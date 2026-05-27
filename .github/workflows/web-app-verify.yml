@@ -1,0 +1,38 @@
+name: Web App Verify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+
+      - name: Biome check
+        run: pnpm --filter web-app check
+
+      - name: Type check
+        run: pnpm --filter web-app typecheck
+
+      - name: Run tests
+        run: pnpm --filter web-app test:run
+
+      - name: Build
+        run: pnpm --filter web-app build

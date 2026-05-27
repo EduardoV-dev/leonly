@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+pnpm lint-staged || exit 1
+pnpm --filter web-app typecheck || exit 1
+pnpm --filter web-app test:run || exit 1

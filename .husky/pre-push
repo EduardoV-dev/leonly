@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+pnpm --filter web-app build || exit 1
