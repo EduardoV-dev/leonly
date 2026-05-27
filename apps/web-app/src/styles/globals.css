@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,6 +26,17 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.8rem;
+    --auth-canvas-start: #151519;
+    --auth-canvas-end: #1f2026;
+    --auth-surface: #f5efee;
+    --auth-border: #dfd4d2;
+    --auth-brand: #7f5a5f;
+    --auth-heading: #252323;
+    --auth-copy: #635b59;
+    --auth-button-bg: #8a6467;
+    --auth-button-border: #7d585d;
+    --auth-button-text: #fffdfd;
+    --auth-legal: #8f8280;
   }
 
   * {
@@ -32,6 +45,179 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Inter", "Segoe UI", sans-serif;
+    font-family: 'Nunito Sans', 'Segoe UI', sans-serif;
+  }
+}
+
+@layer utilities {
+  .bg-auth-canvas {
+    background-image:
+      radial-gradient(circle at 10% 15%, rgb(255 255 255 / 0.09) 0 1px, transparent 1px),
+      radial-gradient(circle at 65% 22%, rgb(255 255 255 / 0.08) 0 1px, transparent 1px),
+      linear-gradient(120deg, var(--auth-canvas-start), var(--auth-canvas-end));
+    background-size: 28px 28px, 28px 28px, cover;
+    background-position: 0 0, 14px 14px, center;
+  }
+
+  .bg-auth-surface {
+    background-color: var(--auth-surface);
+  }
+
+  .border-auth-border {
+    border-color: var(--auth-border);
+  }
+
+  .text-auth-brand {
+    color: var(--auth-brand);
+  }
+
+  .text-auth-heading {
+    color: var(--auth-heading);
+  }
+
+  .text-auth-copy {
+    color: var(--auth-copy);
+  }
+
+  .text-auth-legal {
+    color: var(--auth-legal);
+  }
+
+  .bg-auth-button {
+    background-color: var(--auth-button-bg);
+  }
+
+  .border-auth-button-border {
+    border-color: var(--auth-button-border);
+  }
+
+  .text-auth-button-text {
+    color: var(--auth-button-text);
+  }
+
+  .shadow-auth {
+    box-shadow: 0 22px 54px rgb(17 15 15 / 0.25);
+  }
+
+  .font-display {
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  }
+
+  .auth-card {
+    position: absolute;
+    --auth-rotation: 0deg;
+    transform: rotate(var(--auth-rotation));
+    border-radius: 1rem;
+    border: 8px solid rgb(255 255 255 / 0.88);
+    background-color: #fff;
+    box-shadow: 0 24px 42px rgb(27 15 16 / 0.2);
+    overflow: hidden;
+  }
+
+  .auth-card-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    aspect-ratio: 4 / 5;
+  }
+
+  .auth-card-top {
+    --auth-rotation: 9deg;
+    right: 6%;
+    top: 2%;
+    z-index: 20;
+  }
+
+  .auth-card-middle {
+    --auth-rotation: -4deg;
+    left: 16%;
+    top: 38%;
+    z-index: 30;
+  }
+
+  .auth-card-bottom {
+    --auth-rotation: 12deg;
+    right: 4%;
+    top: 66%;
+    z-index: 10;
+  }
+
+  .auth-float-slow {
+    animation: auth-float-up 7.4s ease-in-out infinite;
+    animation-fill-mode: both;
+  }
+
+  .auth-float-medium {
+    animation: auth-float-down 6.8s ease-in-out infinite;
+    animation-fill-mode: both;
+  }
+
+  .auth-float-fast {
+    animation: auth-float-up 6.2s ease-in-out infinite;
+    animation-delay: 0.6s;
+    animation-fill-mode: both;
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .auth-card-top {
+      right: 5%;
+      top: 0;
+    }
+
+    .auth-card-middle {
+      left: 12%;
+      top: 40%;
+    }
+
+    .auth-card-bottom {
+      right: 1%;
+      top: 67%;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .auth-card {
+      border-width: 7px;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .auth-card-top {
+      right: 18%;
+      top: 5%;
+    }
+
+    .auth-card-middle {
+      left: 9%;
+      top: 26%;
+    }
+
+    .auth-card-bottom {
+      right: 8%;
+      top: 15%;
+    }
+  }
+}
+
+@keyframes auth-float-up {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--auth-rotation));
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(var(--auth-rotation));
+  }
+}
+
+@keyframes auth-float-down {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--auth-rotation));
+  }
+
+  50% {
+    transform: translateY(10px) rotate(var(--auth-rotation));
   }
 }
