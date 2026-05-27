@@ -1,7 +1,9 @@
+import { AppToaster } from '@/components/ui/toaster';
+import { QueryProvider } from '@/providers/QueryProvider';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './styles.css';
+import '@/styles/globals.css';
 
 const rootElement = document.getElementById('root');
 
@@ -11,6 +13,9 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <QueryProvider>
+      <App />
+      <AppToaster />
+    </QueryProvider>
   </React.StrictMode>,
 );
