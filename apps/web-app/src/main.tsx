@@ -1,4 +1,5 @@
 import { AppToaster } from '@/components/ui/toaster';
+import '@/lib/i18n';
 import { QueryProvider } from '@/providers/QueryProvider';
 import React from 'react';
 import ReactDOM from 'react-dom/client';

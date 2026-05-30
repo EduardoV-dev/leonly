@@ -1,9 +1,12 @@
+import { setLanguage } from '@/lib/i18n';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
 describe('App', () => {
-  it('renders auth heading and Google button', () => {
+  it('renders auth heading and Google button', async () => {
+    await setLanguage('en');
+
     render(
       <QueryProvider>
         <App />
