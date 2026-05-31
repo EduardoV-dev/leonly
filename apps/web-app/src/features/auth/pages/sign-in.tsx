@@ -1,3 +1,6 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
 import { type AppLanguage, setLanguage } from '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { FaHeart } from 'react-icons/fa6';
@@ -37,7 +40,7 @@ const languageOptions: Array<{
   { code: 'es', flag: '🇳🇮', labelKey: 'language.spanish', shortLabel: 'ES' },
 ];
 
-export default function App() {
+export function SignInPage() {
   const { t, i18n } = useTranslation('auth');
 
   const currentLanguage: AppLanguage = i18n.language.startsWith('es') ? 'es' : 'en';
@@ -87,13 +90,10 @@ export default function App() {
                 {t('description')}
               </p>
 
-              <button
-                type="button"
-                className="mt-10 inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-auth-button-border bg-auth-button px-6 text-[1.25rem] font-semibold text-auth-button-text shadow-sm transition-transform duration-300 hover:-translate-y-0.5"
-              >
+              <Button className="mt-10">
                 <FcGoogle className="h-6 w-6" aria-hidden="true" />
                 {t('continueWithGoogle')}
-              </button>
+              </Button>
 
               <p className="mt-8 text-xs uppercase tracking-[0.13em] text-auth-legal sm:text-[0.82rem]">
                 {t('legal')}

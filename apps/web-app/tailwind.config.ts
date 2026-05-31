@@ -3,7 +3,7 @@ import animate from 'tailwindcss-animate';
 
 const config: Config = {
   darkMode: ['class'],
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       borderRadius: {
