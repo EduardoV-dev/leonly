@@ -10,7 +10,8 @@
     "format": "turbo run format",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
