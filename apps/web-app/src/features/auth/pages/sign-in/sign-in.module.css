@@ -1,0 +1,84 @@
+.cardFrame {
+  position: absolute;
+  --auth-rotation: 0deg;
+}
+
+.cardTilt {
+  transform: rotate(var(--auth-rotation));
+}
+
+.card {
+  width: 100%;
+  border-radius: 1rem;
+  border: 7px solid rgb(255 255 255 / 0.88);
+  background-color: #fff;
+  box-shadow: 0 24px 42px rgb(27 15 16 / 0.2);
+  overflow: hidden;
+}
+
+.cardImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  aspect-ratio: 4 / 5;
+}
+
+.cardTop {
+  --auth-rotation: 9deg;
+  right: 18%;
+  top: 5%;
+  z-index: 20;
+}
+
+.cardMiddle {
+  --auth-rotation: -4deg;
+  left: 9%;
+  top: 26%;
+  z-index: 30;
+}
+
+.cardBottom {
+  --auth-rotation: 12deg;
+  right: 8%;
+  top: 15%;
+  z-index: 10;
+}
+
+@mixin screen-md {
+  .cardTop {
+    right: 5%;
+    top: 0;
+  }
+
+  .cardMiddle {
+    left: 12%;
+    top: 40%;
+  }
+
+  .cardBottom {
+    right: 1%;
+    top: 67%;
+  }
+}
+
+@mixin screen-lg {
+  .card {
+    border-width: 8px;
+  }
+
+  .cardTop {
+    right: 6%;
+    top: 2%;
+  }
+
+  .cardMiddle {
+    left: 16%;
+    top: 38%;
+  }
+
+  .cardBottom {
+    right: 4%;
+    top: 66%;
+  }
+}
