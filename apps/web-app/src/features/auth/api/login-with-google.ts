@@ -1,12 +1,18 @@
-import { supabase } from '@/lib/supabase';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 
 const loginWithGoogle = async () => {
+  const supabase = createSupabaseBrowserClient();
+
+  console.log('Initiating Google sign-in...', window.location.origin);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
       queryParams: {
-        prompt: 'select_account',
+        prompt: 'consent',
+        access_type: 'offline',
       },
     },
   });

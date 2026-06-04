@@ -1,8 +1,11 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/features/auth/stores/auth';
 import { type AppLanguage, setLanguage } from '@/lib/i18n';
 import { type Variants, motion, useReducedMotion } from 'motion/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaHeart } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
@@ -142,12 +145,20 @@ const languageOptions: Array<{
 ];
 
 export function SignInPage() {
+  const router = useRouter();
   const { t, i18n } = useTranslation('auth');
+  const { isReady, token } = useAuthStore();
   const loginWithGoogleMutation = useLoginWithGoogle();
   const shouldReduceMotion = useReducedMotion();
   const currentLanguage: AppLanguage = i18n.language.startsWith('es') ? 'es' : 'en';
   const entranceVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
   const cardVariants = shouldReduceMotion ? reducedMotionVariants : cardEntryVariants;
+
+  useEffect(() => {
+    if (isReady && token) {
+      router.replace('/space');
+    }
+  }, [isReady, router, token]);
 
   return (
     <motion.main
