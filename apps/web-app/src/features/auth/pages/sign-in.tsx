@@ -2,9 +2,12 @@
 
 import { Button } from '@/components/ui/button';
 import { type AppLanguage, setLanguage } from '@/lib/i18n';
+import { supabase } from '@/lib/supabase';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaHeart } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
+import { useLoginWithGoogle } from '../api/login-with-google';
 
 const memoryCards = [
   {
@@ -42,6 +45,17 @@ const languageOptions: Array<{
 
 export function SignInPage() {
   const { t, i18n } = useTranslation('auth');
+  const loginWithGoogleMutation = useLoginWithGoogle();
+
+  React.useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(event, session);
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
 
   const currentLanguage: AppLanguage = i18n.language.startsWith('es') ? 'es' : 'en';
 
@@ -90,7 +104,11 @@ export function SignInPage() {
                 {t('description')}
               </p>
 
-              <Button className="mt-10">
+              <Button
+                className="mt-10"
+                onClick={() => loginWithGoogleMutation.mutate()}
+                disabled={loginWithGoogleMutation.isPending}
+              >
                 <FcGoogle className="h-6 w-6" aria-hidden="true" />
                 {t('continueWithGoogle')}
               </Button>
