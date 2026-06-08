@@ -1,4 +1,4 @@
-import { type ExternalToast, toast as toaster } from 'sonner';
+import { type ExternalToast, toast as toaster } from "sonner";
 
 export const toast = {
   success: (message: string, options?: ExternalToast) => toaster.success(message, options),

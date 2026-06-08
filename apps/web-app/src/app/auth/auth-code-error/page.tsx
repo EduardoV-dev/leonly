@@ -1,15 +1,12 @@
-import Link from 'next/link';
-import { FaHeart } from 'react-icons/fa6';
+import { LeonlyLogo } from "@/components/leonly-logo";
+import Link from "next/link";
 
 export default function AuthCodeErrorPage() {
   return (
     <main className="min-h-screen bg-auth-canvas px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
       <section className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-[78rem] items-center justify-center overflow-hidden rounded-[1.45rem] border border-auth-border bg-auth-surface px-5 py-10 shadow-auth md:min-h-[calc(100vh-3rem)] md:rounded-[1.75rem]">
         <div className="w-full max-w-[32rem] text-center">
-          <p className="inline-flex items-center gap-3 font-serif text-[2.1rem] leading-none tracking-[-0.02em] text-auth-brand sm:text-[2.45rem]">
-            <FaHeart className="text-[0.78em]" aria-hidden="true" />
-            <span>Leonly</span>
-          </p>
+          <LeonlyLogo />
 
           <div className="mt-10 rounded-[1.25rem] border border-auth-border bg-white/45 px-5 py-8 shadow-sm sm:px-8">
             <p className="text-sm font-semibold uppercase tracking-[0.13em] text-auth-legal">

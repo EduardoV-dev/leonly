@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-import '@/styles/globals.css';
-import { Providers } from './providers';
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "@/styles/globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: 'Leonly',
-  description: 'Private, elegant sanctuary for shared memories.',
+  title: "Leonly",
+  description: "Private, elegant sanctuary for shared memories.",
 };
 
 type RootLayoutProps = {

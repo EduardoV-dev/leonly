@@ -1,3 +1,12 @@
+.root {
+  position: relative;
+  width: 100%;
+  max-width: 24rem;
+  height: 20.5rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .cardFrame {
   position: absolute;
   --auth-rotation: 0deg;
@@ -9,76 +18,93 @@
 
 .card {
   width: 100%;
-  border-radius: 1rem;
+  overflow: hidden;
   border: 7px solid rgb(255 255 255 / 0.88);
+  border-radius: 1rem;
   background-color: #fff;
   box-shadow: 0 24px 42px rgb(27 15 16 / 0.2);
-  overflow: hidden;
 }
 
 .cardImage {
   display: block;
   width: 100%;
   height: auto;
-  object-fit: cover;
   aspect-ratio: 4 / 5;
+  object-fit: cover;
 }
 
 .cardTop {
   --auth-rotation: 9deg;
-  right: 18%;
   top: 5%;
+  right: 18%;
   z-index: 20;
 }
 
 .cardMiddle {
   --auth-rotation: -4deg;
-  left: 9%;
   top: 26%;
+  left: 9%;
   z-index: 30;
 }
 
 .cardBottom {
   --auth-rotation: 12deg;
-  right: 8%;
   top: 15%;
+  right: 8%;
   z-index: 10;
 }
 
+@mixin screen-sm {
+  .root {
+    max-width: 26rem;
+    height: 22rem;
+  }
+}
+
 @mixin screen-md {
+  .root {
+    max-width: 31rem;
+    height: 23.5rem;
+  }
+
   .cardTop {
-    right: 5%;
     top: 0;
+    right: 5%;
   }
 
   .cardMiddle {
-    left: 12%;
     top: 40%;
+    left: 12%;
   }
 
   .cardBottom {
-    right: 1%;
     top: 67%;
+    right: 1%;
   }
 }
 
 @mixin screen-lg {
+  .root {
+    max-width: none;
+    height: auto;
+  }
+
   .card {
     border-width: 8px;
   }
 
   .cardTop {
-    right: 6%;
     top: 2%;
+    right: 6%;
   }
 
   .cardMiddle {
-    left: 16%;
     top: 38%;
+    left: 16%;
   }
 
   .cardBottom {
-    right: 4%;
     top: 66%;
+    right: 4%;
   }
 }

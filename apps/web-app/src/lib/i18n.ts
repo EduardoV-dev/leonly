@@ -1,12 +1,12 @@
-import { authEn } from '@/locales/en/auth';
-import { authEs } from '@/locales/es/auth';
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import { authEn } from "@/locales/en/auth";
+import { authEs } from "@/locales/es/auth";
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
 
-const LOCALE_STORAGE_KEY = 'leonly.locale';
+const LOCALE_STORAGE_KEY = "leonly.locale";
 const LANGUAGES = {
-  SPANISH: 'es',
-  ENGLISH: 'en',
+  SPANISH: "es",
+  ENGLISH: "en",
 } as const;
 
 const resources = {
@@ -21,7 +21,7 @@ const resources = {
 type AppLanguage = keyof typeof resources;
 
 export function normalizeLanguage(locale?: string): AppLanguage {
-  const normalized = locale?.toLowerCase() ?? '';
+  const normalized = locale?.toLowerCase() ?? "";
 
   if (normalized.startsWith(LANGUAGES.SPANISH)) {
     return LANGUAGES.SPANISH;
@@ -43,7 +43,7 @@ export function detectLanguageFromLocales(locales: readonly string[]): AppLangua
 }
 
 function getBrowserLocales(): string[] {
-  if (typeof navigator === 'undefined') {
+  if (typeof navigator === "undefined") {
     return [LANGUAGES.ENGLISH];
   }
 
@@ -66,7 +66,7 @@ export function resolveInitialLanguage(
 }
 
 function getPersistedLanguage(): AppLanguage | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
@@ -80,11 +80,11 @@ function getPersistedLanguage(): AppLanguage | null {
 }
 
 export function setLanguage(language: AppLanguage) {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, language);
   }
 
-  if (typeof document !== 'undefined') {
+  if (typeof document !== "undefined") {
     document.documentElement.lang = language;
   }
 
@@ -93,7 +93,7 @@ export function setLanguage(language: AppLanguage) {
 
 const initialLanguage = resolveInitialLanguage(getPersistedLanguage(), getBrowserLocales());
 
-if (typeof document !== 'undefined') {
+if (typeof document !== "undefined") {
   document.documentElement.lang = initialLanguage;
 }
 
@@ -101,7 +101,7 @@ void i18n.use(initReactI18next).init({
   resources,
   lng: initialLanguage,
   fallbackLng: LANGUAGES.ENGLISH,
-  defaultNS: 'auth',
+  defaultNS: "auth",
   interpolation: {
     escapeValue: false,
   },

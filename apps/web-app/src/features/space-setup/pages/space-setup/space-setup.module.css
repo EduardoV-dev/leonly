@@ -1,0 +1,412 @@
+.shell {
+  display: grid;
+  min-height: calc(100vh - 2rem);
+  width: 100%;
+  max-width: 78rem;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 1.45rem;
+  background: var(--auth-surface);
+  box-shadow: 0 22px 54px rgb(17 15 15 / 0.25);
+}
+
+.storyPanel {
+  position: relative;
+  min-height: 22rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8bcb7 0%, #f6d7d0 100%);
+}
+
+.storyMotion {
+  position: absolute;
+  inset: 0;
+  will-change: opacity, transform;
+}
+
+.brand {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 2;
+  font-size: 1.6rem;
+  color: var(--auth-brand);
+}
+
+.storyImage {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(0.96);
+}
+
+.storyShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(255 246 242 / 0.58) 0%, transparent 34%),
+    linear-gradient(0deg, rgb(63 38 37 / 0.72) 0%, transparent 47%);
+}
+
+.storyCaption {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 2;
+  color: #fffaf7;
+}
+
+.storyCaption p {
+  margin: 0;
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 4vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.storyCaption span {
+  display: block;
+  max-width: 20rem;
+  margin-top: 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: rgb(255 250 247 / 0.82);
+}
+
+.contentPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34rem;
+  padding: 2rem 1.25rem;
+  background: radial-gradient(circle at 85% 85%, rgb(223 212 210 / 0.48), transparent 34%),
+    var(--auth-surface);
+}
+
+.contentInner {
+  width: min(100%, 31rem);
+  will-change: opacity, transform;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgb(125 88 93 / 0.18);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--auth-copy);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 3.4vw, 1.18rem);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.tab::after {
+  position: absolute;
+  right: 12%;
+  bottom: -1px;
+  left: 12%;
+  height: 2px;
+  background: transparent;
+  content: "";
+  transition: background-color 180ms ease;
+}
+
+.activeTab {
+  color: var(--auth-brand);
+}
+
+.activeTab::after {
+  background: var(--auth-brand);
+}
+
+.transitionFrame {
+  position: relative;
+  min-height: 29rem;
+  overflow: hidden;
+}
+
+.stepPanel {
+  width: 100%;
+}
+
+.stepMarker {
+  margin-bottom: 1.3rem;
+}
+
+.stepMarker span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--auth-legal);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.progressTrack {
+  height: 2px;
+  overflow: hidden;
+  background: rgb(125 88 93 / 0.14);
+}
+
+.progressValue {
+  height: 100%;
+  background: var(--auth-button-bg);
+  transition: width 280ms ease;
+}
+
+.heading {
+  max-width: 26rem;
+  margin: 0;
+  color: var(--auth-heading);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: clamp(2.35rem, 8vw, 3.25rem);
+  font-weight: 700;
+  line-height: 0.96;
+}
+
+.copy {
+  max-width: 25rem;
+  margin: 1rem 0 0;
+  color: var(--auth-copy);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.formGroup {
+  margin-top: 1.45rem;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+  color: var(--auth-brand);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.optional {
+  color: var(--auth-legal);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+.input {
+  width: 100%;
+  height: 3.35rem;
+  border: 1px solid rgb(125 88 93 / 0.2);
+  border-radius: 0.8rem;
+  background: #f6f2ee;
+  padding: 0 1rem;
+  color: var(--auth-heading);
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.input:focus {
+  border-color: color-mix(in srgb, var(--auth-brand) 72%, transparent);
+  background: #fffaf7;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--auth-brand) 12%, transparent);
+}
+
+.input::placeholder {
+  color: rgb(99 91 89 / 0.54);
+}
+
+.inputWithIcon {
+  position: relative;
+}
+
+.inputWithIcon .input {
+  padding-right: 3rem;
+}
+
+.inputIcon {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--auth-brand);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.primaryButton {
+  margin-top: 2rem;
+}
+
+.dateCard {
+  margin-top: 2rem;
+  padding: 1.35rem;
+  border: 1px solid rgb(125 88 93 / 0.08);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.66);
+  box-shadow: 0 24px 60px rgb(99 70 73 / 0.1);
+}
+
+.note {
+  margin: 1.25rem 0 0;
+  color: var(--auth-legal);
+  font-size: 0.86rem;
+  font-style: italic;
+  font-weight: 600;
+  text-align: center;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 2.6rem;
+  margin-top: 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--auth-brand);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-bottom: 1.35rem;
+  border: 1px solid rgb(125 88 93 / 0.2);
+  border-radius: 999px;
+  color: var(--auth-brand);
+}
+
+.inviteCodeBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid rgb(125 88 93 / 0.2);
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 18px 40px rgb(99 70 73 / 0.1);
+}
+
+.inviteCodeBox strong {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--auth-brand);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.12em;
+}
+
+.copyButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: rgb(127 90 95 / 0.13);
+  padding: 0 1rem;
+  color: var(--auth-brand);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.expiryNote {
+  margin: 1.35rem 0 0;
+  padding: 1rem;
+  border: 1px solid rgb(125 88 93 / 0.12);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 0.58);
+  color: var(--auth-copy);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.5rem;
+  margin-top: 1.8rem;
+  border: 1px solid var(--auth-button-border);
+  border-radius: 0.9rem;
+  background: var(--auth-button-bg);
+  color: var(--auth-button-text);
+  font-size: 1rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 12px 26px rgb(99 70 73 / 0.22);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.linkButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgb(99 70 73 / 0.25);
+}
+
+@mixin screen-md {
+  .shell {
+    min-height: calc(100vh - 3rem);
+    border-radius: 1.75rem;
+    grid-template-columns: minmax(19rem, 0.92fr) minmax(25rem, 1fr);
+  }
+
+  .storyPanel,
+  .storyImage {
+    min-height: calc(100vh - 3rem);
+  }
+
+  .contentPanel {
+    min-height: calc(100vh - 3rem);
+    padding: 3.5rem 2rem;
+  }
+
+  .transitionFrame {
+    min-height: 31rem;
+  }
+}
+
+@mixin screen-lg {
+  .contentPanel {
+    padding: 4.5rem 3.5rem;
+  }
+
+  .contentInner {
+    width: min(100%, 34rem);
+  }
+}

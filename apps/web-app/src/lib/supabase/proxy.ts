@@ -1,6 +1,6 @@
-import { ENVIRONMENT_VARIABLES } from '@/constants/environment-variables';
-import { createServerClient } from '@supabase/ssr';
-import { type NextRequest, NextResponse } from 'next/server';
+import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
+import { createServerClient } from "@supabase/ssr";
+import { type NextRequest, NextResponse } from "next/server";
 
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = ENVIRONMENT_VARIABLES;
 
@@ -42,20 +42,23 @@ export async function updateSession(request: NextRequest) {
   // with the Supabase client, your users may be randomly logged out.
 
   const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
-  console.log('User in middleware:', user);
 
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+  const user = data?.claims;
+  const pathname = request.nextUrl.pathname;
+  const isAuthCallback = pathname === "/auth/callback";
+  const isAuthRoute = pathname.startsWith("/auth");
+
+  if (user && isAuthRoute && !isAuthCallback) {
     // user is already logged in, potentially respond by redirecting the user to the home page
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = "/welcome";
     return NextResponse.redirect(url);
   }
 
-  if (!user && !request.nextUrl.pathname.startsWith('/auth')) {
+  if (!user && !isAuthRoute) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
-    url.pathname = '/auth';
+    url.pathname = "/auth";
     return NextResponse.redirect(url);
   }
 
