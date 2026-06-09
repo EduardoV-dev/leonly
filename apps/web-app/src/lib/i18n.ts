@@ -1,5 +1,7 @@
 import { authEn } from "@/locales/en/auth";
+import { notFoundEn } from "@/locales/en/not-found";
 import { authEs } from "@/locales/es/auth";
+import { notFoundEs } from "@/locales/es/not-found";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
@@ -12,9 +14,11 @@ const LANGUAGES = {
 const resources = {
   [LANGUAGES.ENGLISH]: {
     auth: authEn,
+    notFound: notFoundEn,
   },
   [LANGUAGES.SPANISH]: {
     auth: authEs,
+    notFound: notFoundEs,
   },
 } as const;
 

@@ -41,3 +41,15 @@ describe("setLanguage", () => {
     expect(i18n.language).toBe("es");
   });
 });
+
+describe("notFound namespace", () => {
+  it("resolves 404 translations in english and spanish", () => {
+    const englishT = i18n.getFixedT("en", "notFound");
+    const spanishT = i18n.getFixedT("es", "notFound");
+
+    expect(englishT("heading")).toBe("This page is not in your album.");
+    expect(englishT("actions.unauthenticated")).toBe("Sign in to memories");
+    expect(spanishT("heading")).toBe("Esta pagina no esta en tu album.");
+    expect(spanishT("actions.authenticated")).toBe("Ir a recuerdos");
+  });
+});

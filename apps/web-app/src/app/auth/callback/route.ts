@@ -13,8 +13,6 @@ export async function GET(request: Request) {
     next = "/welcome";
   }
 
-  console.log("Error exchanging code for session:", code);
-
   if (code) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
