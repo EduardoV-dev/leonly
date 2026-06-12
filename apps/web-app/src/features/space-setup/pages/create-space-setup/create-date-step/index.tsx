@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -35,13 +36,13 @@ export function CreateDateStep({ firstDay, onFirstDayChange }: CreateDateStepPro
         </div>
 
         <Link
-          href="/welcome/create?step=invite"
+          href={APP_ROUTES.WELCOME_CREATE_STEP("invite")}
           className={`${styles.linkButton} ${styles.primaryButton}`}
         >
           {t("actions.continue")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
-        <BackLink href="/welcome/create?step=name" />
+        <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("name")} />
       </div>
 
       <p className={styles.note}>"{t("steps.date.note")}"</p>

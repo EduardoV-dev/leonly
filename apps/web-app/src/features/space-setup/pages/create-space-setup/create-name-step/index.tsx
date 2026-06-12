@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -34,13 +35,13 @@ export function CreateNameStep({ spaceName, onSpaceNameChange }: CreateNameStepP
       </div>
 
       <Link
-        href="/welcome/create?step=date"
+        href={APP_ROUTES.WELCOME_CREATE_STEP("date")}
         className={`${styles.linkButton} ${styles.primaryButton}`}
       >
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
-      <BackLink href="/welcome" />
+      <BackLink href={APP_ROUTES.WELCOME} />
     </div>
   );
 }

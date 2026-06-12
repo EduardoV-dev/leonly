@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -34,7 +35,7 @@ export function CreateStartStep({ displayName, onDisplayNameChange }: CreateStar
         />
       </div>
 
-      <Link href="/welcome/create?step=name" className={styles.linkButton}>
+      <Link href={APP_ROUTES.WELCOME_CREATE_STEP("name")} className={styles.linkButton}>
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>

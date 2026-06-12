@@ -1,4 +1,5 @@
 import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
+import { APP_ROUTES } from "@/constants/routes";
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -46,19 +47,19 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
   const pathname = request.nextUrl.pathname;
   const isAuthCallback = pathname === "/auth/callback";
-  const isAuthRoute = pathname.startsWith("/auth");
+  const isAuthRoute = pathname.startsWith(APP_ROUTES.AUTH);
 
   if (user && isAuthRoute && !isAuthCallback) {
     // user is already logged in, potentially respond by redirecting the user to the home page
     const url = request.nextUrl.clone();
-    url.pathname = "/welcome";
+    url.pathname = APP_ROUTES.WELCOME;
     return NextResponse.redirect(url);
   }
 
   if (!user && !isAuthRoute) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
-    url.pathname = "/auth";
+    url.pathname = APP_ROUTES.AUTH;
     return NextResponse.redirect(url);
   }
 

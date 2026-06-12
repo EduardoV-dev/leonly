@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { Check, Copy, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -40,10 +41,10 @@ export function CreateInviteStep({ copied, onCopy }: CreateInviteStepProps) {
 
       <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
 
-      <Link href="/" className={styles.linkButton}>
+      <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
         {t("actions.startStory")}
       </Link>
-      <BackLink href="/welcome/create?step=date" />
+      <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("date")} />
     </div>
   );
 }

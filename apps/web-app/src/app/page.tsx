@@ -1,5 +1,6 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  redirect("/welcome");
+  redirect(APP_ROUTES.WELCOME);
 }

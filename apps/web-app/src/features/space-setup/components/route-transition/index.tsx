@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_ROUTES } from "@/constants/routes";
 import { AnimatePresence, type Variants, motion, useReducedMotion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -11,9 +12,9 @@ type SpaceSetupRouteTransitionProps = {
 };
 
 const routeOrder: Record<string, number> = {
-  "/welcome": 0,
-  "/welcome/create": 1,
-  "/welcome/join": 1,
+  [APP_ROUTES.WELCOME]: 0,
+  [APP_ROUTES.WELCOME_CREATE]: 1,
+  [APP_ROUTES.WELCOME_JOIN]: 1,
 };
 
 const shellVariants: Variants = {

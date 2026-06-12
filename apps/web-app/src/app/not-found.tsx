@@ -1,6 +1,7 @@
 "use client";
 
 import { LeonlyLogo } from "@/components/leonly-logo";
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight, HeartCrack, Images } from "lucide-react";
 import { type Variants, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
@@ -59,7 +60,7 @@ export default function NotFoundPage() {
   const shouldReduceMotion = Boolean(useReducedMotion());
   const entranceVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
 
-  const actionHref = isAuthenticated ? "/" : "/auth";
+  const actionHref = isAuthenticated ? APP_ROUTES.HOME : APP_ROUTES.AUTH;
   const actionLabel = isAuthenticated ? t("actions.authenticated") : t("actions.unauthenticated");
 
   return (

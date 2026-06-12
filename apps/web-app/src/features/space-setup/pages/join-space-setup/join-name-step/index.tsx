@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { BackLink } from "../../../components/back-link";
@@ -31,10 +32,10 @@ export function JoinNameStep({ displayName, onDisplayNameChange }: JoinNameStepP
         />
       </div>
 
-      <Link href="/" className={styles.linkButton}>
+      <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
         {t("actions.startStory")}
       </Link>
-      <BackLink href="/welcome/join" />
+      <BackLink href={APP_ROUTES.WELCOME_JOIN} />
     </div>
   );
 }

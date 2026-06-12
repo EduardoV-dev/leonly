@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -32,7 +33,7 @@ export function JoinCodeStep({ inviteCode, onInviteCodeChange }: JoinCodeStepPro
           placeholder={INVITE_CODE}
           className={styles.input}
         />
-        <Link href="/welcome/join?step=name" className={styles.linkButton}>
+        <Link href={APP_ROUTES.WELCOME_JOIN_STEP("name")} className={styles.linkButton}>
           {t("actions.joinSpace")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>

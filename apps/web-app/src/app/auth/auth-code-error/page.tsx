@@ -1,4 +1,5 @@
 import { LeonlyLogo } from "@/components/leonly-logo";
+import { APP_ROUTES } from "@/constants/routes";
 import Link from "next/link";
 
 export default function AuthCodeErrorPage() {
@@ -22,13 +23,13 @@ export default function AuthCodeErrorPage() {
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <Link
-                href="/auth"
+                href={APP_ROUTES.AUTH}
                 className="inline-flex h-14 items-center justify-center rounded-2xl border border-auth-button-border bg-auth-button px-5 text-base font-semibold text-auth-button-text shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5"
               >
                 Try again
               </Link>
               <Link
-                href="/"
+                href={APP_ROUTES.HOME}
                 className="inline-flex h-14 items-center justify-center rounded-2xl border border-auth-button-border/45 bg-white/60 px-5 text-base font-semibold text-auth-brand shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:bg-white/80"
               >
                 Go home

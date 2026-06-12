@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/constants/routes";
 import { NextResponse } from "next/server";
 
 // The client you created from the Server-Side Auth instructions
@@ -7,10 +8,10 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   // if "next" is in param, use it as the redirect URL
-  let next = searchParams.get("next") ?? "/welcome";
+  let next = searchParams.get("next") ?? APP_ROUTES.WELCOME;
   if (!next.startsWith("/")) {
     // if "next" is not a relative URL, use the default
-    next = "/welcome";
+    next = APP_ROUTES.WELCOME;
   }
 
   if (code) {
