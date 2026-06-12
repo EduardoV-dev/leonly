@@ -9,3 +9,4 @@ opencode.json
 !.env.example
 .next/
 tsconfig.tsbuildinfo
+apps/web-app/next-env.d.ts
