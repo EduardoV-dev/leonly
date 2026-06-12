@@ -1,4 +1,3 @@
-import type { AppLanguage } from "@/lib/i18n";
 import type { Variants } from "motion/react";
 
 export const revealEase = [0.22, 1, 0.36, 1] as const;
@@ -125,13 +124,3 @@ export const memoryCards = [
     floatDelay: 0.6,
   },
 ] as const;
-
-export const languageOptions: Array<{
-  code: AppLanguage;
-  flag: string;
-  labelKey: "language.english" | "language.spanish";
-  shortLabel: "EN" | "ES";
-}> = [
-  { code: "en", flag: "\u{1F1FA}\u{1F1F8}", labelKey: "language.english", shortLabel: "EN" },
-  { code: "es", flag: "\u{1F1F3}\u{1F1EE}", labelKey: "language.spanish", shortLabel: "ES" },
-];

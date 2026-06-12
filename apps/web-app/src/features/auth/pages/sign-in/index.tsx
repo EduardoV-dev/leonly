@@ -1,7 +1,7 @@
 "use client";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { LeonlyLogo } from "@/components/leonly-logo";
-import type { AppLanguage } from "@/lib/i18n";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { useLoginWithGoogle } from "../../api/login-with-google";
@@ -13,15 +13,13 @@ import {
   revealVariants,
   staggerDelays,
 } from "./constants";
-import { LanguageSwitcher } from "./language-switcher";
 import { MemoryCardStage } from "./memory-card-stage";
 import { SignInCopy } from "./sign-in-copy";
 
 export function SignInPage() {
-  const { t, i18n } = useTranslation("auth");
+  const { t } = useTranslation("auth");
   const loginWithGoogleMutation = useLoginWithGoogle();
   const shouldReduceMotion = useReducedMotion();
-  const currentLanguage: AppLanguage = i18n.language.startsWith("es") ? "es" : "en";
   const shouldUseReducedMotion = Boolean(shouldReduceMotion);
   const entranceVariants = shouldUseReducedMotion ? reducedMotionVariants : revealVariants;
 
@@ -38,11 +36,7 @@ export function SignInPage() {
       >
         <div className="grid w-full gap-8 px-5 py-8 min-[360px]:px-6 sm:p-10 lg:grid-cols-[1fr_1.03fr] lg:gap-6 lg:px-14 lg:py-12 xl:px-16">
           <div className="flex flex-col justify-center">
-            <LanguageSwitcher
-              currentLanguage={currentLanguage}
-              entranceVariants={entranceVariants}
-              t={t}
-            />
+            <LanguageSwitcher />
 
             <motion.div
               variants={shouldUseReducedMotion ? reducedMotionVariants : brandVariants}

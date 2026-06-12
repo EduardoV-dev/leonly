@@ -13,6 +13,7 @@ type SpaceSetupRouteTransitionProps = {
 const routeOrder: Record<string, number> = {
   "/welcome": 0,
   "/welcome/create": 1,
+  "/welcome/join": 1,
 };
 
 const shellVariants: Variants = {

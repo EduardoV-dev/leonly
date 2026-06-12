@@ -1,11 +1,14 @@
-import { notFound } from "next/navigation";
+import {
+  SPACE_SETUP_STEPS,
+  SpaceCreateSetupPage,
+  type SpaceSetupCreateSteps,
+} from "@/features/space-setup";
+import { getQueryParams } from "@/utils/router";
 
-import { SpaceSetupPage, type SpaceSetupScreen } from "@/features/space-setup";
-
-const createStepScreens: Record<string, SpaceSetupScreen> = {
-  "1": "create-name",
-  "2": "create-date",
-  "3": "create-invite",
+const createStepScreens: Record<string, SpaceSetupCreateSteps> = {
+  name: SPACE_SETUP_STEPS.CREATE_NAME,
+  date: SPACE_SETUP_STEPS.CREATE_DATE,
+  invite: SPACE_SETUP_STEPS.CREATE_INVITE,
 };
 
 type CreateSpacePageProps = {
@@ -15,13 +18,8 @@ type CreateSpacePageProps = {
 };
 
 export default async function CreateSpacePage({ searchParams }: CreateSpacePageProps) {
-  const params = await searchParams;
-  const step = Array.isArray(params?.step) ? params.step[0] : params?.step;
-  const screen = createStepScreens[step ?? "1"];
+  const { step } = await getQueryParams(searchParams, ["step"]);
+  const screen = createStepScreens[step || "name"];
 
-  if (!screen) {
-    notFound();
-  }
-
-  return <SpaceSetupPage screen={screen} />;
+  return <SpaceCreateSetupPage screen={screen} />;
 }

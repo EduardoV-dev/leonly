@@ -1,3 +1,9 @@
-export { SpaceSetupPage } from "./pages/space-setup";
+export { SpaceCreateSetupPage } from "./pages/create-space-setup";
+export { SpaceJoinSetupPage } from "./pages/join-space-setup";
 export { SpaceSetupRouteTransition } from "./components/route-transition";
-export type { SpaceSetupScreen } from "./pages/space-setup";
+export { SPACE_SETUP_STEPS } from "./constants/welcome-steps";
+export type {
+  SpaceSetupCreateSteps,
+  SpaceSetupJoinSteps,
+  SpaceSetupSteps,
+} from "./types/setup-types";

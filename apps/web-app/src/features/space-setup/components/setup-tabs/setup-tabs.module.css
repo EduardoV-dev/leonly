@@ -1,0 +1,48 @@
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgb(125 88 93 / 0.18);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 3.25rem;
+  overflow-wrap: anywhere;
+  border: 0;
+  background: transparent;
+  padding: 0 0.6rem;
+  color: var(--auth-copy);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 3.4vw, 1.18rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.tab::after {
+  position: absolute;
+  right: 12%;
+  bottom: -1px;
+  left: 12%;
+  height: 2px;
+  background: transparent;
+  content: "";
+  transition: background-color 180ms ease;
+}
+
+.activeTab {
+  color: var(--auth-brand);
+}
+
+.activeTab::after {
+  background: var(--auth-brand);
+}

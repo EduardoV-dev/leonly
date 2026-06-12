@@ -57,14 +57,10 @@ export default function NotFoundPage() {
   const [isAuthenticated] = React.useState(false);
   const { t } = useTranslation("notFound");
   const shouldReduceMotion = Boolean(useReducedMotion());
-  const entranceVariants = shouldReduceMotion
-    ? reducedMotionVariants
-    : revealVariants;
+  const entranceVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
 
   const actionHref = isAuthenticated ? "/" : "/auth";
-  const actionLabel = isAuthenticated
-    ? t("actions.authenticated")
-    : t("actions.unauthenticated");
+  const actionLabel = isAuthenticated ? t("actions.authenticated") : t("actions.unauthenticated");
 
   return (
     <motion.main
@@ -86,9 +82,7 @@ export default function NotFoundPage() {
           <motion.img
             src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=82"
             alt=""
-            animate={
-              shouldReduceMotion ? undefined : { scale: [1.02, 1.07, 1.02] }
-            }
+            animate={shouldReduceMotion ? undefined : { scale: [1.02, 1.07, 1.02] }}
             transition={{
               duration: 13,
               repeat: Number.POSITIVE_INFINITY,
@@ -134,10 +128,7 @@ export default function NotFoundPage() {
               custom={0.16}
               className="inline-flex items-center gap-2 rounded-full border border-auth-button-border/35 bg-white/45 px-4 py-2 text-xs font-semibold uppercase tracking-[0.13em] text-auth-legal shadow-sm"
             >
-              <HeartCrack
-                className="h-4 w-4 text-auth-brand"
-                aria-hidden="true"
-              />
+              <HeartCrack className="h-4 w-4 text-auth-brand" aria-hidden="true" />
               {t("badge")}
             </motion.p>
 
@@ -148,9 +139,7 @@ export default function NotFoundPage() {
               {errorDigits.map((digit, index) => (
                 <motion.span
                   key={digit.id}
-                  variants={
-                    shouldReduceMotion ? reducedMotionVariants : digitVariants
-                  }
+                  variants={shouldReduceMotion ? reducedMotionVariants : digitVariants}
                   custom={0.22 + index * 0.07}
                   aria-hidden="true"
                   className="inline-block"
@@ -176,11 +165,7 @@ export default function NotFoundPage() {
               {t("description")}
             </motion.p>
 
-            <motion.div
-              variants={entranceVariants}
-              custom={0.64}
-              className="mt-9"
-            >
+            <motion.div variants={entranceVariants} custom={0.64} className="mt-9">
               <Link
                 href={actionHref}
                 className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl border border-auth-button-border bg-auth-button px-5 text-base font-semibold text-auth-button-text shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 sm:w-auto sm:min-w-[13.5rem]"

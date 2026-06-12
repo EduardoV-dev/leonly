@@ -1,0 +1,16 @@
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 2.6rem;
+  margin-top: 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--auth-brand);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}

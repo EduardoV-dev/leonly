@@ -53,3 +53,26 @@ describe("notFound namespace", () => {
     expect(spanishT("actions.authenticated")).toBe("Ir a recuerdos");
   });
 });
+
+describe("spaceSetup namespace", () => {
+  it("resolves setup translations in english and spanish", () => {
+    const englishT = i18n.getFixedT("en", "spaceSetup");
+    const spanishT = i18n.getFixedT("es", "spaceSetup");
+
+    expect(englishT("steps.start.heading")).toBe("Begin Your Story");
+    expect(englishT("steps.join.heading")).toBe("Join your shared space");
+    expect(englishT("tabs.create")).toBe("Create a Space");
+    expect(englishT("stepMarker.label", { step: 2, total: 3 })).toBe("Step 2 of 3");
+    expect(englishT("actions.copyCode")).toBe("Copy Code");
+    expect(englishT("actions.copied")).toBe("Copied");
+    expect(englishT("story.create-start.caption")).toBe("Every great story has a beginning.");
+
+    expect(spanishT("steps.start.heading")).toBe("Empieza tu historia");
+    expect(spanishT("steps.join.heading")).toBe("Unete a su espacio compartido");
+    expect(spanishT("tabs.join")).toBe("Unirse con codigo");
+    expect(spanishT("stepMarker.label", { step: 3, total: 3 })).toBe("Paso 3 de 3");
+    expect(spanishT("actions.copyCode")).toBe("Copiar codigo");
+    expect(spanishT("actions.copied")).toBe("Copiado");
+    expect(spanishT("story.join-code.imageAlt")).toBe("Pareja tomada de la mano al aire libre");
+  });
+});
