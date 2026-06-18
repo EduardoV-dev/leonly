@@ -2,7 +2,7 @@ import { APP_ROUTES } from "@/constants/routes";
 import { NextResponse } from "next/server";
 
 // The client you created from the Server-Side Auth instructions
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {

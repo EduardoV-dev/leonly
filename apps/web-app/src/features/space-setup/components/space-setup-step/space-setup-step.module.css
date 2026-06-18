@@ -69,6 +69,63 @@
   color: rgb(99 91 89 / 0.54);
 }
 
+.fieldMeta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  min-height: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+.fieldError {
+  margin: 0.5rem 0 0;
+  color: #a33b49;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.fieldMeta .fieldError {
+  margin: 0;
+}
+
+.dateField {
+  gap: 0.65rem;
+}
+
+.datePickerTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-color: rgb(125 88 93 / 0.2);
+  background: #f6f2ee;
+  padding: 0 1rem;
+  box-shadow: none;
+}
+
+.datePickerTrigger:hover,
+.datePickerTrigger:focus-visible {
+  border-color: color-mix(in srgb, var(--auth-brand) 72%, transparent);
+  background: #fffaf7;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--auth-brand) 12%, transparent);
+}
+
+.datePickerTrigger svg {
+  color: var(--auth-brand);
+}
+
+.datePickerPlaceholder {
+  color: rgb(99 91 89 / 0.54);
+}
+
+.datePopover {
+  border: 1px solid rgb(125 88 93 / 0.12);
+  border-radius: 1rem;
+  background: var(--auth-surface);
+  box-shadow: 0 24px 60px rgb(99 70 73 / 0.16);
+}
+
 .inputWithIcon {
   position: relative;
 }
@@ -187,6 +244,8 @@
   border-radius: 0.9rem;
   background: var(--auth-button-bg);
   color: var(--auth-button-text);
+  cursor: pointer;
+  font-family: inherit;
   font-size: 1rem;
   font-weight: 900;
   text-decoration: none;

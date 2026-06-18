@@ -1,0 +1,9 @@
+.count {
+  color: var(--auth-legal);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.overLimit {
+  color: #a33b49;
+}

@@ -19,6 +19,16 @@ export const spaceSetupEn = {
   stepMarker: {
     label: "Step {{step}} of {{total}}",
   },
+  validation: {
+    displayNameMin: "Use at least {{count}} characters.",
+    displayNameMax: "Use {{count}} characters or fewer.",
+    spaceNameRequired: "Enter a sanctuary name.",
+    spaceNameMin: "Sanctuary name must be at least {{count}} characters.",
+    spaceNameMax: "Sanctuary name must be {{count}} characters or fewer.",
+    firstDayFuture: "Choose today or a past date.",
+    inviteCodeRequired: "Enter an invite code.",
+    inviteCodeInvalid: "Use a code like LNY-7KQ9M2.",
+  },
   story: {
     "create-start": {
       imageAlt: "A couple holding a small instant photo together",

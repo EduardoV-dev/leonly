@@ -1,7 +1,7 @@
 "use client";
 
 import { type AppLanguage, normalizeLanguage, setLanguage } from "@/lib/i18n";
-import { mergeClassNames } from "@/utils/merge-class-names";
+import { cn } from "@/utils/merge-class-names";
 import { type Variants, motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
@@ -49,7 +49,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     <motion.div
       variants={entranceVariants}
       custom={languageDelay}
-      className={mergeClassNames("mb-6 flex justify-center lg:justify-end", className)}
+      className={cn("mb-6 flex justify-center lg:justify-end", className)}
     >
       <div className="inline-flex rounded-full border border-auth-button-border/60 bg-white/65 p-1 shadow-sm backdrop-blur">
         {languageOptions.map((option) => {

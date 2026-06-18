@@ -2,7 +2,7 @@
 
 import { APP_ROUTES } from "@/constants/routes";
 import { AnimatePresence, type Variants, motion, useReducedMotion } from "motion/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 type Direction = "forward" | "back";
@@ -39,24 +39,35 @@ const reducedMotionVariants: Variants = {
 
 export function SpaceSetupRouteTransition({ children }: SpaceSetupRouteTransitionProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryString = searchParams.toString();
+  const routeKey = queryString ? `${pathname}?${queryString}` : pathname;
   const previousPathnameRef = useRef(pathname);
+  const previousRouteKeyRef = useRef(routeKey);
   const [direction, setDirection] = useState<Direction>("forward");
   const shouldReduceMotion = useReducedMotion();
   const activeVariants = shouldReduceMotion ? reducedMotionVariants : shellVariants;
 
   useEffect(() => {
+    if (previousRouteKeyRef.current === routeKey) {
+      return;
+    }
+
     const previousOrder = routeOrder[previousPathnameRef.current] ?? 0;
     const nextOrder = routeOrder[pathname] ?? previousOrder;
 
-    setDirection(nextOrder >= previousOrder ? "forward" : "back");
+    setDirection(
+      pathname === previousPathnameRef.current || nextOrder >= previousOrder ? "forward" : "back",
+    );
     previousPathnameRef.current = pathname;
-  }, [pathname]);
+    previousRouteKeyRef.current = routeKey;
+  }, [pathname, routeKey]);
 
   return (
     <div className="min-h-screen bg-auth-canvas">
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
-          key={pathname}
+          key={routeKey}
           className="min-h-screen"
           custom={direction}
           variants={activeVariants}

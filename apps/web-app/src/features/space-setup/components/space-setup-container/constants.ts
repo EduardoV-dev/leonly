@@ -2,7 +2,6 @@ import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import type { SpaceSetupSteps } from "../../types/setup-types";
 
 export const INVITE_CODE = "LEO-LOVE-2024";
-export const STORAGE_KEY = "leonly-space-setup";
 
 export const screenImages: Record<
   SpaceSetupSteps,

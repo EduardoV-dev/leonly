@@ -1,8 +1,8 @@
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 
 const loginWithGoogle = async () => {
-  const supabase = createSupabaseBrowserClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

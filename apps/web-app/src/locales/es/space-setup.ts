@@ -19,6 +19,16 @@ export const spaceSetupEs = {
   stepMarker: {
     label: "Paso {{step}} de {{total}}",
   },
+  validation: {
+    displayNameMin: "Usa al menos {{count}} caracteres.",
+    displayNameMax: "Usa {{count}} caracteres o menos.",
+    spaceNameRequired: "Ingresa un nombre para el santuario.",
+    spaceNameMin: "El nombre del santuario debe tener al menos {{count}} caracteres.",
+    spaceNameMax: "El nombre del santuario debe tener {{count}} caracteres o menos.",
+    firstDayFuture: "Elige hoy o una fecha pasada.",
+    inviteCodeRequired: "Ingresa un codigo de invitacion.",
+    inviteCodeInvalid: "Usa un codigo como LNY-7KQ9M2.",
+  },
   story: {
     "create-start": {
       imageAlt: "Pareja sosteniendo una pequena foto instantanea",

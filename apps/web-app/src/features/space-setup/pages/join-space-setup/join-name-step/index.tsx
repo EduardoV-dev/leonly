@@ -1,16 +1,27 @@
+import { CharacterCount } from "@/components/character-count";
 import { APP_ROUTES } from "@/constants/routes";
-import Link from "next/link";
+import type { Control, FieldError } from "react-hook-form";
+import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
+import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
+import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-setup-form";
 
 type JoinNameStepProps = {
-  displayName: string;
-  onDisplayNameChange: (value: string) => void;
+  control: Control<JoinSpaceSetupFormValues>;
+  displayNameError?: FieldError;
+  onContinue: () => void;
 };
 
-export function JoinNameStep({ displayName, onDisplayNameChange }: JoinNameStepProps) {
+export function JoinNameStep({ control, displayNameError, onContinue }: JoinNameStepProps) {
   const { t } = useTranslation("spaceSetup");
+  const displayNameErrorId = "join-display-name-error";
+  const { field } = useController({
+    control,
+    name: "displayName",
+  });
+  const displayNameValue = field.value ?? "";
 
   return (
     <div>
@@ -25,16 +36,28 @@ export function JoinNameStep({ displayName, onDisplayNameChange }: JoinNameStepP
         <input
           id="join-display-name"
           type="text"
-          value={displayName}
-          onChange={(event) => onDisplayNameChange(event.target.value)}
           placeholder={t("steps.joinName.displayNamePlaceholder")}
           className={styles.input}
+          aria-describedby={displayNameError ? displayNameErrorId : undefined}
+          aria-invalid={Boolean(displayNameError)}
+          {...field}
+          value={displayNameValue}
         />
+        <div className={styles.fieldMeta}>
+          {displayNameError ? (
+            <p id={displayNameErrorId} className={styles.fieldError}>
+              {displayNameError.message}
+            </p>
+          ) : (
+            <span />
+          )}
+          <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
+        </div>
       </div>
 
-      <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
+      <button type="button" className={styles.linkButton} onClick={onContinue}>
         {t("actions.startStory")}
-      </Link>
+      </button>
       <BackLink href={APP_ROUTES.WELCOME_JOIN} />
     </div>
   );

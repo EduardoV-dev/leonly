@@ -1,18 +1,29 @@
+import { CharacterCount } from "@/components/character-count";
 import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import type { Control, FieldError } from "react-hook-form";
+import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
+import { SPACE_NAME_MAX_LENGTH } from "../../../constants/validation";
+import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space-setup-form";
 
 type CreateNameStepProps = {
-  spaceName: string;
-  onSpaceNameChange: (value: string) => void;
+  control: Control<CreateSpaceSetupFormValues>;
+  onContinue: () => void;
+  spaceNameError?: FieldError;
 };
 
-export function CreateNameStep({ spaceName, onSpaceNameChange }: CreateNameStepProps) {
+export function CreateNameStep({ control, onContinue, spaceNameError }: CreateNameStepProps) {
   const { t } = useTranslation("spaceSetup");
+  const spaceNameErrorId = "space-name-error";
+  const { field } = useController({
+    control,
+    name: "spaceName",
+  });
+  const spaceNameValue = field.value ?? "";
 
   return (
     <div>
@@ -27,20 +38,33 @@ export function CreateNameStep({ spaceName, onSpaceNameChange }: CreateNameStepP
         <input
           id="space-name"
           type="text"
-          value={spaceName}
-          onChange={(event) => onSpaceNameChange(event.target.value)}
           placeholder={t("steps.name.spaceNamePlaceholder")}
           className={styles.input}
+          aria-describedby={spaceNameError ? spaceNameErrorId : undefined}
+          aria-invalid={Boolean(spaceNameError)}
+          {...field}
+          value={spaceNameValue}
         />
+        <div className={styles.fieldMeta}>
+          {spaceNameError ? (
+            <p id={spaceNameErrorId} className={styles.fieldError}>
+              {spaceNameError.message}
+            </p>
+          ) : (
+            <span />
+          )}
+          <CharacterCount value={spaceNameValue} max={SPACE_NAME_MAX_LENGTH} />
+        </div>
       </div>
 
-      <Link
-        href={APP_ROUTES.WELCOME_CREATE_STEP("date")}
+      <button
+        type="button"
         className={`${styles.linkButton} ${styles.primaryButton}`}
+        onClick={onContinue}
       >
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </Link>
+      </button>
       <BackLink href={APP_ROUTES.WELCOME} />
     </div>
   );
