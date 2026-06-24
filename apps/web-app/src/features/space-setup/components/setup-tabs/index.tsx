@@ -20,11 +20,11 @@ export function SetupTabs({ activeTab }: SetupTabsProps) {
 
   return (
     <div className={styles.tabs} aria-label={t("tabs.label")}>
-      <Link href={APP_ROUTES.WELCOME} className={getLinkClasses("create")}>
+      <Link href={APP_ROUTES.WELCOME_CREATE_STEP("start")} className={getLinkClasses("create")}>
         {t("tabs.create")}
       </Link>
 
-      <Link href={APP_ROUTES.WELCOME_JOIN} className={getLinkClasses("join")}>
+      <Link href={APP_ROUTES.WELCOME_JOIN_STEP("code")} className={getLinkClasses("join")}>
         {t("tabs.join")}
       </Link>
     </div>

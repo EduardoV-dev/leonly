@@ -35,7 +35,7 @@ export function JoinNameStep() {
       <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
         {t("actions.startStory")}
       </Link>
-      <BackLink href={APP_ROUTES.WELCOME_JOIN} />
+      <BackLink href={APP_ROUTES.WELCOME_JOIN_STEP("code")} />
     </div>
   );
 }

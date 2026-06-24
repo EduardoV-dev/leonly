@@ -2,7 +2,7 @@
 
 import { APP_ROUTES } from "@/constants/routes";
 import { AnimatePresence, type Variants, motion, useReducedMotion } from "motion/react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 type Direction = "forward" | "back";
@@ -13,8 +13,14 @@ type SpaceSetupRouteTransitionProps = {
 
 const routeOrder: Record<string, number> = {
   [APP_ROUTES.WELCOME]: 0,
-  [APP_ROUTES.WELCOME_CREATE]: 1,
-  [APP_ROUTES.WELCOME_JOIN]: 1,
+  [APP_ROUTES.WELCOME_CREATE]: 0,
+  [APP_ROUTES.WELCOME_CREATE_STEP("start")]: 0,
+  [APP_ROUTES.WELCOME_CREATE_STEP("name")]: 1,
+  [APP_ROUTES.WELCOME_CREATE_STEP("date")]: 2,
+  [APP_ROUTES.WELCOME_CREATE_STEP("invite")]: 3,
+  [APP_ROUTES.WELCOME_JOIN]: 0,
+  [APP_ROUTES.WELCOME_JOIN_STEP("code")]: 0,
+  [APP_ROUTES.WELCOME_JOIN_STEP("name")]: 1,
 };
 
 const shellVariants: Variants = {
@@ -39,35 +45,28 @@ const reducedMotionVariants: Variants = {
 
 export function SpaceSetupRouteTransition({ children }: SpaceSetupRouteTransitionProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const queryString = searchParams.toString();
-  const routeKey = queryString ? `${pathname}?${queryString}` : pathname;
   const previousPathnameRef = useRef(pathname);
-  const previousRouteKeyRef = useRef(routeKey);
   const [direction, setDirection] = useState<Direction>("forward");
   const shouldReduceMotion = useReducedMotion();
   const activeVariants = shouldReduceMotion ? reducedMotionVariants : shellVariants;
 
   useEffect(() => {
-    if (previousRouteKeyRef.current === routeKey) {
+    if (previousPathnameRef.current === pathname) {
       return;
     }
 
     const previousOrder = routeOrder[previousPathnameRef.current] ?? 0;
     const nextOrder = routeOrder[pathname] ?? previousOrder;
 
-    setDirection(
-      pathname === previousPathnameRef.current || nextOrder >= previousOrder ? "forward" : "back",
-    );
+    setDirection(nextOrder >= previousOrder ? "forward" : "back");
     previousPathnameRef.current = pathname;
-    previousRouteKeyRef.current = routeKey;
-  }, [pathname, routeKey]);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-auth-canvas">
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
-          key={routeKey}
+          key={pathname}
           className="min-h-screen"
           custom={direction}
           variants={activeVariants}

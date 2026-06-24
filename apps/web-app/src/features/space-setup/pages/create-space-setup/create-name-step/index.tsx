@@ -41,7 +41,7 @@ export function CreateNameStep() {
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
-      <BackLink href={APP_ROUTES.WELCOME} />
+      <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("start")} />
     </div>
   );
 }
