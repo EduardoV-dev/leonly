@@ -1,8 +1,5 @@
-import { APP_ROUTES } from "@/constants/routes";
 import { Check, Copy, KeyRound } from "lucide-react";
-import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { BackLink } from "../../../components/back-link";
 import { INVITE_CODE } from "../../../components/space-setup-container/constants";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
@@ -10,9 +7,10 @@ import { StepMarker } from "../../../components/step-marker";
 type CreateInviteStepProps = {
   copied: boolean;
   onCopy: () => void;
+  onStartStory: () => void;
 };
 
-export function CreateInviteStep({ copied, onCopy }: CreateInviteStepProps) {
+export function CreateInviteStep({ copied, onCopy, onStartStory }: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
   return (
@@ -41,10 +39,9 @@ export function CreateInviteStep({ copied, onCopy }: CreateInviteStepProps) {
 
       <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
 
-      <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
+      <button type="button" className={styles.linkButton} onClick={onStartStory}>
         {t("actions.startStory")}
-      </Link>
-      <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("date")} />
+      </button>
     </div>
   );
 }

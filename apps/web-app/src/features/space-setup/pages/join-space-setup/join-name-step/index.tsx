@@ -1,13 +1,25 @@
 import { CharacterCount } from "@/components/character-count";
-import { APP_ROUTES } from "@/constants/routes";
-import Link from "next/link";
+import type { Control, FieldError } from "react-hook-form";
+import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
+import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-setup-form";
 
-export function JoinNameStep() {
+type JoinNameStepProps = {
+  control: Control<JoinSpaceSetupFormValues>;
+  displayNameError?: FieldError;
+  onStartStory: () => void;
+};
+
+export function JoinNameStep({ control, displayNameError, onStartStory }: JoinNameStepProps) {
   const { t } = useTranslation("spaceSetup");
+  const displayNameErrorId = "join-display-name-error";
+  const { field } = useController({
+    control,
+    name: "displayName",
+  });
+  const displayNameValue = field.value ?? "";
 
   return (
     <div>
@@ -24,18 +36,26 @@ export function JoinNameStep() {
           type="text"
           placeholder={t("steps.joinName.displayNamePlaceholder")}
           className={styles.input}
-          defaultValue=""
+          aria-describedby={displayNameError ? displayNameErrorId : undefined}
+          aria-invalid={Boolean(displayNameError)}
+          {...field}
+          value={displayNameValue}
         />
         <div className={styles.fieldMeta}>
-          <span />
-          <CharacterCount value="" max={DISPLAY_NAME_MAX_LENGTH} />
+          {displayNameError ? (
+            <p id={displayNameErrorId} className={styles.fieldError}>
+              {displayNameError.message}
+            </p>
+          ) : (
+            <span />
+          )}
+          <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
         </div>
       </div>
 
-      <Link href={APP_ROUTES.HOME} className={styles.linkButton}>
+      <button type="button" className={styles.linkButton} onClick={onStartStory}>
         {t("actions.startStory")}
-      </Link>
-      <BackLink href={APP_ROUTES.WELCOME_JOIN_STEP("code")} />
+      </button>
     </div>
   );
 }

@@ -25,6 +25,7 @@ export const spaceSetupEs = {
     spaceNameRequired: "Ingresa un nombre para el santuario.",
     spaceNameMin: "El nombre del santuario debe tener al menos {{count}} caracteres.",
     spaceNameMax: "El nombre del santuario debe tener {{count}} caracteres o menos.",
+    firstDayRequired: "Elige su primer dia.",
     firstDayFuture: "Elige hoy o una fecha pasada.",
     inviteCodeRequired: "Ingresa un codigo de invitacion.",
     inviteCodeInvalid: "Usa un codigo como LNY-7KQ9M2.",

@@ -25,6 +25,7 @@ export const spaceSetupEn = {
     spaceNameRequired: "Enter a sanctuary name.",
     spaceNameMin: "Sanctuary name must be at least {{count}} characters.",
     spaceNameMax: "Sanctuary name must be {{count}} characters or fewer.",
+    firstDayRequired: "Choose your first day.",
     firstDayFuture: "Choose today or a past date.",
     inviteCodeRequired: "Enter an invite code.",
     inviteCodeInvalid: "Use a code like LNY-7KQ9M2.",
