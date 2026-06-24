@@ -1,27 +1,14 @@
 import { CharacterCount } from "@/components/character-count";
+import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
-import type { Control, FieldError } from "react-hook-form";
-import { useController } from "react-hook-form";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { SetupTabs } from "../../../components/setup-tabs";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
-import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space-setup-form";
 
-type CreateStartStepProps = {
-  control: Control<CreateSpaceSetupFormValues>;
-  displayNameError?: FieldError;
-  onContinue: () => void;
-};
-
-export function CreateStartStep({ control, displayNameError, onContinue }: CreateStartStepProps) {
+export function CreateStartStep() {
   const { t } = useTranslation("spaceSetup");
-  const displayNameErrorId = "display-name-error";
-  const { field } = useController({
-    control,
-    name: "displayName",
-  });
-  const displayNameValue = field.value ?? "";
 
   return (
     <div>
@@ -40,27 +27,18 @@ export function CreateStartStep({ control, displayNameError, onContinue }: Creat
           type="text"
           placeholder={t("steps.start.displayNamePlaceholder")}
           className={styles.input}
-          aria-describedby={displayNameError ? displayNameErrorId : undefined}
-          aria-invalid={Boolean(displayNameError)}
-          {...field}
-          value={displayNameValue}
+          defaultValue=""
         />
         <div className={styles.fieldMeta}>
-          {displayNameError ? (
-            <p id={displayNameErrorId} className={styles.fieldError}>
-              {displayNameError.message}
-            </p>
-          ) : (
-            <span />
-          )}
-          <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
+          <span />
+          <CharacterCount value="" max={DISPLAY_NAME_MAX_LENGTH} />
         </div>
       </div>
 
-      <button type="button" className={styles.linkButton} onClick={onContinue}>
+      <Link href={APP_ROUTES.WELCOME_CREATE_STEP("name")} className={styles.linkButton}>
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </button>
+      </Link>
     </div>
   );
 }
