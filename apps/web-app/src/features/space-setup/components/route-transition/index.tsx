@@ -12,13 +12,10 @@ type SpaceSetupRouteTransitionProps = {
 };
 
 const routeOrder: Record<string, number> = {
-  [APP_ROUTES.WELCOME]: 0,
-  [APP_ROUTES.WELCOME_CREATE]: 0,
   [APP_ROUTES.WELCOME_CREATE_STEP("start")]: 0,
   [APP_ROUTES.WELCOME_CREATE_STEP("name")]: 1,
   [APP_ROUTES.WELCOME_CREATE_STEP("date")]: 2,
   [APP_ROUTES.WELCOME_CREATE_STEP("invite")]: 3,
-  [APP_ROUTES.WELCOME_JOIN]: 0,
   [APP_ROUTES.WELCOME_JOIN_STEP("code")]: 0,
   [APP_ROUTES.WELCOME_JOIN_STEP("name")]: 1,
 };

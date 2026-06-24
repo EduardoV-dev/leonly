@@ -52,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isAuthRoute && !isAuthCallback) {
     // user is already logged in, potentially respond by redirecting the user to the home page
     const url = request.nextUrl.clone();
-    url.pathname = APP_ROUTES.WELCOME;
+    url.pathname = APP_ROUTES.WELCOME_CREATE_STEP("start");
     return NextResponse.redirect(url);
   }
 

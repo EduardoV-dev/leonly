@@ -28,7 +28,7 @@ export function SignInCopy({
       <motion.h1
         variants={shouldReduceMotion ? reducedMotionVariants : headingVariants}
         custom={staggerDelays.heading}
-        className="font-display text-[2.8rem] leading-[0.95] text-auth-heading sm:text-[3.2rem] md:text-[3.35rem] lg:text-[3.7rem]"
+        className="font-display font-semibold text-[2.8rem] leading-[0.95] text-auth-heading sm:text-[3.2rem] md:text-[3.35rem] lg:text-[3.7rem]"
       >
         {t("heading")}
       </motion.h1>
