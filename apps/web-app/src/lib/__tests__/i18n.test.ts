@@ -49,7 +49,7 @@ describe("notFound namespace", () => {
 
     expect(englishT("heading")).toBe("This page is not in your album.");
     expect(englishT("actions.unauthenticated")).toBe("Sign in to memories");
-    expect(spanishT("heading")).toBe("Esta pagina no esta en tu album.");
+    expect(spanishT("heading")).toBe("Esta página no está en tu álbum.");
     expect(spanishT("actions.authenticated")).toBe("Ir a recuerdos");
   });
 });
@@ -68,10 +68,10 @@ describe("spaceSetup namespace", () => {
     expect(englishT("story.create-start.caption")).toBe("Every great story has a beginning.");
 
     expect(spanishT("steps.start.heading")).toBe("Empieza tu historia");
-    expect(spanishT("steps.join.heading")).toBe("Unete a su espacio compartido");
-    expect(spanishT("tabs.join")).toBe("Unirse con codigo");
+    expect(spanishT("steps.join.heading")).toBe("Únete a su espacio compartido");
+    expect(spanishT("tabs.join")).toBe("Unirse con código");
     expect(spanishT("stepMarker.label", { step: 3, total: 3 })).toBe("Paso 3 de 3");
-    expect(spanishT("actions.copyCode")).toBe("Copiar codigo");
+    expect(spanishT("actions.copyCode")).toBe("Copiar código");
     expect(spanishT("actions.copied")).toBe("Copiado");
     expect(spanishT("story.join-code.imageAlt")).toBe("Pareja tomada de la mano al aire libre");
   });

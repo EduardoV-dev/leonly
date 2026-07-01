@@ -7,7 +7,7 @@ export const notFoundEn = {
   },
   heading: "This page is not in your album.",
   description:
-    "The link may have moved, expired, or never existed. Head back to your memories and keep building the space that matters.",
+    "The link may have moved, expired, or never existed. Go back to your memories and pick up where you left off.",
   actions: {
     authenticated: "Go to memories",
     unauthenticated: "Sign in to memories",

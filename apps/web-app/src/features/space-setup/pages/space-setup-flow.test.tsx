@@ -87,10 +87,10 @@ describe("space setup flow validation and guards", () => {
 
     render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_NAME} />);
 
-    const spaceNameInput = await screen.findByLabelText("Sanctuary name");
+    const spaceNameInput = await screen.findByLabelText("Space name");
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-    const error = await screen.findByText("Enter a sanctuary name.");
+    const error = await screen.findByText("Enter a name for your space.");
     expect(error).toBeInTheDocument();
     expect(spaceNameInput).toHaveAttribute("aria-invalid", "true");
     expect(spaceNameInput).toHaveAttribute("aria-describedby", error.id);
@@ -102,7 +102,7 @@ describe("space setup flow validation and guards", () => {
 
     render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_NAME} />);
 
-    fireEvent.change(await screen.findByLabelText("Sanctuary name"), {
+    fireEvent.change(await screen.findByLabelText("Space name"), {
       target: { value: "Our Little World" },
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
@@ -142,7 +142,7 @@ describe("space setup flow validation and guards", () => {
     render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} />);
 
     expect(
-      await screen.findByRole("heading", { name: "Your sanctuary is ready." }),
+      await screen.findByRole("heading", { name: "Your space is ready." }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Start Our Story" }));

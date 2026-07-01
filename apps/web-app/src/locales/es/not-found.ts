@@ -1,15 +1,15 @@
 export const notFoundEs = {
-  badge: "Pagina no encontrada",
+  badge: "Página no encontrada",
   ariaLabel: "404",
   imageCard: {
-    eyebrow: "Pagina perdida",
-    title: "Aun forma parte de la historia",
+    eyebrow: "Página perdida",
+    title: "Todavía forma parte de la historia",
   },
-  heading: "Esta pagina no esta en tu album.",
+  heading: "Esta página no está en tu álbum.",
   description:
-    "El enlace pudo haberse movido, expirado o nunca haber existido. Vuelve a tus recuerdos y sigue construyendo el espacio que importa.",
+    "Es posible que el enlace haya cambiado, haya vencido o nunca haya existido. Vuelve a tus recuerdos y retoma la historia donde la dejaste.",
   actions: {
     authenticated: "Ir a recuerdos",
-    unauthenticated: "Iniciar sesion para ver recuerdos",
+    unauthenticated: "Inicia sesión para ver tus recuerdos",
   },
 } as const;
