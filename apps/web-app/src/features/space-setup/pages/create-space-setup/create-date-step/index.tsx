@@ -77,7 +77,7 @@ export function CreateDateStep({ control, firstDayError, onContinue }: CreateDat
             <FieldLabel className={styles.label} htmlFor="first-day-trigger">
               {t("steps.date.firstDayLabel")}
             </FieldLabel>
-            <FieldContent>
+            <FieldContent data-setup-field>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button

@@ -34,7 +34,7 @@ export function JoinCodeStep({ control, inviteCodeError, onContinue }: JoinCodeS
       <h1 className={styles.heading}>{t("steps.join.heading")}</h1>
       <p className={styles.copy}>{t("steps.join.description")}</p>
 
-      <div className={styles.dateCard}>
+      <div className={styles.dateCard} data-setup-field>
         <label className={styles.label} htmlFor="invite-code">
           {t("steps.join.inviteCodeLabel")}
         </label>

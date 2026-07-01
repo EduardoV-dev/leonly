@@ -26,7 +26,7 @@ export function JoinNameStep({ control, displayNameError, onStartStory }: JoinNa
       <h1 className={styles.heading}>{t("steps.joinName.heading")}</h1>
       <p className={styles.copy}>{t("steps.joinName.description")}</p>
 
-      <div className={styles.formGroup}>
+      <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="join-display-name">
           {t("steps.joinName.displayNameLabel")}
           <span className={styles.optional}>{t("steps.joinName.optional")}</span>

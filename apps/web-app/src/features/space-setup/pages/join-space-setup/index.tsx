@@ -7,6 +7,7 @@ import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { useJoinSpaceSetupForm } from "../../hooks/use-join-space-setup-form";
 import type { SpaceSetupJoinSteps } from "../../types/setup-types";
+import { focusInvalidField } from "../../utils/focus-invalid-field";
 import { JoinCodeStep } from "./join-code-step";
 import { JoinNameStep } from "./join-name-step";
 
@@ -30,21 +31,27 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   } = useJoinSpaceSetupForm(screen);
 
   const continueToNameStep = async () => {
-    const isValid = await trigger("inviteCode", { shouldFocus: true });
+    const isValid = await trigger("inviteCode");
 
-    if (isValid) {
-      completeStep(SPACE_SETUP_STEPS.JOIN_CODE, getValues());
-      router.push(APP_ROUTES.WELCOME_JOIN_STEP("name"));
+    if (!isValid) {
+      focusInvalidField("invite-code");
+      return;
     }
+
+    completeStep(SPACE_SETUP_STEPS.JOIN_CODE, getValues());
+    router.push(APP_ROUTES.WELCOME_JOIN_STEP("name"));
   };
 
   const startStory = async () => {
-    const isValid = await trigger("displayName", { shouldFocus: true });
+    const isValid = await trigger("displayName");
 
-    if (isValid) {
-      clearState();
-      router.push(APP_ROUTES.HOME);
+    if (!isValid) {
+      focusInvalidField("join-display-name");
+      return;
     }
+
+    clearState();
+    router.push(APP_ROUTES.HOME);
   };
 
   const steps: Record<SpaceSetupJoinSteps, ReactNode> = {

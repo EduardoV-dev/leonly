@@ -31,7 +31,7 @@ export function CreateNameStep({ control, onContinue, spaceNameError }: CreateNa
       <h1 className={styles.heading}>{t("steps.name.heading")}</h1>
       <p className={styles.copy}>{t("steps.name.description")}</p>
 
-      <div className={styles.formGroup}>
+      <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="space-name">
           {t("steps.name.spaceNameLabel")}
         </label>

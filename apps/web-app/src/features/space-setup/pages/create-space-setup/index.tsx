@@ -13,6 +13,7 @@ import {
   useCreateSpaceSetupForm,
 } from "../../hooks/use-create-space-setup-form";
 import type { SpaceSetupCreateSteps } from "../../types/setup-types";
+import { focusInvalidField } from "../../utils/focus-invalid-field";
 import { CreateDateStep } from "./create-date-step";
 import { CreateInviteStep } from "./create-invite-step";
 import { CreateNameStep } from "./create-name-step";
@@ -44,30 +45,39 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   };
 
   const continueToNameStep = async () => {
-    const isValid = await trigger("displayName", { shouldFocus: true });
+    const isValid = await trigger("displayName");
 
-    if (isValid) {
-      completeStep(SPACE_SETUP_STEPS.CREATE_START, getValues());
-      router.push(APP_ROUTES.WELCOME_CREATE_STEP("name"));
+    if (!isValid) {
+      focusInvalidField("display-name");
+      return;
     }
+
+    completeStep(SPACE_SETUP_STEPS.CREATE_START, getValues());
+    router.push(APP_ROUTES.WELCOME_CREATE_STEP("name"));
   };
 
   const continueToDateStep = async () => {
-    const isValid = await trigger("spaceName", { shouldFocus: true });
+    const isValid = await trigger("spaceName");
 
-    if (isValid) {
-      completeStep(SPACE_SETUP_STEPS.CREATE_NAME, getValues());
-      router.push(APP_ROUTES.WELCOME_CREATE_STEP("date"));
+    if (!isValid) {
+      focusInvalidField("space-name");
+      return;
     }
+
+    completeStep(SPACE_SETUP_STEPS.CREATE_NAME, getValues());
+    router.push(APP_ROUTES.WELCOME_CREATE_STEP("date"));
   };
 
   const continueToInviteStep = async () => {
-    const isValid = await trigger("firstDay", { shouldFocus: true });
+    const isValid = await trigger("firstDay");
 
-    if (isValid) {
-      completeStep(SPACE_SETUP_STEPS.CREATE_DATE, getValues());
-      router.push(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
+    if (!isValid) {
+      focusInvalidField("first-day-trigger");
+      return;
     }
+
+    completeStep(SPACE_SETUP_STEPS.CREATE_DATE, getValues());
+    router.push(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
   };
 
   const startStory = () => {

@@ -71,6 +71,7 @@ describe("space setup flow validation and guards", () => {
     navigationMock.replace.mockReset();
     sessionStorage.clear();
     localStorage.clear();
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   it("shows create validation errors before moving forward", async () => {
@@ -161,6 +162,20 @@ describe("space setup flow validation and guards", () => {
     expect(inviteCodeInput).toHaveAttribute("aria-invalid", "true");
     expect(inviteCodeInput).toHaveAttribute("aria-describedby", error.id);
     expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+
+  it("keeps the invalid join code field focused while showing its error", async () => {
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+
+    const inviteCodeInput = await screen.findByLabelText("Invite code");
+    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
+
+    await screen.findByText("Enter an invite code.");
+
+    await waitFor(() => {
+      expect(inviteCodeInput).toHaveFocus();
+    });
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
   it("shows invalid join code format errors", async () => {

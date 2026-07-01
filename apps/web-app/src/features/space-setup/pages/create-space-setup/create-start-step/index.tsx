@@ -30,7 +30,7 @@ export function CreateStartStep({ control, displayNameError, onContinue }: Creat
       <h1 className={styles.heading}>{t("steps.start.heading")}</h1>
       <p className={styles.copy}>{t("steps.start.description")}</p>
 
-      <div className={styles.formGroup}>
+      <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="display-name">
           {t("steps.start.displayNameLabel")}
           <span className={styles.optional}>{t("steps.start.optional")}</span>
