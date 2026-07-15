@@ -8,7 +8,6 @@ type CreateInviteStepProps = {
   inviteCode: string;
   onCopy: () => void;
   onContinue: () => void;
-  spaceName: string;
 };
 
 export function CreateInviteStep({
@@ -16,7 +15,6 @@ export function CreateInviteStep({
   inviteCode,
   onContinue,
   onCopy,
-  spaceName,
 }: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
@@ -33,7 +31,6 @@ export function CreateInviteStep({
         <div>
           <p className={styles.label}>{t("steps.invite.codeLabel")}</p>
           <strong>{inviteCode}</strong>
-          <p className={styles.note}>{spaceName}</p>
         </div>
         <button type="button" className={styles.copyButton} onClick={onCopy}>
           {copied ? (

@@ -9,10 +9,9 @@ import { CreateInviteStep } from "../create-space-setup/create-invite-step";
 
 type CreateSpaceInvitePageProps = {
   inviteCode: string;
-  spaceName: string;
 };
 
-export function CreateSpaceInvitePage({ inviteCode, spaceName }: CreateSpaceInvitePageProps) {
+export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
@@ -28,7 +27,6 @@ export function CreateSpaceInvitePage({ inviteCode, spaceName }: CreateSpaceInvi
         inviteCode={inviteCode}
         onContinue={() => router.push(APP_ROUTES.HOME)}
         onCopy={handleCopy}
-        spaceName={spaceName}
       />
     </SpaceSetupContainer>
   );

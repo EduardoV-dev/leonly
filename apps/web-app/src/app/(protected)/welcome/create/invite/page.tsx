@@ -25,10 +25,5 @@ export default async function CreateInvitePage() {
     throw new Error("Invite code is missing for the active space.");
   }
 
-  return (
-    <CreateSpaceInvitePage
-      inviteCode={formatInviteCodeDisplay(activeSpace.invite_code)}
-      spaceName={activeSpace.name}
-    />
-  );
+  return <CreateSpaceInvitePage inviteCode={formatInviteCodeDisplay(activeSpace.invite_code)} />;
 }

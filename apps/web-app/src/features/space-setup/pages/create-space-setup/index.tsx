@@ -152,7 +152,6 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
         inviteCode={INVITE_CODE}
         onContinue={startStory}
         onCopy={copyInviteCode}
-        spaceName={getValues("spaceName") || "Your space"}
       />
     ),
   };
