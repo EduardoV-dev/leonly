@@ -61,7 +61,7 @@ const joinState = (completedSteps: string[]) =>
     completedSteps,
     values: {
       displayName: "",
-      inviteCode: "LNY-7KQ9M2",
+      inviteCode: "LNY-7KLP0",
     },
   });
 
@@ -145,7 +145,7 @@ describe("space setup flow validation and guards", () => {
       await screen.findByRole("heading", { name: "Your space is ready." }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Start Our Story" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
 
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
     expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.HOME);
@@ -187,7 +187,7 @@ describe("space setup flow validation and guards", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
-    const error = await screen.findByText("Use a code like LNY-7KQ9M2.");
+    const error = await screen.findByText("Use a code like LNY-7KLP0.");
     expect(error).toBeInTheDocument();
     expect(inviteCodeInput).toHaveAttribute("aria-invalid", "true");
     expect(inviteCodeInput).toHaveAttribute("aria-describedby", error.id);
@@ -198,7 +198,7 @@ describe("space setup flow validation and guards", () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
     fireEvent.change(await screen.findByLabelText("Invite code"), {
-      target: { value: "lny-7kq9m2" },
+      target: { value: "lny7klp0" },
     });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
@@ -207,6 +207,17 @@ describe("space setup flow validation and guards", () => {
     });
 
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toContain(SPACE_SETUP_STEPS.JOIN_CODE);
+  });
+
+  it("masks join invite code input after the first three characters", async () => {
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+
+    const inviteCodeInput = await screen.findByLabelText("Invite code");
+    fireEvent.change(inviteCodeInput, {
+      target: { value: "lny7klp0" },
+    });
+
+    expect(inviteCodeInput).toHaveValue("LNY-7KLP0");
   });
 
   it("blocks direct join name access until code is complete", async () => {

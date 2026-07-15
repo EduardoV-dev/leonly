@@ -38,6 +38,8 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     isAllowed,
   } = useCreateSpaceSetupForm(screen);
   const [copied, setCopied] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const copyInviteCode = async () => {
     await navigator.clipboard.writeText(INVITE_CODE);
@@ -76,7 +78,40 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
       return;
     }
 
-    completeStep(SPACE_SETUP_STEPS.CREATE_DATE, getValues());
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const values = getValues();
+
+    try {
+      const response = await fetch("/api/spaces/create", {
+        body: JSON.stringify({
+          display_name: values.displayName,
+          space_name: values.spaceName,
+          start_date: values.firstDay,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "We could not create your space. Please try again.");
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "We could not create your space. Please try again.",
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    completeStep(SPACE_SETUP_STEPS.CREATE_DATE, values);
     router.push(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
   };
 
@@ -106,11 +141,19 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
       <CreateDateStep
         control={firstDayControl}
         firstDayError={errors.firstDay}
+        isSubmitting={isSubmitting}
         onContinue={continueToInviteStep}
+        submitError={submitError}
       />
     ),
     [SPACE_SETUP_STEPS.CREATE_INVITE]: (
-      <CreateInviteStep copied={copied} onCopy={copyInviteCode} onStartStory={startStory} />
+      <CreateInviteStep
+        copied={copied}
+        inviteCode={INVITE_CODE}
+        onContinue={startStory}
+        onCopy={copyInviteCode}
+        spaceName={getValues("spaceName") || "Your space"}
+      />
     ),
   };
 

@@ -1,16 +1,23 @@
 import { Check, Copy, KeyRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { INVITE_CODE } from "../../../components/space-setup-container/constants";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
 
 type CreateInviteStepProps = {
   copied: boolean;
+  inviteCode: string;
   onCopy: () => void;
-  onStartStory: () => void;
+  onContinue: () => void;
+  spaceName: string;
 };
 
-export function CreateInviteStep({ copied, onCopy, onStartStory }: CreateInviteStepProps) {
+export function CreateInviteStep({
+  copied,
+  inviteCode,
+  onContinue,
+  onCopy,
+  spaceName,
+}: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
   return (
@@ -25,7 +32,8 @@ export function CreateInviteStep({ copied, onCopy, onStartStory }: CreateInviteS
       <div className={styles.inviteCodeBox}>
         <div>
           <p className={styles.label}>{t("steps.invite.codeLabel")}</p>
-          <strong>{INVITE_CODE}</strong>
+          <strong>{inviteCode}</strong>
+          <p className={styles.note}>{spaceName}</p>
         </div>
         <button type="button" className={styles.copyButton} onClick={onCopy}>
           {copied ? (
@@ -39,8 +47,8 @@ export function CreateInviteStep({ copied, onCopy, onStartStory }: CreateInviteS
 
       <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
 
-      <button type="button" className={styles.linkButton} onClick={onStartStory}>
-        {t("actions.startStory")}
+      <button type="button" className={styles.linkButton} onClick={onContinue}>
+        {t("actions.continueToDashboard")}
       </button>
     </div>
   );

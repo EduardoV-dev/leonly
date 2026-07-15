@@ -8,6 +8,8 @@ export const spaceSetupEn = {
     continue: "Continue",
     copyCode: "Copy Code",
     copied: "Copied",
+    creatingSpace: "Creating your space...",
+    continueToDashboard: "Continue to dashboard",
     joinSpace: "Join Space",
     startStory: "Start Our Story",
   },
@@ -20,6 +22,7 @@ export const spaceSetupEn = {
     label: "Step {{step}} of {{total}}",
   },
   validation: {
+    displayNameRequired: "Enter your name.",
     displayNameMin: "Use at least {{count}} characters.",
     displayNameMax: "Use {{count}} characters or fewer.",
     spaceNameRequired: "Enter a name for your space.",
@@ -28,7 +31,7 @@ export const spaceSetupEn = {
     firstDayRequired: "Choose your first day.",
     firstDayFuture: "Choose today or a past date.",
     inviteCodeRequired: "Enter an invite code.",
-    inviteCodeInvalid: "Use a code like LNY-7KQ9M2.",
+    inviteCodeInvalid: "Use a code like LNY-7KLP0.",
   },
   story: {
     "create-start": {
@@ -69,7 +72,7 @@ export const spaceSetupEn = {
         "Create a private space for your shared memories. Start with the name your partner will see.",
       displayNameLabel: "Your display name",
       optional: "Optional",
-      displayNamePlaceholder: "Use your Google name if left blank",
+      displayNamePlaceholder: "e.g. Leo",
     },
     name: {
       heading: "Name your space",

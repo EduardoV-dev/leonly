@@ -5,7 +5,7 @@ import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { SetupTabs } from "../../../components/setup-tabs";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
-import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
+import { CREATE_DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
 import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space-setup-form";
 
 type CreateStartStepProps = {
@@ -33,7 +33,6 @@ export function CreateStartStep({ control, displayNameError, onContinue }: Creat
       <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="display-name">
           {t("steps.start.displayNameLabel")}
-          <span className={styles.optional}>{t("steps.start.optional")}</span>
         </label>
         <input
           id="display-name"
@@ -53,7 +52,7 @@ export function CreateStartStep({ control, displayNameError, onContinue }: Creat
           ) : (
             <span />
           )}
-          <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
+          <CharacterCount value={displayNameValue} max={CREATE_DISPLAY_NAME_MAX_LENGTH} />
         </div>
       </div>
 

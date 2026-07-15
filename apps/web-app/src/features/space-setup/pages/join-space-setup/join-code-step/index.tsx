@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { SetupTabs } from "../../../components/setup-tabs";
 import { INVITE_CODE } from "../../../components/space-setup-container/constants";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
-import { normalizeInviteCode } from "../../../constants/validation";
+import { formatInviteCodeInput } from "../../../constants/validation";
 import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-setup-form";
 
 type JoinCodeStepProps = {
@@ -24,7 +24,7 @@ export function JoinCodeStep({ control, inviteCodeError, onContinue }: JoinCodeS
   });
 
   const handleInviteCodeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    field.onChange(normalizeInviteCode(event.target.value));
+    field.onChange(formatInviteCodeInput(event.target.value));
   };
 
   return (
@@ -45,6 +45,7 @@ export function JoinCodeStep({ control, inviteCodeError, onContinue }: JoinCodeS
           className={styles.input}
           aria-describedby={inviteCodeError ? inviteCodeErrorId : undefined}
           aria-invalid={Boolean(inviteCodeError)}
+          autoCapitalize="characters"
           {...field}
           onChange={handleInviteCodeChange}
           value={field.value ?? ""}

@@ -20,6 +20,8 @@ import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space
 type CreateDateStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
   firstDayError?: FieldError;
+  isSubmitting?: boolean;
+  submitError?: string | null;
   onContinue: () => void;
 };
 
@@ -40,7 +42,13 @@ function isFutureDate(date: Date) {
   return date > today;
 }
 
-export function CreateDateStep({ control, firstDayError, onContinue }: CreateDateStepProps) {
+export function CreateDateStep({
+  control,
+  firstDayError,
+  isSubmitting,
+  onContinue,
+  submitError,
+}: CreateDateStepProps) {
   const { t, i18n } = useTranslation("spaceSetup");
   const [open, setOpen] = useState(false);
   const currentYear = new Date().getFullYear();
@@ -131,11 +139,13 @@ export function CreateDateStep({ control, firstDayError, onContinue }: CreateDat
         <button
           type="button"
           className={`${styles.linkButton} ${styles.primaryButton}`}
+          disabled={isSubmitting}
           onClick={onContinue}
         >
-          {t("actions.continue")}
+          {isSubmitting ? t("actions.creatingSpace") : t("actions.startStory")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
+        {submitError ? <p className={styles.fieldError}>{submitError}</p> : null}
         <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("name")} />
       </div>
 

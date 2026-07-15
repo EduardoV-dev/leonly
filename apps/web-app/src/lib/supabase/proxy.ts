@@ -50,14 +50,12 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute = pathname.startsWith(APP_ROUTES.AUTH);
 
   if (user && isAuthRoute && !isAuthCallback) {
-    // user is already logged in, potentially respond by redirecting the user to the home page
     const url = request.nextUrl.clone();
-    url.pathname = APP_ROUTES.WELCOME_CREATE_STEP("start");
+    url.pathname = APP_ROUTES.HOME;
     return NextResponse.redirect(url);
   }
 
   if (!user && !isAuthRoute) {
-    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = APP_ROUTES.AUTH;
     return NextResponse.redirect(url);

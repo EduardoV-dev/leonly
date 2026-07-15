@@ -8,6 +8,8 @@ export const spaceSetupEs = {
     continue: "Continuar",
     copyCode: "Copiar código",
     copied: "Copiado",
+    creatingSpace: "Creando tu espacio...",
+    continueToDashboard: "Continuar al inicio",
     joinSpace: "Unirse al espacio",
     startStory: "Empezar nuestra historia",
   },
@@ -20,6 +22,7 @@ export const spaceSetupEs = {
     label: "Paso {{step}} de {{total}}",
   },
   validation: {
+    displayNameRequired: "Ingresa tu nombre.",
     displayNameMin: "Usa al menos {{count}} caracteres.",
     displayNameMax: "Usa {{count}} caracteres o menos.",
     spaceNameRequired: "Ingresa un nombre para tu espacio.",
@@ -28,7 +31,7 @@ export const spaceSetupEs = {
     firstDayRequired: "Elige el primer día de su historia.",
     firstDayFuture: "Elige hoy o una fecha pasada.",
     inviteCodeRequired: "Ingresa un código de invitación.",
-    inviteCodeInvalid: "Usa un código como LNY-7KQ9M2.",
+    inviteCodeInvalid: "Usa un código como LNY-7KLP0.",
   },
   story: {
     "create-start": {
@@ -69,7 +72,7 @@ export const spaceSetupEs = {
         "Crea un espacio privado para sus recuerdos compartidos. Empieza con el nombre que verá tu pareja.",
       displayNameLabel: "Tu nombre visible",
       optional: "Opcional",
-      displayNamePlaceholder: "Usa tu nombre de Google si lo dejas vacío",
+      displayNamePlaceholder: "p. ej. Leo",
     },
     name: {
       heading: "Ponle nombre a tu espacio",
