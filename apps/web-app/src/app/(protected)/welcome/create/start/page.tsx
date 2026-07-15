@@ -1,6 +1,6 @@
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceCreateSetupPage } from "@/features/space-setup";
-import { getActiveSpaceForUser } from "@/features/space-setup/server/get-active-space-for-user";
+import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -14,7 +14,7 @@ export default async function CreateStartPage() {
     redirect(APP_ROUTES.AUTH);
   }
 
-  const activeSpace = await getActiveSpaceForUser(user.id);
+  const activeSpace = await getActiveSpaceForCurrentUser();
 
   if (activeSpace) {
     redirect(APP_ROUTES.HOME);

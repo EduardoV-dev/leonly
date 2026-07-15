@@ -34,6 +34,14 @@ export async function syncCurrentUser() {
   });
 
   if (error) {
+    process.stderr.write(
+      `Failed to sync the current user: ${JSON.stringify({
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        message: error.message,
+      })}\n`,
+    );
     throw new Error("Failed to sync the current user.");
   }
 

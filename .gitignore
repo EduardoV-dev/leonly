@@ -10,3 +10,4 @@ opencode.json
 .next/
 tsconfig.tsbuildinfo
 apps/web-app/next-env.d.ts
+supabase/migrations

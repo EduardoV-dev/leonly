@@ -2,7 +2,7 @@ import {
   formatInviteCodeDisplay,
   isFutureDateString,
 } from "@/features/space-setup/constants/validation";
-import { getActiveSpaceForUser } from "@/features/space-setup/server/get-active-space-for-user";
+import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { syncCurrentUser } from "@/features/space-setup/server/sync-current-user";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
@@ -50,8 +50,8 @@ function getErrorStatus(message: string) {
 export async function POST(request: Request) {
   try {
     const payload = createSpaceRequestSchema.parse(await request.json());
-    const user = await syncCurrentUser();
-    const activeSpace = await getActiveSpaceForUser(user.id);
+    await syncCurrentUser();
+    const activeSpace = await getActiveSpaceForCurrentUser();
 
     if (activeSpace) {
       return NextResponse.json(

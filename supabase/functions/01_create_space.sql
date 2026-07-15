@@ -14,14 +14,14 @@ declare
   random_part text;
   trimmed_display_name text := btrim(p_display_name);
   trimmed_space_name text := btrim(p_space_name);
-  user_id uuid := auth.uid();
+  current_user_id uuid := auth.uid();
   created_space record;
   generated_invite_code text;
   is_available boolean;
   max_attempts integer := 10;
   prefix text;
 begin
-  if user_id is null then
+  if current_user_id is null then
     raise exception 'Authentication is required.';
   end if;
 
@@ -49,7 +49,7 @@ begin
     raise exception 'The start date cannot be in the future.';
   end if;
 
-  if not exists(select 1 from public.users where id = user_id) then
+  if not exists(select 1 from public.users where id = current_user_id) then
     raise exception 'The current user profile must exist before creating a space.';
   end if;
 
@@ -57,7 +57,7 @@ begin
     select 1
     from public.space_members space_member
     inner join public.spaces space on space.id = space_member.space_id
-    where space_member.user_id = user_id
+    where space_member.user_id = current_user_id
       and space_member.is_active = true
       and space.is_active = true
   ) then
@@ -102,13 +102,13 @@ begin
     updated_by_user_id
   )
   values (
-    user_id,
+    current_user_id,
     generated_invite_code,
     null,
     true,
     trimmed_space_name,
     p_start_date,
-    user_id
+    current_user_id
   )
   returning * into created_space;
 
@@ -117,7 +117,7 @@ begin
     is_active,
     role,
     space_id,
-    user_id
+    current_user_id
   )
   values (
     trimmed_display_name,
@@ -136,4 +136,6 @@ begin
 end;
 $$;
 
+revoke execute on function public.create_space(text, text, date) from public;
+revoke execute on function public.create_space(text, text, date) from anon;
 grant execute on function public.create_space(text, text, date) to authenticated;
