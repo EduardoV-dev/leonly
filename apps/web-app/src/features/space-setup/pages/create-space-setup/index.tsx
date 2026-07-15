@@ -150,8 +150,10 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
       <CreateInviteStep
         copied={copied}
         inviteCode={INVITE_CODE}
+        isSubmitting={false}
         onContinue={startStory}
         onCopy={copyInviteCode}
+        submitError={null}
       />
     ),
   };

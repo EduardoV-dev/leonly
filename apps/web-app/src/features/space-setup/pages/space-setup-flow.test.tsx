@@ -13,6 +13,12 @@ const navigationMock = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
+const fetchMock = vi.hoisted(() => vi.fn());
+
+const locationMock = vi.hoisted(() => ({
+  assign: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationMock,
 }));
@@ -69,6 +75,14 @@ describe("space setup flow validation and guards", () => {
   beforeEach(() => {
     navigationMock.push.mockReset();
     navigationMock.replace.mockReset();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      json: async () => ({}),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    locationMock.assign.mockReset();
+    vi.stubGlobal("location", locationMock);
     sessionStorage.clear();
     localStorage.clear();
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -206,7 +220,27 @@ describe("space setup flow validation and guards", () => {
       expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name"));
     });
 
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join/validate", {
+      body: JSON.stringify({ invite_code: "LNY-7KLP0" }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toContain(SPACE_SETUP_STEPS.JOIN_CODE);
+  });
+
+  it("shows a lookup error instead of advancing for an unknown invite code", async () => {
+    fetchMock.mockResolvedValue({
+      json: async () => ({ error: "No space found for this invite code." }),
+      ok: false,
+    });
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+
+    const inviteCodeInput = await screen.findByLabelText("Invite code");
+    fireEvent.change(inviteCodeInput, { target: { value: "lny7klp0" } });
+    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
+
+    expect(await screen.findByText("No space found for this invite code.")).toBeInTheDocument();
+    expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
   it("masks join invite code input after the first three characters", async () => {
@@ -243,9 +277,61 @@ describe("space setup flow validation and guards", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start Our Story" }));
 
     await waitFor(() => {
-      expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.HOME);
+      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join", {
+      body: JSON.stringify({ display_name: "", invite_code: "LNY-7KLP0" }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toBeNull();
+    expect(navigationMock.replace).not.toHaveBeenCalled();
+  });
+
+  it("disables the final join button while joining the space", async () => {
+    let resolveJoin!: (response: {
+      json: () => Promise<Record<string, never>>;
+      ok: boolean;
+    }) => void;
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveJoin = resolve;
+        }),
+    );
+    sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));
+
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_NAME} />);
+
+    const button = await screen.findByRole("button", { name: "Start Our Story" });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(button).toBeDisabled();
+      expect(button).toHaveTextContent("Joining space...");
+    });
+
+    resolveJoin({ json: async () => ({}), ok: true });
+
+    await waitFor(() => {
+      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    });
+  });
+
+  it("keeps join state when joining the validated space fails", async () => {
+    fetchMock.mockResolvedValue({
+      json: async () => ({ error: "No space found for this invite code." }),
+      ok: false,
+    });
+    sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));
+
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_NAME} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+
+    expect(await screen.findByText("No space found for this invite code.")).toBeInTheDocument();
+    expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).not.toBeNull();
+    expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
   it("shows join display name validation errors before finishing", async () => {

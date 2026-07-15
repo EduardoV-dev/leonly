@@ -117,14 +117,14 @@ begin
     is_active,
     role,
     space_id,
-    current_user_id
+    user_id
   )
   values (
     trimmed_display_name,
     true,
     'owner',
     created_space.id,
-    user_id
+    current_user_id
   );
 
   return jsonb_build_object(

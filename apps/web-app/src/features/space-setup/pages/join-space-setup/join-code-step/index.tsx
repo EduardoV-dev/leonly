@@ -12,10 +12,16 @@ import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-set
 type JoinCodeStepProps = {
   control: Control<JoinSpaceSetupFormValues>;
   inviteCodeError?: FieldError;
+  isSubmitting: boolean;
   onContinue: () => void;
 };
 
-export function JoinCodeStep({ control, inviteCodeError, onContinue }: JoinCodeStepProps) {
+export function JoinCodeStep({
+  control,
+  inviteCodeError,
+  isSubmitting,
+  onContinue,
+}: JoinCodeStepProps) {
   const { t } = useTranslation("spaceSetup");
   const inviteCodeErrorId = "invite-code-error";
   const { field } = useController({
@@ -55,8 +61,13 @@ export function JoinCodeStep({ control, inviteCodeError, onContinue }: JoinCodeS
             {inviteCodeError.message}
           </p>
         ) : null}
-        <button type="button" className={styles.linkButton} onClick={onContinue}>
-          {t("actions.joinSpace")}
+        <button
+          type="button"
+          className={styles.linkButton}
+          disabled={isSubmitting}
+          onClick={onContinue}
+        >
+          {isSubmitting ? t("actions.validatingInviteCode") : t("actions.joinSpace")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>

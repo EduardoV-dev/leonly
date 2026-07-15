@@ -9,10 +9,16 @@ import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-set
 type JoinNameStepProps = {
   control: Control<JoinSpaceSetupFormValues>;
   displayNameError?: FieldError;
+  isSubmitting: boolean;
   onStartStory: () => void;
 };
 
-export function JoinNameStep({ control, displayNameError, onStartStory }: JoinNameStepProps) {
+export function JoinNameStep({
+  control,
+  displayNameError,
+  isSubmitting,
+  onStartStory,
+}: JoinNameStepProps) {
   const { t } = useTranslation("spaceSetup");
   const displayNameErrorId = "join-display-name-error";
   const { field } = useController({
@@ -53,8 +59,13 @@ export function JoinNameStep({ control, displayNameError, onStartStory }: JoinNa
         </div>
       </div>
 
-      <button type="button" className={styles.linkButton} onClick={onStartStory}>
-        {t("actions.startStory")}
+      <button
+        type="button"
+        className={styles.linkButton}
+        disabled={isSubmitting}
+        onClick={onStartStory}
+      >
+        {isSubmitting ? t("actions.joiningSpace") : t("actions.startStory")}
       </button>
     </div>
   );

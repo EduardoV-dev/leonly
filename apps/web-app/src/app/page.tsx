@@ -19,5 +19,9 @@ export default async function HomePage() {
     redirect(APP_ROUTES.WELCOME_CREATE_STEP("start"));
   }
 
+  if (!activeSpace.onboarding_completed_at) {
+    redirect(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
+  }
+
   return <main>hello</main>;
 }

@@ -13,6 +13,7 @@ describe("getActiveSpaceForCurrentUser", () => {
       invite_code: "twofw3k3",
       invite_code_expires_at: null,
       name: "Our Space",
+      onboarding_completed_at: "2025-04-27T00:00:00Z",
       start_date: "2025-04-27",
     };
     const rpc = vi.fn().mockResolvedValue({ data: space, error: null });

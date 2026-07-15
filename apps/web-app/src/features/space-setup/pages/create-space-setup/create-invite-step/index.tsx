@@ -6,15 +6,19 @@ import { StepMarker } from "../../../components/step-marker";
 type CreateInviteStepProps = {
   copied: boolean;
   inviteCode: string;
+  isSubmitting: boolean;
   onCopy: () => void;
   onContinue: () => void;
+  submitError: string | null;
 };
 
 export function CreateInviteStep({
   copied,
   inviteCode,
+  isSubmitting,
   onContinue,
   onCopy,
+  submitError,
 }: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
@@ -44,8 +48,15 @@ export function CreateInviteStep({
 
       <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
 
-      <button type="button" className={styles.linkButton} onClick={onContinue}>
-        {t("actions.continueToDashboard")}
+      {submitError ? <p className={styles.fieldError}>{submitError}</p> : null}
+
+      <button
+        type="button"
+        className={styles.linkButton}
+        disabled={isSubmitting}
+        onClick={onContinue}
+      >
+        {isSubmitting ? t("actions.completingSetup") : t("actions.continueToDashboard")}
       </button>
     </div>
   );

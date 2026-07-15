@@ -9,6 +9,7 @@ as $$
     'invite_code', space.invite_code,
     'invite_code_expires_at', space.invite_code_expires_at,
     'name', space.name,
+    'onboarding_completed_at', space_member.onboarding_completed_at,
     'start_date', space.start_date
   )
   from public.space_members space_member

@@ -9,8 +9,11 @@ export const spaceSetupEs = {
     copyCode: "Copiar código",
     copied: "Copiado",
     creatingSpace: "Creando tu espacio...",
+    completingSetup: "Completando configuración...",
     continueToDashboard: "Continuar al inicio",
     joinSpace: "Unirse al espacio",
+    joiningSpace: "Uniéndote al espacio...",
+    validatingInviteCode: "Verificando código...",
     startStory: "Empezar nuestra historia",
   },
   tabs: {

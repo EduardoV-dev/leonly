@@ -5,6 +5,7 @@ create table if not exists public.space_members (
   display_name text not null,
   role public.space_member_role not null,
   is_active boolean not null default true,
+  onboarding_completed_at timestamptz,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
 

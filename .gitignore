@@ -10,4 +10,6 @@ opencode.json
 .next/
 tsconfig.tsbuildinfo
 apps/web-app/next-env.d.ts
-supabase/migrations
+supabase/migrations/*
+!supabase/migrations/20260715163000_join_space_lookup.sql
+!supabase/migrations/20260715170000_space_setup_completion.sql

@@ -9,5 +9,7 @@ To bootstrap a new Supabase project, run these files in the SQL editor in order:
 5. `policies/01_space_access.sql`
 6. `functions/01_create_space.sql`
 7. `functions/02_get_active_space.sql`
+8. `functions/03_join_space.sql`
+9. `functions/04_complete_space_setup.sql`
 
-`migrations/` contains the equivalent changes for existing projects. Apply each migration once; do not run both a migration and its matching bootstrap source against an existing project.
+For an existing project, apply the tracked files in `migrations/` once, in filename order. Do not rerun the table bootstrap files.

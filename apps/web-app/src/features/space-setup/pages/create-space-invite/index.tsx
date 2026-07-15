@@ -1,7 +1,6 @@
 "use client";
 
 import { APP_ROUTES } from "@/constants/routes";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -12,12 +11,35 @@ type CreateSpaceInvitePageProps = {
 };
 
 export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps) {
-  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(inviteCode);
     setCopied(true);
+  };
+
+  const completeSetup = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch("/api/spaces/setup/complete", { method: "POST" });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "We could not complete setup. Please try again.");
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "We could not complete setup. Please try again.",
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    globalThis.location.assign(APP_ROUTES.HOME);
   };
 
   return (
@@ -25,8 +47,10 @@ export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps
       <CreateInviteStep
         copied={copied}
         inviteCode={inviteCode}
-        onContinue={() => router.push(APP_ROUTES.HOME)}
+        isSubmitting={isSubmitting}
         onCopy={handleCopy}
+        onContinue={completeSetup}
+        submitError={submitError}
       />
     </SpaceSetupContainer>
   );
