@@ -66,6 +66,7 @@ describe("spaceSetup namespace", () => {
     expect(englishT("actions.copyCode")).toBe("Copy Code");
     expect(englishT("actions.copied")).toBe("Copied");
     expect(englishT("story.create-start.caption")).toBe("Every great story has a beginning.");
+    expect(englishT("validation.inviteCodeExpired")).toBe("This invite code has expired.");
 
     expect(spanishT("steps.start.heading")).toBe("Empieza tu historia");
     expect(spanishT("steps.join.heading")).toBe("Únete a su espacio compartido");
@@ -74,5 +75,6 @@ describe("spaceSetup namespace", () => {
     expect(spanishT("actions.copyCode")).toBe("Copiar código");
     expect(spanishT("actions.copied")).toBe("Copiado");
     expect(spanishT("story.join-code.imageAlt")).toBe("Pareja tomada de la mano al aire libre");
+    expect(spanishT("validation.inviteCodeExpired")).toBe("Este código de invitación venció.");
   });
 });

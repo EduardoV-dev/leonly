@@ -35,6 +35,7 @@ export const spaceSetupEn = {
     firstDayFuture: "Choose today or a past date.",
     inviteCodeRequired: "Enter an invite code.",
     inviteCodeInvalid: "Use a code like LNY-7KLP0.",
+    inviteCodeExpired: "This invite code has expired.",
   },
   story: {
     "create-start": {

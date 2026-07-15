@@ -147,11 +147,3 @@ begin
   return jsonb_build_object('id', matching_space.id);
 end;
 $$;
-
-revoke execute on function public.find_joinable_space(text) from public;
-revoke execute on function public.find_joinable_space(text) from anon;
-grant execute on function public.find_joinable_space(text) to authenticated;
-
-revoke execute on function public.join_space(text, text) from public;
-revoke execute on function public.join_space(text, text) from anon;
-grant execute on function public.join_space(text, text) to authenticated;

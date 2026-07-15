@@ -30,6 +30,10 @@ function getErrorStatus(message: string) {
     return 404;
   }
 
+  if (message === "This invite code has expired.") {
+    return 410;
+  }
+
   if (message === "Use at least 5 characters." || message === "Use 50 characters or fewer.") {
     return 400;
   }

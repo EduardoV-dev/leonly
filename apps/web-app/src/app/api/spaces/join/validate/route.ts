@@ -28,6 +28,10 @@ function getErrorStatus(message: string) {
     return 404;
   }
 
+  if (message === "This invite code has expired.") {
+    return 410;
+  }
+
   return 500;
 }
 

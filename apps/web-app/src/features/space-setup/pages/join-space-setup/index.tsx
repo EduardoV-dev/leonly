@@ -3,6 +3,7 @@
 import { APP_ROUTES } from "@/constants/routes";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
@@ -18,6 +19,7 @@ type SpaceJoinSetupPageProps = {
 
 export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const router = useRouter();
+  const { t } = useTranslation("spaceSetup");
   const {
     completeStep,
     form: {
@@ -32,6 +34,14 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   } = useJoinSpaceSetupForm(screen);
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
   const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
+
+  const getJoinErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message === "This invite code has expired.") {
+      return t("validation.inviteCodeExpired");
+    }
+
+    return error instanceof Error ? error.message : fallback;
+  };
 
   const continueToNameStep = async () => {
     const isValid = await trigger("inviteCode");
@@ -60,10 +70,10 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
       }
     } catch (error) {
       setError("inviteCode", {
-        message:
-          error instanceof Error
-            ? error.message
-            : "We could not validate the invite code. Please try again.",
+        message: getJoinErrorMessage(
+          error,
+          "We could not validate the invite code. Please try again.",
+        ),
       });
       focusInvalidField("invite-code");
       setIsSubmittingCode(false);
@@ -102,10 +112,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
       }
     } catch (error) {
       setError("displayName", {
-        message:
-          error instanceof Error
-            ? error.message
-            : "We could not join this space. Please try again.",
+        message: getJoinErrorMessage(error, "We could not join this space. Please try again."),
       });
       focusInvalidField("join-display-name");
       setIsSubmittingJoin(false);

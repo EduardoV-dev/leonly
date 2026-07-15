@@ -243,6 +243,21 @@ describe("space setup flow validation and guards", () => {
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
+  it("shows an expiration error instead of advancing for an expired invite code", async () => {
+    fetchMock.mockResolvedValue({
+      json: async () => ({ error: "This invite code has expired." }),
+      ok: false,
+    });
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+
+    const inviteCodeInput = await screen.findByLabelText("Invite code");
+    fireEvent.change(inviteCodeInput, { target: { value: "lny7klp0" } });
+    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
+
+    expect(await screen.findByText("This invite code has expired.")).toBeInTheDocument();
+    expect(navigationMock.push).not.toHaveBeenCalled();
+  });
+
   it("masks join invite code input after the first three characters", async () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
