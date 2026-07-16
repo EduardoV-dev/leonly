@@ -10,3 +10,5 @@ opencode.json
 .next/
 tsconfig.tsbuildinfo
 apps/web-app/next-env.d.ts
+sonar-project.properties
+.scannerwork
