@@ -99,7 +99,11 @@ export function setLanguage(language: AppLanguage) {
   return i18n.changeLanguage(language);
 }
 
-const initialLanguage = resolveInitialLanguage(getPersistedLanguage(), getBrowserLocales());
+export function initializeLanguage() {
+  return setLanguage(resolveInitialLanguage(getPersistedLanguage(), getBrowserLocales()));
+}
+
+const initialLanguage = LANGUAGES.ENGLISH;
 
 if (typeof document !== "undefined") {
   document.documentElement.lang = initialLanguage;

@@ -1,6 +1,7 @@
 import {
   detectLanguageFromLocales,
   i18n,
+  initializeLanguage,
   normalizeLanguage,
   resolveInitialLanguage,
   setLanguage,
@@ -39,6 +40,24 @@ describe("setLanguage", () => {
     expect(window.localStorage.getItem("leonly.locale")).toBe("es");
     expect(document.documentElement.lang).toBe("es");
     expect(i18n.language).toBe("es");
+  });
+});
+
+describe("initializeLanguage", () => {
+  it("applies the saved locale after hydration", async () => {
+    window.localStorage.setItem("leonly.locale", "es");
+    document.documentElement.lang = "en";
+
+    try {
+      await initializeLanguage();
+
+      expect(document.documentElement.lang).toBe("es");
+      expect(i18n.language).toBe("es");
+    } finally {
+      window.localStorage.removeItem("leonly.locale");
+      await setLanguage("en");
+      window.localStorage.removeItem("leonly.locale");
+    }
   });
 });
 
