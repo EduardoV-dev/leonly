@@ -1,249 +1,253 @@
 .page {
   min-height: 100vh;
-  background: #fff;
-  color: #252021;
+  background: #fffdfc;
+  color: var(--auth-heading);
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
 }
 
 .shell {
-  display: grid;
-  min-height: 100vh;
+  min-height: 100svh;
   background: #fffdfc;
+}
+
+.mobileHeader {
+  display: flex;
+  height: 3.65rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #eee7e5;
+  background: rgb(255 253 252 / 0.96);
+}
+
+.mobileBrand,
+.mobileHeaderActions {
+  display: flex;
+  align-items: center;
+}
+
+.mobileBrand {
+  gap: 0.55rem;
+}
+
+.mobileBrand img {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 7px rgb(64 43 44 / 0.17);
+}
+
+.mobileBrand span {
+  color: var(--auth-brand);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.mobileHeaderActions {
+  gap: 0.15rem;
+}
+
+.mobileHeaderActions button {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6e6261;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mobileHeaderActions button:active,
+.addMemoryCard:active,
+.mobileNavigation a:active {
+  transform: scale(0.97);
+}
+
+.mobileHeaderActions svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 1.7;
 }
 
 .sidebar {
   display: none;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 1.5rem;
-  border-bottom: 1px solid #f0e9e7;
-  background: linear-gradient(90deg, #fffdfd, #fcf7f6);
-}
-
-.storyIdentity {
-  text-align: center;
-}
-
-.avatar {
-  width: 3.75rem;
-  height: 3.75rem;
-  margin: 0 auto 0.65rem;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 3px 9px rgb(57 33 35 / 0.14);
-}
-
-.storyIdentity h1,
-.memoryDetails h3,
-.placeCard h3 {
-  margin: 0;
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-}
-
-.storyIdentity h1 {
-  color: #a22d42;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-
-.storyIdentity p,
-.welcome span,
-.memoryDetails time,
-.addMemoryCard span {
-  margin: 0;
-  color: #785f61;
-  font-size: 0.72rem;
-}
-
-.navigation {
-  display: flex;
-  gap: 0.35rem;
-  overflow-x: auto;
-  padding-bottom: 0.1rem;
-}
-
-.navigation a,
-.sidebarFooter a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-height: 2.2rem;
-  padding: 0 0.7rem;
-  border-radius: 0.5rem;
-  color: #4b3739;
-  font-size: 0.92rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.navigation svg,
-.sidebarFooter svg {
-  width: 1rem;
-  height: 1rem;
-  stroke-width: 1.9;
-}
-
-.activeNavItem {
-  background: #ebd9f0;
-  color: #743d6b !important;
-}
-
-.sidebarAddButton,
-.addMemoryCard {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-}
-
-.sidebarAddButton {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  min-height: 2.55rem;
-  border-radius: 0.45rem;
-  background: #80575a;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.sidebarAddButton span {
-  font-size: 1.15rem;
-}
-
-.sidebarFooter {
-  display: none;
 }
 
 .content {
-  padding: 1.75rem clamp(1.25rem, 4vw, 3.25rem) 9rem;
+  padding: 0.85rem 0.65rem calc(5.8rem + env(safe-area-inset-bottom));
 }
 
 .welcome {
-  margin-bottom: 1.9rem;
+  display: none;
 }
 
-.welcome p,
-.sectionHeading h2,
-.milestoneCard h2 {
-  margin: 0;
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-}
-
-.welcome p {
-  font-size: clamp(1.3rem, 2vw, 1.5rem);
-  font-weight: 700;
-}
-
-.welcome span {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.heroGrid,
-.memoryGrid,
-.placesGrid {
+.heroGrid {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .milestoneCard {
-  min-height: 8.7rem;
-  padding: 1.35rem;
-  border-radius: 0.9rem;
-  background: radial-gradient(circle at 10% 15%, #fff, transparent 35%), #fff5f4;
+  position: relative;
+  min-height: 16rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #776b67;
+  color: #fff;
+  box-shadow: 0 16px 35px rgb(66 47 45 / 0.12);
+}
+
+.milestoneImage,
+.milestoneShade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.milestoneImage {
+  object-fit: cover;
+  filter: saturate(0.74) contrast(0.92);
+}
+
+.milestoneShade {
+  background: linear-gradient(180deg, rgb(53 39 38 / 0.02) 35%, rgb(39 26 26 / 0.72) 100%);
+}
+
+.milestoneContent {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1;
 }
 
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  color: #b82b49;
-  font-size: 0.62rem;
+  gap: 0.35rem;
+  font-size: 0.59rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .eyebrow svg {
-  width: 0.85rem;
+  display: none;
+  width: 0.8rem;
   fill: currentColor;
 }
 
+.milestoneCard h2,
+.sectionHeading h2,
+.memoryDetails h3,
+.placeCard h3,
+.storyIdentity h1,
+.welcome p,
+.addMemoryCard strong {
+  margin: 0;
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+}
+
 .milestoneCard h2 {
-  margin-top: 0.9rem;
-  font-size: clamp(2.25rem, 3.8vw, 2.55rem);
-  font-weight: 700;
-  line-height: 1;
+  margin-top: 0.35rem;
+  font-size: clamp(2rem, 10vw, 2.6rem);
+  font-style: italic;
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
 }
 
 .milestoneCard p {
-  max-width: 23rem;
-  margin: 0.7rem 0 0;
-  color: #6d5557;
-  font-size: 1rem;
+  max-width: 17rem;
+  margin: 0.45rem 0 0;
+  overflow: hidden;
+  color: rgb(255 255 255 / 0.84);
+  font-size: 0.74rem;
   font-weight: 600;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .addMemoryCard {
-  display: flex;
-  min-height: 8.7rem;
-  flex-direction: column;
+  display: grid;
+  min-height: 4.15rem;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: center;
-  border-radius: 0.9rem;
-  background: #80585a;
-  color: #fff;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 1rem;
+  background: #f6c4c5;
+  color: #795558;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms ease;
 }
 
 .cameraPlus {
   position: relative;
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin-bottom: 0.7rem;
+  width: 2.45rem;
+  height: 2.45rem;
   place-items: center;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.48);
 }
 
 .cameraPlus svg:first-child {
-  width: 2rem;
-  height: 2rem;
-  stroke-width: 2.4;
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 1.65;
 }
 
 .cameraPlus svg:last-child {
   position: absolute;
-  top: -0.25rem;
-  right: -0.25rem;
-  width: 0.8rem;
-  height: 0.8rem;
-  stroke-width: 3;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  stroke-width: 2.5;
+}
+
+.addMemoryCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .addMemoryCard strong {
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
-.addMemoryCard span {
-  max-width: 8rem;
-  margin-top: 0.4rem;
-  color: #f6e7e6;
-  font-size: 0.92rem;
+.addMemoryCard .addMemoryCopy > span {
+  margin-top: 0.15rem;
+  color: #9b7779;
+  font-size: 0.66rem;
   font-weight: 600;
-  text-align: center;
+}
+
+.addMemoryChevron {
+  width: 1rem;
+  height: 1rem;
+  color: #a88183;
+  stroke-width: 1.5;
 }
 
 .memories,
 .places {
-  margin-top: 2rem;
+  margin-top: 1.65rem;
+  scroll-margin-top: 1rem;
 }
 
 .sectionHeading {
@@ -251,39 +255,56 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.75rem;
 }
 
 .sectionHeading h2 {
-  font-size: clamp(1.55rem, 2.5vw, 1.85rem);
-  font-weight: 700;
+  color: #80575a;
+  font-size: 1.12rem;
+  font-weight: 600;
 }
 
 .sectionHeading a {
   display: inline-flex;
   align-items: center;
-  color: #b82b49;
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: #bd2d4d;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
   text-decoration: none;
-  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .sectionHeading a svg {
-  width: 0.8rem;
+  display: none;
+}
+
+.memoryGrid {
+  display: grid;
+  grid-auto-columns: minmax(10.7rem, 72%);
+  grid-auto-flow: column;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.memoryGrid::-webkit-scrollbar {
+  display: none;
 }
 
 .memoryCard {
-  overflow: hidden;
-  border-radius: 0.55rem;
-  background: #fff;
-  box-shadow: 0 13px 26px rgb(71 47 49 / 0.07);
+  min-width: 0;
+  scroll-snap-align: start;
 }
 
 .memoryImageWrap {
   position: relative;
-  aspect-ratio: 1.34 / 1;
+  aspect-ratio: 1.42 / 1;
   overflow: hidden;
+  border-radius: 0.75rem;
+  background: #eee7e5;
 }
 
 .memoryImage {
@@ -293,163 +314,223 @@
 }
 
 .savedHeart {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 1.3rem;
-  height: 1.3rem;
-  padding: 0.22rem;
-  border-radius: 50%;
-  background: #f5e1e7;
-  color: #c63757;
-  fill: currentColor;
+  display: none;
 }
 
 .memoryDetails {
-  padding: 0.75rem;
+  padding: 0.48rem 0.05rem 0;
 }
 
 .memoryDetails time {
   display: block;
-  font-size: 0.7rem;
+  color: #b84a58;
+  font-size: 0.48rem;
+  text-transform: uppercase;
 }
 
 .memoryDetails h3 {
-  margin-top: 0.35rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.placesGrid {
-  grid-auto-columns: minmax(12rem, 82%);
-  grid-auto-flow: column;
-  grid-template-columns: none;
-  overflow-x: auto;
-  padding-bottom: 0.35rem;
-  scroll-snap-type: x proximity;
-}
-
-.placesGrid > * {
-  scroll-snap-align: start;
-}
-
-.placeCard {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-  padding: 0.75rem;
-  border-radius: 0.55rem;
-  background: #fff;
-  box-shadow: 0 13px 26px rgb(71 47 49 / 0.05);
-}
-
-.placeIcon {
-  display: grid;
-  width: 2.4rem;
-  height: 2.4rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 0.3rem;
-  background: #eadbf2;
-  color: #795070;
-}
-
-.placeIcon svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.placeCard h3 {
+  margin-top: 0.12rem;
   overflow: hidden;
-  font-family: "Nunito Sans", "Segoe UI", sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: #4a3839;
+  font-size: 0.88rem;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.rating {
+.placesGrid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.placeCard {
   display: flex;
-  gap: 0.1rem;
-  margin-top: 0.25rem;
-  color: #bf2948;
+  min-width: 0;
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 4.15rem;
+  padding: 0.45rem 0.65rem 0.45rem 0.45rem;
+  border: 1px solid #eee8e6;
+  border-radius: 0.82rem;
+  background: #fbf9f7;
+  box-shadow: 0 3px 12px rgb(64 44 44 / 0.04);
 }
 
-.rating svg {
-  width: 0.58rem;
-  height: 0.58rem;
+.placeImage {
+  width: 3.05rem;
+  height: 3.05rem;
+  flex: 0 0 auto;
+  border-radius: 0.55rem;
+  object-fit: cover;
 }
 
-.emptyStar {
-  color: #d7caca;
+.placeIcon,
+.rating {
+  display: none;
+}
+
+.placeDetails {
+  min-width: 0;
+  flex: 1;
+}
+
+.placeCard h3 {
+  overflow: hidden;
+  color: #4a3839;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeDetails p {
+  margin: 0.2rem 0 0;
+  color: #8b7575;
+  font-size: 0.52rem;
+}
+
+.ratingPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.3rem 0.45rem;
+  color: #b52c4a;
+  font-size: 0.58rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgb(82 55 57 / 0.06);
+}
+
+.ratingPill svg {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.mobileNavigation {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 0.5rem 0.25rem calc(0.38rem + env(safe-area-inset-bottom));
+  border-top: 1px solid #eee7e5;
+  background: rgb(255 253 252 / 0.97);
+  box-shadow: 0 -6px 20px rgb(67 47 48 / 0.05);
+  backdrop-filter: blur(12px);
+}
+
+.mobileNavigation a {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #a49a98;
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 160ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mobileNavigation svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke-width: 1.7;
+}
+
+.mobileNavigation .activeMobileNavItem {
+  color: #bd2d4d;
+}
+
+.mobileHeaderActions button:focus-visible,
+.addMemoryCard:focus-visible,
+.mobileNavigation a:focus-visible,
+.navigation a:focus-visible,
+.sidebarAddButton:focus-visible,
+.sidebarFooter a:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mobileHeaderActions button:hover {
+    background: #f5eeec;
+  }
+
+  .addMemoryCard:hover {
+    box-shadow: 0 8px 22px rgb(127 90 95 / 0.15);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .mobileHeader,
   .storyIdentity,
   .navigation a,
   .sidebarAddButton,
   .sidebarFooter,
   .welcome,
-  .heroGrid,
-  .memories,
-  .places {
-    animation: dashboard-enter 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  .milestoneCard,
+  .addMemoryCard,
+  .sectionHeading,
+  .memoryCard,
+  .placeCard {
+    animation: dashboard-enter 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 
-  .storyIdentity {
-    animation-delay: 40ms;
-  }
-
-  .navigation a:nth-child(1) {
-    animation-delay: 100ms;
+  .navigation a:nth-child(1),
+  .addMemoryCard {
+    animation-delay: 35ms;
   }
 
   .navigation a:nth-child(2) {
-    animation-delay: 140ms;
+    animation-delay: 60ms;
   }
 
-  .navigation a:nth-child(3) {
-    animation-delay: 180ms;
+  .navigation a:nth-child(3),
+  .memories .sectionHeading {
+    animation-delay: 85ms;
   }
 
-  .navigation a:nth-child(4) {
-    animation-delay: 220ms;
+  .navigation a:nth-child(4),
+  .memoryCard:nth-child(1) {
+    animation-delay: 110ms;
   }
 
-  .navigation a:nth-child(5) {
-    animation-delay: 260ms;
+  .navigation a:nth-child(5),
+  .memoryCard:nth-child(2) {
+    animation-delay: 135ms;
   }
 
-  .sidebarAddButton {
-    animation-delay: 300ms;
+  .sidebarAddButton,
+  .memoryCard:nth-child(3),
+  .places .sectionHeading {
+    animation-delay: 160ms;
   }
 
-  .sidebarFooter {
-    animation-delay: 340ms;
+  .sidebarFooter,
+  .placeCard:nth-child(1) {
+    animation-delay: 185ms;
   }
 
-  .welcome {
-    animation-delay: 80ms;
+  .placeCard:nth-child(2) {
+    animation-delay: 210ms;
   }
 
-  .heroGrid {
-    animation-delay: 140ms;
-  }
-
-  .memories {
-    animation-delay: 220ms;
-  }
-
-  .places {
-    animation-delay: 300ms;
+  .placeCard:nth-child(3) {
+    animation-delay: 235ms;
   }
 }
 
 @keyframes dashboard-enter {
   from {
     opacity: 0;
-    transform: translateY(0.75rem);
+    transform: translateY(0.35rem);
   }
 
   to {
@@ -458,86 +539,414 @@
   }
 }
 
-@media (max-width: 359px) {
+@mixin screen-sm {
   .content {
     padding-right: 1rem;
     padding-left: 1rem;
   }
 
-  .sectionHeading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.3rem;
+  .milestoneCard {
+    min-height: 19rem;
   }
-}
 
-@mixin screen-sm {
   .memoryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-columns: minmax(13rem, 48%);
   }
 }
 
 @mixin screen-md {
+  .page {
+    background: var(--auth-surface);
+  }
+
   .shell {
-    grid-template-columns: 16.125rem minmax(0, 1fr);
+    display: grid;
+    min-height: 100vh;
+    width: 100%;
+    max-width: none;
+    grid-template-columns: 16rem minmax(0, 1fr);
+    margin: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: var(--auth-surface);
+    box-shadow: none;
+  }
+
+  .mobileHeader,
+  .mobileNavigation {
+    display: none;
   }
 
   .sidebar {
     display: flex;
+    min-height: 100%;
+    flex-direction: column;
     gap: 1.25rem;
-    padding: 1.5rem 0.85rem 1.1rem;
-    border-right: 1px solid #f0e9e7;
-    border-bottom: 0;
+    padding: 1.75rem 1rem 1.25rem;
+    border-right: 1px solid #e9dfdd;
+    background: rgb(255 253 252 / 0.5);
+  }
+
+  .storyIdentity {
+    text-align: center;
+  }
+
+  .avatar {
+    width: 4.5rem;
+    height: 4.5rem;
+    margin: 0 auto 0.7rem;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgb(57 33 35 / 0.16);
+  }
+
+  .storyIdentity h1 {
+    color: #a22d42;
+    font-size: 1.55rem;
+    font-weight: 600;
+  }
+
+  .storyIdentity p {
+    margin: 0.25rem 0 0;
+    color: #785f61;
+    font-size: 0.82rem;
   }
 
   .navigation {
+    display: flex;
     flex-direction: column;
-    overflow: visible;
+    gap: 0.3rem;
   }
 
-  .sidebarAddButton,
-  .sidebarFooter {
+  .navigation a,
+  .sidebarFooter a {
     display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0 0.75rem;
+    border-radius: 0.55rem;
+    color: #584648;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .navigation svg,
+  .sidebarFooter svg {
+    width: 1rem;
+    height: 1rem;
+    stroke-width: 1.8;
+  }
+
+  .navigation .activeNavItem {
+    background: #e9d9ee;
+    color: #744a70;
   }
 
   .sidebarAddButton {
+    display: flex;
+    min-height: 2.8rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
     margin-top: auto;
+    border: 0;
+    border-radius: 0.55rem;
+    background: var(--auth-button-bg);
+    color: #fff;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   .sidebarFooter {
+    display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #eee6e5;
+    gap: 0.15rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #e9dfdd;
   }
 
   .content {
-    padding-bottom: 3rem;
+    padding: 2.5rem clamp(2.25rem, 4vw, 4.5rem) 3.5rem;
+  }
+
+  .welcome {
+    display: block;
+    margin-bottom: 2.2rem;
+  }
+
+  .welcome p {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  .welcome span {
+    display: block;
+    margin-top: 0.35rem;
+    color: var(--auth-copy);
+    font-size: 1.05rem;
   }
 
   .heroGrid {
-    grid-template-columns: minmax(0, 1.7fr) minmax(10.6rem, 0.82fr);
+    grid-template-columns: minmax(0, 1.75fr) minmax(10.5rem, 0.82fr);
+    gap: 1rem;
+  }
+
+  .milestoneCard {
+    min-height: 12.5rem;
+    padding: 1.75rem;
+    border-radius: 1rem;
+    background: radial-gradient(circle at 12% 15%, #fff, transparent 37%), #fff4f3;
+    color: var(--auth-heading);
+    box-shadow: none;
+  }
+
+  .milestoneImage,
+  .milestoneShade {
+    display: none;
+  }
+
+  .milestoneContent {
+    position: static;
+  }
+
+  .eyebrow {
+    color: #b82b49;
+    font-size: 0.7rem;
+  }
+
+  .eyebrow svg {
+    display: block;
+  }
+
+  .milestoneCard h2 {
+    margin-top: 1.1rem;
+    font-size: clamp(2.5rem, 3.5vw, 3.25rem);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  .milestoneCard p {
+    max-width: 32rem;
+    margin-top: 0.75rem;
+    overflow: visible;
+    color: #6d5557;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .addMemoryCard {
+    display: flex;
+    min-height: 12.5rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: var(--auth-button-bg);
+    color: #fff;
+    text-align: center;
+  }
+
+  .cameraPlus {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 0.7rem;
+    background: transparent;
+  }
+
+  .cameraPlus svg:first-child {
+    width: 2.15rem;
+    height: 2.15rem;
+    stroke-width: 2.3;
+  }
+
+  .cameraPlus svg:last-child {
+    top: -0.15rem;
+    right: -0.15rem;
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .addMemoryCard strong {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .addMemoryCard .addMemoryCopy > span {
+    max-width: 10rem;
+    margin-top: 0.4rem;
+    color: #f2e3e2;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .addMemoryChevron {
+    display: none;
+  }
+
+  .memories,
+  .places {
+    margin-top: 2rem;
+  }
+
+  .sectionHeading {
+    margin-bottom: 0.95rem;
+  }
+
+  .sectionHeading h2 {
+    color: var(--auth-heading);
+    font-size: 1.85rem;
+    font-weight: 600;
+  }
+
+  .sectionHeading a {
+    color: #b82b49;
+    font-size: 0.85rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .sectionHeading a svg {
+    display: block;
+    width: 0.8rem;
+  }
+
+  .memoryGrid {
+    grid-auto-columns: auto;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .memoryCard {
+    overflow: hidden;
+    border-radius: 0.65rem;
+    background: #fff;
+    box-shadow: 0 12px 28px rgb(71 47 49 / 0.07);
+  }
+
+  .memoryImageWrap {
+    aspect-ratio: 1.35 / 1;
+    border-radius: 0;
+  }
+
+  .savedHeart {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    display: block;
+    width: 1.35rem;
+    height: 1.35rem;
+    padding: 0.25rem;
+    border-radius: 50%;
+    background: #f5e1e7;
+    color: #c63757;
+    fill: currentColor;
+  }
+
+  .memoryDetails {
+    padding: 0.75rem 0.85rem 0.85rem;
+  }
+
+  .memoryDetails time {
+    color: #785f61;
+    font-size: 0.7rem;
+    text-transform: none;
+  }
+
+  .memoryDetails h3 {
+    margin-top: 0.32rem;
+    color: var(--auth-heading);
+    font-size: 1.25rem;
   }
 
   .placesGrid {
-    grid-auto-columns: auto;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-x: visible;
-    padding-bottom: 0;
+    grid-template-columns: repeat(2, minmax(0, 17rem));
+    gap: 1rem;
+  }
+
+  .placeCard {
+    min-height: 4.15rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: #fff;
+    box-shadow: 0 12px 28px rgb(71 47 49 / 0.05);
+  }
+
+  .placeCard:nth-child(3) {
+    display: none;
+  }
+
+  .placeImage,
+  .ratingPill,
+  .placeDetails p {
+    display: none;
+  }
+
+  .placeIcon {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.4rem;
+    background: #eadbf2;
+    color: #795070;
+  }
+
+  .placeIcon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .placeCard h3 {
+    font-family: "Nunito Sans", "Segoe UI", sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .rating {
+    display: flex;
+    gap: 0.1rem;
+    margin-top: 0.3rem;
+    color: #bf2948;
+  }
+
+  .rating svg {
+    width: 0.6rem;
+    height: 0.6rem;
+  }
+
+  .emptyStar {
+    color: #d7caca;
   }
 }
 
 @mixin screen-lg {
+  .shell {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding-right: 1.2rem;
+    padding-left: 1.2rem;
+  }
+
   .content {
-    padding-top: 2.05rem;
-  }
-
-  .memoryGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .placesGrid {
-    grid-template-columns: repeat(2, minmax(0, 10.8rem));
+    padding-top: 2.5rem;
   }
 }

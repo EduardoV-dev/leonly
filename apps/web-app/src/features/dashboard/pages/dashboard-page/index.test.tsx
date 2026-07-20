@@ -45,5 +45,9 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("heading", { name: "Recent Memories" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Memory" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "A couple sharing a moment" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Mobile dashboard sections" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Our profile" })).toBeInTheDocument();
   });
 });

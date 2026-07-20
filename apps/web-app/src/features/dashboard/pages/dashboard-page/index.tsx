@@ -3,6 +3,7 @@ import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-
 import { createClient } from "@/lib/supabase/server";
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import {
+  BookHeart,
   Camera,
   ChevronRight,
   Headphones,
@@ -15,10 +16,10 @@ import {
   Settings,
   Star,
   Trees,
+  UsersRound,
   Utensils,
 } from "lucide-react";
 import { redirect } from "next/navigation";
-import { MobileMenu } from "../../components/mobile-menu";
 import styles from "./dashboard-page.module.css";
 
 const recentMemories = [
@@ -43,9 +44,34 @@ const recentMemories = [
 ];
 
 const favoritePlaces = [
-  { icon: Utensils, name: "Casa Luna", rating: 5 },
-  { icon: Trees, name: "Botanical Gardens", rating: 4 },
+  {
+    icon: Utensils,
+    image:
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=240&q=80",
+    location: "Paris, France",
+    name: "Casa Luna",
+    rating: 4.9,
+  },
+  {
+    icon: Trees,
+    image:
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=240&q=80",
+    location: "Swiss Alps",
+    name: "Botanical Gardens",
+    rating: 5,
+  },
+  {
+    icon: Star,
+    image:
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=240&q=80",
+    location: "New York City",
+    name: "Luna Rooftop Bar",
+    rating: 4.7,
+  },
 ];
+
+const coupleImage =
+  "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=85";
 
 export async function DashboardPage() {
   const supabase = await createClient();
@@ -80,13 +106,24 @@ export async function DashboardPage() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <header className={styles.mobileHeader}>
+          <div className={styles.mobileBrand}>
+            <img src={coupleImage} alt="" />
+            <span>Leonly</span>
+          </div>
+          <div className={styles.mobileHeaderActions}>
+            <button type="button" aria-label="Favorite memories">
+              <Heart aria-hidden="true" />
+            </button>
+            <button type="button" aria-label="Our profile">
+              <UsersRound aria-hidden="true" />
+            </button>
+          </div>
+        </header>
+
         <aside className={styles.sidebar}>
           <div className={styles.storyIdentity}>
-            <img
-              className={styles.avatar}
-              src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=160&q=85"
-              alt="A couple sharing a moment"
-            />
+            <img className={styles.avatar} src={coupleImage} alt="A couple sharing a moment" />
             <h1>Our Story</h1>
             <p>Since {startedOn}</p>
           </div>
@@ -139,22 +176,29 @@ export async function DashboardPage() {
 
           <div className={styles.heroGrid}>
             <section className={styles.milestoneCard} aria-label="Relationship milestone">
-              <span className={styles.eyebrow}>
-                <Heart aria-hidden="true" /> Milestone
-              </span>
-              <h2>{daysTogether.toLocaleString()} Days Together</h2>
-              <p>
-                Every moment captured, every memory cherished. Your journey continues to unfold
-                beautifully.
-              </p>
+              <img className={styles.milestoneImage} src={coupleImage} alt="" />
+              <div className={styles.milestoneShade} aria-hidden="true" />
+              <div className={styles.milestoneContent}>
+                <span className={styles.eyebrow}>
+                  <Heart aria-hidden="true" /> Milestone reached
+                </span>
+                <h2>{daysTogether.toLocaleString()} Days Together</h2>
+                <p>
+                  Every moment captured, every memory cherished. Your journey continues to unfold
+                  beautifully.
+                </p>
+              </div>
             </section>
             <button className={styles.addMemoryCard} type="button">
               <span className={styles.cameraPlus} aria-hidden="true">
                 <Camera />
                 <Plus />
               </span>
-              <strong>Add Memory</strong>
-              <span>Capture a new moment today</span>
+              <span className={styles.addMemoryCopy}>
+                <strong>Add Memory</strong>
+                <span>Capture a new chapter</span>
+              </span>
+              <ChevronRight className={styles.addMemoryChevron} aria-hidden="true" />
             </button>
           </div>
 
@@ -193,15 +237,19 @@ export async function DashboardPage() {
 
                 return (
                   <article className={styles.placeCard} key={place.name}>
+                    <img className={styles.placeImage} src={place.image} alt="" />
                     <span className={styles.placeIcon}>
                       <Icon aria-hidden="true" />
                     </span>
-                    <div>
+                    <div className={styles.placeDetails}>
                       <h3>{place.name}</h3>
+                      <p>{place.location}</p>
                       <div className={styles.rating} aria-label={`${place.rating} out of 5 stars`}>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
-                            className={star > place.rating ? styles.emptyStar : undefined}
+                            className={
+                              star > Math.round(place.rating) ? styles.emptyStar : undefined
+                            }
                             key={star}
                             aria-hidden="true"
                             fill="currentColor"
@@ -209,6 +257,9 @@ export async function DashboardPage() {
                         ))}
                       </div>
                     </div>
+                    <span className={styles.ratingPill} aria-hidden="true">
+                      {place.rating.toFixed(1)} <Star fill="currentColor" />
+                    </span>
                   </article>
                 );
               })}
@@ -216,7 +267,28 @@ export async function DashboardPage() {
           </section>
         </section>
 
-        <MobileMenu />
+        <nav className={styles.mobileNavigation} aria-label="Mobile dashboard sections">
+          <a className={styles.activeMobileNavItem} href="#timeline">
+            <BookHeart aria-hidden="true" />
+            <span>Timeline</span>
+          </a>
+          <a href="#gallery">
+            <ImageIcon aria-hidden="true" />
+            <span>Gallery</span>
+          </a>
+          <a href="#map">
+            <MapPin aria-hidden="true" />
+            <span>Map</span>
+          </a>
+          <a href="#rankings">
+            <Star aria-hidden="true" />
+            <span>Rankings</span>
+          </a>
+          <a href="#vault">
+            <Heart aria-hidden="true" />
+            <span>Vault</span>
+          </a>
+        </nav>
       </div>
     </main>
   );
