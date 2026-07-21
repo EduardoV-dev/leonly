@@ -97,11 +97,8 @@ export async function DashboardPage() {
     0,
     differenceInCalendarDays(new Date(), parseISO(activeSpace.start_date)),
   );
-  const startedOn = format(parseISO(activeSpace.start_date), "MMM d, yyyy");
-  const displayName =
-    typeof user.user_metadata.full_name === "string"
-      ? user.user_metadata.full_name.split(" ")[0]
-      : "there";
+  const startedOn = format(parseISO(activeSpace.start_date), "MMMM yyyy");
+  const memberNames = activeSpace.member_names.join(" & ");
 
   return (
     <main className={styles.page}>
@@ -124,12 +121,12 @@ export async function DashboardPage() {
         <aside className={styles.sidebar}>
           <div className={styles.storyIdentity}>
             <img className={styles.avatar} src={coupleImage} alt="A couple sharing a moment" />
-            <h1>Our Story</h1>
+            <h1>{activeSpace.name}</h1>
             <p>Since {startedOn}</p>
           </div>
 
           <nav className={styles.navigation} aria-label="Dashboard sections">
-            <a className={styles.activeNavItem} href="#timeline">
+            <a href="#timeline">
               <MapIcon aria-hidden="true" />
               Timeline
             </a>
@@ -170,7 +167,7 @@ export async function DashboardPage() {
 
         <section className={styles.content} id="timeline">
           <header className={styles.welcome}>
-            <p>Welcome back, {displayName}</p>
+            <p>Welcome back, {memberNames}</p>
             <span>Here is your shared universe.</span>
           </header>
 
@@ -268,7 +265,7 @@ export async function DashboardPage() {
         </section>
 
         <nav className={styles.mobileNavigation} aria-label="Mobile dashboard sections">
-          <a className={styles.activeMobileNavItem} href="#timeline">
+          <a href="#timeline">
             <BookHeart aria-hidden="true" />
             <span>Timeline</span>
           </a>

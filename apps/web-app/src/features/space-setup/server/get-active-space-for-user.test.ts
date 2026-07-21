@@ -12,6 +12,7 @@ describe("getActiveSpaceForCurrentUser", () => {
       id: 1,
       invite_code: "twofw3k3",
       invite_code_expires_at: null,
+      member_names: ["Leo", "Annie"],
       name: "Our Space",
       onboarding_completed_at: "2025-04-27T00:00:00Z",
       start_date: "2025-04-27",

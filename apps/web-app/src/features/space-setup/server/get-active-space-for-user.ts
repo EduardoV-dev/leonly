@@ -4,6 +4,7 @@ type ActiveSpace = {
   id: number;
   invite_code: string | null;
   invite_code_expires_at: string | null;
+  member_names: string[];
   name: string;
   onboarding_completed_at: string | null;
   start_date: string;
