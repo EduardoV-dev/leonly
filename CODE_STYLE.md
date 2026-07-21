@@ -19,8 +19,7 @@ this document.
 - Split files by responsibility before they reach the limit; do not compress formatting or combine
   unrelated statements to evade it.
 - Generated files, dependency code, lockfiles, and build output are exempt.
-- `pnpm check:file-length` enforces the limit for JavaScript, TypeScript, CSS, and SQL files under
-  `apps/`, `scripts/`, and `supabase/`.
+- Biome enforces the limit for supported source files under `apps/`. SQL file length is not checked.
 
 ## Collocation And Ownership
 
@@ -112,9 +111,83 @@ features/space-setup/
 - Validate input at trust boundaries and fail fast for impossible internal states.
 - Never silently swallow errors; preserve the original cause when wrapping one.
 - Present recoverable user-facing errors with a recovery path.
-- Enforce authentication, authorization, and ownership on the server.
-- Never trust client-provided identity or ownership fields.
-- Never log or commit secrets, tokens, credentials, or sensitive personal data.
+- Treat route handlers, Server Actions, RPC functions, webhooks, file uploads, URL parameters,
+  cookies, headers, and third-party responses as untrusted input.
+- Validate type, length, range, format, and allowed values on the server. Client validation is only
+  for user experience.
+- Return generic errors to clients. Do not expose stack traces, SQL details, internal paths, tokens,
+  or information that helps enumerate users and resources.
+
+### XSS And Browser Security
+
+- Render untrusted text through React's normal JSX interpolation so React escapes it.
+- Do not use `dangerouslySetInnerHTML` with user-controlled content. If rendering HTML is a product
+  requirement, sanitize it with a maintained allowlist-based sanitizer at the final render boundary
+  and add tests for scripts, event handlers, unsafe URLs, SVG, and malformed markup.
+- Validate user-controlled URLs before assigning them to `href`, `src`, redirects, or CSS. Allow only
+  required protocols and reject `javascript:`, `data:`, protocol-relative, and malformed URLs unless
+  a reviewed use case explicitly needs them.
+- Do not build executable JavaScript, HTML, CSS, or JSON by concatenating untrusted strings.
+- Keep a restrictive Content Security Policy. Avoid `unsafe-inline` and `unsafe-eval`; use nonces or
+  hashes when inline code is unavoidable.
+- Set authentication cookies with `HttpOnly`, `Secure`, and an appropriate `SameSite` value. Never
+  store session secrets in browser-readable storage.
+
+### SQL And Other Injection Prevention
+
+- Use the Supabase query builder, parameterized SQL, or typed RPC parameters. Never concatenate or
+  interpolate untrusted values into SQL text.
+- Values cannot parameterize table names, column names, sort directions, or operators. Map dynamic
+  identifiers to a fixed server-side allowlist.
+- Validate filter, pagination, and ordering input before passing it to a query builder. Do not accept
+  arbitrary PostgREST filter syntax from clients.
+- Avoid shell commands. When one is required, use argument-array APIs such as `execFile` or `spawn`
+  without `shell: true`; never concatenate user input into a command.
+- Treat template expressions, log fields, email headers, HTTP headers, and file paths as injection
+  boundaries. Use structured APIs, reject control characters, and constrain paths to an expected
+  root.
+
+### Access And Data Protection
+
+- Enforce authentication, authorization, ownership, and tenant membership on the server for every
+  read and mutation. Hiding a UI control is not authorization.
+- Never trust client-provided user IDs, roles, ownership fields, prices, statuses, or permission
+  flags. Derive identity from the verified session and sensitive values from server-owned data.
+- Enable Row Level Security on every exposed Supabase table and write policies for each permitted
+  operation. Test that users cannot read or change another account's rows.
+- Keep service-role credentials in server-only modules. Never expose them through `NEXT_PUBLIC_*`,
+  client bundles, logs, errors, or test fixtures.
+- Grant the least database and application privileges needed. Review every `security definer`
+  function, set a safe `search_path`, schema-qualify referenced objects, and restrict execution.
+- Encrypt sensitive data in transit and at rest with platform-supported cryptography. Do not invent
+  encryption, hashing, token, or random-number algorithms.
+- Collect and retain only the sensitive data the feature needs. Redact secrets, tokens, credentials,
+  session data, and personal information from logs and analytics.
+
+### OWASP Top 10 Baseline
+
+Apply the current OWASP Top 10 controls to every feature. At minimum, follow these rules:
+
+- Design authorization before implementation and deny access by default. Check object-level and
+  function-level permissions to prevent broken access control.
+- Keep production configuration restrictive: disable debug output, limit CORS to known origins, set
+  security headers, and remove default accounts, sample endpoints, and unused services.
+- Pin dependencies through the lockfile, review dependency changes, run automated vulnerability
+  checks, and promptly update packages with exploitable advisories.
+- Verify authentication callbacks, OAuth `state`, redirect destinations, session expiry, and account
+  recovery flows. Rate-limit login, invite, lookup, and other abuse-prone endpoints.
+- Protect state-changing cookie-authenticated requests from CSRF with `SameSite` cookies plus Origin
+  checks or CSRF tokens where cross-site requests are possible. Do not mutate state through `GET`.
+- Verify webhook signatures and the integrity and provenance of updates, generated artifacts, and
+  serialized data before trusting them.
+- Restrict server-side outbound requests to required hosts and protocols. Block private, loopback,
+  link-local, metadata, and redirect-based destinations to prevent SSRF.
+- Log security-relevant events with request and actor identifiers, but no secrets. Alert on repeated
+  authentication failures, authorization failures, validation failures, and suspicious rate spikes.
+- Set request body, upload, query, recursion, and execution limits. Handle timeouts and partial
+  failures explicitly so exceptional conditions fail closed without corrupting data.
+- Threat-model new trust boundaries and sensitive workflows during design. Add focused tests for
+  access control, injection payloads, unsafe redirects, forged requests, and cross-tenant access.
 
 ## Testing
 

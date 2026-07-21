@@ -1,7 +1,7 @@
-import { APP_ROUTES } from "@/constants/routes";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { APP_ROUTES } from "@/constants/routes";
 import "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";

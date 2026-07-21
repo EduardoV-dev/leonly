@@ -59,7 +59,9 @@
   font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 .navigation a:focus-visible,

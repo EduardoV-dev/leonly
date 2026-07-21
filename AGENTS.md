@@ -130,7 +130,7 @@ Follow existing patterns first. Keep edits minimal and local.
 
 ### React and Component Structure
 - Use function components.
-- Keep authored code files at or below 400 physical lines. `pnpm check:file-length` enforces this.
+- Keep authored code files at or below 400 physical lines. Biome enforces this for supported files.
 - Declare one React component per production `.tsx` file. Compound primitive families under
   `src/components/ui` are the only exception.
 - Collocate page-only components beside their page, feature-reused components under the feature's

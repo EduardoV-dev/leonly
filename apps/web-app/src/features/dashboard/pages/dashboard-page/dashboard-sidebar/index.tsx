@@ -1,4 +1,3 @@
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import {
   Headphones,
   ImageIcon,
@@ -8,6 +7,7 @@ import {
   Settings,
   Star,
 } from "lucide-react";
+import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-sidebar.module.css";
 

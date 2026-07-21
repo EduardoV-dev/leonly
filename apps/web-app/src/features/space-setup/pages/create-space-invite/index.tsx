@@ -1,7 +1,7 @@
 "use client";
 
-import { APP_ROUTES } from "@/constants/routes";
 import { useState } from "react";
+import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import { CreateInviteStep } from "../create-space-setup/create-invite-step";

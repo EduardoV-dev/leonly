@@ -1,10 +1,10 @@
 "use client";
 
-import { APP_ROUTES } from "@/constants/routes";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import type { Control } from "react-hook-form";
+import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { INVITE_CODE } from "../../components/space-setup-container/constants";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";

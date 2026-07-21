@@ -1,10 +1,10 @@
 "use client";
 
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { LeonlyLogo } from "@/components/leonly-logo";
-import { AnimatePresence, type Variants, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { LeonlyLogo } from "@/components/leonly-logo";
 import type { SpaceSetupSteps } from "../../types/setup-types";
 import { screenImages } from "./constants";
 import styles from "./space-setup.module.css";

@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createClient } from "@/lib/supabase/server";
 import { syncCurrentUser } from "./sync-current-user";
 
 vi.mock("@/lib/supabase/server", () => ({

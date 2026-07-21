@@ -11,7 +11,7 @@ export function StepMarker({ step, total }: StepMarkerProps) {
   const label = t("stepMarker.label", { step, total });
 
   return (
-    <div className={styles.stepMarker} aria-label={label}>
+    <div className={styles.stepMarker}>
       <span>{label}</span>
       <div className={styles.progressTrack}>
         <div className={styles.progressValue} style={{ width: `${(step / total) * 100}%` }} />

@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { describe, expect, it, vi } from "vitest";
+import { createClient } from "@/lib/supabase/server";
 import { getActiveSpaceForCurrentUser } from "./get-active-space-for-user";
 
 vi.mock("@/lib/supabase/server", () => ({

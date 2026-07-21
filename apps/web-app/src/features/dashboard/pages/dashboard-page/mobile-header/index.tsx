@@ -1,5 +1,5 @@
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { Heart, UsersRound } from "lucide-react";
+import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./mobile-header.module.css";
 

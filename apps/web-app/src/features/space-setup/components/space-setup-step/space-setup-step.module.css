@@ -56,7 +56,10 @@
   font: inherit;
   font-weight: 700;
   outline: none;
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 
 .input:focus {
@@ -250,7 +253,9 @@
   font-weight: 900;
   text-decoration: none;
   box-shadow: 0 12px 26px rgb(99 70 73 / 0.22);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .linkButton:hover {

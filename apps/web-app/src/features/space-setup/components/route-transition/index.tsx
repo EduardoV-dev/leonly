@@ -1,9 +1,9 @@
 "use client";
 
-import { APP_ROUTES } from "@/constants/routes";
-import { AnimatePresence, type Variants, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { APP_ROUTES } from "@/constants/routes";
 
 type Direction = "forward" | "back";
 

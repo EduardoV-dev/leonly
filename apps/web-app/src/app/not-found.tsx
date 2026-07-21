@@ -1,12 +1,12 @@
 "use client";
 
-import { LeonlyLogo } from "@/components/leonly-logo";
-import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight, HeartCrack, Images } from "lucide-react";
-import { type Variants, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { LeonlyLogo } from "@/components/leonly-logo";
+import { APP_ROUTES } from "@/constants/routes";
 
 const pageVariants: Variants = {
   hidden: { opacity: 0 },
@@ -135,6 +135,7 @@ export default function NotFoundPage() {
 
             <div
               className="mt-6 flex justify-center gap-1 font-display text-[4.8rem] font-[600] leading-none tracking-normal text-auth-heading min-[360px]:text-[5.6rem] sm:text-[7rem] lg:justify-start"
+              role="img"
               aria-label={t("ariaLabel")}
             >
               {errorDigits.map((digit, index) => (

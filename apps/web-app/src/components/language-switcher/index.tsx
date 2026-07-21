@@ -1,9 +1,9 @@
 "use client";
 
+import { motion, useReducedMotion, type Variants } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { type AppLanguage, normalizeLanguage, setLanguage } from "@/lib/i18n";
 import { cn } from "@/utils/merge-class-names";
-import { type Variants, motion, useReducedMotion } from "motion/react";
-import { useTranslation } from "react-i18next";
 
 const languageRevealEase = [0.22, 1, 0.36, 1] as const;
 const languageDelay = 0.07;

@@ -1,8 +1,8 @@
+import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceCreateSetupPage } from "@/features/space-setup";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 
 export default async function CreateDatePage() {
   const supabase = await createClient();

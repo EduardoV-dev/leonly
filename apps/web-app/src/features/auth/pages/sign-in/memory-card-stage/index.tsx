@@ -1,4 +1,4 @@
-import { type Variants, motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 import { cardEntryVariants, memoryCards, reducedMotionVariants, staggerDelays } from "../constants";
 import styles from "./memory-card-stage.module.css";
 

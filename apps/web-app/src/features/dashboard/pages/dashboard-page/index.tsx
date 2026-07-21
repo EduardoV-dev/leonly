@@ -1,8 +1,8 @@
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
-import { differenceInCalendarDays, format, parseISO } from "date-fns";
-import { redirect } from "next/navigation";
 import { DashboardContent } from "./dashboard-content";
 import styles from "./dashboard-page.module.css";
 import { DashboardSidebar } from "./dashboard-sidebar";

@@ -1,7 +1,7 @@
-import { APP_ROUTES } from "@/constants/routes";
 import clsx from "clsx";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { APP_ROUTES } from "@/constants/routes";
 import styles from "./setup-tabs.module.css";
 
 type WelcomeTab = "create" | "join";
@@ -19,7 +19,7 @@ export function SetupTabs({ activeTab }: SetupTabsProps) {
     });
 
   return (
-    <div className={styles.tabs} aria-label={t("tabs.label")}>
+    <nav className={styles.tabs} aria-label={t("tabs.label")}>
       <Link href={APP_ROUTES.WELCOME_CREATE_STEP("start")} className={getLinkClasses("create")}>
         {t("tabs.create")}
       </Link>
@@ -27,6 +27,6 @@ export function SetupTabs({ activeTab }: SetupTabsProps) {
       <Link href={APP_ROUTES.WELCOME_JOIN_STEP("code")} className={getLinkClasses("join")}>
         {t("tabs.join")}
       </Link>
-    </div>
+    </nav>
   );
 }

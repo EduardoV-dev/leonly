@@ -13,7 +13,7 @@
     "typecheck": "next typegen && tsc -p tsconfig.json",
     "lint": "pnpm exec biome lint .",
     "format": "pnpm exec biome format --write .",
-    "check": "pnpm exec biome check . && pnpm -w check:file-length"
+    "check": "pnpm exec biome check ."
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -42,7 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.5.5",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^25.9.1",

@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   formatInviteCodeDisplay,
   isFutureDateString,
@@ -5,8 +7,6 @@ import {
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { syncCurrentUser } from "@/features/space-setup/server/sync-current-user";
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 const createSpaceRequestSchema = z.object({
   display_name: z.string().trim().min(2, "Your name must be at least 2 characters.").max(100),

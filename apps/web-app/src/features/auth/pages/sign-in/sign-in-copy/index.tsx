@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { type Variants, motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 import { FcGoogle } from "react-icons/fc";
+import { Button } from "@/components/ui/button";
 import {
   buttonVariants,
   headingVariants,

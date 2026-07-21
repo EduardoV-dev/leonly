@@ -1,9 +1,9 @@
-import { CharacterCount } from "@/components/character-count";
-import { APP_ROUTES } from "@/constants/routes";
 import { ArrowRight } from "lucide-react";
 import type { Control, FieldError } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { CharacterCount } from "@/components/character-count";
+import { APP_ROUTES } from "@/constants/routes";
 import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";

@@ -1,5 +1,5 @@
-import { cn } from "@/utils/merge-class-names";
 import type React from "react";
+import { cn } from "@/utils/merge-class-names";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean;

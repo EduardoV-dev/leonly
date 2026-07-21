@@ -1,11 +1,11 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
 import { authEn } from "@/locales/en/auth";
 import { notFoundEn } from "@/locales/en/not-found";
 import { spaceSetupEn } from "@/locales/en/space-setup";
 import { authEs } from "@/locales/es/auth";
 import { notFoundEs } from "@/locales/es/not-found";
 import { spaceSetupEs } from "@/locales/es/space-setup";
-import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
 
 const LOCALE_STORAGE_KEY = "leonly.locale";
 const LANGUAGES = {

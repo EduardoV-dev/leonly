@@ -51,14 +51,18 @@
 
 @layer utilities {
   .bg-auth-canvas {
-    background-image: radial-gradient(
-        circle at 10% 15%,
-        rgb(255 255 255 / 0.09) 0 1px,
-        transparent 1px
-      ), radial-gradient(circle at 65% 22%, rgb(255 255 255 / 0.08) 0 1px, transparent 1px),
+    background-image:
+      radial-gradient(circle at 10% 15%, rgb(255 255 255 / 0.09) 0 1px, transparent 1px),
+      radial-gradient(circle at 65% 22%, rgb(255 255 255 / 0.08) 0 1px, transparent 1px),
       linear-gradient(120deg, var(--auth-canvas-start), var(--auth-canvas-end));
-    background-size: 28px 28px, 28px 28px, cover;
-    background-position: 0 0, 14px 14px, center;
+    background-size:
+      28px 28px,
+      28px 28px,
+      cover;
+    background-position:
+      0 0,
+      14px 14px,
+      center;
   }
 
   .bg-auth-surface {

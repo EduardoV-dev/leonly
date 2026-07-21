@@ -1,5 +1,5 @@
-import { APP_ROUTES } from "@/constants/routes";
 import { NextResponse } from "next/server";
+import { APP_ROUTES } from "@/constants/routes";
 
 // The client you created from the Server-Side Auth instructions
 import { createClient } from "@/lib/supabase/server";

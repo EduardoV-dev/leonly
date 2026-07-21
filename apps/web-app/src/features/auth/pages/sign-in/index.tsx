@@ -1,9 +1,9 @@
 "use client";
 
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { LeonlyLogo } from "@/components/leonly-logo";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { LeonlyLogo } from "@/components/leonly-logo";
 import { useLoginWithGoogle } from "../../api/login-with-google";
 import {
   brandVariants,

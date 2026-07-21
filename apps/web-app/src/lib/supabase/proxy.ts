@@ -1,7 +1,7 @@
-import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
-import { APP_ROUTES } from "@/constants/routes";
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
+import { APP_ROUTES } from "@/constants/routes";
 
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = ENVIRONMENT_VARIABLES;
 

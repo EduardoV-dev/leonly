@@ -1,9 +1,9 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import { normalizeInviteCode } from "@/features/space-setup/constants/validation";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { syncCurrentUser } from "@/features/space-setup/server/sync-current-user";
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
-import { z } from "zod";
 
 const joinSpaceRequestSchema = z.object({
   display_name: z

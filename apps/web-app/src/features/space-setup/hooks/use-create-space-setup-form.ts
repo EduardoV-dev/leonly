@@ -1,11 +1,11 @@
 "use client";
 
-import { APP_ROUTES } from "@/constants/routes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { APP_ROUTES } from "@/constants/routes";
 import { CREATE_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { createCreateSpaceSetupSchema } from "../constants/validation";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";

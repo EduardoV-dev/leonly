@@ -1,9 +1,9 @@
 "use client";
 
-import { APP_ROUTES } from "@/constants/routes";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";

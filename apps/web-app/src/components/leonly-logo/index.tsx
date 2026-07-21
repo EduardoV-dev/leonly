@@ -1,5 +1,5 @@
-import { cn } from "@/utils/merge-class-names";
 import { FaHeart } from "react-icons/fa6";
+import { cn } from "@/utils/merge-class-names";
 
 type LeonlyLogoProps = {
   className?: string;
