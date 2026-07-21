@@ -5,6 +5,7 @@
   "packageManager": "pnpm@9.12.0",
   "scripts": {
     "build": "turbo run build",
+    "check:file-length": "node scripts/check-file-length.mjs",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "turbo run format",

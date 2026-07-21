@@ -13,7 +13,7 @@
     "typecheck": "next typegen && tsc -p tsconfig.json",
     "lint": "pnpm exec biome lint .",
     "format": "pnpm exec biome format --write .",
-    "check": "pnpm exec biome check ."
+    "check": "pnpm exec biome check . && pnpm -w check:file-length"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
-type ActiveSpace = {
+type ActiveSpaceMember = {
+  avatar_url: string | null;
+  display_name: string;
+};
+
+export type ActiveSpace = {
+  active_members: ActiveSpaceMember[];
   id: number;
   invite_code: string | null;
   invite_code_expires_at: string | null;

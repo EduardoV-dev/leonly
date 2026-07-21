@@ -3,7 +3,7 @@ Guidance for agentic coding agents working in this repository.
 
 ## Repository Overview
 - Monorepo uses `pnpm` workspaces + Turborepo.
-- Main app: `apps/web-app` (React 18 + Vite 5 + TypeScript + Vitest).
+- Main app: `apps/web-app` (Next.js 16 + React 19 + TypeScript + Vitest).
 - Task graph: `turbo.json`.
 - Lint/format: Biome (`biome.json`).
 - Git hooks: Husky (`.husky/`).
@@ -21,11 +21,13 @@ pnpm exec husky install
 
 ## Important Files
 - `package.json`
+- `CODE_STYLE.md`
 - `turbo.json`
 - `biome.json`
 - `tsconfig.base.json`
 - `apps/web-app/package.json`
-- `apps/web-app/vite.config.ts`
+- `apps/web-app/next.config.ts`
+- `apps/web-app/vitest.config.ts`
 - `apps/web-app/vitest.setup.ts`
 - `.github/workflows/web-app-verify.yml`
 
@@ -99,6 +101,9 @@ pnpm exec biome check --write
 Targets: `*.{js,jsx,ts,tsx,cjs,mjs,json}`.
 
 ## Code Style Guidelines
+Read `CODE_STYLE.md` before writing or refactoring code. Its file-size, component-structure, and
+collocation rules are mandatory for every change.
+
 Follow existing patterns first. Keep edits minimal and local.
 
 ### Frontend Design
@@ -107,7 +112,7 @@ Follow existing patterns first. Keep edits minimal and local.
 
 ### Formatting
 - Use Biome as source of truth.
-- 2 spaces, width 100, single quotes, semicolons always, trailing commas where valid.
+- 2 spaces, width 100, double quotes, semicolons always, trailing commas where valid.
 - Do not hand-format against Biome output.
 
 ### Imports
@@ -125,7 +130,14 @@ Follow existing patterns first. Keep edits minimal and local.
 
 ### React and Component Structure
 - Use function components.
-- Component filenames: PascalCase (`App.tsx`).
+- Keep authored code files at or below 400 physical lines. `pnpm check:file-length` enforces this.
+- Declare one React component per production `.tsx` file. Compound primitive families under
+  `src/components/ui` are the only exception.
+- Collocate page-only components beside their page, feature-reused components under the feature's
+  `components/`, and cross-feature components under `src/components/`.
+- Keep component-specific CSS modules beside their component; never borrow another page's styles.
+- Use kebab-case component folders with an `index.tsx` entry point; use PascalCase only for
+  standalone component filenames.
 - Variables/functions: `camelCase`.
 - Types/interfaces/components: `PascalCase`.
 - Constants: `UPPER_SNAKE_CASE` only for true constants.
@@ -138,13 +150,13 @@ Follow existing patterns first. Keep edits minimal and local.
 
 ### Testing Conventions
 - Framework stack: Vitest + Testing Library + `@testing-library/jest-dom`.
-- Test environment: `jsdom` configured in `apps/web-app/vite.config.ts`.
+- Test environment: `jsdom` configured in `apps/web-app/vitest.config.ts`.
 - Setup file: `apps/web-app/vitest.setup.ts`.
 - Prefer accessible queries (`getByRole` + name) over brittle selectors.
 - Keep tests deterministic; mock timers/network when needed.
 
 ### CSS Conventions
-- Current global style file: `apps/web-app/src/styles.css`.
+- Current global style file: `apps/web-app/src/styles/globals.css`.
 - Preserve existing visual language unless task requests redesign.
 - As styles grow, introduce reusable variables/tokens.
 
