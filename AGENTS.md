@@ -101,6 +101,10 @@ Targets: `*.{js,jsx,ts,tsx,cjs,mjs,json}`.
 ## Code Style Guidelines
 Follow existing patterns first. Keep edits minimal and local.
 
+### Frontend Design
+- Read `DESIGN.md` before creating or substantially changing a frontend screen.
+- Preserve the established Leonly visual system, components, responsive patterns, and accessibility requirements.
+
 ### Formatting
 - Use Biome as source of truth.
 - 2 spaces, width 100, single quotes, semicolons always, trailing commas where valid.
