@@ -55,6 +55,7 @@ features/space-setup/
 ## React Components And Hooks
 
 - Declare one React component per production `.tsx` file.
+- Declare component props as readonly, using `Readonly<Props>` or readonly properties.
 - Use a kebab-case component folder with an `index.tsx` entry point and a co-located CSS module.
 - Keep route files such as `page.tsx`, `error.tsx`, and `loading.tsx` thin; they may re-export their
   feature implementation.
