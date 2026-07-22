@@ -15,7 +15,7 @@ Each active member can create or update one rating for an active place. The disp
 
 ## Business Rules
 
-- Ratings are whole or decimal values from 1 to 5; the OpenSpec must select one representation.
+- Ratings are whole numbers from 1 through 5.
 - A unique `(place_id, user_id)` constraint enforces one rating per user.
 - A member may clear their rating; zero is not a rating.
 
@@ -23,6 +23,7 @@ Each active member can create or update one rating for an active place. The disp
 
 - [ ] A member can add, update, and clear only their rating.
 - [ ] Average rating is correct for zero, one, or two member ratings.
+- [ ] Averages display one decimal place.
 - [ ] Invalid values, inactive places, and cross-space requests are rejected.
 - [ ] Errors do not leave an incorrect optimistic average.
 

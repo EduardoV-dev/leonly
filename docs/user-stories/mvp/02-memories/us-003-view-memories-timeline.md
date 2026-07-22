@@ -17,20 +17,22 @@ The timeline is the core Leonly experience: a responsive chronological list of v
 
 - Photo preview, title, date, description preview, optional location, reaction count, comment count, detail link, and action menu.
 - Loading, empty, error, and slow-network states.
-- Live refresh strategy when the other member adds a memory, defined in OpenSpec.
+- Bounded cursor pagination and refresh after local actions, navigation, or manual refresh.
 
 ## Business Rules
 
 - Query only `is_active = true` and `is_hidden = false` records for the active space.
 - A missing photo, description, or location is valid.
-- Deleted, hidden, and cross-space memories never appear or open.
+- Deleted and cross-space memories never appear or open. Hidden memories do not appear here but remain openable by active members through the Vault or an authorized direct URL.
+- Order by memory date descending with a deterministic secondary key selected in OpenSpec.
 
 ## Acceptance Criteria
 
 - [ ] Only the active space's visible, active memories appear, newest first.
 - [ ] Cards show title, date, photo fallback, reaction count, comment count, and actions.
 - [ ] Empty, loading, and error states are useful and responsive.
-- [ ] Direct detail access to another space's, hidden, or deleted memory is denied.
+- [ ] Another space's or deleted memory returns the generic not-found outcome; an active hidden memory remains accessible to active members.
+- [ ] Load-more pagination does not duplicate or skip records with equal memory dates.
 
 ## Verification
 

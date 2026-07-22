@@ -17,7 +17,8 @@ An active member can set a valid shared start date and the inclusive dashboard c
 
 - The date is required and cannot be in the future.
 - Store a date without a time; apply the same timezone/display rules as US-002.
-- The server and RLS enforce active-space ownership.
+- The request includes the browser's IANA timezone; the server validates it and derives the member's local calendar date for future-date validation.
+- The server and RLS enforce active-space membership; the stored creator/owner attribute grants no extra permission.
 
 ## Acceptance Criteria
 

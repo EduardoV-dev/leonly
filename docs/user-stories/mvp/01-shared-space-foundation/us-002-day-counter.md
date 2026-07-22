@@ -3,7 +3,7 @@
 **Status:** Partial  
 **Priority:** Must  
 **OpenSpec:** Not created  
-**Depends on:** Active shared space
+**Depends on:** US-027
 
 ## User Story
 
@@ -16,7 +16,7 @@ The dashboard prominently displays an inclusive calendar-day count from the spac
 ## Business Rules
 
 - Use calendar dates, not elapsed 24-hour durations.
-- Interpret the stored date consistently in the member's display timezone; the OpenSpec must choose the exact timezone strategy.
+- Use the member's browser-local calendar date for display and future-date validation. Members in different timezones may briefly see different counts.
 - `start_date` is required and cannot be in the future.
 - Invalid or missing stored data is handled safely, without showing a misleading count.
 

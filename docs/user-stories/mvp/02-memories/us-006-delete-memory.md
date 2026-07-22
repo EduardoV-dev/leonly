@@ -17,8 +17,8 @@ After explicit confirmation, an active member soft-deletes an active memory by s
 
 - This is a soft delete for MVP; do not claim permanent storage deletion.
 - Cancelling has no effect.
-- The operation is idempotent for an already-inactive record.
 - Comments, reactions, and photos are retained according to the retention policy but never surfaced through deleted memory UI.
+- Repeat, missing, deleted, and inaccessible record IDs return the same generic not-found result.
 
 ## Acceptance Criteria
 

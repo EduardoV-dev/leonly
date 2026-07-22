@@ -11,12 +11,13 @@ As a space member, I want to view shared-space settings so I can manage basic in
 
 ## Intended Outcome
 
-The settings page presents space name, start date, invite code, member information, current member display name, account context, and a Private Vault link.
+The settings page presents space name, start date, invite status, member information, current member display name, preferred currency, account context, and a Private Vault link.
 
 ## Business Rules
 
 - Only the active member's space can be read.
 - One-member spaces prominently show invite status and code.
+- A full two-member space does not show an actionable invite code.
 - Missing partner avatar or invite code uses a safe fallback.
 
 ## Acceptance Criteria

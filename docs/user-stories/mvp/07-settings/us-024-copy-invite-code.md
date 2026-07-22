@@ -11,19 +11,20 @@ As a space member, I want to copy the invite code from settings so I can invite 
 
 ## Intended Outcome
 
-Active members can see a safely formatted invite code and copy it using the browser clipboard, with understandable success and failure feedback.
+The sole active member can see a safely formatted invite code, copy it using the browser clipboard, and regenerate it after expiry, with understandable success and failure feedback.
 
 ## Business Rules
 
 - Display formatting is presentation-only; the stored code remains normalized.
-- The OpenSpec must decide whether an expired or missing code is regenerated and by whom.
-- A two-member space may show the code and joined status, but must not imply a new member can join if membership is capped.
+- A code expires 24 hours after issue and becomes invalid when the second member joins.
+- The sole active member can regenerate an expired or missing code; regeneration invalidates the prior code.
+- A two-member space shows joined status instead of an actionable invite code.
 
 ## Acceptance Criteria
 
-- [ ] Active members can view a formatted code and copy it on supported devices.
+- [ ] The sole active member can view a formatted unexpired code and copy it on supported devices.
 - [ ] Success and clipboard failure messages are shown.
-- [ ] Missing or expired code has a safe fallback defined by the specification.
+- [ ] Missing or expired code offers regeneration; a full space does not.
 - [ ] The component works on mobile and does not expose another space's invite.
 
 ## Verification

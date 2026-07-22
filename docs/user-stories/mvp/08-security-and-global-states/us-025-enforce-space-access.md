@@ -24,6 +24,8 @@ Every protected feature applies one invariant: a user can access a record only i
 - Server code derives authorization context; it never trusts a submitted `space_id`.
 - Inactive memberships, inactive spaces, and inactive records are denied.
 - Database constraints enforce cardinality and uniqueness rules in addition to RLS.
+- Active members have equal access to shared records and settings regardless of the informational creator/owner attribute; member-owned records remain author-only for mutation.
+- Missing, inactive, deleted, and inaccessible record IDs return the same generic not-found outcome.
 
 ## Acceptance Criteria
 

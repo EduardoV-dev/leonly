@@ -5,10 +5,10 @@ Define access, content, and feedback requirements for the active shared-space da
 ## Requirements
 
 ### Requirement: Active-space dashboard access
-The system SHALL render the dashboard only for an authenticated active member's active shared space. It MUST redirect users without an active space to setup and members with incomplete onboarding to the invite step.
+The system SHALL render the dashboard only for an authenticated active member's active shared space. It MUST redirect users without an active space to setup. Creating a space completes onboarding, so a one-member creator can access the dashboard while waiting for a partner.
 
 #### Scenario: Active member views dashboard
-- **WHEN** an authenticated user has an active, completed space membership
+- **WHEN** an authenticated user has an active space membership
 - **THEN** the system renders only that space's dashboard data
 
 #### Scenario: User has no active space

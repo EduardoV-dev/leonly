@@ -15,7 +15,7 @@ After confirmation, an active member soft-deletes an active place with `is_activ
 
 ## Business Rules
 
-- Deletion is soft for MVP and idempotent.
+- Deletion is soft for MVP. Repeat, missing, deleted, and inaccessible IDs return the same generic not-found result.
 - Related ratings are retained according to data policy but excluded from UI and aggregates.
 
 ## Acceptance Criteria

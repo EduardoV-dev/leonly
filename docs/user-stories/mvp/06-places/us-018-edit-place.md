@@ -11,13 +11,13 @@ As a space member, I want to edit a place so I can correct or improve its detail
 
 ## Intended Outcome
 
-Active members can update name, category, description, location, cover photo, and non-negative estimated budget for active places in their space.
+Active members can update name, category, description, location, cover photo, and non-negative estimated budget with `USD` or `NIO` currency for active places in their space.
 
 ## Business Rules
 
 - Existing values are prefilled.
 - Name/category and upload validation match creation.
-- The OpenSpec must define photo replacement and orphan cleanup.
+- Replacing a cover uses the MVP-wide private-storage contract; the old object becomes inaccessible after the update succeeds, and failed updates clean up the new object.
 
 ## Acceptance Criteria
 

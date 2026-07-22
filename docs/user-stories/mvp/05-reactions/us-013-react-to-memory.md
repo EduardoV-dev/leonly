@@ -16,8 +16,10 @@ Each active member has at most one reaction on an active memory: `heart`, `laugh
 ## Business Rules
 
 - Enforce one active reaction per `(memory_id, user_id)` with a database constraint.
+- Adding or changing a reaction upserts the unique row; selecting the same type deletes it.
 - Reactions work for visible and Vault memories, but never inactive or cross-space memories.
 - Counts exclude inactive reactions and update after mutations.
+- Reaction controls are disabled while a mutation is pending. Failure restores the last confirmed state and refetches counts.
 
 ## Acceptance Criteria
 

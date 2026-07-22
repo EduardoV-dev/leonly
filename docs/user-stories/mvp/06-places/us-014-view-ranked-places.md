@@ -3,7 +3,7 @@
 **Status:** Planned  
 **Priority:** Must  
 **OpenSpec:** Not created  
-**Depends on:** US-025
+**Depends on:** US-025, US-029
 
 ## User Story
 
@@ -15,8 +15,11 @@ A responsive places page lists active places in the current space with name, cat
 
 ## Business Rules
 
-- Sort by highest rated, lowest rated, cheapest, most expensive, or most recent.
-- Define null-rating and null-budget sort placement in OpenSpec.
+- Sort by highest rated, lowest rated, cheapest, most expensive, or most recently created.
+- Average ratings display one decimal place. Unrated places follow rated places in rating sorts; places without budgets follow budgeted places in budget sorts.
+- Rating ties use newest creation time, then ID. Budget and recency ties use ID.
+- Mixed-currency budget sorting converts amounts with the same current or cached rate displayed to the member.
+- Results use bounded cursor pagination.
 - Inactive and cross-space places never appear.
 
 ## Acceptance Criteria

@@ -17,7 +17,7 @@ The authenticated member can update only their own `space_members.display_name`,
 
 - The trimmed display name is required and 2-100 characters.
 - A member cannot update the other member's name through UI, API, or altered payload.
-- Updated display names are used for members, comments, memories, and place metadata according to the data model.
+- Views join the current membership display name, so an update changes historical comments, memories, and place metadata without rewriting those records.
 
 ## Acceptance Criteria
 

@@ -17,8 +17,9 @@ An active member can create a place with optional cover photo, estimated budget,
 
 - Required: name and category.
 - Categories: `restaurant`, `hotel`, `cafe`, `park`, `travel`, or `other`.
-- Optional: description, location, cover photo, non-negative budget, and rating.
-- Ratings are 1 through 5 when present; clearing a rating is a separate action.
+- Optional: description, location, one cover photo, non-negative budget with `USD` or `NIO` currency, and rating.
+- Cover photos use the MVP-wide image validation and private-storage contract.
+- Ratings are whole numbers from 1 through 5 when present; clearing a rating is a separate action.
 - Server-derived membership determines the target space and creator.
 
 ## Acceptance Criteria

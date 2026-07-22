@@ -3,7 +3,7 @@
 **Status:** Planned  
 **Priority:** Must  
 **OpenSpec:** Not created  
-**Depends on:** US-003, US-025
+**Depends on:** US-003, US-025, US-028
 
 ## User Story
 
@@ -18,6 +18,8 @@ The Vault presents a responsive list of the active space's active, hidden memori
 - Query only `is_hidden = true` and `is_active = true` memories for the active space.
 - Visible timeline memories and deleted memories never appear.
 - Missing photos and optional metadata are valid.
+- The UI identifies the Vault as shared by both active members.
+- Results use bounded cursor pagination and deterministic newest-first ordering.
 
 ## Acceptance Criteria
 

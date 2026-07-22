@@ -16,7 +16,7 @@ After confirmation, only the author can soft-delete their active comment by sett
 ## Business Rules
 
 - Do not allow one member to delete the other member's comment.
-- The operation is idempotent and deleted comments never appear in counts or lists.
+- Deleted comments never appear in counts or lists. Repeat, missing, deleted, and inaccessible IDs return the same generic not-found result.
 
 ## Acceptance Criteria
 

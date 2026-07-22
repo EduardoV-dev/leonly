@@ -17,6 +17,7 @@ An active memory can move from the shared timeline to the shared Private Vault w
 
 - Private Vault is shared by the active members; it is not a partner-to-partner security boundary.
 - Moving a memory sets `is_hidden = true`; it does not delete the record.
+- Detail, comment, and reaction access remain enabled for both active members.
 - Inactive, already-hidden, and cross-space memories cannot be moved.
 
 ## Acceptance Criteria

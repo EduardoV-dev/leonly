@@ -2,8 +2,8 @@
 
 **Status:** Partial  
 **Priority:** Must  
-**OpenSpec:** Not created  
-**Depends on:** Authentication, active shared space, US-002
+**OpenSpec:** [shared-space-dashboard](../../../../openspec/specs/shared-space-dashboard/spec.md)<br>
+**Depends on:** US-002, US-003, US-014, US-025, US-027
 
 ## User Story
 
@@ -17,7 +17,7 @@ After login, an active member lands on a responsive, data-backed summary of thei
 
 - Space name and the day counter.
 - Both active members' display names and avatars when available.
-- Recent visible memories and top-rated active places.
+- Bounded recent visible memories and top-rated active places with deterministic ordering.
 - An add-memory action, empty states, and an invite/waiting state for a one-member space.
 - Loading, error, and direct-refresh behavior.
 

@@ -27,11 +27,11 @@ No major screen appears blank or broken during data fetches, zero-data condition
 
 ## Acceptance Criteria
 
-- [ ] Every major screen has visible loading, empty, and error states.
-- [ ] Forms show accessible field-level validation and prevent duplicate submissions.
+- [ ] List screens have visible loading, empty, and error states; detail screens distinguish loading, missing optional data, and generic not-found states.
+- [ ] Forms associate field errors with controls, announce submission results, and prevent duplicate submissions.
 - [ ] Errors offer retry or safe navigation where useful.
 - [ ] Missing optional data and offline/failed requests do not break layout.
-- [ ] States are responsive and accessible.
+- [ ] Interactive controls are keyboard operable with visible focus, semantic names and states, non-color-only meaning, and reduced-motion support in accordance with WCAG 2.2 AA.
 
 ## Verification
 
