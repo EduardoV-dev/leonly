@@ -129,5 +129,6 @@ describe("DashboardPage", () => {
     render(<DashboardLoading />);
 
     expect(screen.getByRole("status", { name: "Loading dashboard" })).toBeInTheDocument();
+    expect(screen.queryByText("Opening your shared space")).not.toBeInTheDocument();
   });
 });
