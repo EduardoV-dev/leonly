@@ -1,14 +1,15 @@
 # User Stories
 
-User stories capture product intent and delivery status. OpenSpec specifications are authoritative for final behavior and scenarios.
+User stories preserve product intent across implementation changes. They state the user outcome,
+scope, business rules, observable acceptance criteria, unresolved decisions, and verification risks
+needed to derive OpenSpec requirements, scenarios, and tasks.
 
-- [MVP backlog](mvp/README.md)
+- [MVP user stories](mvp/README.md)
 
-## Statuses
+## Relationship to OpenSpec
 
-- **Implemented**: Definition of Done is met and verified.
-- **Partial**: Some code exists, but the story's acceptance criteria are not complete.
-- **Planned**: Not yet implemented.
-- **Blocked**: Cannot proceed until a documented dependency or decision is resolved.
-
-Update the story status, verification checklist, and OpenSpec link when work is completed.
+- Stories are durable product inputs, not delivery trackers.
+- OpenSpec specifications are authoritative for normative behavior and acceptance scenarios.
+- OpenSpec changes capture a proposed delta and its implementation tasks.
+- Application code, policies, migrations, and tests describe current system behavior.
+- A `Decision Required` section identifies missing product decisions that OpenSpec must not infer.

@@ -1,6 +1,8 @@
 # Leonly Documentation
 
-This directory records Leonly product intent and delivery status.
+This directory records durable Leonly product intent. User stories describe outcomes, scope, and
+observable behavior that OpenSpec can turn into requirements, scenarios, and implementation tasks;
+they do not track delivery.
 
 - [MVP user stories](user-stories/mvp/README.md)
 - [Frontend design guide](../DESIGN.md)
@@ -9,10 +11,12 @@ This directory records Leonly product intent and delivery status.
 
 | Concern | Source of truth |
 | --- | --- |
-| Product intent and delivery status | `docs/user-stories/` |
+| Durable product intent | `docs/user-stories/` |
 | Normative behavior and acceptance scenarios | `openspec/specs/` |
 | Proposed changes and implementation tasks | `openspec/changes/` |
 | Frontend visual and interaction rules | `DESIGN.md` |
 | Actual implementation | application code, migrations, policies, and tests |
 
-User stories do not replace OpenSpec specifications. Before implementation, create or update the relevant OpenSpec change and link it from the story.
+User stories are inputs to OpenSpec, not substitutes for it. OpenSpec specifications define normative
+behavior and acceptance scenarios, while OpenSpec changes define proposed work and implementation
+tasks. Link a story to its relevant OpenSpec artifact when one exists.

@@ -1,39 +1,49 @@
 # US-003: View Memories Timeline
 
-**Status:** Planned  
-**Priority:** Must  
-**OpenSpec:** Not created  
+**Priority:** Must
+
+
 **Depends on:** US-025
 
 ## User Story
 
-As a space member, I want to see our shared memories in a timeline so I can revisit our story in chronological order.
+As an active member, I want to see our shared memories in a timeline so I can revisit our story in chronological order.
 
 ## Intended Outcome
 
-The timeline is the core Leonly experience: a responsive chronological list of visible, active memories for the current space, ordered newest first.
+After entering their active space, an active member sees that space's visible, active memories in newest-memory-date-first order. The timeline excludes memories in the shared Private Vault and soft-deleted memories, supports deterministic bounded pagination, and remains usable when data is loading, absent, slow, or unavailable.
 
-## In Scope
+## Scope
 
-- Photo preview, title, date, description preview, optional location, reaction count, comment count, detail link, and action menu.
-- Loading, empty, error, and slow-network states.
-- Bounded cursor pagination and refresh after local actions, navigation, or manual refresh.
+- Each memory card shows its title, date, cover-photo preview or fallback, optional description and location previews, reaction count, comment count, detail link, and available actions.
+- Initial loading, load-more, empty, slow-network, and failed-read states.
+- Refresh after local actions, navigation, or manual refresh; realtime partner updates are not required.
 
 ## Business Rules
 
-- Query only `is_active = true` and `is_hidden = false` records for the active space.
-- A missing photo, description, or location is valid.
-- Deleted and cross-space memories never appear or open. Hidden memories do not appear here but remain openable by active members through the Vault or an authorized direct URL.
-- Order by memory date descending with a deterministic secondary key selected in OpenSpec.
+- Only visible, active memories belonging to the active space appear.
+- A missing photo, description, or location is valid and does not prevent the memory from appearing.
+- Memories are ordered by memory date descending, followed by a deterministic secondary order.
+- Bounded cursor pagination preserves that order when multiple memories have the same date and when additional pages are loaded.
+- Memories in the shared Private Vault do not appear in the timeline but remain accessible to either active member through the Vault or an authorized direct URL.
+- Missing, inactive, soft-deleted, and inaccessible memory IDs produce the same generic not-found outcome.
+- A failed initial read shows a retryable page error; a failed load-more request keeps already loaded memories visible and can be retried.
 
 ## Acceptance Criteria
 
-- [ ] Only the active space's visible, active memories appear, newest first.
-- [ ] Cards show title, date, photo fallback, reaction count, comment count, and actions.
-- [ ] Empty, loading, and error states are useful and responsive.
-- [ ] Another space's or deleted memory returns the generic not-found outcome; an active hidden memory remains accessible to active members.
-- [ ] Load-more pagination does not duplicate or skip records with equal memory dates.
+- An active member sees only the active space's visible, active memories, ordered newest first.
+- Cards show the required summary fields, valid optional fields, counts, actions, and a photo fallback when no cover exists.
+- Empty, loading, slow-network, failed-read, and load-more states are understandable and responsive.
+- Loading additional pages neither duplicates nor skips memories with equal memory dates.
+- A memory in the shared Private Vault is absent from the timeline but remains available to either active member through an authorized detail route.
+- Missing, inactive, soft-deleted, and inaccessible memory IDs render the same generic not-found outcome without revealing record existence.
 
-## Verification
+## Decision Required
 
-- [ ] Test scope, ordering, optional fields, empty list, and authorization failures.
+- Define timeline page size, deterministic secondary ordering, cursor fields and format, and invalid or stale cursor behavior.
+
+## Verification Notes
+
+- Verify active-space scope, ordering, equal-date pagination, optional fields, counts, and the empty list.
+- Verify initial-read and load-more failures, retries, direct refresh, and slow-network feedback.
+- Verify shared Private Vault exclusion and generic not-found behavior for missing, inactive, soft-deleted, and inaccessible memories.

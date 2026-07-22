@@ -1,35 +1,57 @@
 # US-005: Edit Memory
 
-**Status:** Planned  
-**Priority:** Must  
-**OpenSpec:** Not created  
+**Priority:** Must
+
+
 **Depends on:** US-004, US-025
 
 ## User Story
 
-As a space member, I want to edit a memory so I can correct or improve its details after creation.
+As an active member, I want to edit a memory in our active space so I can correct or improve its details after creation.
 
 ## Intended Outcome
 
-Active members can update title, description, date, location, photos, and timeline/Vault visibility for active memories in their shared space.
+Either active member can open an active memory in the active space, review its current values, and update its title, description, date, location, photos, cover, or timeline/shared Private Vault placement. A successful edit is reflected in every affected view without changing the memory's creator, comments, or reactions.
+
+## Scope
+
+- Prefilled edit fields for all create-memory inputs and current placement.
+- Add, retain, remove, or replace photos within the create-memory limits, including removal of every photo.
+- Select any retained or replacement photo as cover.
+- Save, cancel, validation, pending, success, and recoverable failure behavior.
 
 ## Business Rules
 
-- Reuse create-memory validation and upload rules.
-- An edited hidden memory leaves the timeline; a restored visible memory re-enters according to its memory date.
-- A missing, inactive, or cross-space memory cannot be edited.
-- New uploads use the same private-storage and partial-failure cleanup rules as creation; removed photos become inaccessible after the update succeeds.
-- The member can select any retained or replacement photo as the cover.
+- Editing uses the same trimmed text, browser-local date, timezone, file count, file size, and verified-content rules as creation.
+- Missing, inactive, soft-deleted, and inaccessible memories cannot be read or edited and produce the same generic not-found outcome.
+- Cancelling makes no change to the memory or its photos.
+- Moving a visible memory to the shared Private Vault removes it from the timeline. Moving a hidden memory to the timeline restores it at the position determined by its memory date.
+- At most five retained and replacement photos may remain after the edit.
+- If photos remain, the cover must reference one of them. If no photos remain, the memory has no cover and affected views use their fallback.
+- An edit succeeds as one observable change. If a new upload or persistence step fails, existing memory data and existing photo access remain unchanged, and newly uploaded objects are removed.
+- Removed photos become inaccessible only after the edit succeeds. Photos, comments, reactions, creator, and untouched metadata otherwise remain unchanged.
+- While save is pending, repeated activation does not start another edit request.
 
 ## Acceptance Criteria
 
-- [ ] Existing values are prefilled and valid changes are reflected in all affected views.
-- [ ] Invalid fields and future dates are rejected.
-- [ ] Users can remove all photos or add valid replacement photos.
-- [ ] Cover selection remains valid after photo removal or replacement.
-- [ ] Visibility changes update timeline and Vault correctly.
-- [ ] Cross-space and deleted-memory updates are denied; errors and cancellation are handled.
+- Either active member sees current values prefilled and can save valid changes to an active memory in the active space.
+- Valid changes appear consistently in timeline, shared Private Vault, detail, and dashboard views after refresh.
+- Invalid fields, files, timezones, and future dates are rejected without changing the memory.
+- A member can add, retain, replace, or remove photos, including removing all photos, without leaving an invalid cover.
+- Placement changes move the memory between the timeline and shared Private Vault without changing related data.
+- Cancelling leaves all data unchanged, and repeated activation while pending produces at most one successful edit.
+- Failed uploads or persistence leave the prior memory and photo set intact, clean up new objects, and present a retryable error.
+- Missing, inactive, soft-deleted, and inaccessible memories produce the same generic not-found outcome.
 
-## Verification
+## Decision Required
 
-- [ ] Test validation, visibility moves, photo changes, and authorization.
+- Define conflict behavior when both active members edit the same memory or when an edit overlaps a delete, move, or restore.
+- Define the destination after save or cancel when editing began from timeline, shared Private Vault, or detail.
+- Define whether photo reordering is supported and, if so, how retained and replacement photos are ordered.
+
+## Verification Notes
+
+- Verify prefilled values, shared-member editing, all reused validation, cancel, and affected-view refresh.
+- Verify photo add, retain, replace, remove-all, cover validity, failed-upload cleanup, and failed-persistence rollback.
+- Verify timeline/shared Private Vault transitions and preservation of creator, comments, reactions, and untouched metadata.
+- Verify pending duplicate activation, decided conflict behavior, and generic not-found behavior.

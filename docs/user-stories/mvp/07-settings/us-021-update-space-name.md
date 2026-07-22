@@ -1,31 +1,49 @@
 # US-021: Update Space Name
 
-**Status:** Planned  
-**Priority:** Must  
-**OpenSpec:** Not created  
+**Priority:** Must<br>
 **Depends on:** US-020, US-025
 
 ## User Story
 
-As a space member, I want to update the shared space name so the app reflects how we describe our relationship or friendship.
+As an active member, I want to rename my active space so its shared identity reflects how its members
+describe their relationship or friendship.
 
 ## Intended Outcome
 
-An active member can update the active space name, and the result is reflected across dashboard, navigation, and settings.
+Either active member can update the shared name. After success, subsequent reads use the new name
+across dashboard, navigation, and settings without changing membership or ownership.
+
+## Scope
+
+- Name edit, client and server validation, save, cancel, pending, success, and failure states.
+- Refresh of every currently rendered surface that displays the active space name.
 
 ## Business Rules
 
-- Trimmed name is required and must be 2-100 characters.
-- Server-side authorization and RLS scope the update to active membership.
-- Pending saves prevent duplicate submission.
+- The trimmed name is required and must be 2-100 characters.
+- Either active member may update the name; the informational space creator/owner has no extra right.
+- Server authorization and RLS derive and enforce active-space membership rather than trusting a
+  submitted space or owner identifier.
+- Missing, inactive, and inaccessible spaces return the generic not-found outcome.
+- Cancel changes no persisted state. Pending saves prevent duplicate local submission, and failure
+  preserves the prior persisted name plus the attempted value for retry.
+- The field has an accessible label, validation is associated with it, and pending, success, and
+  failure feedback is announced.
 
 ## Acceptance Criteria
 
-- [ ] Valid names persist and refresh all affected views.
-- [ ] Empty, too-short, and too-long names are rejected.
-- [ ] Cross-space requests are denied.
-- [ ] Save state and failures are clear.
+- Either active member can save a valid trimmed name, and all affected views refresh to show it.
+- Empty, whitespace-only, under-limit, and over-limit names are rejected without discarding input.
+- Unauthenticated, inactive-member, and cross-space requests cannot change or expose the target space.
+- Cancel, pending, success, failure, and retry behavior is clear and keyboard accessible.
 
-## Verification
+## Decision Required
 
-- [ ] Test validation, refresh behavior, duplicate submit, and authorization.
+- Define conflict behavior when both active members rename the space concurrently, such as
+  last-write-wins or optimistic concurrency with a conflict response.
+
+## Verification Notes
+
+- Test validation boundaries, trimming, cancel, refresh behavior, duplicate submit, and failure retry.
+- Test equal member permission, inactive membership, altered identifiers, and cross-space access.
+- Test keyboard operation, associated errors, focus behavior, and announced asynchronous feedback.
