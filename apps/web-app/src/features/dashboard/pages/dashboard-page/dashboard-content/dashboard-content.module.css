@@ -65,6 +65,24 @@
   line-height: 1.35;
 }
 
+.unavailableDate button {
+  min-height: 2.5rem;
+  margin-top: 0.8rem;
+  padding: 0 1rem;
+  border: 1px solid #b82b49;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: #8a4c59;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.unavailableDate button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
 .memberSummary {
   display: flex;
   min-height: 11rem;

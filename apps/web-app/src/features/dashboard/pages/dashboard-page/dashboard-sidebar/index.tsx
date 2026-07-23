@@ -13,10 +13,9 @@ import styles from "./dashboard-sidebar.module.css";
 
 type DashboardSidebarProps = {
   activeSpace: ActiveSpace;
-  startedOn: string;
 };
 
-export function DashboardSidebar({ activeSpace, startedOn }: DashboardSidebarProps) {
+export function DashboardSidebar({ activeSpace }: DashboardSidebarProps) {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.identity}>
@@ -26,7 +25,6 @@ export function DashboardSidebar({ activeSpace, startedOn }: DashboardSidebarPro
           ))}
         </div>
         <h1>{activeSpace.name}</h1>
-        <p>Since {startedOn}</p>
       </div>
 
       <nav className={styles.navigation} aria-label="Dashboard sections">

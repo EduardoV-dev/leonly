@@ -89,6 +89,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
           display_name: values.displayName,
           space_name: values.spaceName,
           start_date: values.firstDay,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
         headers: {
           "Content-Type": "application/json",

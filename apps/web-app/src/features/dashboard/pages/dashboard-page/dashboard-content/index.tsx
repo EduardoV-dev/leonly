@@ -2,13 +2,13 @@ import { Heart, ImageIcon, MapPin } from "lucide-react";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
+import { RelationshipMilestone } from "./relationship-milestone";
 
 type DashboardContentProps = {
   activeSpace: ActiveSpace;
-  daysTogether: number;
 };
 
-export function DashboardContent({ activeSpace, daysTogether }: DashboardContentProps) {
+export function DashboardContent({ activeSpace }: DashboardContentProps) {
   const memberNames = activeSpace.active_members.map((member) => member.display_name).join(" & ");
   const isWaitingForPartner = activeSpace.active_members.length === 1;
 
@@ -24,11 +24,7 @@ export function DashboardContent({ activeSpace, daysTogether }: DashboardContent
           <span className={styles.eyebrow}>
             <Heart aria-hidden="true" /> Milestone reached
           </span>
-          <h2>{daysTogether.toLocaleString()} Days Together</h2>
-          <p>
-            Every moment captured, every memory cherished. Your journey continues to unfold
-            beautifully.
-          </p>
+          <RelationshipMilestone startDate={activeSpace.start_date} />
         </section>
         <section className={styles.memberSummary} aria-label="Space members">
           <div className={styles.avatars}>

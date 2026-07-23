@@ -22,6 +22,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 
 const activeSpace = {
@@ -58,9 +59,8 @@ describe("DashboardPage", () => {
     render(await DashboardPage());
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
-    expect(screen.getByText("Since March 2023")).toBeInTheDocument();
     expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "2 Days Together" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
     expect(screen.getAllByRole("img", { name: "Annie's avatar" })).not.toHaveLength(0);
     expect(screen.getByRole("heading", { name: "No memories yet" })).toBeInTheDocument();
@@ -80,6 +80,7 @@ describe("DashboardPage", () => {
     render(await DashboardPage());
 
     expect(screen.getByRole("heading", { name: "Waiting for your person" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
     expect(screen.getByText("twofw3k3")).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
   });
@@ -111,6 +112,19 @@ describe("DashboardPage", () => {
 
     expect(getActiveSpaceForCurrentUserMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Another Space")).not.toBeInTheDocument();
+  });
+
+  it("omits derived date copy and shows recovery when the date is unavailable", async () => {
+    getActiveSpaceForCurrentUserMock.mockResolvedValue({
+      ...activeSpace,
+      start_date: "2023-02-30",
+    });
+
+    render(await DashboardPage());
+
+    expect(screen.queryByText(/^Since /)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Day count unavailable" })).toBeInTheDocument();
+    expect(screen.queryByText(/days together/i)).not.toBeInTheDocument();
   });
 
   it("surfaces query failures to the recoverable error boundary", async () => {

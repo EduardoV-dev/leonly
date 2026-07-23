@@ -1,4 +1,3 @@
-import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
@@ -33,18 +32,12 @@ export async function DashboardPage() {
     throw new Error("The active space has no active members.");
   }
 
-  const daysTogether = Math.max(
-    0,
-    differenceInCalendarDays(new Date(), parseISO(activeSpace.start_date)),
-  );
-  const startedOn = format(parseISO(activeSpace.start_date), "MMMM yyyy");
-
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
         <MobileHeader member={activeSpace.active_members[0]} />
-        <DashboardSidebar activeSpace={activeSpace} startedOn={startedOn} />
-        <DashboardContent activeSpace={activeSpace} daysTogether={daysTogether} />
+        <DashboardSidebar activeSpace={activeSpace} />
+        <DashboardContent activeSpace={activeSpace} />
         <MobileNavigation />
       </div>
     </main>

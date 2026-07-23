@@ -1,3 +1,5 @@
+drop function if exists public.create_space(text, text, date);
+
 create or replace function public.create_space(
   p_space_name text,
   p_display_name text,

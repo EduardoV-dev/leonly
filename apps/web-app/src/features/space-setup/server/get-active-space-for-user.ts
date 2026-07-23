@@ -13,7 +13,7 @@ export type ActiveSpace = {
   member_names: string[];
   name: string;
   onboarding_completed_at: string | null;
-  start_date: string;
+  start_date: string | null;
 };
 
 export async function getActiveSpaceForCurrentUser(): Promise<ActiveSpace | null> {

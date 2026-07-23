@@ -1,23 +1,34 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  formatInviteCodeDisplay,
-  isFutureDateString,
-} from "@/features/space-setup/constants/validation";
+import { formatInviteCodeDisplay } from "@/features/space-setup/constants/validation";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { syncCurrentUser } from "@/features/space-setup/server/sync-current-user";
 import { createClient } from "@/lib/supabase/server";
+import { getCalendarDateInTimeZone, parseCalendarDate } from "@/utils/calendar-date";
 
-const createSpaceRequestSchema = z.object({
-  display_name: z.string().trim().min(2, "Your name must be at least 2 characters.").max(100),
-  space_name: z.string().trim().min(2, "Space name must be at least 2 characters.").max(100),
-  start_date: z
-    .string()
-    .min(1, "Start date is required.")
-    .refine((value) => !isFutureDateString(value), {
-      message: "The start date cannot be in the future.",
-    }),
-});
+const createSpaceRequestSchema = z
+  .object({
+    display_name: z.string().trim().min(2, "Your name must be at least 2 characters.").max(100),
+    space_name: z.string().trim().min(2, "Space name must be at least 2 characters.").max(100),
+    start_date: z
+      .string()
+      .min(1, "Start date is required.")
+      .refine((value) => parseCalendarDate(value) !== null, "Enter a valid start date."),
+    timezone: z.string().min(1, "Timezone is required."),
+  })
+  .superRefine(({ start_date, timezone }, context) => {
+    const today = getCalendarDateInTimeZone(timezone);
+
+    if (!today) {
+      context.addIssue({ code: "custom", message: "Enter a valid timezone.", path: ["timezone"] });
+    } else if (start_date > today) {
+      context.addIssue({
+        code: "custom",
+        message: "The start date cannot be in the future.",
+        path: ["start_date"],
+      });
+    }
+  });
 
 const createdSpaceSchema = z.object({
   id: z.any(),
@@ -39,7 +50,10 @@ function getErrorStatus(message: string) {
     message === "Space name must be at least 2 characters." ||
     message === "Your name must be at least 2 characters." ||
     message === "The start date cannot be in the future." ||
-    message === "Start date is required."
+    message === "Start date is required." ||
+    message === "Enter a valid start date." ||
+    message === "Timezone is required." ||
+    message === "Enter a valid timezone."
   ) {
     return 400;
   }
@@ -65,6 +79,7 @@ export async function POST(request: Request) {
       p_display_name: payload.display_name,
       p_space_name: payload.space_name,
       p_start_date: payload.start_date,
+      p_timezone: payload.timezone,
     });
 
     if (error) {

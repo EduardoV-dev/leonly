@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import { z } from "zod";
+import { getInclusiveCalendarDayCount, parseCalendarDate } from "@/utils/calendar-date";
 
 export const DISPLAY_NAME_MIN_LENGTH = 5;
 export const DISPLAY_NAME_MAX_LENGTH = 50;
@@ -44,21 +45,7 @@ export function formatInviteCodeDisplay(value: string) {
 }
 
 function isFutureDateString(value: string) {
-  if (!value) {
-    return false;
-  }
-
-  const [year, month, day] = value.split("-").map(Number);
-
-  if (!year || !month || !day) {
-    return false;
-  }
-
-  const selectedDate = new Date(year, month - 1, day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  return selectedDate > today;
+  return parseCalendarDate(value) !== null && getInclusiveCalendarDayCount(value) === null;
 }
 
 export { isFutureDateString };
@@ -114,6 +101,9 @@ export function createCreateSpaceSetupSchema(t: SpaceSetupT) {
     firstDay: z
       .string()
       .refine((value) => getTrimmedLength(value) > 0, {
+        message: t("validation.firstDayRequired"),
+      })
+      .refine((value) => parseCalendarDate(value) !== null, {
         message: t("validation.firstDayRequired"),
       })
       .refine((value) => !isFutureDateString(value), {
