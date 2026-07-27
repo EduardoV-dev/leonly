@@ -88,7 +88,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ space_id: space.id });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
+      const issue = error.issues[0];
+      return NextResponse.json(
+        {
+          error: issue?.message,
+          field: typeof issue?.path[0] === "string" ? issue.path[0] : undefined,
+        },
+        { status: 400 },
+      );
     }
 
     if (error instanceof AuthenticationRequiredError) {

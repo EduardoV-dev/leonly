@@ -1,4 +1,4 @@
-import type { Control, FieldError } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CharacterCount } from "@/components/character-count";
@@ -8,7 +8,6 @@ import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-set
 
 type JoinNameStepProps = {
   control: Control<JoinSpaceSetupFormValues>;
-  displayNameError?: FieldError;
   isSubmitting: boolean;
   onStartStory: () => void;
   submitError: string | null;
@@ -16,27 +15,33 @@ type JoinNameStepProps = {
 
 export function JoinNameStep({
   control,
-  displayNameError,
   isSubmitting,
   onStartStory,
   submitError,
 }: JoinNameStepProps) {
   const { t } = useTranslation("spaceSetup");
   const displayNameErrorId = "join-display-name-error";
-  const { field } = useController({
+  const { field, fieldState } = useController({
     control,
     name: "displayName",
   });
+  const displayNameError = fieldState.error;
   const displayNameValue = field.value ?? "";
 
   return (
-    <div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onStartStory();
+      }}
+    >
       <h1 className={styles.heading}>{t("steps.joinName.heading")}</h1>
       <p className={styles.copy}>{t("steps.joinName.description")}</p>
 
       <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="join-display-name">
           {t("steps.joinName.displayNameLabel")}
+          <span className={styles.optional}>({t("steps.joinName.optional")})</span>
         </label>
         <input
           id="join-display-name"
@@ -50,7 +55,7 @@ export function JoinNameStep({
         />
         <div className={styles.fieldMeta}>
           {displayNameError ? (
-            <p id={displayNameErrorId} className={styles.fieldError}>
+            <p id={displayNameErrorId} className={styles.fieldError} role="alert">
               {displayNameError.message}
             </p>
           ) : (
@@ -66,14 +71,9 @@ export function JoinNameStep({
         </p>
       ) : null}
 
-      <button
-        type="button"
-        className={styles.linkButton}
-        disabled={isSubmitting}
-        onClick={onStartStory}
-      >
+      <button type="submit" className={styles.linkButton} disabled={isSubmitting}>
         {isSubmitting ? t("actions.joiningSpace") : t("actions.startStory")}
       </button>
-    </div>
+    </form>
   );
 }

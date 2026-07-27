@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import type { ChangeEvent } from "react";
-import type { Control, FieldError } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { SetupTabs } from "../../../components/setup-tabs";
@@ -11,30 +11,30 @@ import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-set
 
 type JoinCodeStepProps = {
   control: Control<JoinSpaceSetupFormValues>;
-  inviteCodeError?: FieldError;
   isSubmitting: boolean;
   onContinue: () => void;
 };
 
-export function JoinCodeStep({
-  control,
-  inviteCodeError,
-  isSubmitting,
-  onContinue,
-}: JoinCodeStepProps) {
+export function JoinCodeStep({ control, isSubmitting, onContinue }: JoinCodeStepProps) {
   const { t } = useTranslation("spaceSetup");
   const inviteCodeErrorId = "invite-code-error";
-  const { field } = useController({
+  const { field, fieldState } = useController({
     control,
     name: "inviteCode",
   });
+  const inviteCodeError = fieldState.error;
 
   const handleInviteCodeChange = (event: ChangeEvent<HTMLInputElement>) => {
     field.onChange(formatInviteCodeInput(event.target.value));
   };
 
   return (
-    <div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onContinue();
+      }}
+    >
       <SetupTabs activeTab="join" />
 
       <h1 className={styles.heading}>{t("steps.join.heading")}</h1>
@@ -57,20 +57,15 @@ export function JoinCodeStep({
           value={field.value ?? ""}
         />
         {inviteCodeError ? (
-          <p id={inviteCodeErrorId} className={styles.fieldError}>
+          <p id={inviteCodeErrorId} className={styles.fieldError} role="alert">
             {inviteCodeError.message}
           </p>
         ) : null}
-        <button
-          type="button"
-          className={styles.linkButton}
-          disabled={isSubmitting}
-          onClick={onContinue}
-        >
+        <button type="submit" className={styles.linkButton} disabled={isSubmitting}>
           {isSubmitting ? t("actions.validatingInviteCode") : t("actions.joinSpace")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </form>
   );
 }

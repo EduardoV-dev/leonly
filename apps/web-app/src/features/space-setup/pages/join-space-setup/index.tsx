@@ -20,13 +20,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const router = useRouter();
   const {
     completeStep,
-    form: {
-      control,
-      formState: { errors },
-      setError,
-      getValues,
-      trigger,
-    },
+    form: { control, setError, getValues, trigger },
     hasLoaded,
     isAllowed,
   } = useJoinSpaceSetupForm(screen);
@@ -76,6 +70,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   };
 
   const startStory = async () => {
+    setSubmitError(null);
     const isValid = await trigger("displayName");
 
     if (!isValid) {
@@ -85,7 +80,6 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
 
     const values = getValues();
     setIsSubmittingJoin(true);
-    setSubmitError(null);
     try {
       const response = await fetch("/api/spaces/join", {
         body: JSON.stringify({
@@ -97,10 +91,19 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         },
         method: "POST",
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as { error?: string; field?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "We could not join this space. Please try again.");
+        const message = payload.error || "We could not join this space. Please try again.";
+
+        if (payload.field === "display_name") {
+          setError("displayName", { message });
+          focusInvalidField("join-display-name");
+          setIsSubmittingJoin(false);
+          return;
+        }
+
+        throw new Error(message);
       }
     } catch (error) {
       setSubmitError(
@@ -118,7 +121,6 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
     [SPACE_SETUP_STEPS.JOIN_CODE]: (
       <JoinCodeStep
         control={control}
-        inviteCodeError={errors.inviteCode}
         isSubmitting={isSubmittingCode}
         onContinue={continueToNameStep}
       />
@@ -126,7 +128,6 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
     [SPACE_SETUP_STEPS.JOIN_NAME]: (
       <JoinNameStep
         control={control}
-        displayNameError={errors.displayName}
         isSubmitting={isSubmittingJoin}
         onStartStory={startStory}
         submitError={submitError}

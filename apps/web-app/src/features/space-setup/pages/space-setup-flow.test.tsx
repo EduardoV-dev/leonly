@@ -88,7 +88,7 @@ describe("space setup flow validation and guards", () => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
-  it("shows create validation errors before moving forward", async () => {
+  it("shows create validation errors on native form submission", async () => {
     sessionStorage.setItem(
       CREATE_SPACE_STORAGE_KEY,
       createState([SPACE_SETUP_STEPS.CREATE_START], {
@@ -102,7 +102,7 @@ describe("space setup flow validation and guards", () => {
     render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_NAME} />);
 
     const spaceNameInput = await screen.findByLabelText("Space name");
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.submit(spaceNameInput.closest("form") as HTMLFormElement);
 
     const error = await screen.findByText("Enter a name for your space.");
     expect(error).toBeInTheDocument();
@@ -189,11 +189,11 @@ describe("space setup flow validation and guards", () => {
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
   });
 
-  it("validates join code before moving to display name", async () => {
+  it("validates join code on native form submission", async () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
     const inviteCodeInput = await screen.findByLabelText("Invite code");
-    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
+    fireEvent.submit(inviteCodeInput.closest("form") as HTMLFormElement);
 
     const error = await screen.findByText("Enter an invite code.");
     expect(error).toBeInTheDocument();
@@ -225,7 +225,7 @@ describe("space setup flow validation and guards", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
-    const error = await screen.findByText("Use a code like LNY-7KMP2.");
+    const error = await screen.findByText("The format of the code provided is invalid.");
     expect(error).toBeInTheDocument();
     expect(inviteCodeInput).toHaveAttribute("aria-invalid", "true");
     expect(inviteCodeInput).toHaveAttribute("aria-describedby", error.id);
@@ -306,14 +306,15 @@ describe("space setup flow validation and guards", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("allows guarded join name access and clears storage on finish", async () => {
-    sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));
+  it("allows guarded join name access with an optional display name", async () => {
+    sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE], ""));
 
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_NAME} />);
 
     expect(
       await screen.findByRole("heading", { name: "Add your display name" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("(Optional)")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Start Our Story" }));
 
@@ -321,7 +322,7 @@ describe("space setup flow validation and guards", () => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join", {
-      body: JSON.stringify({ display_name: "Leo", invite_code: "LNY-7KMP2" }),
+      body: JSON.stringify({ display_name: "", invite_code: "LNY-7KMP2" }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
@@ -361,16 +362,18 @@ describe("space setup flow validation and guards", () => {
 
   it("keeps join state when joining the validated space fails", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "This invite is invalid or unavailable." }),
+      json: async () => ({ error: "Invalid name.", field: "display_name" }),
       ok: false,
     });
     sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));
 
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_NAME} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+    const displayNameInput = await screen.findByLabelText(/Your display name/);
+    fireEvent.submit(displayNameInput.closest("form") as HTMLFormElement);
 
-    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
+    const error = await screen.findByText("Invalid name.");
+    expect(displayNameInput).toHaveAttribute("aria-describedby", error.id);
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).not.toBeNull();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });

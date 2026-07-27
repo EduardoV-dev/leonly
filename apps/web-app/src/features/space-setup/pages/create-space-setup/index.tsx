@@ -28,12 +28,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   const {
     clearState,
     completeStep,
-    form: {
-      control,
-      formState: { errors },
-      getValues,
-      trigger,
-    },
+    form: { control, getValues, setError, trigger },
     hasLoaded,
     isAllowed,
   } = useCreateSpaceSetupForm(screen);
@@ -71,6 +66,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   };
 
   const continueToInviteStep = async () => {
+    setSubmitError(null);
     const isValid = await trigger("firstDay");
 
     if (!isValid) {
@@ -79,8 +75,6 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     }
 
     setIsSubmitting(true);
-    setSubmitError(null);
-
     const values = getValues();
 
     try {
@@ -97,10 +91,19 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
         method: "POST",
       });
 
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as { error?: string; field?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "We could not create your space. Please try again.");
+        const message = payload.error || "We could not create your space. Please try again.";
+
+        if (payload.field === "start_date") {
+          setError("firstDay", { message });
+          focusInvalidField("first-day-trigger");
+          setIsSubmitting(false);
+          return;
+        }
+
+        throw new Error(message);
       }
     } catch (error) {
       setSubmitError(
@@ -125,23 +128,14 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
 
   const steps: Record<SpaceSetupCreateSteps, ReactNode> = {
     [SPACE_SETUP_STEPS.CREATE_START]: (
-      <CreateStartStep
-        control={control}
-        displayNameError={errors.displayName}
-        onContinue={continueToNameStep}
-      />
+      <CreateStartStep control={control} onContinue={continueToNameStep} />
     ),
     [SPACE_SETUP_STEPS.CREATE_NAME]: (
-      <CreateNameStep
-        control={control}
-        onContinue={continueToDateStep}
-        spaceNameError={errors.spaceName}
-      />
+      <CreateNameStep control={control} onContinue={continueToDateStep} />
     ),
     [SPACE_SETUP_STEPS.CREATE_DATE]: (
       <CreateDateStep
         control={firstDayControl}
-        firstDayError={errors.firstDay}
         isSubmitting={isSubmitting}
         onContinue={continueToInviteStep}
         submitError={submitError}

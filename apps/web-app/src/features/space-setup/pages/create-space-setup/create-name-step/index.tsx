@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import type { Control, FieldError } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CharacterCount } from "@/components/character-count";
@@ -13,20 +13,25 @@ import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space
 type CreateNameStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
   onContinue: () => void;
-  spaceNameError?: FieldError;
 };
 
-export function CreateNameStep({ control, onContinue, spaceNameError }: CreateNameStepProps) {
+export function CreateNameStep({ control, onContinue }: CreateNameStepProps) {
   const { t } = useTranslation("spaceSetup");
   const spaceNameErrorId = "space-name-error";
-  const { field } = useController({
+  const { field, fieldState } = useController({
     control,
     name: "spaceName",
   });
+  const spaceNameError = fieldState.error;
   const spaceNameValue = field.value ?? "";
 
   return (
-    <div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onContinue();
+      }}
+    >
       <StepMarker step={1} total={3} />
       <h1 className={styles.heading}>{t("steps.name.heading")}</h1>
       <p className={styles.copy}>{t("steps.name.description")}</p>
@@ -47,7 +52,7 @@ export function CreateNameStep({ control, onContinue, spaceNameError }: CreateNa
         />
         <div className={styles.fieldMeta}>
           {spaceNameError ? (
-            <p id={spaceNameErrorId} className={styles.fieldError}>
+            <p id={spaceNameErrorId} className={styles.fieldError} role="alert">
               {spaceNameError.message}
             </p>
           ) : (
@@ -57,15 +62,11 @@ export function CreateNameStep({ control, onContinue, spaceNameError }: CreateNa
         </div>
       </div>
 
-      <button
-        type="button"
-        className={`${styles.linkButton} ${styles.primaryButton}`}
-        onClick={onContinue}
-      >
+      <button type="submit" className={`${styles.linkButton} ${styles.primaryButton}`}>
         {t("actions.continue")}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>
       <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("start")} />
-    </div>
+    </form>
   );
 }

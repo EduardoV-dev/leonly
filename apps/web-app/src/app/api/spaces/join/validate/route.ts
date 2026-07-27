@@ -59,7 +59,10 @@ export async function POST(request: Request) {
     }
 
     if (result.status === "malformed") {
-      return NextResponse.json({ error: "Use a code like LNY-7KMP2." }, { status: 400 });
+      return NextResponse.json(
+        { error: "The format of the code provided is invalid." },
+        { status: 400 },
+      );
     }
 
     if (result.status === "unavailable") {

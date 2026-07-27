@@ -64,7 +64,10 @@ describe("POST /api/spaces/create", () => {
     const response = await POST(createRequest("2026-07-23"));
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: "The start date cannot be in the future." });
+    expect(await response.json()).toEqual({
+      error: "The start date cannot be in the future.",
+      field: "start_date",
+    });
     expect(rpcMock).not.toHaveBeenCalled();
   });
 

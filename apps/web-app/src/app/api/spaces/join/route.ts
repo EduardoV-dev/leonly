@@ -14,7 +14,10 @@ import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 const joinSpaceRequestSchema = z.object({
-  display_name: z.string(),
+  display_name: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ""),
   invite_code: z.string(),
 });
 
@@ -22,7 +25,7 @@ export async function POST(request: Request) {
   const requestResult = joinSpaceRequestSchema.safeParse(await request.json().catch(() => null));
 
   if (!requestResult.success) {
-    return NextResponse.json({ error: "Enter your name and invite code." }, { status: 400 });
+    return NextResponse.json({ error: "Enter an invite code." }, { status: 400 });
   }
 
   try {
@@ -62,12 +65,18 @@ export async function POST(request: Request) {
     }
 
     if (result.status === "malformed") {
-      return NextResponse.json({ error: "Use a code like LNY-7KMP2." }, { status: 400 });
+      return NextResponse.json(
+        { error: "The format of the code provided is invalid." },
+        { status: 400 },
+      );
     }
 
     if (result.status === "invalid_name") {
       return NextResponse.json(
-        { error: "Your name must contain 2 to 100 characters." },
+        {
+          error: "Your name must contain 2 to 100 characters.",
+          field: "display_name",
+        },
         { status: 400 },
       );
     }

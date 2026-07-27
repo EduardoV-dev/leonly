@@ -2,7 +2,7 @@ import { format, isValid, parse } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { useMemo, useState } from "react";
-import type { Control, FieldError } from "react-hook-form";
+import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,7 +19,6 @@ import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space
 
 type CreateDateStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
-  firstDayError?: FieldError;
   isSubmitting?: boolean;
   submitError?: string | null;
   onContinue: () => void;
@@ -44,7 +43,6 @@ function isFutureDate(date: Date) {
 
 export function CreateDateStep({
   control,
-  firstDayError,
   isSubmitting,
   onContinue,
   submitError,
@@ -55,10 +53,11 @@ export function CreateDateStep({
   const firstDayErrorId = "first-day-error";
   const currentLanguage = normalizeLanguage(i18n.language);
   const calendarLocale = currentLanguage === "es" ? es : enUS;
-  const { field } = useController({
+  const { field, fieldState } = useController({
     control,
     name: "firstDay",
   });
+  const firstDayError = fieldState.error;
   const selectedDate = useMemo(() => parseStoredDate(field.value), [field.value]);
 
   const handleSelect = (date: Date | undefined) => {
@@ -74,7 +73,12 @@ export function CreateDateStep({
   };
 
   return (
-    <div>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onContinue();
+      }}
+    >
       <StepMarker step={2} total={3} />
       <h1 className={styles.heading}>{t("steps.date.heading")}</h1>
       <p className={styles.copy}>{t("steps.date.description")}</p>
@@ -90,6 +94,7 @@ export function CreateDateStep({
                 <PopoverTrigger asChild>
                   <Button
                     id="first-day-trigger"
+                    type="button"
                     variant="outline"
                     className={cn(
                       styles.input,
@@ -128,7 +133,7 @@ export function CreateDateStep({
                 </PopoverContent>
               </Popover>
               {firstDayError ? (
-                <p id={firstDayErrorId} className={styles.fieldError}>
+                <p id={firstDayErrorId} className={styles.fieldError} role="alert">
                   {firstDayError.message}
                 </p>
               ) : null}
@@ -137,19 +142,22 @@ export function CreateDateStep({
         </FieldGroup>
 
         <button
-          type="button"
+          type="submit"
           className={`${styles.linkButton} ${styles.primaryButton}`}
           disabled={isSubmitting}
-          onClick={onContinue}
         >
           {isSubmitting ? t("actions.creatingSpace") : t("actions.startStory")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
-        {submitError ? <p className={styles.fieldError}>{submitError}</p> : null}
+        {submitError ? (
+          <p className={styles.fieldError} role="alert">
+            {submitError}
+          </p>
+        ) : null}
         <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("name")} />
       </div>
 
       <p className={styles.note}>"{t("steps.date.note")}"</p>
-    </div>
+    </form>
   );
 }

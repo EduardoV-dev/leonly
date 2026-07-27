@@ -34,7 +34,7 @@ export const spaceSetupEs = {
     firstDayRequired: "Elige el primer día de su historia.",
     firstDayFuture: "Elige hoy o una fecha pasada.",
     inviteCodeRequired: "Ingresa un código de invitación.",
-    inviteCodeInvalid: "Usa un código como LNY-7KMP2.",
+    inviteCodeInvalid: "El formato del código proporcionado no es válido.",
   },
   story: {
     "create-start": {

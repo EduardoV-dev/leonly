@@ -31,7 +31,9 @@ describe("POST /api/spaces/join/validate", () => {
     const response = await POST(createRequest("bad-code"));
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: "Use a code like LNY-7KMP2." });
+    expect(await response.json()).toEqual({
+      error: "The format of the code provided is invalid.",
+    });
     expect(rpcMock).toHaveBeenCalledWith("process_space_invite", {
       p_display_name: null,
       p_invite_code: "bad-code",

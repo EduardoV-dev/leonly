@@ -49,15 +49,26 @@ type SpaceSetupT = TFunction<"spaceSetup">;
 function createJoinDisplayNameSchema(t: SpaceSetupT) {
   return z
     .string()
-    .refine((value) => getTrimmedLength(value) > 0, {
-      message: t("validation.displayNameRequired"),
-    })
-    .refine((value) => getTrimmedLength(value) >= DISPLAY_NAME_MIN_LENGTH, {
-      message: t("validation.displayNameMin", { count: DISPLAY_NAME_MIN_LENGTH }),
-    })
-    .refine((value) => getTrimmedLength(value) <= DISPLAY_NAME_MAX_LENGTH, {
-      message: t("validation.displayNameMax", { count: DISPLAY_NAME_MAX_LENGTH }),
-    });
+    .refine(
+      (value) => {
+        const trimmedLength = getTrimmedLength(value);
+
+        return trimmedLength === 0 || trimmedLength >= DISPLAY_NAME_MIN_LENGTH;
+      },
+      {
+        message: t("validation.displayNameMin", { count: DISPLAY_NAME_MIN_LENGTH }),
+      },
+    )
+    .refine(
+      (value) => {
+        const trimmedLength = getTrimmedLength(value);
+
+        return trimmedLength === 0 || trimmedLength <= DISPLAY_NAME_MAX_LENGTH;
+      },
+      {
+        message: t("validation.displayNameMax", { count: DISPLAY_NAME_MAX_LENGTH }),
+      },
+    );
 }
 
 function createRequiredDisplayNameSchema(t: SpaceSetupT) {
