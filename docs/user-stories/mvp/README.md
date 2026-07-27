@@ -26,78 +26,57 @@ These rules apply to every story unless a story explicitly narrows them:
 - MVP refreshes data after local actions, navigation, and manual refresh. Realtime partner updates are not required.
 - Display names are read from the current active membership and update historical views; content does not snapshot names.
 - Place ratings are whole stars from 1 through 5. Averages display one decimal place. Null placement and deterministic tie-breakers must be specified for every ranking.
-- Place budgets store a non-negative amount and original currency (`USD` or `NIO`). Each member chooses a preferred display currency. Conversion uses a live exchange-rate provider with the last successful rate cached with its timestamp; when no rate is available, show the original amount. Mixed-currency sorting uses the same current or cached conversion rate shown to the member.
+- Application configuration defines exactly two currencies: `USD` and `NIO`. Each membership owns an
+  independent preferred display currency. Place expense items retain their non-negative original
+  amount and currency. A member may convert all items to one selected display currency and see their
+  total using one current or cached timestamped rate snapshot; when conversion is unavailable,
+  original values remain visible and no misleading mixed-currency total is shown.
 - Memory uploads allow up to five JPEG, PNG, or WebP images of at most 5 MB each. Place covers use the same type and per-file limit. The server verifies file content, storage is private to the active space, and partial failures clean up new objects. A memory creator selects the cover photo; an editor may select any retained or replacement photo as cover.
 - User-facing MVP work targets WCAG 2.2 AA, including keyboard operation, visible focus, semantic names and states, associated validation, announced asynchronous feedback, non-color-only meaning, and reduced-motion support.
 - Leaving/removing members, closing spaces, ownership transfer, account deletion, advanced media editing, search, audit history, and realtime synchronization are post-MVP.
 
-## MVP Stories
+## Dependency and Ordering Contract
 
-### 1. Shared Space Foundation
+- Story IDs define the implementation order. Every `Depends on` story has a lower ID.
+- `Depends on` lists hard implementation or end-to-end acceptance prerequisites. A later action may
+  integrate into an earlier host through an extension point without creating a reverse dependency.
+- Each feature ships its own authorization, RLS, storage policies, validation, UI states, and
+  accessibility behavior. US-029 and US-030 are final cross-feature audits, not hardening passes.
+- US-001 has no story dependency, but Google authentication is an explicit external prerequisite.
+- The sequence is dependency-safe, but a story is not fully implementation-ready until its
+  `Decision Required` items and inherited decisions are resolved in OpenSpec.
 
-- [US-001 View shared-space dashboard](01-shared-space-foundation/us-001-view-dashboard.md)
-- [US-002 Relationship/friendship day counter](01-shared-space-foundation/us-002-day-counter.md)
+## MVP Implementation Sequence
 
-### 2. Memories
-
-- [US-003 View memories timeline](02-memories/us-003-view-memories-timeline.md)
-- [US-004 Create memory](02-memories/us-004-create-memory.md)
-- [US-005 Edit memory](02-memories/us-005-edit-memory.md)
-- [US-006 Delete memory](02-memories/us-006-delete-memory.md)
-- [US-028 View memory detail](02-memories/us-028-view-memory-detail.md)
-
-### 3. Private Vault
-
-- [US-007 Move memory to Private Vault](03-private-vault/us-007-move-memory-to-vault.md)
-- [US-008 View Private Vault](03-private-vault/us-008-view-private-vault.md)
-- [US-009 Restore memory](03-private-vault/us-009-restore-memory.md)
-
-### 4. Comments
-
-- [US-010 Add comment](04-comments/us-010-add-comment.md)
-- [US-011 Edit own comment](04-comments/us-011-edit-own-comment.md)
-- [US-012 Delete own comment](04-comments/us-012-delete-own-comment.md)
-
-### 5. Reactions
-
-- [US-013 React to memory](05-reactions/us-013-react-to-memory.md)
-
-### 6. Places
-
-- [US-014 View ranked places](06-places/us-014-view-ranked-places.md)
-- [US-015 Add place](06-places/us-015-add-place.md)
-- [US-016 View place detail](06-places/us-016-view-place-detail.md)
-- [US-017 Rate place](06-places/us-017-rate-place.md)
-- [US-018 Edit place](06-places/us-018-edit-place.md)
-- [US-019 Delete place](06-places/us-019-delete-place.md)
-
-### 7. Settings
-
-- [US-020 View shared-space settings](07-settings/us-020-view-space-settings.md)
-- [US-021 Update space name](07-settings/us-021-update-space-name.md)
-- [US-022 Update start date](07-settings/us-022-update-start-date.md)
-- [US-023 Update my display name](07-settings/us-023-update-display-name.md)
-- [US-024 Copy invite code](07-settings/us-024-copy-invite-code.md)
-- [US-029 Set preferred currency](07-settings/us-029-set-preferred-currency.md)
-
-### 8. Security and Global States
-
-- [US-025 Enforce active-space access](08-security-and-global-states/us-025-enforce-space-access.md)
-- [US-026 Handle global UI states](08-security-and-global-states/us-026-global-ui-states.md)
-
-### 9. Access and Onboarding
-
-- [US-027 Enforce space lifecycle](09-access-and-onboarding/us-027-space-lifecycle.md)
-
-## Recommended OpenSpec Sequence
-
-1. US-027 and US-025: define lifecycle invariants and authorization before private feature data is introduced.
-2. US-002, US-003 through US-006, US-028, then US-008, US-007, and US-009: establish memories and the shared Vault.
-3. US-010 through US-013: add memory comments and reactions.
-4. US-020 and US-029: establish settings and personal currency conversion.
-5. US-014 through US-019: add places and ratings.
-6. US-021 through US-024: complete remaining settings.
-7. US-001: integrate dashboard summaries after memory and place queries are defined.
-8. US-026: apply shared UI states and accessibility across user-facing paths.
-
-US-025 remains cross-cutting: each resource must ship with its RLS and storage policies, not receive them as a later hardening pass.
+| ID | Story | Explicit dependencies |
+| --- | --- | --- |
+| US-001 | [Enforce space lifecycle](01-access-and-onboarding/us-001-space-lifecycle.md) | None; Google authentication is external |
+| US-002 | [Relationship/friendship day counter](02-shared-space-foundation/us-002-day-counter.md) | US-001 |
+| US-003 | [View memories timeline](03-memories/us-003-view-memories-timeline.md) | US-001 |
+| US-004 | [Create memory](03-memories/us-004-create-memory.md) | US-003 |
+| US-005 | [View memory detail](03-memories/us-005-view-memory-detail.md) | US-003, US-004 |
+| US-006 | [View Private Vault](04-private-vault/us-006-view-private-vault.md) | US-003, US-004, US-005 |
+| US-007 | [Edit memory](03-memories/us-007-edit-memory.md) | US-004, US-005, US-006 |
+| US-008 | [Move memory to Private Vault](04-private-vault/us-008-move-memory-to-vault.md) | US-003, US-005, US-006 |
+| US-009 | [Restore memory](04-private-vault/us-009-restore-memory.md) | US-003, US-005, US-006, US-008 |
+| US-010 | [Add comment](05-comments/us-010-add-comment.md) | US-005, US-006 |
+| US-011 | [Edit own comment](05-comments/us-011-edit-own-comment.md) | US-010 |
+| US-012 | [Delete own comment](05-comments/us-012-delete-own-comment.md) | US-010 |
+| US-013 | [React to memory](06-reactions/us-013-react-to-memory.md) | US-003, US-005, US-006 |
+| US-014 | [Delete memory](03-memories/us-014-delete-memory.md) | US-003, US-005 through US-010, US-013 |
+| US-015 | [View shared-space settings](07-settings/us-015-view-space-settings.md) | US-001, US-006 |
+| US-016 | [Set preferred currency](07-settings/us-016-set-preferred-currency.md) | US-001, US-015 |
+| US-017 | [Add place](08-places/us-017-add-place.md) | US-001, US-016 |
+| US-018 | [Manage place expense items and converted total](08-places/us-018-manage-place-expense-items.md) | US-016, US-017 |
+| US-019 | [View ranked places](08-places/us-019-view-ranked-places.md) | US-001, US-016 through US-018 |
+| US-020 | [View place detail](08-places/us-020-view-place-detail.md) | US-016 through US-019 |
+| US-021 | [Rate place](08-places/us-021-rate-place.md) | US-017, US-019, US-020 |
+| US-022 | [Edit place](08-places/us-022-edit-place.md) | US-017, US-020 |
+| US-023 | [Delete place](08-places/us-023-delete-place.md) | US-017 through US-022 |
+| US-024 | [Manage partner invite](07-settings/us-024-manage-partner-invite.md) | US-001, US-015 |
+| US-025 | [View shared-space dashboard](02-shared-space-foundation/us-025-view-dashboard.md) | US-001 through US-004, US-019, US-024 |
+| US-026 | [Update space name](07-settings/us-026-update-space-name.md) | US-015, US-025 |
+| US-027 | [Update start date](07-settings/us-027-update-start-date.md) | US-002, US-015, US-025 |
+| US-028 | [Update my display name](07-settings/us-028-update-display-name.md) | US-003, US-005, US-006, US-010, US-015, US-019, US-020, US-025 |
+| US-029 | [Verify active-space access](09-security-and-global-states/us-029-verify-space-access.md) | US-001 through US-028 |
+| US-030 | [Verify global UI states](09-security-and-global-states/us-030-verify-global-ui-states.md) | US-001 through US-029 |
