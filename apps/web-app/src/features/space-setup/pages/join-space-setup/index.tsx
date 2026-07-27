@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
@@ -19,7 +18,6 @@ type SpaceJoinSetupPageProps = {
 
 export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const router = useRouter();
-  const { t } = useTranslation("spaceSetup");
   const {
     completeStep,
     form: {
@@ -34,14 +32,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   } = useJoinSpaceSetupForm(screen);
   const [isSubmittingCode, setIsSubmittingCode] = useState(false);
   const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
-
-  const getJoinErrorMessage = (error: unknown, fallback: string) => {
-    if (error instanceof Error && error.message === "This invite code has expired.") {
-      return t("validation.inviteCodeExpired");
-    }
-
-    return error instanceof Error ? error.message : fallback;
-  };
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const continueToNameStep = async () => {
     const isValid = await trigger("inviteCode");
@@ -70,10 +61,10 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
       }
     } catch (error) {
       setError("inviteCode", {
-        message: getJoinErrorMessage(
-          error,
-          "We could not validate the invite code. Please try again.",
-        ),
+        message:
+          error instanceof Error
+            ? error.message
+            : "We could not validate the invite code. Please try again.",
       });
       focusInvalidField("invite-code");
       setIsSubmittingCode(false);
@@ -94,6 +85,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
 
     const values = getValues();
     setIsSubmittingJoin(true);
+    setSubmitError(null);
     try {
       const response = await fetch("/api/spaces/join", {
         body: JSON.stringify({
@@ -111,10 +103,9 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         throw new Error(payload.error || "We could not join this space. Please try again.");
       }
     } catch (error) {
-      setError("displayName", {
-        message: getJoinErrorMessage(error, "We could not join this space. Please try again."),
-      });
-      focusInvalidField("join-display-name");
+      setSubmitError(
+        error instanceof Error ? error.message : "We could not join this space. Please try again.",
+      );
       setIsSubmittingJoin(false);
       return;
     }
@@ -138,6 +129,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         displayNameError={errors.displayName}
         isSubmitting={isSubmittingJoin}
         onStartStory={startStory}
+        submitError={submitError}
       />
     ),
   };

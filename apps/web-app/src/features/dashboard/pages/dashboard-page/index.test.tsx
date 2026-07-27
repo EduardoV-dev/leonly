@@ -74,6 +74,7 @@ describe("DashboardPage", () => {
       ...activeSpace,
       active_members: [{ avatar_url: null, display_name: "Leo" }],
       invite_code: "twofw3k3",
+      invite_code_expires_at: "2023-03-29T12:00:00.000Z",
       member_names: ["Leo"],
     });
 
@@ -81,8 +82,37 @@ describe("DashboardPage", () => {
 
     expect(screen.getByRole("heading", { name: "Waiting for your person" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
-    expect(screen.getByText("twofw3k3")).toBeInTheDocument();
+    expect(screen.getByText("TWO-FW3K3")).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
+  });
+
+  it("offers invite regeneration when the one-member invite is missing", async () => {
+    getActiveSpaceForCurrentUserMock.mockResolvedValue({
+      ...activeSpace,
+      active_members: [{ avatar_url: null, display_name: "Leo" }],
+      member_names: ["Leo"],
+    });
+
+    render(await DashboardPage());
+
+    expect(screen.getByRole("button", { name: "Create a new invite" })).toBeInTheDocument();
+  });
+
+  it("explains that an expired invite must be regenerated", async () => {
+    getActiveSpaceForCurrentUserMock.mockResolvedValue({
+      ...activeSpace,
+      active_members: [{ avatar_url: null, display_name: "Leo" }],
+      invite_code: "twofw3k3",
+      invite_code_expires_at: "2023-03-28T12:00:00.000Z",
+      member_names: ["Leo"],
+    });
+
+    render(await DashboardPage());
+
+    expect(
+      screen.getByText("Your previous invite code has expired. Create a new one to share."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create a new invite" })).toBeInTheDocument();
   });
 
   it("redirects an unauthenticated user before loading a space", async () => {
@@ -98,13 +128,15 @@ describe("DashboardPage", () => {
     await expect(DashboardPage()).rejects.toThrow("NEXT_REDIRECT:/welcome/create/start");
   });
 
-  it("redirects incomplete onboarding to the invite step", async () => {
+  it("renders an active space even when legacy onboarding state is incomplete", async () => {
     getActiveSpaceForCurrentUserMock.mockResolvedValue({
       ...activeSpace,
       onboarding_completed_at: null,
     });
 
-    await expect(DashboardPage()).rejects.toThrow("NEXT_REDIRECT:/welcome/create/invite");
+    render(await DashboardPage());
+
+    expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
   });
 
   it("uses only the authenticated active-space response", async () => {

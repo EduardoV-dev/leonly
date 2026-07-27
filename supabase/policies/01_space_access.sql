@@ -1,6 +1,7 @@
 alter table public.users enable row level security;
 alter table public.spaces enable row level security;
 alter table public.space_members enable row level security;
+alter table public.join_attempt_limits enable row level security;
 
 drop policy if exists "Users can view own profile" on public.users;
 create policy "Users can view own profile"
@@ -37,6 +38,9 @@ on public.spaces
 for select
 to authenticated
 using (
+  spaces.is_active
+  and spaces.deleted_at is null
+  and
   exists (
     select 1
     from public.space_members
@@ -45,3 +49,7 @@ using (
       and space_members.is_active
   )
 );
+
+revoke all on table public.join_attempt_limits from public;
+revoke all on table public.join_attempt_limits from anon;
+revoke all on table public.join_attempt_limits from authenticated;

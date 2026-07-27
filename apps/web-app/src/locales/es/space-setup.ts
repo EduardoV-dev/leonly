@@ -34,8 +34,7 @@ export const spaceSetupEs = {
     firstDayRequired: "Elige el primer día de su historia.",
     firstDayFuture: "Elige hoy o una fecha pasada.",
     inviteCodeRequired: "Ingresa un código de invitación.",
-    inviteCodeInvalid: "Usa un código como LNY-7KLP0.",
-    inviteCodeExpired: "Este código de invitación venció.",
+    inviteCodeInvalid: "Usa un código como LNY-7KMP2.",
   },
   story: {
     "create-start": {
@@ -109,7 +108,7 @@ export const spaceSetupEs = {
       description: "Elige el nombre que verá tu pareja cuando te unas a este espacio compartido.",
       displayNameLabel: "Tu nombre visible",
       optional: "Opcional",
-      displayNamePlaceholder: "Usa tu nombre de Google si lo dejas vacío",
+      displayNamePlaceholder: "p. ej. Leo",
     },
   },
 } as const;

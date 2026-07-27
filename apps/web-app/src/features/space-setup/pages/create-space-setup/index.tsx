@@ -112,8 +112,8 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
       return;
     }
 
-    completeStep(SPACE_SETUP_STEPS.CREATE_DATE, values);
-    router.push(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
+    clearState();
+    globalThis.location.assign(APP_ROUTES.HOME);
   };
 
   const startStory = () => {

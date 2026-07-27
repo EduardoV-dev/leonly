@@ -8,7 +8,7 @@ declare
   current_user_id uuid := auth.uid();
 begin
   if current_user_id is null then
-    raise exception 'Authentication is required.';
+    raise exception using errcode = 'L1001', message = 'Authentication is required.';
   end if;
 
   update public.space_members space_member
@@ -17,10 +17,11 @@ begin
   where space_member.space_id = space.id
     and space_member.user_id = current_user_id
     and space_member.is_active = true
-    and space.is_active = true;
+    and space.is_active = true
+    and space.deleted_at is null;
 
   if not found then
-    raise exception 'You do not belong to an active space.';
+    raise exception using errcode = 'L1006', message = 'You do not belong to an active space.';
   end if;
 end;
 $$;

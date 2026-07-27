@@ -1,77 +1,78 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { normalizeInviteCode } from "@/features/space-setup/constants/validation";
-import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
-import { syncCurrentUser } from "@/features/space-setup/server/sync-current-user";
+import {
+  createLockedInviteResponse,
+  INVITE_UNAVAILABLE_MESSAGE,
+  parseSpaceInviteResult,
+} from "@/features/space-setup/server/space-invite-result";
+import { SPACE_RPC_ERROR_CODES } from "@/features/space-setup/server/space-rpc-error-codes";
+import {
+  AuthenticationRequiredError,
+  syncCurrentUser,
+} from "@/features/space-setup/server/sync-current-user";
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
-const inviteCodeSchema = z.object({
-  invite_code: z
-    .string()
-    .transform(normalizeInviteCode)
-    .refine((value) => /^[a-z]{3}[a-z0-9]{5}$/.test(value), "Use a code like LNY-7KLP0."),
-});
-
-function getErrorStatus(message: string) {
-  if (message === "Authentication is required.") {
-    return 401;
-  }
-
-  if (message === "You already belong to an active space.") {
-    return 409;
-  }
-
-  if (
-    message === "No space found for this invite code." ||
-    message === "Use a code like LNY-7KLP0."
-  ) {
-    return 404;
-  }
-
-  if (message === "This invite code has expired.") {
-    return 410;
-  }
-
-  return 500;
-}
+const inviteCodeRequestSchema = z.object({ invite_code: z.string() });
 
 export async function POST(request: Request) {
+  const requestResult = inviteCodeRequestSchema.safeParse(await request.json().catch(() => null));
+
+  if (!requestResult.success) {
+    return NextResponse.json({ error: "Enter an invite code." }, { status: 400 });
+  }
+
   try {
-    const payload = inviteCodeSchema.parse(await request.json());
     await syncCurrentUser();
-
-    if (await getActiveSpaceForCurrentUser()) {
-      return NextResponse.json(
-        { error: "You already belong to an active space." },
-        { status: 409 },
-      );
-    }
-
     const supabase = await createClient();
-    const { error } = await supabase.rpc("find_joinable_space", {
-      p_invite_code: payload.invite_code,
+    const { data, error } = await supabase.rpc("process_space_invite", {
+      p_display_name: null,
+      p_invite_code: requestResult.data.invite_code,
+      p_redeem: false,
     });
 
     if (error) {
+      if (error.code === SPACE_RPC_ERROR_CODES.AUTHENTICATION_REQUIRED) {
+        return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+      }
+
+      logServerError("Invite validation RPC failed.", {
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        message: error.message,
+      });
       return NextResponse.json(
-        { error: error.message || "We could not validate the invite code. Please try again." },
-        { status: getErrorStatus(error.message) },
+        { error: "We could not validate the invite code. Please try again." },
+        { status: 500 },
       );
     }
 
-    return NextResponse.json({ valid: true });
+    const result = parseSpaceInviteResult(data);
+
+    if (result.status === "valid") {
+      return NextResponse.json({ valid: true });
+    }
+
+    if (result.status === "locked") {
+      return createLockedInviteResponse(result.retry_after);
+    }
+
+    if (result.status === "malformed") {
+      return NextResponse.json({ error: "Use a code like LNY-7KMP2." }, { status: 400 });
+    }
+
+    if (result.status === "unavailable") {
+      return NextResponse.json({ error: INVITE_UNAVAILABLE_MESSAGE }, { status: 404 });
+    }
+
+    throw new Error("Unexpected invite validation result.");
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.issues[0]?.message }, { status: 400 });
+    if (error instanceof AuthenticationRequiredError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message || "We could not validate the invite code. Please try again." },
-        { status: getErrorStatus(error.message) },
-      );
-    }
-
+    logServerError("Invite validation failed unexpectedly.", error);
     return NextResponse.json(
       { error: "We could not validate the invite code. Please try again." },
       { status: 500 },

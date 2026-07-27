@@ -11,6 +11,7 @@ type JoinNameStepProps = {
   displayNameError?: FieldError;
   isSubmitting: boolean;
   onStartStory: () => void;
+  submitError: string | null;
 };
 
 export function JoinNameStep({
@@ -18,6 +19,7 @@ export function JoinNameStep({
   displayNameError,
   isSubmitting,
   onStartStory,
+  submitError,
 }: JoinNameStepProps) {
   const { t } = useTranslation("spaceSetup");
   const displayNameErrorId = "join-display-name-error";
@@ -35,7 +37,6 @@ export function JoinNameStep({
       <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="join-display-name">
           {t("steps.joinName.displayNameLabel")}
-          <span className={styles.optional}>{t("steps.joinName.optional")}</span>
         </label>
         <input
           id="join-display-name"
@@ -58,6 +59,12 @@ export function JoinNameStep({
           <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
         </div>
       </div>
+
+      {submitError ? (
+        <p className={styles.fieldError} role="alert">
+          {submitError}
+        </p>
+      ) : null}
 
       <button
         type="button"

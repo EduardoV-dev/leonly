@@ -1,4 +1,12 @@
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
+
+export class AuthenticationRequiredError extends Error {
+  constructor() {
+    super("Authentication is required.");
+    this.name = "AuthenticationRequiredError";
+  }
+}
 
 function getDisplayName(user: {
   email?: string | null;
@@ -22,7 +30,7 @@ export async function syncCurrentUser() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Authentication is required.");
+    throw new AuthenticationRequiredError();
   }
 
   const { error } = await supabase.from("users").upsert({
@@ -34,14 +42,12 @@ export async function syncCurrentUser() {
   });
 
   if (error) {
-    process.stderr.write(
-      `Failed to sync the current user: ${JSON.stringify({
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        message: error.message,
-      })}\n`,
-    );
+    logServerError("Failed to sync the current user.", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+    });
     throw new Error("Failed to sync the current user.");
   }
 

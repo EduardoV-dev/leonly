@@ -2,42 +2,36 @@ import type { TFunction } from "i18next";
 import { z } from "zod";
 import { getInclusiveCalendarDayCount, parseCalendarDate } from "@/utils/calendar-date";
 
-export const DISPLAY_NAME_MIN_LENGTH = 5;
-export const DISPLAY_NAME_MAX_LENGTH = 50;
+export const DISPLAY_NAME_MIN_LENGTH = 2;
+export const DISPLAY_NAME_MAX_LENGTH = 100;
 export const CREATE_DISPLAY_NAME_MIN_LENGTH = 2;
 export const CREATE_DISPLAY_NAME_MAX_LENGTH = 100;
 export const SPACE_NAME_MIN_LENGTH = 2;
 export const SPACE_NAME_MAX_LENGTH = 100;
-export const INVITE_CODE_PATTERN = /^[A-Z]{3}-[A-Z0-9]{5}$/;
+export const INVITE_CODE_PATTERN = /^(LEO|LOV|MEM|OUR|DUO|TWO|JOY|SUN|LNY)-?[A-HJKMNP-Z2-9]{5}$/;
 
 function getTrimmedLength(value: string) {
   return value.trim().length;
 }
 
-function sanitizeInviteCode(value: string) {
-  return value
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 8);
-}
-
 export function formatInviteCodeInput(value: string) {
-  const sanitizedValue = sanitizeInviteCode(value);
+  const upperValue = value.toUpperCase();
 
-  if (sanitizedValue.length <= 3) {
-    return sanitizedValue;
+  if (/^[A-Z0-9]{4,8}$/.test(upperValue)) {
+    return `${upperValue.slice(0, 3)}-${upperValue.slice(3)}`;
   }
 
-  return `${sanitizedValue.slice(0, 3)}-${sanitizedValue.slice(3)}`;
+  return upperValue.slice(0, 9);
 }
 
 export function normalizeInviteCode(value: string) {
-  return sanitizeInviteCode(value).toLowerCase();
+  const trimmedValue = value.replace(/^[\t\n\r\f\v ]+|[\t\n\r\f\v ]+$/g, "").toLowerCase();
+
+  return /^[a-z]{3}-[a-z2-9]{5}$/.test(trimmedValue) ? trimmedValue.replace("-", "") : trimmedValue;
 }
 
 function isValidInviteCode(value: string) {
-  return INVITE_CODE_PATTERN.test(formatInviteCodeInput(value));
+  return INVITE_CODE_PATTERN.test(value);
 }
 
 export function formatInviteCodeDisplay(value: string) {
@@ -52,19 +46,15 @@ export { isFutureDateString };
 
 type SpaceSetupT = TFunction<"spaceSetup">;
 
-function createOptionalDisplayNameSchema(t: SpaceSetupT) {
+function createJoinDisplayNameSchema(t: SpaceSetupT) {
   return z
     .string()
-    .refine(
-      (value) => {
-        const length = getTrimmedLength(value);
-
-        return length === 0 || length >= DISPLAY_NAME_MIN_LENGTH;
-      },
-      {
-        message: t("validation.displayNameMin", { count: DISPLAY_NAME_MIN_LENGTH }),
-      },
-    )
+    .refine((value) => getTrimmedLength(value) > 0, {
+      message: t("validation.displayNameRequired"),
+    })
+    .refine((value) => getTrimmedLength(value) >= DISPLAY_NAME_MIN_LENGTH, {
+      message: t("validation.displayNameMin", { count: DISPLAY_NAME_MIN_LENGTH }),
+    })
     .refine((value) => getTrimmedLength(value) <= DISPLAY_NAME_MAX_LENGTH, {
       message: t("validation.displayNameMax", { count: DISPLAY_NAME_MAX_LENGTH }),
     });
@@ -123,6 +113,6 @@ export function createJoinSpaceSetupSchema(t: SpaceSetupT) {
       .refine(isValidInviteCode, {
         message: t("validation.inviteCodeInvalid"),
       }),
-    displayName: createOptionalDisplayNameSchema(t),
+    displayName: createJoinDisplayNameSchema(t),
   });
 }

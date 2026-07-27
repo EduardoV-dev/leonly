@@ -5,6 +5,7 @@ create table if not exists public.spaces (
   invite_code text,
   invite_code_expires_at timestamptz,
   is_active boolean not null default true,
+  deleted_at timestamptz,
   created_by_user_id uuid not null references public.users(id) on delete restrict,
   updated_by_user_id uuid not null references public.users(id) on delete restrict,
   created_at timestamptz not null default timezone('utc', now()),
@@ -16,13 +17,13 @@ create table if not exists public.spaces (
   constraint spaces_invite_code_format_check
     check (
       invite_code is null
-      or invite_code ~ '^[a-z]{3}[a-z2-9]{5}$'
+      or invite_code ~ '^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$'
     )
 );
 
 create unique index if not exists spaces_active_invite_code_unique_idx
   on public.spaces (invite_code)
-  where is_active = true and invite_code is not null;
+  where is_active = true and deleted_at is null and invite_code is not null;
 
 create index if not exists spaces_is_active_idx
   on public.spaces (is_active);
@@ -42,9 +43,10 @@ language plpgsql
 set search_path = public
 as $$
 begin
-  if new.invite_code is not null
-    and (tg_op = 'INSERT' or new.invite_code is distinct from old.invite_code) then
-    new.invite_code_expires_at := now() + interval '24 hours';
+  if new.invite_code is null then
+    new.invite_code_expires_at := null;
+  elsif tg_op = 'INSERT' or new.invite_code is distinct from old.invite_code then
+    new.invite_code_expires_at := clock_timestamp() + interval '24 hours';
   end if;
 
   return new;

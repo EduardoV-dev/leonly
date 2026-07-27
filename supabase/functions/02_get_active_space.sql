@@ -40,6 +40,7 @@ as $$
   where space_member.user_id = auth.uid()
     and space_member.is_active = true
     and space.is_active = true
+    and space.deleted_at is null
   limit 1;
 $$;
 

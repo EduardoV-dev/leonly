@@ -12,7 +12,7 @@ type WelcomeLayoutProps = {
 export default async function WelcomeLayout({ children }: WelcomeLayoutProps) {
   const activeSpace = await getActiveSpaceForCurrentUser();
 
-  if (activeSpace?.onboarding_completed_at) {
+  if (activeSpace) {
     redirect(APP_ROUTES.HOME);
   }
 

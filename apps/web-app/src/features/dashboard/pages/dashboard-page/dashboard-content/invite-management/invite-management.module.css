@@ -1,0 +1,50 @@
+.code {
+  margin-top: 0.75rem;
+  border-radius: 0.45rem;
+  background: #fff4f3;
+  padding: 0.35rem 0.65rem;
+  color: #8a4c59;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.regeneration {
+  margin-top: 0.75rem;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+}
+
+.regeneration .expired {
+  max-width: 17rem;
+  margin: 0 0 0.65rem;
+  color: #b82b49;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.regeneration button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid #b82b49;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: #8a4c59;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.regeneration button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.regeneration button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.error {
+  max-width: 15rem;
+  color: var(--destructive);
+}

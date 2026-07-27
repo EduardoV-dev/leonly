@@ -34,8 +34,7 @@ export const spaceSetupEn = {
     firstDayRequired: "Choose your first day.",
     firstDayFuture: "Choose today or a past date.",
     inviteCodeRequired: "Enter an invite code.",
-    inviteCodeInvalid: "Use a code like LNY-7KLP0.",
-    inviteCodeExpired: "This invite code has expired.",
+    inviteCodeInvalid: "Use a code like LNY-7KMP2.",
   },
   story: {
     "create-start": {
@@ -108,7 +107,7 @@ export const spaceSetupEn = {
       description: "Choose the name your partner will see when you join this shared space.",
       displayNameLabel: "Your display name",
       optional: "Optional",
-      displayNamePlaceholder: "Use your Google name if left blank",
+      displayNamePlaceholder: "e.g. Leo",
     },
   },
 } as const;

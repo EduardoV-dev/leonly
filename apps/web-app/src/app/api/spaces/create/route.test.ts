@@ -40,8 +40,6 @@ describe("POST /api/spaces/create", () => {
       data: {
         id: 1,
         invite_code: "leoabc23",
-        name: "Forever Us",
-        start_date: "2026-07-22",
       },
       error: null,
     });
@@ -74,11 +72,24 @@ describe("POST /api/spaces/create", () => {
     const response = await POST(createRequest("2026-07-22"));
 
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ space_id: 1 });
     expect(rpcMock).toHaveBeenCalledWith("create_space", {
       p_display_name: "Leo",
       p_space_name: "Forever Us",
       p_start_date: "2026-07-22",
       p_timezone: "America/Los_Angeles",
     });
+  });
+
+  it("maps active-membership conflicts by PostgreSQL code", async () => {
+    rpcMock.mockResolvedValue({
+      data: null,
+      error: { code: "L1003", message: "wording can change" },
+    });
+
+    const response = await POST(createRequest("2026-07-22"));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "You already belong to an active space." });
   });
 });

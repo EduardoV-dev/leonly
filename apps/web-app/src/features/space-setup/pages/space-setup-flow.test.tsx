@@ -62,12 +62,12 @@ const createState = (
     values,
   });
 
-const joinState = (completedSteps: string[]) =>
+const joinState = (completedSteps: string[], displayName = "Leo") =>
   JSON.stringify({
     completedSteps,
     values: {
-      displayName: "",
-      inviteCode: "LNY-7KLP0",
+      displayName,
+      inviteCode: "LNY-7KMP2",
     },
   });
 
@@ -165,6 +165,30 @@ describe("space setup flow validation and guards", () => {
     expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.HOME);
   });
 
+  it("routes an atomically created space directly to the dashboard", async () => {
+    sessionStorage.setItem(
+      CREATE_SPACE_STORAGE_KEY,
+      createState([SPACE_SETUP_STEPS.CREATE_START, SPACE_SETUP_STEPS.CREATE_NAME], {
+        displayName: "Leo",
+        firstDay: "2023-03-26",
+        spaceName: "Forever Us",
+      }),
+    );
+
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+
+    await waitFor(() => {
+      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/spaces/create",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
+  });
+
   it("validates join code before moving to display name", async () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
@@ -201,7 +225,7 @@ describe("space setup flow validation and guards", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
-    const error = await screen.findByText("Use a code like LNY-7KLP0.");
+    const error = await screen.findByText("Use a code like LNY-7KMP2.");
     expect(error).toBeInTheDocument();
     expect(inviteCodeInput).toHaveAttribute("aria-invalid", "true");
     expect(inviteCodeInput).toHaveAttribute("aria-describedby", error.id);
@@ -212,7 +236,7 @@ describe("space setup flow validation and guards", () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
     fireEvent.change(await screen.findByLabelText("Invite code"), {
-      target: { value: "lny7klp0" },
+      target: { value: "lny7kmp2" },
     });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
@@ -221,7 +245,7 @@ describe("space setup flow validation and guards", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join/validate", {
-      body: JSON.stringify({ invite_code: "LNY-7KLP0" }),
+      body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
@@ -230,31 +254,33 @@ describe("space setup flow validation and guards", () => {
 
   it("shows a lookup error instead of advancing for an unknown invite code", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "No space found for this invite code." }),
+      json: async () => ({ error: "This invite is invalid or unavailable." }),
       ok: false,
     });
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
     const inviteCodeInput = await screen.findByLabelText("Invite code");
-    fireEvent.change(inviteCodeInput, { target: { value: "lny7klp0" } });
+    fireEvent.change(inviteCodeInput, { target: { value: "lny7kmp2" } });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
-    expect(await screen.findByText("No space found for this invite code.")).toBeInTheDocument();
+    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
-  it("shows an expiration error instead of advancing for an expired invite code", async () => {
+  it("shows rate-limit feedback instead of advancing", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "This invite code has expired." }),
+      json: async () => ({ error: "Too many join attempts. Try again in 10 minutes." }),
       ok: false,
     });
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
     const inviteCodeInput = await screen.findByLabelText("Invite code");
-    fireEvent.change(inviteCodeInput, { target: { value: "lny7klp0" } });
+    fireEvent.change(inviteCodeInput, { target: { value: "lny7kmp2" } });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
 
-    expect(await screen.findByText("This invite code has expired.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Too many join attempts. Try again in 10 minutes."),
+    ).toBeInTheDocument();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
@@ -263,10 +289,10 @@ describe("space setup flow validation and guards", () => {
 
     const inviteCodeInput = await screen.findByLabelText("Invite code");
     fireEvent.change(inviteCodeInput, {
-      target: { value: "lny7klp0" },
+      target: { value: "lny7kmp2" },
     });
 
-    expect(inviteCodeInput).toHaveValue("LNY-7KLP0");
+    expect(inviteCodeInput).toHaveValue("LNY-7KMP2");
   });
 
   it("blocks direct join name access until code is complete", async () => {
@@ -295,7 +321,7 @@ describe("space setup flow validation and guards", () => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join", {
-      body: JSON.stringify({ display_name: "", invite_code: "LNY-7KLP0" }),
+      body: JSON.stringify({ display_name: "Leo", invite_code: "LNY-7KMP2" }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
@@ -335,7 +361,7 @@ describe("space setup flow validation and guards", () => {
 
   it("keeps join state when joining the validated space fails", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "No space found for this invite code." }),
+      json: async () => ({ error: "This invite is invalid or unavailable." }),
       ok: false,
     });
     sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));
@@ -344,7 +370,7 @@ describe("space setup flow validation and guards", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
 
-    expect(await screen.findByText("No space found for this invite code.")).toBeInTheDocument();
+    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).not.toBeNull();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
@@ -356,11 +382,11 @@ describe("space setup flow validation and guards", () => {
 
     const displayNameInput = await screen.findByLabelText(/Your display name/);
     fireEvent.change(displayNameInput, {
-      target: { value: "Leo" },
+      target: { value: "L" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Start Our Story" }));
 
-    const error = await screen.findByText("Use at least 5 characters.");
+    const error = await screen.findByText("Use at least 2 characters.");
     expect(error).toBeInTheDocument();
     expect(displayNameInput).toHaveAttribute("aria-invalid", "true");
     expect(displayNameInput).toHaveAttribute("aria-describedby", error.id);

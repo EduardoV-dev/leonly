@@ -1,7 +1,7 @@
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import type { SpaceSetupSteps } from "../../types/setup-types";
 
-export const INVITE_CODE = "LNY-7KLP0";
+export const INVITE_CODE = "LNY-7KMP2";
 
 export const screenImages: Record<
   SpaceSetupSteps,

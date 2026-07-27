@@ -119,16 +119,6 @@
   line-height: 1.45;
 }
 
-.memberSummary code {
-  margin-top: 0.75rem;
-  border-radius: 0.45rem;
-  background: #fff4f3;
-  padding: 0.35rem 0.65rem;
-  color: #8a4c59;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
 .summarySection {
   margin-top: 1.65rem;
   scroll-margin-top: 1rem;

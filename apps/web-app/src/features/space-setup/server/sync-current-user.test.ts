@@ -12,8 +12,13 @@ describe("syncCurrentUser", () => {
   });
 
   it("logs the database error while returning a safe error", async () => {
-    const databaseError = new Error("new row violates row-level security policy");
-    const write = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const databaseError = {
+      code: "42501",
+      details: "Rejected by users policy",
+      hint: null,
+      message: "new row violates row-level security policy",
+    };
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     vi.mocked(createClient).mockResolvedValue({
       auth: {
@@ -33,8 +38,6 @@ describe("syncCurrentUser", () => {
     } as never);
 
     await expect(syncCurrentUser()).rejects.toThrow("Failed to sync the current user.");
-    expect(write).toHaveBeenCalledWith(
-      'Failed to sync the current user: {"message":"new row violates row-level security policy"}\n',
-    );
+    expect(consoleError).toHaveBeenCalledWith("Failed to sync the current user.", databaseError);
   });
 });

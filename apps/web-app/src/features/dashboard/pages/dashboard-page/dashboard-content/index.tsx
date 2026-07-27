@@ -2,6 +2,7 @@ import { Heart, ImageIcon, MapPin } from "lucide-react";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
+import { InviteManagement } from "./invite-management";
 import { RelationshipMilestone } from "./relationship-milestone";
 
 type DashboardContentProps = {
@@ -38,8 +39,11 @@ export function DashboardContent({ activeSpace }: DashboardContentProps) {
               ? "Share your invite code when you are ready for them to join."
               : `Sharing ${activeSpace.name} together.`}
           </p>
-          {isWaitingForPartner && activeSpace.invite_code ? (
-            <code>{activeSpace.invite_code}</code>
+          {isWaitingForPartner ? (
+            <InviteManagement
+              inviteCode={activeSpace.invite_code}
+              inviteCodeExpiresAt={activeSpace.invite_code_expires_at}
+            />
           ) : null}
         </section>
       </div>

@@ -21,6 +21,10 @@ create unique index if not exists space_members_active_space_user_unique_idx
   on public.space_members (space_id, user_id)
   where is_active = true;
 
+create unique index if not exists space_members_active_space_role_unique_idx
+  on public.space_members (space_id, role)
+  where is_active = true;
+
 create index if not exists space_members_space_id_idx
   on public.space_members (space_id);
 

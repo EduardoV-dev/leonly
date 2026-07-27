@@ -24,10 +24,6 @@ export async function DashboardPage() {
     redirect(APP_ROUTES.WELCOME_CREATE_STEP("start"));
   }
 
-  if (!activeSpace.onboarding_completed_at) {
-    redirect(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
-  }
-
   if (activeSpace.active_members.length === 0) {
     throw new Error("The active space has no active members.");
   }
