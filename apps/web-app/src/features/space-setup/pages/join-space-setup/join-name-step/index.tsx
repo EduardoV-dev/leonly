@@ -2,6 +2,7 @@ import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CharacterCount } from "@/components/character-count";
+import { Button } from "@/components/ui/button";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
 import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-setup-form";
@@ -71,9 +72,14 @@ export function JoinNameStep({
         </p>
       ) : null}
 
-      <button type="submit" className={styles.linkButton} disabled={isSubmitting}>
+      <Button
+        type="submit"
+        className={styles.linkButton}
+        loading={isSubmitting}
+        aria-busy={isSubmitting}
+      >
         {isSubmitting ? t("actions.joiningSpace") : t("actions.startStory")}
-      </button>
+      </Button>
     </form>
   );
 }

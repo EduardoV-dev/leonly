@@ -17,10 +17,22 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ rpc: rpcMock }),
 }));
 
-function createRequest(startDate: string, timezone = "America/Los_Angeles") {
+type CreateRequestOptions = {
+  displayName?: string | null;
+  includeDisplayName?: boolean;
+  timezone?: string;
+};
+
+function createRequest(startDate: string, options: CreateRequestOptions = {}) {
+  const {
+    displayName = "Leo",
+    includeDisplayName = true,
+    timezone = "America/Los_Angeles",
+  } = options;
+
   return new Request("http://localhost/api/spaces/create", {
     body: JSON.stringify({
-      display_name: "Leo",
+      ...(includeDisplayName ? { display_name: displayName } : {}),
       space_name: "Forever Us",
       start_date: startDate,
       timezone,
@@ -82,6 +94,30 @@ describe("POST /api/spaces/create", () => {
       p_start_date: "2026-07-22",
       p_timezone: "America/Los_Angeles",
     });
+  });
+
+  it.each([
+    { displayName: "", label: "blank" },
+    { displayName: null, label: "null" },
+    { includeDisplayName: false, label: "missing" },
+  ])("passes an empty display name for $label input", async ({ label: _label, ...options }) => {
+    const response = await POST(createRequest("2026-07-22", options));
+
+    expect(response.status).toBe(200);
+    expect(rpcMock).toHaveBeenCalledWith("create_space", {
+      p_display_name: "",
+      p_space_name: "Forever Us",
+      p_start_date: "2026-07-22",
+      p_timezone: "America/Los_Angeles",
+    });
+  });
+
+  it("rejects a one-character explicit display name", async () => {
+    const response = await POST(createRequest("2026-07-22", { displayName: "L" }));
+
+    expect(response.status).toBe(400);
+    expect(syncCurrentUserMock).not.toHaveBeenCalled();
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
   it("maps active-membership conflicts by PostgreSQL code", async () => {

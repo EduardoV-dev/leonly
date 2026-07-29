@@ -14,6 +14,7 @@ import {
 } from "../../hooks/use-create-space-setup-form";
 import type { SpaceSetupCreateSteps } from "../../types/setup-types";
 import { focusInvalidField } from "../../utils/focus-invalid-field";
+import { waitForNextPaint } from "../../utils/wait-for-next-paint";
 import { CreateDateStep } from "./create-date-step";
 import { CreateInviteStep } from "./create-invite-step";
 import { CreateNameStep } from "./create-name-step";
@@ -42,10 +43,17 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   };
 
   const continueToNameStep = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    await waitForNextPaint();
     const isValid = await trigger("displayName");
 
     if (!isValid) {
       focusInvalidField("display-name");
+      setIsSubmitting(false);
       return;
     }
 
@@ -54,10 +62,17 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   };
 
   const continueToDateStep = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    await waitForNextPaint();
     const isValid = await trigger("spaceName");
 
     if (!isValid) {
       focusInvalidField("space-name");
+      setIsSubmitting(false);
       return;
     }
 
@@ -66,15 +81,21 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   };
 
   const continueToInviteStep = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     setSubmitError(null);
+    setIsSubmitting(true);
+    await waitForNextPaint();
     const isValid = await trigger("firstDay");
 
     if (!isValid) {
       focusInvalidField("first-day-trigger");
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
     const values = getValues();
 
     try {
@@ -116,7 +137,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     }
 
     clearState();
-    globalThis.location.assign(APP_ROUTES.HOME);
+    globalThis.location.assign(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
   };
 
   const startStory = () => {
@@ -128,10 +149,18 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
 
   const steps: Record<SpaceSetupCreateSteps, ReactNode> = {
     [SPACE_SETUP_STEPS.CREATE_START]: (
-      <CreateStartStep control={control} onContinue={continueToNameStep} />
+      <CreateStartStep
+        control={control}
+        isSubmitting={isSubmitting}
+        onContinue={continueToNameStep}
+      />
     ),
     [SPACE_SETUP_STEPS.CREATE_NAME]: (
-      <CreateNameStep control={control} onContinue={continueToDateStep} />
+      <CreateNameStep
+        control={control}
+        isSubmitting={isSubmitting}
+        onContinue={continueToDateStep}
+      />
     ),
     [SPACE_SETUP_STEPS.CREATE_DATE]: (
       <CreateDateStep

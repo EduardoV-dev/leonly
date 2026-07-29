@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { SetupTabs } from "../../../components/setup-tabs";
 import { INVITE_CODE } from "../../../components/space-setup-container/constants";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
@@ -61,10 +62,15 @@ export function JoinCodeStep({ control, isSubmitting, onContinue }: JoinCodeStep
             {inviteCodeError.message}
           </p>
         ) : null}
-        <button type="submit" className={styles.linkButton} disabled={isSubmitting}>
+        <Button
+          type="submit"
+          className={styles.linkButton}
+          loading={isSubmitting}
+          aria-busy={isSubmitting}
+        >
           {isSubmitting ? t("actions.validatingInviteCode") : t("actions.joinSpace")}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </button>
+          {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
+        </Button>
       </div>
     </form>
   );

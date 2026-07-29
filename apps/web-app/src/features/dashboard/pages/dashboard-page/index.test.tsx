@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardError } from "./error";
 import { DashboardPage } from "./index";
@@ -7,6 +8,15 @@ import { DashboardLoading } from "./loading";
 const getActiveSpaceForCurrentUserMock = vi.hoisted(() => vi.fn());
 const getUserMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
+const axiosPostMock = vi.hoisted(() => vi.fn());
+const axiosIsAxiosErrorMock = vi.hoisted(() => vi.fn());
+
+vi.mock("axios", () => ({
+  default: {
+    post: axiosPostMock,
+  },
+  isAxiosError: axiosIsAxiosErrorMock,
+}));
 
 vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
   getActiveSpaceForCurrentUser: getActiveSpaceForCurrentUserMock,
@@ -39,6 +49,23 @@ const activeSpace = {
   start_date: "2023-03-26",
 };
 
+const renderDashboardPage = async () => {
+  const page = await DashboardPage();
+  const queryClient = new QueryClient();
+
+  render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
+};
+
+const flushReactQuery = async () => {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+};
+
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,6 +73,12 @@ describe("DashboardPage", () => {
     vi.setSystemTime(new Date("2023-03-28T12:00:00Z"));
     getUserMock.mockResolvedValue({ data: { user: {} } });
     getActiveSpaceForCurrentUserMock.mockResolvedValue(activeSpace);
+    axiosPostMock.mockResolvedValue({
+      data: {
+        invite_code: "newcode",
+        invite_code_expires_at: "2023-03-29T12:00:00.000Z",
+      },
+    });
     redirectMock.mockImplementation((path: string) => {
       throw new Error(`NEXT_REDIRECT:${path}`);
     });
@@ -56,7 +89,7 @@ describe("DashboardPage", () => {
   });
 
   it("renders active-space members with avatar fallbacks and truthful empty states", async () => {
-    render(await DashboardPage());
+    await renderDashboardPage();
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
     expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
@@ -78,7 +111,7 @@ describe("DashboardPage", () => {
       member_names: ["Leo"],
     });
 
-    render(await DashboardPage());
+    await renderDashboardPage();
 
     expect(screen.getByRole("heading", { name: "Waiting for your person" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
@@ -86,19 +119,22 @@ describe("DashboardPage", () => {
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
   });
 
-  it("offers invite regeneration when the one-member invite is missing", async () => {
+  it("automatically creates an invite when the one-member invite is missing", async () => {
     getActiveSpaceForCurrentUserMock.mockResolvedValue({
       ...activeSpace,
       active_members: [{ avatar_url: null, display_name: "Leo" }],
       member_names: ["Leo"],
     });
 
-    render(await DashboardPage());
+    await renderDashboardPage();
 
-    expect(screen.getByRole("button", { name: "Create a new invite" })).toBeInTheDocument();
+    await flushReactQuery();
+
+    expect(screen.getByText("NEW-CODE")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create a new invite" })).not.toBeInTheDocument();
   });
 
-  it("explains that an expired invite must be regenerated", async () => {
+  it("automatically regenerates an expired invite", async () => {
     getActiveSpaceForCurrentUserMock.mockResolvedValue({
       ...activeSpace,
       active_members: [{ avatar_url: null, display_name: "Leo" }],
@@ -107,12 +143,64 @@ describe("DashboardPage", () => {
       member_names: ["Leo"],
     });
 
-    render(await DashboardPage());
+    await renderDashboardPage();
+    await flushReactQuery();
 
-    expect(
-      screen.getByText("Your previous invite code has expired. Create a new one to share."),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create a new invite" })).toBeInTheDocument();
+    expect(screen.getByText("NEW-CODE")).toBeInTheDocument();
+    expect(axiosPostMock).toHaveBeenCalledOnce();
+    expect(axiosPostMock).toHaveBeenCalledWith("/api/spaces/invite/regenerate");
+    expect(screen.queryByRole("button", { name: "Create a new invite" })).not.toBeInTheDocument();
+  });
+
+  it("automatically regenerates an invite when it expires while displayed", async () => {
+    getActiveSpaceForCurrentUserMock.mockResolvedValue({
+      ...activeSpace,
+      active_members: [{ avatar_url: null, display_name: "Leo" }],
+      invite_code: "twofw3k3",
+      invite_code_expires_at: "2023-03-28T12:00:01.000Z",
+      member_names: ["Leo"],
+    });
+
+    await renderDashboardPage();
+
+    expect(screen.getByText("TWO-FW3K3")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    await flushReactQuery();
+
+    expect(screen.getByText("NEW-CODE")).toBeInTheDocument();
+    expect(axiosPostMock).toHaveBeenCalledOnce();
+  });
+
+  it("keeps retrying automatic invite creation after a network failure", async () => {
+    getActiveSpaceForCurrentUserMock.mockResolvedValue({
+      ...activeSpace,
+      active_members: [{ avatar_url: null, display_name: "Leo" }],
+      member_names: ["Leo"],
+    });
+    axiosIsAxiosErrorMock.mockReturnValue(true);
+    axiosPostMock.mockRejectedValueOnce(new Error("network failed")).mockResolvedValueOnce({
+      data: {
+        invite_code: "newcode",
+        invite_code_expires_at: "2023-03-29T12:00:00.000Z",
+      },
+    });
+
+    await renderDashboardPage();
+
+    await flushReactQuery();
+
+    expect(axiosPostMock).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    await flushReactQuery();
+
+    expect(screen.getByText("NEW-CODE")).toBeInTheDocument();
+    expect(axiosPostMock).toHaveBeenCalledTimes(2);
   });
 
   it("redirects an unauthenticated user before loading a space", async () => {
@@ -134,13 +222,13 @@ describe("DashboardPage", () => {
       onboarding_completed_at: null,
     });
 
-    render(await DashboardPage());
+    await renderDashboardPage();
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
   });
 
   it("uses only the authenticated active-space response", async () => {
-    render(await DashboardPage());
+    await renderDashboardPage();
 
     expect(getActiveSpaceForCurrentUserMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Another Space")).not.toBeInTheDocument();
@@ -152,7 +240,7 @@ describe("DashboardPage", () => {
       start_date: "2023-02-30",
     });
 
-    render(await DashboardPage());
+    await renderDashboardPage();
 
     expect(screen.queryByText(/^Since /)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Day count unavailable" })).toBeInTheDocument();

@@ -1,21 +1,12 @@
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupRouteTransition } from "@/features/space-setup";
-import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 
 type WelcomeLayoutProps = {
   children: ReactNode;
 };
 
 export default async function WelcomeLayout({ children }: WelcomeLayoutProps) {
-  const activeSpace = await getActiveSpaceForCurrentUser();
-
-  if (activeSpace) {
-    redirect(APP_ROUTES.HOME);
-  }
-
   return (
     <Suspense fallback={null}>
       <SpaceSetupRouteTransition>{children}</SpaceSetupRouteTransition>

@@ -3,6 +3,7 @@ import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CharacterCount } from "@/components/character-count";
+import { Button } from "@/components/ui/button";
 import { APP_ROUTES } from "@/constants/routes";
 import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
@@ -12,10 +13,11 @@ import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space
 
 type CreateNameStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
+  isSubmitting: boolean;
   onContinue: () => void;
 };
 
-export function CreateNameStep({ control, onContinue }: CreateNameStepProps) {
+export function CreateNameStep({ control, isSubmitting, onContinue }: CreateNameStepProps) {
   const { t } = useTranslation("spaceSetup");
   const spaceNameErrorId = "space-name-error";
   const { field, fieldState } = useController({
@@ -62,10 +64,15 @@ export function CreateNameStep({ control, onContinue }: CreateNameStepProps) {
         </div>
       </div>
 
-      <button type="submit" className={`${styles.linkButton} ${styles.primaryButton}`}>
-        {t("actions.continue")}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </button>
+      <Button
+        type="submit"
+        className={`${styles.linkButton} ${styles.primaryButton}`}
+        loading={isSubmitting}
+        aria-busy={isSubmitting}
+      >
+        {isSubmitting ? t("actions.savingSpaceName") : t("actions.continue")}
+        {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
+      </Button>
       <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("start")} />
     </form>
   );

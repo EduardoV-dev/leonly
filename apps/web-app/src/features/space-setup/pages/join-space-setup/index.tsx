@@ -9,6 +9,7 @@ import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { useJoinSpaceSetupForm } from "../../hooks/use-join-space-setup-form";
 import type { SpaceSetupJoinSteps } from "../../types/setup-types";
 import { focusInvalidField } from "../../utils/focus-invalid-field";
+import { waitForNextPaint } from "../../utils/wait-for-next-paint";
 import { JoinCodeStep } from "./join-code-step";
 import { JoinNameStep } from "./join-name-step";
 
@@ -29,15 +30,21 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const continueToNameStep = async () => {
+    if (isSubmittingCode) {
+      return;
+    }
+
+    setIsSubmittingCode(true);
+    await waitForNextPaint();
     const isValid = await trigger("inviteCode");
 
     if (!isValid) {
       focusInvalidField("invite-code");
+      setIsSubmittingCode(false);
       return;
     }
 
     const values = getValues();
-    setIsSubmittingCode(true);
     try {
       const response = await fetch("/api/spaces/join/validate", {
         body: JSON.stringify({ invite_code: values.inviteCode }),
@@ -70,16 +77,22 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   };
 
   const startStory = async () => {
+    if (isSubmittingJoin) {
+      return;
+    }
+
     setSubmitError(null);
+    setIsSubmittingJoin(true);
+    await waitForNextPaint();
     const isValid = await trigger("displayName");
 
     if (!isValid) {
       focusInvalidField("join-display-name");
+      setIsSubmittingJoin(false);
       return;
     }
 
     const values = getValues();
-    setIsSubmittingJoin(true);
     try {
       const response = await fetch("/api/spaces/join", {
         body: JSON.stringify({

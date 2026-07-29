@@ -13,6 +13,8 @@ export const spaceSetupEn = {
     continueToDashboard: "Continue to dashboard",
     joinSpace: "Join Space",
     joiningSpace: "Joining space...",
+    savingDisplayName: "Saving your name...",
+    savingSpaceName: "Saving your space name...",
     validatingInviteCode: "Checking code...",
     startStory: "Start Our Story",
   },
@@ -25,7 +27,6 @@ export const spaceSetupEn = {
     label: "Step {{step}} of {{total}}",
   },
   validation: {
-    displayNameRequired: "Enter your name.",
     displayNameMin: "Use at least {{count}} characters.",
     displayNameMax: "Use {{count}} characters or fewer.",
     spaceNameRequired: "Enter a name for your space.",
@@ -72,7 +73,7 @@ export const spaceSetupEn = {
     start: {
       heading: "Begin Your Story",
       description:
-        "Create a private space for your shared memories. Start with the name your partner will see.",
+        "Create a private space for your shared memories. Enter the name your partner will see, or leave it blank to use your Google name.",
       displayNameLabel: "Your display name",
       optional: "Optional",
       displayNamePlaceholder: "e.g. Leo",

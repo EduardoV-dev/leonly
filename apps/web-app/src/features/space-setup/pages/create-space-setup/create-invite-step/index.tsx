@@ -1,5 +1,6 @@
 import { Check, Copy, KeyRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
 
@@ -50,14 +51,15 @@ export function CreateInviteStep({
 
       {submitError ? <p className={styles.fieldError}>{submitError}</p> : null}
 
-      <button
+      <Button
         type="button"
         className={styles.linkButton}
-        disabled={isSubmitting}
+        loading={isSubmitting}
+        aria-busy={isSubmitting}
         onClick={onContinue}
       >
         {isSubmitting ? t("actions.completingSetup") : t("actions.continueToDashboard")}
-      </button>
+      </Button>
     </div>
   );
 }

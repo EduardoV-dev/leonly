@@ -1,92 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import { formatInviteCodeDisplay } from "@/features/space-setup/constants/validation";
 import styles from "./invite-management.module.css";
+import { useRegenerateInvite } from "./use-regenerate-invite";
 
 type InviteManagementProps = {
   inviteCode: string | null;
   inviteCodeExpiresAt: string | null;
 };
 
-type InviteResponse = {
-  error?: string;
-  invite_code?: string;
-  invite_code_expires_at?: string;
-};
-
 export function InviteManagement({ inviteCode, inviteCodeExpiresAt }: InviteManagementProps) {
-  const [code, setCode] = useState(inviteCode);
-  const [expiresAt, setExpiresAt] = useState(inviteCodeExpiresAt);
-  const [, setExpirationVersion] = useState(0);
-  const [isRegenerating, setIsRegenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const regeneration = useRegenerateInvite();
+  const code = regeneration.data?.invite_code ?? inviteCode;
+  const expiresAt = regeneration.data?.invite_code_expires_at ?? inviteCodeExpiresAt;
+  const automaticallyRegeneratedInvite = useRef<string | null>(null);
+
+  const regenerateExpiredInvite = useEffectEvent(() => {
+    const expirationTime = expiresAt ? Date.parse(expiresAt) : Number.NaN;
+
+    if (code && Number.isFinite(expirationTime) && expirationTime > Date.now()) {
+      return;
+    }
+
+    const inviteKey = `${code}:${expiresAt ?? ""}`;
+
+    if (automaticallyRegeneratedInvite.current === inviteKey) {
+      return;
+    }
+
+    automaticallyRegeneratedInvite.current = inviteKey;
+    regeneration.mutate();
+  });
 
   useEffect(() => {
-    if (!expiresAt) {
+    const expirationTime = expiresAt ? Date.parse(expiresAt) : Number.NaN;
+
+    if (!Number.isFinite(expirationTime) || expirationTime <= Date.now()) {
+      regenerateExpiredInvite();
       return;
     }
 
-    const remainingMilliseconds = Date.parse(expiresAt) - Date.now();
-
-    if (remainingMilliseconds <= 0) {
-      return;
-    }
-
-    const timeout = window.setTimeout(
-      () => setExpirationVersion((version) => version + 1),
-      remainingMilliseconds,
-    );
+    const timeout = window.setTimeout(regenerateExpiredInvite, expirationTime - Date.now());
 
     return () => window.clearTimeout(timeout);
   }, [expiresAt]);
 
-  const regenerateInvite = async () => {
-    setIsRegenerating(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/spaces/invite/regenerate", { method: "POST" });
-      const payload = (await response.json()) as InviteResponse;
-
-      if (!response.ok || !payload.invite_code || !payload.invite_code_expires_at) {
-        throw new Error(payload.error || "We could not create a new invite. Please try again.");
-      }
-
-      setCode(payload.invite_code);
-      setExpiresAt(payload.invite_code_expires_at);
-    } catch (regenerationError) {
-      setError(
-        regenerationError instanceof Error
-          ? regenerationError.message
-          : "We could not create a new invite. Please try again.",
-      );
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  const isExpired = !expiresAt || Date.parse(expiresAt) <= Date.now();
+  const expirationTime = expiresAt ? Date.parse(expiresAt) : Number.NaN;
+  const isExpired = !Number.isFinite(expirationTime) || expirationTime <= Date.now();
 
   if (code && !isExpired) {
     return <code className={styles.code}>{formatInviteCodeDisplay(code)}</code>;
   }
 
+  if (regeneration.isError) {
+    return (
+      <p role="alert" className={styles.error}>
+        We could not create a new invite. Please refresh the page to try again.
+      </p>
+    );
+  }
+
   return (
-    <div className={styles.regeneration}>
-      {code && isExpired ? (
-        <p className={styles.expired}>
-          Your previous invite code has expired. Create a new one to share.
-        </p>
-      ) : null}
-      <button type="button" disabled={isRegenerating} onClick={regenerateInvite}>
-        {isRegenerating ? "Creating invite..." : "Create a new invite"}
-      </button>
-      {error ? (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <p className={styles.regeneration} role="status" aria-live="polite">
+      Creating a new invite...
+    </p>
   );
 }

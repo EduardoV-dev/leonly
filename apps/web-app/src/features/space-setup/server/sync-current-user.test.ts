@@ -11,6 +11,30 @@ describe("syncCurrentUser", () => {
     vi.clearAllMocks();
   });
 
+  it("persists the Google profile name", async () => {
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const user = {
+      email: "leo@example.com",
+      id: "a8d7d357-9435-4dcc-8b53-3bae9b885a05",
+      user_metadata: { name: "Google Name" },
+    };
+
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user } }) },
+      from: vi.fn().mockReturnValue({ upsert }),
+    } as never);
+
+    await syncCurrentUser();
+
+    expect(upsert).toHaveBeenCalledWith({
+      avatar_url: null,
+      email: user.email,
+      id: user.id,
+      is_active: true,
+      name: "Google Name",
+    });
+  });
+
   it("logs the database error while returning a safe error", async () => {
     const databaseError = {
       code: "42501",

@@ -4,8 +4,6 @@ import { getInclusiveCalendarDayCount, parseCalendarDate } from "@/utils/calenda
 
 export const DISPLAY_NAME_MIN_LENGTH = 2;
 export const DISPLAY_NAME_MAX_LENGTH = 100;
-export const CREATE_DISPLAY_NAME_MIN_LENGTH = 2;
-export const CREATE_DISPLAY_NAME_MAX_LENGTH = 100;
 export const SPACE_NAME_MIN_LENGTH = 2;
 export const SPACE_NAME_MAX_LENGTH = 100;
 export const INVITE_CODE_PATTERN = /^(LEO|LOV|MEM|OUR|DUO|TWO|JOY|SUN|LNY)-?[A-HJKMNP-Z2-9]{5}$/;
@@ -46,7 +44,7 @@ export { isFutureDateString };
 
 type SpaceSetupT = TFunction<"spaceSetup">;
 
-function createJoinDisplayNameSchema(t: SpaceSetupT) {
+function createOptionalDisplayNameSchema(t: SpaceSetupT) {
   return z
     .string()
     .refine(
@@ -71,23 +69,9 @@ function createJoinDisplayNameSchema(t: SpaceSetupT) {
     );
 }
 
-function createRequiredDisplayNameSchema(t: SpaceSetupT) {
-  return z
-    .string()
-    .refine((value) => getTrimmedLength(value) > 0, {
-      message: t("validation.displayNameRequired"),
-    })
-    .refine((value) => getTrimmedLength(value) >= CREATE_DISPLAY_NAME_MIN_LENGTH, {
-      message: t("validation.displayNameMin", { count: CREATE_DISPLAY_NAME_MIN_LENGTH }),
-    })
-    .refine((value) => getTrimmedLength(value) <= CREATE_DISPLAY_NAME_MAX_LENGTH, {
-      message: t("validation.displayNameMax", { count: CREATE_DISPLAY_NAME_MAX_LENGTH }),
-    });
-}
-
 export function createCreateSpaceSetupSchema(t: SpaceSetupT) {
   return z.object({
-    displayName: createRequiredDisplayNameSchema(t),
+    displayName: createOptionalDisplayNameSchema(t),
     spaceName: z
       .string()
       .refine((value) => getTrimmedLength(value) > 0, {
@@ -124,6 +108,6 @@ export function createJoinSpaceSetupSchema(t: SpaceSetupT) {
       .refine(isValidInviteCode, {
         message: t("validation.inviteCodeInvalid"),
       }),
-    displayName: createJoinDisplayNameSchema(t),
+    displayName: createOptionalDisplayNameSchema(t),
   });
 }

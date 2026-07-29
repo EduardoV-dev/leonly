@@ -3,17 +3,19 @@ import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { CharacterCount } from "@/components/character-count";
+import { Button } from "@/components/ui/button";
 import { SetupTabs } from "../../../components/setup-tabs";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
-import { CREATE_DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
+import { DISPLAY_NAME_MAX_LENGTH } from "../../../constants/validation";
 import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space-setup-form";
 
 type CreateStartStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
+  isSubmitting: boolean;
   onContinue: () => void;
 };
 
-export function CreateStartStep({ control, onContinue }: CreateStartStepProps) {
+export function CreateStartStep({ control, isSubmitting, onContinue }: CreateStartStepProps) {
   const { t } = useTranslation("spaceSetup");
   const displayNameErrorId = "display-name-error";
   const { field, fieldState } = useController({
@@ -38,6 +40,7 @@ export function CreateStartStep({ control, onContinue }: CreateStartStepProps) {
       <div className={styles.formGroup} data-setup-field>
         <label className={styles.label} htmlFor="display-name">
           {t("steps.start.displayNameLabel")}
+          <span className={styles.optional}>({t("steps.start.optional")})</span>
         </label>
         <input
           id="display-name"
@@ -57,14 +60,19 @@ export function CreateStartStep({ control, onContinue }: CreateStartStepProps) {
           ) : (
             <span />
           )}
-          <CharacterCount value={displayNameValue} max={CREATE_DISPLAY_NAME_MAX_LENGTH} />
+          <CharacterCount value={displayNameValue} max={DISPLAY_NAME_MAX_LENGTH} />
         </div>
       </div>
 
-      <button type="submit" className={styles.linkButton}>
-        {t("actions.continue")}
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </button>
+      <Button
+        type="submit"
+        className={styles.linkButton}
+        loading={isSubmitting}
+        aria-busy={isSubmitting}
+      >
+        {isSubmitting ? t("actions.savingDisplayName") : t("actions.continue")}
+        {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
+      </Button>
     </form>
   );
 }

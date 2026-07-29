@@ -12,7 +12,16 @@ import { getCalendarDateInTimeZone, parseCalendarDate } from "@/utils/calendar-d
 
 const createSpaceRequestSchema = z
   .object({
-    display_name: z.string().trim().min(2, "Your name must be at least 2 characters.").max(100),
+    display_name: z
+      .string()
+      .trim()
+      .max(100)
+      .refine(
+        (value) => value.length === 0 || value.length >= 2,
+        "Your name must be at least 2 characters.",
+      )
+      .nullish()
+      .transform((value) => value ?? ""),
     space_name: z.string().trim().min(2, "Space name must be at least 2 characters.").max(100),
     start_date: z
       .string()

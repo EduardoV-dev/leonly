@@ -12,18 +12,26 @@ space. The mutation MUST atomically create the space, its first active membershi
 and completed onboarding state, or create none of them. The creator attribute and membership role
 MUST NOT grant authorization beyond active membership.
 
-Creation inputs MUST include a space name, creator display name, start date, and IANA timezone. Names
-MUST be trimmed and contain 2 to 100 characters. The start date MUST be a real `YYYY-MM-DD` date no
-later than the current date in the submitted valid timezone.
+Creation inputs MUST include a space name, start date, and IANA timezone. The creator display name is
+optional; when supplied, it MUST be trimmed and contain 2 to 100 characters. When omitted or blank,
+the system SHALL use the authenticated user's synchronized provider name, falling back to `Leonly
+User` when that name is unavailable or invalid. The space name MUST be trimmed and contain 2 to 100
+characters. The start date MUST be a real `YYYY-MM-DD` date no later than the current date in the
+submitted valid timezone.
 
 #### Scenario: Eligible user creates a space
 - **WHEN** an authenticated user without an active membership submits valid creation inputs
 - **THEN** the system atomically creates the active space and first active membership, issues an
-  invite expiring 24 hours later, marks onboarding complete, and routes the user to the dashboard
+  invite expiring 24 hours later, marks onboarding complete, and routes the user to the invite
+  interstitial before the dashboard
 
 #### Scenario: Ineligible or invalid creation
 - **WHEN** creation input is invalid or the user already has an active membership
 - **THEN** the system rejects creation without creating a space, membership, or invite
+
+#### Scenario: Creator omits a display name
+- **WHEN** an eligible user submits valid creation inputs without a display name
+- **THEN** the owner membership uses the user's synchronized provider name or the safe fallback
 
 #### Scenario: Concurrent creation requests
 - **WHEN** the same eligible user submits concurrent valid creation requests
@@ -154,9 +162,10 @@ and return only the joined active-space identifier needed for routing.
 
 ### Requirement: Membership-aware product routing
 After authentication and after successful create or join mutations, the system SHALL resolve the
-user's active membership on the server. A user without one SHALL enter create/join setup. A user with
-one SHALL enter the existing dashboard shell with a one-member or two-member state derived from
-persisted active memberships.
+user's active membership on the server. A user without one SHALL enter create/join setup. A creator
+SHALL see the invite interstitial before entering the existing dashboard shell; a user with an active
+membership after setup completion SHALL enter the dashboard shell with a one-member or two-member
+state derived from persisted active memberships.
 
 #### Scenario: User has no active membership
 - **WHEN** post-login routing finds no active membership

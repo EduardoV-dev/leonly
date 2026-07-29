@@ -4,6 +4,7 @@ import { useState } from "react";
 import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
+import { waitForNextPaint } from "../../utils/wait-for-next-paint";
 import { CreateInviteStep } from "../create-space-setup/create-invite-step";
 
 type CreateSpaceInvitePageProps = {
@@ -21,8 +22,13 @@ export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps
   };
 
   const completeSetup = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError(null);
+    await waitForNextPaint();
 
     try {
       const response = await fetch("/api/spaces/setup/complete", { method: "POST" });

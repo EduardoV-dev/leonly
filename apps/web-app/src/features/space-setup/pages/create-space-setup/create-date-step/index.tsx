@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Button as LoadingButton } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,7 +20,7 @@ import type { CreateSpaceSetupFormValues } from "../../../hooks/use-create-space
 
 type CreateDateStepProps = {
   control: Control<CreateSpaceSetupFormValues>;
-  isSubmitting?: boolean;
+  isSubmitting: boolean;
   submitError?: string | null;
   onContinue: () => void;
 };
@@ -141,14 +142,15 @@ export function CreateDateStep({
           </Field>
         </FieldGroup>
 
-        <button
+        <LoadingButton
           type="submit"
           className={`${styles.linkButton} ${styles.primaryButton}`}
-          disabled={isSubmitting}
+          loading={isSubmitting}
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? t("actions.creatingSpace") : t("actions.startStory")}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </button>
+          {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
+        </LoadingButton>
         {submitError ? (
           <p className={styles.fieldError} role="alert">
             {submitError}

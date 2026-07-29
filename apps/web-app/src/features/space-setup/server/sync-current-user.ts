@@ -15,11 +15,20 @@ function getDisplayName(user: {
     name?: string;
   };
 }) {
+  const candidates = [
+    user.user_metadata?.name,
+    user.user_metadata?.full_name,
+    user.email?.split("@")[0],
+  ];
+
   return (
-    user?.user_metadata?.name ??
-    user?.user_metadata?.full_name ??
-    user?.email?.split("@")[0] ??
-    "Leonly User"
+    candidates
+      .find((candidate) => {
+        const length = candidate?.trim().length ?? 0;
+
+        return length > 0 && length <= 100;
+      })
+      ?.trim() ?? "Leonly User"
   );
 }
 

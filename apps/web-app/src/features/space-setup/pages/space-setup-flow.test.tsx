@@ -5,6 +5,7 @@ import { APP_ROUTES } from "@/constants/routes";
 import "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
+import { CreateSpaceInvitePage } from "./create-space-invite";
 import { SpaceCreateSetupPage } from "./create-space-setup";
 import { SpaceJoinSetupPage } from "./join-space-setup";
 
@@ -111,6 +112,19 @@ describe("space setup flow validation and guards", () => {
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
+  it("allows a blank create display name and marks it optional", async () => {
+    sessionStorage.setItem(CREATE_SPACE_STORAGE_KEY, createState([]));
+
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_START} />);
+
+    expect(screen.getByText("(Optional)")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /continue/i }));
+
+    await waitFor(() => {
+      expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("name"));
+    });
+  });
+
   it("marks a valid create step complete and pushes the next route", async () => {
     sessionStorage.setItem(CREATE_SPACE_STORAGE_KEY, createState([SPACE_SETUP_STEPS.CREATE_START]));
 
@@ -130,42 +144,7 @@ describe("space setup flow validation and guards", () => {
     );
   });
 
-  it("blocks direct create invite access until required steps are complete", async () => {
-    sessionStorage.setItem(CREATE_SPACE_STORAGE_KEY, createState([SPACE_SETUP_STEPS.CREATE_START]));
-
-    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} />);
-
-    await waitFor(() => {
-      expect(navigationMock.replace).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("name"));
-    });
-    expect(
-      screen.queryByRole("heading", { name: "Your sanctuary is ready." }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("allows guarded create invite access and clears storage on finish", async () => {
-    sessionStorage.setItem(
-      CREATE_SPACE_STORAGE_KEY,
-      createState([
-        SPACE_SETUP_STEPS.CREATE_START,
-        SPACE_SETUP_STEPS.CREATE_NAME,
-        SPACE_SETUP_STEPS.CREATE_DATE,
-      ]),
-    );
-
-    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} />);
-
-    expect(
-      await screen.findByRole("heading", { name: "Your space is ready." }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
-
-    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
-    expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.HOME);
-  });
-
-  it("routes an atomically created space directly to the dashboard", async () => {
+  it("routes an atomically created space to the invite interstitial", async () => {
     sessionStorage.setItem(
       CREATE_SPACE_STORAGE_KEY,
       createState([SPACE_SETUP_STEPS.CREATE_START, SPACE_SETUP_STEPS.CREATE_NAME], {
@@ -180,13 +159,29 @@ describe("space setup flow validation and guards", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
 
     await waitFor(() => {
-      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/spaces/create",
       expect.objectContaining({ method: "POST" }),
     );
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("shows the persisted invite code and completes setup before the dashboard", async () => {
+    render(<CreateSpaceInvitePage inviteCode="LNY-ABCD2" />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your space is ready." }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("LNY-ABCD2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith("/api/spaces/setup/complete", { method: "POST" });
+      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    });
   });
 
   it("validates join code on native form submission", async () => {
@@ -238,7 +233,12 @@ describe("space setup flow validation and guards", () => {
     fireEvent.change(await screen.findByLabelText("Invite code"), {
       target: { value: "lny7kmp2" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
+    const button = screen.getByRole("button", { name: /join space/i });
+    fireEvent.click(button);
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveTextContent("Checking code...");
 
     await waitFor(() => {
       expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name"));
@@ -348,11 +348,11 @@ describe("space setup flow validation and guards", () => {
     const button = await screen.findByRole("button", { name: "Start Our Story" });
     fireEvent.click(button);
 
-    await waitFor(() => {
-      expect(button).toBeDisabled();
-      expect(button).toHaveTextContent("Joining space...");
-    });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveTextContent("Joining space...");
 
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     resolveJoin({ json: async () => ({}), ok: true });
 
     await waitFor(() => {
