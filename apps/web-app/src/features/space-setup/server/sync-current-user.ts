@@ -36,7 +36,16 @@ export async function syncCurrentUser() {
   const supabase = await createClient();
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    logServerError(
+      { event: "supabase_operation_failed", operation: "get_current_user" },
+      userError,
+    );
+    throw new Error("Failed to load the current user.");
+  }
 
   if (!user) {
     throw new AuthenticationRequiredError();
@@ -51,12 +60,7 @@ export async function syncCurrentUser() {
   });
 
   if (error) {
-    logServerError("Failed to sync the current user.", {
-      code: error.code,
-      details: error.details,
-      hint: error.hint,
-      message: error.message,
-    });
+    logServerError({ event: "supabase_operation_failed", operation: "sync_current_user" }, error);
     throw new Error("Failed to sync the current user.");
   }
 

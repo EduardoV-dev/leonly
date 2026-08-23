@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 const rpcMock = vi.hoisted(() => vi.fn());
+const request = new Request("http://localhost/api/spaces/setup/complete", { method: "POST" });
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ rpc: rpcMock }),
@@ -18,7 +19,7 @@ describe("POST /api/spaces/setup/complete", () => {
   ])("maps PostgreSQL code %s", async (code, status, message) => {
     rpcMock.mockResolvedValue({ data: null, error: { code, message: "wording can change" } });
 
-    const response = await POST();
+    const response = await POST(request);
 
     expect(response.status).toBe(status);
     expect(await response.json()).toEqual({ error: message });

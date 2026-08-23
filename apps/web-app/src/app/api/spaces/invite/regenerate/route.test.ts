@@ -3,6 +3,7 @@ import { POST } from "./route";
 
 const rpcMock = vi.hoisted(() => vi.fn());
 const syncCurrentUserMock = vi.hoisted(() => vi.fn());
+const request = new Request("http://localhost/api/spaces/invite/regenerate", { method: "POST" });
 
 vi.mock("@/features/space-setup/server/sync-current-user", () => ({
   syncCurrentUser: syncCurrentUserMock,
@@ -27,7 +28,7 @@ describe("POST /api/spaces/invite/regenerate", () => {
       error: null,
     });
 
-    const response = await POST();
+    const response = await POST(request);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -39,7 +40,7 @@ describe("POST /api/spaces/invite/regenerate", () => {
   it("uses the same not-found response for unavailable regeneration", async () => {
     rpcMock.mockResolvedValue({ data: { status: "unavailable" }, error: null });
 
-    const response = await POST();
+    const response = await POST(request);
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Space not found." });

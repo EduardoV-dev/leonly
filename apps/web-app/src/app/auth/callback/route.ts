@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { APP_ROUTES } from "@/constants/routes";
-
-// The client you created from the Server-Side Auth instructions
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
+  const requestLogger = createRequestLogger(request);
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const defaultNext = APP_ROUTES.HOME;
@@ -32,6 +32,12 @@ export async function GET(request: Request) {
       }
       return NextResponse.redirect(`${origin}${next}`);
     }
+
+    logServerError(
+      { event: "supabase_operation_failed", operation: "exchange_code_for_session" },
+      error,
+      requestLogger,
+    );
   }
 
   // return the user to an error page with instructions

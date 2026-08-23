@@ -10,7 +10,7 @@ import {
   AuthenticationRequiredError,
   syncCurrentUser,
 } from "@/features/space-setup/server/sync-current-user";
-import { logServerError } from "@/lib/server-logger";
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 const joinSpaceRequestSchema = z.object({
@@ -22,6 +22,7 @@ const joinSpaceRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const requestLogger = createRequestLogger(request);
   const requestResult = joinSpaceRequestSchema.safeParse(await request.json().catch(() => null));
 
   if (!requestResult.success) {
@@ -42,12 +43,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
       }
 
-      logServerError("Invite redemption RPC failed.", {
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        message: error.message,
-      });
+      logServerError(
+        { event: "supabase_operation_failed", operation: "redeem_space_invite" },
+        error,
+        requestLogger,
+      );
       return NextResponse.json(
         { error: "We could not join this space. Please try again." },
         { status: 500 },
@@ -91,7 +91,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    logServerError("Invite redemption failed unexpectedly.", error);
+    logServerError(
+      { event: "invite_redemption_failed", operation: "redeem_space_invite" },
+      error,
+      requestLogger,
+    );
     return NextResponse.json(
       { error: "We could not join this space. Please try again." },
       { status: 500 },

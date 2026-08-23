@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 type ActiveSpaceMember = {
@@ -21,6 +22,7 @@ export async function getActiveSpaceForCurrentUser(): Promise<ActiveSpace | null
   const { data, error } = await supabase.rpc("get_active_space");
 
   if (error) {
+    logServerError({ event: "supabase_operation_failed", operation: "get_active_space" }, error);
     throw new Error("Failed to load the active space.");
   }
 

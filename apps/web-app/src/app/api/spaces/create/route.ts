@@ -6,7 +6,7 @@ import {
   AuthenticationRequiredError,
   syncCurrentUser,
 } from "@/features/space-setup/server/sync-current-user";
-import { logServerError } from "@/lib/server-logger";
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { getCalendarDateInTimeZone, parseCalendarDate } from "@/utils/calendar-date";
 
@@ -48,6 +48,8 @@ const createdSpaceSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const requestLogger = createRequestLogger(request);
+
   try {
     const payload = createSpaceRequestSchema.parse(await request.json());
     await syncCurrentUser();
@@ -80,12 +82,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "The space details are invalid." }, { status: 400 });
       }
 
-      logServerError("Space creation RPC failed.", {
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        message: error.message,
-      });
+      logServerError(
+        { event: "supabase_operation_failed", operation: "create_space" },
+        error,
+        requestLogger,
+      );
       return NextResponse.json(
         { error: "We could not create your space. Please try again." },
         { status: 500 },
@@ -111,7 +112,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    logServerError("Space creation failed unexpectedly.", error);
+    logServerError(
+      { event: "space_creation_failed", operation: "create_space" },
+      error,
+      requestLogger,
+    );
     return NextResponse.json(
       { error: "We could not create your space. Please try again." },
       { status: 500 },

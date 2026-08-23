@@ -5,7 +5,7 @@ import {
   AuthenticationRequiredError,
   syncCurrentUser,
 } from "@/features/space-setup/server/sync-current-user";
-import { logServerError } from "@/lib/server-logger";
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 const regenerationResultSchema = z.discriminatedUnion("status", [
@@ -17,7 +17,9 @@ const regenerationResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("unavailable") }),
 ]);
 
-export async function POST() {
+export async function POST(request: Request) {
+  const requestLogger = createRequestLogger(request);
+
   try {
     await syncCurrentUser();
     const supabase = await createClient();
@@ -28,12 +30,11 @@ export async function POST() {
         return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
       }
 
-      logServerError("Invite regeneration RPC failed.", {
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        message: error.message,
-      });
+      logServerError(
+        { event: "supabase_operation_failed", operation: "regenerate_space_invite" },
+        error,
+        requestLogger,
+      );
       return NextResponse.json(
         { error: "We could not create a new invite. Please try again." },
         { status: 500 },
@@ -55,7 +56,11 @@ export async function POST() {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    logServerError("Invite regeneration failed unexpectedly.", error);
+    logServerError(
+      { event: "invite_regeneration_failed", operation: "regenerate_space_invite" },
+      error,
+      requestLogger,
+    );
     return NextResponse.json(
       { error: "We could not create a new invite. Please try again." },
       { status: 500 },

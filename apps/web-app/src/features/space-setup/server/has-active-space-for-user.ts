@@ -1,3 +1,4 @@
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 export async function hasActiveSpaceForCurrentUser(): Promise<boolean> {
@@ -12,6 +13,7 @@ export async function hasActiveSpaceForCurrentUser(): Promise<boolean> {
     .maybeSingle();
 
   if (error) {
+    logServerError({ event: "supabase_operation_failed", operation: "check_active_space" }, error);
     throw new Error("Failed to check the active space.");
   }
 

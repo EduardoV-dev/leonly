@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveSpaceForCurrentUser } from "./get-active-space-for-user";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
+}));
+
+vi.mock("@/lib/server-logger", () => ({
+  logServerError: vi.fn(),
 }));
 
 describe("getActiveSpaceForCurrentUser", () => {
@@ -45,5 +50,24 @@ describe("getActiveSpaceForCurrentUser", () => {
     vi.mocked(createClient).mockResolvedValue({ rpc } as never);
 
     await expect(getActiveSpaceForCurrentUser()).resolves.toEqual(space);
+  });
+
+  it("logs the RPC failure while preserving the safe error", async () => {
+    const rpcError = {
+      code: "42501",
+      details: "permission denied for leo@example.com",
+      message: "permission denied",
+    };
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: rpcError });
+
+    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
+
+    await expect(getActiveSpaceForCurrentUser()).rejects.toThrow(
+      "Failed to load the active space.",
+    );
+    expect(logServerError).toHaveBeenCalledWith(
+      { event: "supabase_operation_failed", operation: "get_active_space" },
+      rpcError,
+    );
   });
 });

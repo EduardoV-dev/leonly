@@ -2,10 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
 import { APP_ROUTES } from "@/constants/routes";
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
 
 const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } = ENVIRONMENT_VARIABLES;
 
 export async function updateSession(request: NextRequest) {
+  const requestLogger = createRequestLogger(request);
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -42,7 +44,15 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: If you remove getClaims() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
 
-  const { data } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
+
+  if (error) {
+    logServerError(
+      { event: "supabase_operation_failed", operation: "get_auth_claims" },
+      error,
+      requestLogger,
+    );
+  }
 
   const user = data?.claims;
   const pathname = request.nextUrl.pathname;

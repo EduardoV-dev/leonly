@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { syncCurrentUser } from "./sync-current-user";
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
+}));
+
+vi.mock("@/lib/server-logger", () => ({
+  logServerError: vi.fn(),
 }));
 
 describe("syncCurrentUser", () => {
@@ -42,8 +47,6 @@ describe("syncCurrentUser", () => {
       hint: null,
       message: "new row violates row-level security policy",
     };
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-
     vi.mocked(createClient).mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -62,6 +65,9 @@ describe("syncCurrentUser", () => {
     } as never);
 
     await expect(syncCurrentUser()).rejects.toThrow("Failed to sync the current user.");
-    expect(consoleError).toHaveBeenCalledWith("Failed to sync the current user.", databaseError);
+    expect(logServerError).toHaveBeenCalledWith(
+      { event: "supabase_operation_failed", operation: "sync_current_user" },
+      databaseError,
+    );
   });
 });

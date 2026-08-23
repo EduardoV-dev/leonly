@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
+import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardContent } from "./dashboard-content";
 import styles from "./dashboard-page.module.css";
@@ -12,7 +13,12 @@ export async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+
+  if (error) {
+    logServerError({ event: "supabase_operation_failed", operation: "get_dashboard_user" }, error);
+  }
 
   if (!user) {
     redirect(APP_ROUTES.AUTH);

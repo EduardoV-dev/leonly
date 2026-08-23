@@ -90,8 +90,7 @@ describe("POST /api/spaces/join", () => {
     });
   });
 
-  it("redacts unexpected database failures", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("returns a safe error for unexpected database failures", async () => {
     rpcMock.mockResolvedValue({ data: null, error: { message: "sensitive database detail" } });
 
     const response = await POST(createRequest());
@@ -100,9 +99,5 @@ describe("POST /api/spaces/join", () => {
     expect(await response.json()).toEqual({
       error: "We could not join this space. Please try again.",
     });
-    expect(consoleError).toHaveBeenCalledWith(
-      "Invite redemption RPC failed.",
-      expect.objectContaining({ message: "sensitive database detail" }),
-    );
   });
 });
