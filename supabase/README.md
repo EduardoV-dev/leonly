@@ -1,16 +1,27 @@
 # Supabase Schema
 
-To bootstrap a new Supabase project, run these files in the SQL editor in order:
+`migrations/` is the only database source of truth. A clean local database is reproduced by applying
+`20260728000000_baseline.sql`; do not apply SQL from any other directory or the Supabase SQL editor.
 
-1. `tables/00_shared.sql`
-2. `tables/01_users.sql`
-3. `tables/02_spaces.sql`
-4. `tables/03_space_members.sql`
-5. `tables/04_join_attempt_limits.sql`
-6. `policies/01_space_access.sql`
-7. `functions/01_create_space.sql`
-8. `functions/02_get_active_space.sql`
-9. `functions/03_join_space.sql`
-10. `functions/04_complete_space_setup.sql`
+## Local Reset
 
-For an existing project, apply the tracked files in `migrations/` once, in filename order. Do not rerun the table bootstrap files.
+The committed `config.toml` lets the Supabase CLI discover this project. With the local Supabase stack
+running, reset and replay the baseline with:
+
+```bash
+supabase db reset
+```
+
+This reset is local-only and intentionally has no seed data.
+
+## Existing Environments Cutover
+
+The baseline must not be executed against an existing populated environment. The database operator must:
+
+1. Back up the database and verify the current schema, functions, RLS policies, grants, and migration ledger.
+2. Reconcile the environment's migration ledger to remove the legacy versions and mark
+   `20260728000000` as applied without executing it against existing data.
+3. Verify the reconciled ledger and schema, then test `supabase db reset` against a clean local environment.
+
+This repository change does not execute or deploy the cutover. The operator owns backup, ledger
+reconciliation, and verification for every existing environment.

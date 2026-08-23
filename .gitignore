@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 apps/web-app/next-env.d.ts
 sonar-project.properties
 .scannerwork
+supabase/.temp/
+supabase/snippets/
+supabase/.branches/
