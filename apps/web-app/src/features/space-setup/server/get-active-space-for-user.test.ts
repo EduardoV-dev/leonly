@@ -18,7 +18,7 @@ describe("getActiveSpaceForCurrentUser", () => {
         { avatar_url: "https://example.com/leo.jpg", display_name: "Leo" },
         { avatar_url: null, display_name: "Annie" },
       ],
-      id: 1,
+      id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
       invite_code: "twofw3k3",
       invite_code_expires_at: null,
       member_names: ["Leo", "Annie"],
@@ -37,7 +37,7 @@ describe("getActiveSpaceForCurrentUser", () => {
   it("returns a single active member without an avatar", async () => {
     const space = {
       active_members: [{ avatar_url: null, display_name: "Leo" }],
-      id: 1,
+      id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
       invite_code: "twofw3k3",
       invite_code_expires_at: null,
       member_names: ["Leo"],

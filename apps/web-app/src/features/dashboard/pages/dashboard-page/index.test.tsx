@@ -30,6 +30,10 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+vi.mock("@/features/memories/components/memories-timeline", () => ({
+  MemoriesTimeline: () => <div>Timeline memories</div>,
+}));
+
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
   useRouter: () => ({ refresh: vi.fn() }),
@@ -40,7 +44,7 @@ const activeSpace = {
     { avatar_url: "https://example.com/leo.jpg", display_name: "Leo" },
     { avatar_url: null, display_name: "Annie" },
   ],
-  id: 1,
+  id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   invite_code: null,
   invite_code_expires_at: null,
   member_names: ["Leo", "Annie"],
@@ -96,7 +100,7 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
     expect(screen.getAllByRole("img", { name: "Annie's avatar" })).not.toHaveLength(0);
-    expect(screen.getByRole("heading", { name: "No memories yet" })).toBeInTheDocument();
+    expect(screen.getByText("Timeline memories")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No rated places yet" })).toBeInTheDocument();
     expect(screen.queryByText("Autumn in Paris")).not.toBeInTheDocument();
     expect(screen.queryByText("Casa Luna")).not.toBeInTheDocument();

@@ -1,4 +1,5 @@
-import { Heart, ImageIcon, MapPin } from "lucide-react";
+import { Heart, MapPin } from "lucide-react";
+import { MemoriesTimeline } from "@/features/memories/components/memories-timeline";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
@@ -50,11 +51,7 @@ export function DashboardContent({ activeSpace }: DashboardContentProps) {
 
       <section className={styles.summarySection} id="gallery">
         <h2>Recent Memories</h2>
-        <div className={styles.emptyState}>
-          <ImageIcon aria-hidden="true" />
-          <h3>No memories yet</h3>
-          <p>Your shared moments will appear here once memories are available.</p>
-        </div>
+        <MemoriesTimeline />
       </section>
 
       <section className={styles.summarySection} id="rankings">

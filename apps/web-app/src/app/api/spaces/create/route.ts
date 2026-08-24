@@ -44,7 +44,7 @@ const createSpaceRequestSchema = z
   });
 
 const createdSpaceSchema = z.object({
-  id: z.number(),
+  id: z.uuid(),
 });
 
 export async function POST(request: Request) {

@@ -8,7 +8,7 @@ type ActiveSpaceMember = {
 
 export type ActiveSpace = {
   active_members: ActiveSpaceMember[];
-  id: number;
+  id: string;
   invite_code: string | null;
   invite_code_expires_at: string | null;
   member_names: string[];

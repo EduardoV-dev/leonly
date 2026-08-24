@@ -34,12 +34,15 @@ describe("POST /api/spaces/join", () => {
   });
 
   it("returns only the joined space identifier", async () => {
-    rpcMock.mockResolvedValue({ data: { space_id: 42, status: "joined" }, error: null });
+    rpcMock.mockResolvedValue({
+      data: { space_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", status: "joined" },
+      error: null,
+    });
 
     const response = await POST(createRequest());
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ space_id: 42 });
+    expect(await response.json()).toEqual({ space_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" });
     expect(rpcMock).toHaveBeenCalledWith("process_space_invite", {
       p_display_name: "Leo",
       p_invite_code: "LNY-7KMP2",
@@ -52,7 +55,10 @@ describe("POST /api/spaces/join", () => {
     ["a null name", createRequest(null), ""],
     ["a missing name", createRequest("Leo", false), ""],
   ])("accepts %s", async (_description, request, normalizedName) => {
-    rpcMock.mockResolvedValue({ data: { space_id: 42, status: "joined" }, error: null });
+    rpcMock.mockResolvedValue({
+      data: { space_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", status: "joined" },
+      error: null,
+    });
 
     const response = await POST(request);
 

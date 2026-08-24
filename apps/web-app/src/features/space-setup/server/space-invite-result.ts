@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const spaceInviteResultSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("valid") }),
-  z.object({ space_id: z.number(), status: z.literal("joined") }),
+  z.object({ space_id: z.uuid(), status: z.literal("joined") }),
   z.object({ status: z.literal("malformed") }),
   z.object({ status: z.literal("unavailable") }),
   z.object({ status: z.literal("invalid_name") }),

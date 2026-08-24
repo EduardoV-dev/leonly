@@ -9,23 +9,25 @@ vi.mock("@/lib/supabase/server", () => ({
 function createQueryMock(result: { data: unknown; error: Error | null }) {
   const maybeSingle = vi.fn().mockResolvedValue(result);
   const limit = vi.fn().mockReturnValue({ maybeSingle });
-  const is = vi.fn().mockReturnValue({ limit });
-  const secondEq = vi.fn().mockReturnValue({ is });
-  const firstEq = vi.fn().mockReturnValue({ eq: secondEq });
-  const select = vi.fn().mockReturnValue({ eq: firstEq });
+  const secondIs = vi.fn().mockReturnValue({ limit });
+  const firstIs = vi.fn().mockReturnValue({ is: secondIs });
+  const select = vi.fn().mockReturnValue({ is: firstIs });
   const from = vi.fn().mockReturnValue({ select });
 
-  return { from, select, firstEq, secondEq, is, limit, maybeSingle };
+  return { from, select, firstIs, secondIs, limit, maybeSingle };
 }
 
 describe("hasActiveSpaceForCurrentUser", () => {
   it("returns true when the user has an active space", async () => {
-    const query = createQueryMock({ data: { id: 1 }, error: null });
+    const query = createQueryMock({
+      data: { id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" },
+      error: null,
+    });
     vi.mocked(createClient).mockResolvedValue({ from: query.from } as never);
 
     await expect(hasActiveSpaceForCurrentUser()).resolves.toBe(true);
     expect(query.from).toHaveBeenCalledWith("space_members");
-    expect(query.select).toHaveBeenCalledWith("id, spaces!inner(id, is_active, deleted_at)");
+    expect(query.select).toHaveBeenCalledWith("id, spaces!inner(id, deleted_at)");
   });
 
   it("returns false when the user has no active space", async () => {

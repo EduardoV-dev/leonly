@@ -1,0 +1,102 @@
+.card {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #eadfdd;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.cover {
+  display: grid;
+  min-height: 8rem;
+  place-items: center;
+  background: #fff4f3;
+  color: #9b7779;
+}
+
+.cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover span {
+  display: grid;
+  place-items: center;
+}
+
+.cover svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  stroke-width: 1.5;
+}
+
+.cardBody {
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.date {
+  margin: 0;
+  color: #9b7779;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cardBody h3 {
+  margin: 0.2rem 0 0;
+  color: var(--auth-heading);
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-size: 1.12rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.description {
+  display: -webkit-box;
+  margin: 0.4rem 0 0;
+  overflow: hidden;
+  color: var(--auth-copy);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.45rem 0 0;
+  color: #80575a;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.location svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.extensions {
+  min-height: 0;
+}
+
+@mixin screen-sm {
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .cover {
+    min-height: 9rem;
+  }
+}
+
+@mixin screen-md {
+  .cover {
+    min-height: 10.5rem;
+  }
+}

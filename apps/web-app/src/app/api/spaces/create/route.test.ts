@@ -50,7 +50,7 @@ describe("POST /api/spaces/create", () => {
     getActiveSpaceMock.mockResolvedValue(null);
     rpcMock.mockResolvedValue({
       data: {
-        id: 1,
+        id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
         invite_code: "leoabc23",
       },
       error: null,
@@ -87,7 +87,7 @@ describe("POST /api/spaces/create", () => {
     const response = await POST(createRequest("2026-07-22"));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ space_id: 1 });
+    expect(await response.json()).toEqual({ space_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" });
     expect(rpcMock).toHaveBeenCalledWith("create_space", {
       p_display_name: "Leo",
       p_space_name: "Forever Us",

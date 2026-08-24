@@ -33,9 +33,9 @@ describe("syncCurrentUser", () => {
 
     expect(upsert).toHaveBeenCalledWith({
       avatar_url: null,
+      deleted_at: null,
       email: user.email,
       id: user.id,
-      is_active: true,
       name: "Google Name",
     });
   });
