@@ -47,6 +47,22 @@ describe("GET /api/memories/timeline", () => {
     });
   });
 
+  it("passes a bounded recent-memory limit to the timeline query", async () => {
+    getTimelinePageMock.mockResolvedValue({ cursorReset: false, memories: [], nextCursor: null });
+
+    const response = await GET(new Request("http://localhost/api/memories/timeline?limit=4"));
+
+    expect(getTimelinePageMock).toHaveBeenCalledWith(null, 4);
+    expect(response.status).toBe(200);
+  });
+
+  it("rejects timeline limits outside the supported range", async () => {
+    const response = await GET(new Request("http://localhost/api/memories/timeline?limit=21"));
+
+    expect(response.status).toBe(400);
+    expect(getTimelinePageMock).not.toHaveBeenCalled();
+  });
+
   it("returns a generic retryable error when the authorized query fails", async () => {
     getTimelinePageMock.mockRejectedValue(new Error("database details"));
     const response = await GET(new Request("http://localhost/api/memories/timeline"));

@@ -1,21 +1,16 @@
-import {
-  Headphones,
-  ImageIcon,
-  LockKeyhole,
-  Map as MapIcon,
-  MapPin,
-  Settings,
-  Star,
-} from "lucide-react";
+import { BookHeart, LayoutGrid, LockKeyhole, MapPin, Plus, Settings } from "lucide-react";
+import Link from "next/link";
+import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-sidebar.module.css";
 
 type DashboardSidebarProps = {
+  activeSection: "dashboard" | "timeline";
   activeSpace: ActiveSpace;
 };
 
-export function DashboardSidebar({ activeSpace }: DashboardSidebarProps) {
+export function DashboardSidebar({ activeSection, activeSpace }: Readonly<DashboardSidebarProps>) {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.identity}>
@@ -27,39 +22,39 @@ export function DashboardSidebar({ activeSpace }: DashboardSidebarProps) {
         <h1>{activeSpace.name}</h1>
       </div>
 
-      <nav className={styles.navigation} aria-label="Dashboard sections">
-        <a href="#timeline">
-          <MapIcon aria-hidden="true" />
-          Timeline
-        </a>
-        <a href="#gallery">
-          <ImageIcon aria-hidden="true" />
-          Gallery
-        </a>
-        <a href="#map">
-          <MapPin aria-hidden="true" />
-          Map
-        </a>
-        <a href="#rankings">
-          <Star aria-hidden="true" />
-          Rankings
-        </a>
-        <a href="#vault">
-          <LockKeyhole aria-hidden="true" />
-          Private Vault
-        </a>
-      </nav>
+      <Link className={styles.newEntry} href={APP_ROUTES.TIMELINE_NEW}>
+        <Plus aria-hidden="true" />
+        New Entry
+      </Link>
 
-      <div className={styles.footer}>
-        <a href="#settings">
+      <nav className={styles.navigation} aria-label="Dashboard sections">
+        <Link
+          href={APP_ROUTES.HOME}
+          aria-current={activeSection === "dashboard" ? "page" : undefined}
+        >
+          <LayoutGrid aria-hidden="true" />
+          Dashboard
+        </Link>
+        <Link
+          href={APP_ROUTES.TIMELINE}
+          aria-current={activeSection === "timeline" ? "page" : undefined}
+        >
+          <BookHeart aria-hidden="true" />
+          Timeline
+        </Link>
+        <button type="button" disabled>
+          <MapPin aria-hidden="true" />
+          Places
+        </button>
+        <button type="button" disabled>
+          <LockKeyhole aria-hidden="true" />
+          Vault
+        </button>
+        <button type="button" disabled>
           <Settings aria-hidden="true" />
           Settings
-        </a>
-        <a href="#support">
-          <Headphones aria-hidden="true" />
-          Support
-        </a>
-      </div>
+        </button>
+      </nav>
     </aside>
   );
 }

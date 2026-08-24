@@ -1,23 +1,40 @@
 .timeline {
   display: grid;
-  gap: 0.85rem;
+  gap: 3rem;
 }
 
-.toolbar {
+.month {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.monthHeading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
-  color: var(--auth-copy);
-  font-size: 0.78rem;
-  font-weight: 700;
 }
 
-.toolbar p {
+.monthHeading h2 {
+  flex: 0 0 auto;
   margin: 0;
+  color: #5b3138;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 600;
 }
 
-.toolbar button,
+.monthHeading span {
+  width: 100%;
+  height: 1px;
+  background: #dfcfcc;
+}
+
+.monthCards,
+.recentCards {
+  display: grid;
+  gap: 1.25rem;
+}
+
 .loadMore button,
 .feedback button {
   min-height: 2.45rem;
@@ -28,22 +45,6 @@
   font: inherit;
   font-weight: 800;
   cursor: pointer;
-}
-
-.toolbar button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0 0.7rem;
-}
-.toolbar svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.cards {
-  display: grid;
-  gap: 0.8rem;
 }
 
 .feedback {
@@ -86,7 +87,7 @@
   display: grid;
   justify-items: center;
   gap: 0.55rem;
-  padding-top: 0.25rem;
+  padding-top: 0.5rem;
 }
 .loadMore p {
   margin: 0;
@@ -95,21 +96,20 @@
   font-weight: 700;
 }
 
-.toolbar button:focus-visible,
 .loadMore button:focus-visible,
 .feedback button:focus-visible {
   outline: 2px solid #b82b49;
   outline-offset: 2px;
 }
 
-@mixin screen-sm {
-  .cards {
+@mixin screen-md {
+  .recentCards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@mixin screen-md {
-  .cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@mixin screen-lg {
+  .recentCards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

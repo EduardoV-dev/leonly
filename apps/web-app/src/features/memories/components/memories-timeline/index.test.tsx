@@ -161,4 +161,110 @@ describe("MemoriesTimeline", () => {
 
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
   });
+
+  it("renders a cover and details panel for every full timeline memory", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        cursorReset: false,
+        memories: [
+          {
+            ...memory,
+            coverPhotoUrl: "https://storage.example/first-cover",
+            description: "First memory description",
+            location: "First place",
+            title: "First memory",
+          },
+          {
+            ...memory,
+            coverPhotoUrl: "https://storage.example/second-cover",
+            description: "Second memory description",
+            id: "4ca93820-5a95-4bae-b4f5-bab500550ef3",
+            location: "Second place",
+            title: "Second memory",
+          },
+        ],
+        nextCursor: null,
+      }),
+    );
+
+    render(<MemoriesTimeline />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("img", { name: "Cover for First memory" })).toHaveAttribute(
+      "src",
+      "https://storage.example/first-cover",
+    );
+    expect(screen.getByRole("img", { name: "Cover for Second memory" })).toHaveAttribute(
+      "src",
+      "https://storage.example/second-cover",
+    );
+    expect(screen.getByText("First memory description")).toBeInTheDocument();
+    expect(screen.getByText("Second memory description")).toBeInTheDocument();
+    expect(screen.getByText("First place")).toBeInTheDocument();
+    expect(screen.getByText("Second place")).toBeInTheDocument();
+  });
+
+  it("groups memories into editorial month sections in newest-first order", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        cursorReset: false,
+        memories: [
+          { ...memory, memoryDate: "2026-10-12", title: "October feature" },
+          {
+            ...memory,
+            id: "4ca93820-5a95-4bae-b4f5-bab500550ef3",
+            memoryDate: "2026-10-03",
+            title: "October note",
+          },
+          {
+            ...memory,
+            id: "1f8cf0f4-b763-4ac8-9493-786856c92e03",
+            memoryDate: "2026-09-21",
+            title: "September feature",
+          },
+        ],
+        nextCursor: null,
+      }),
+    );
+
+    render(<MemoriesTimeline />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const monthHeadings = screen.getAllByRole("heading", { level: 2 });
+    expect(monthHeadings.map((heading) => heading.textContent)).toEqual([
+      "October 2026",
+      "September 2026",
+    ]);
+    expect(screen.getByRole("heading", { name: "October feature" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "October note" })).toBeInTheDocument();
+  });
+
+  it("renders only four recent cards with their cover images", async () => {
+    const recentMemories = Array.from({ length: 5 }, (_, index) => ({
+      ...memory,
+      coverPhotoUrl: `https://storage.example/cover-${index}`,
+      id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      title: `Recent memory ${index + 1}`,
+    }));
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: recentMemories, nextCursor: "next" }),
+    );
+
+    render(<MemoriesTimeline variant="recent" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetch).toHaveBeenCalledWith("/api/memories/timeline?limit=4");
+    expect(screen.getAllByRole("img", { name: /Cover for Recent memory/i })).toHaveLength(4);
+    expect(screen.queryByRole("heading", { name: "Recent memory 5" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
+  });
 });

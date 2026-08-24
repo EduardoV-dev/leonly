@@ -70,6 +70,18 @@ describe("getTimelinePage", () => {
     expect(timelineCursor.decode(page.nextCursor)).toMatchObject({ id: rows[19].id, v: 1 });
   });
 
+  it("uses a smaller page boundary for recent-memory summaries", async () => {
+    const query = createQuery();
+    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+
+    const page = await getTimelinePage(null, 4);
+
+    expect(query.limit).toHaveBeenCalledWith(5);
+    expect(page.memories).toHaveLength(4);
+    expect(getCoverPreviewUrlMock).toHaveBeenCalledTimes(4);
+    expect(page.nextCursor).not.toBeNull();
+  });
+
   it("resets malformed cursors without using them as a query predicate", async () => {
     const query = createQuery([]);
     createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });

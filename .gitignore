@@ -16,3 +16,4 @@ supabase/.temp/
 supabase/snippets/
 supabase/.branches/
 .atl/
+.codegraph/

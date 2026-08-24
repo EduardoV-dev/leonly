@@ -1,18 +1,40 @@
 .card {
+  position: relative;
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr);
+  min-width: 0;
+}
+
+.timeline {
+  gap: 0.9rem;
+}
+
+.recent {
+  height: 100%;
+  min-height: 16rem;
   overflow: hidden;
-  border: 1px solid #eadfdd;
-  border-radius: 0.9rem;
+  border: 1px solid #eee6e3;
+  border-radius: 0.75rem;
   background: #fff;
 }
 
 .cover {
   display: grid;
-  min-height: 8rem;
+  min-width: 0;
   place-items: center;
+  overflow: hidden;
   background: #fff4f3;
   color: #9b7779;
+}
+
+.timeline .cover {
+  min-height: 15rem;
+  aspect-ratio: 16 / 10;
+  border-radius: 0.75rem;
+}
+
+.recent .cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
 }
 
 .cover img {
@@ -33,8 +55,51 @@
 }
 
 .cardBody {
+  position: relative;
+  display: flex;
   min-width: 0;
-  padding: 0.85rem;
+  flex-direction: column;
+  align-items: flex-start;
+  background: #fff;
+}
+
+.timeline .cardBody {
+  min-height: 14rem;
+  padding: 1.35rem;
+  border: 1px solid #eee6e3;
+  border-radius: 0.75rem;
+}
+
+.recent .cardBody {
+  min-height: 11rem;
+  padding: 1rem;
+}
+
+.meta {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.15rem;
+}
+
+.recent .meta {
+  margin-bottom: 0.9rem;
+}
+
+.iconBadge {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #f6f2ef;
+  color: var(--auth-brand);
+}
+
+.iconBadge svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .date {
@@ -50,19 +115,27 @@
   margin: 0.2rem 0 0;
   color: var(--auth-heading);
   font-family: "Fraunces", Georgia, "Times New Roman", serif;
-  font-size: 1.12rem;
+  font-size: 1.45rem;
   font-weight: 600;
   line-height: 1.1;
 }
 
+.recent .cardBody h3 {
+  font-size: 1.2rem;
+}
+
 .description {
   display: -webkit-box;
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
   overflow: hidden;
-  color: var(--auth-copy);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  color: #554b4a;
+  font-size: 0.9rem;
+  line-height: 1.5;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.recent .description {
   -webkit-line-clamp: 2;
 }
 
@@ -70,7 +143,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   color: #80575a;
   font-size: 0.72rem;
   font-weight: 700;
@@ -81,22 +154,32 @@
   height: 0.85rem;
 }
 
+.favorite {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: auto;
+  color: #c3a3a6;
+  fill: currentcolor;
+  stroke: none;
+}
+
 .extensions {
   min-height: 0;
 }
 
-@mixin screen-sm {
-  .card {
-    grid-template-columns: 1fr;
-  }
-
-  .cover {
-    min-height: 9rem;
-  }
-}
-
 @mixin screen-md {
-  .cover {
-    min-height: 10.5rem;
+  .timeline {
+    grid-template-columns: minmax(0, 2fr) minmax(14rem, 0.9fr);
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .timeline .cover {
+    min-height: 21.5rem;
+    aspect-ratio: auto;
+  }
+
+  .timeline .cardBody {
+    min-height: 21.5rem;
   }
 }

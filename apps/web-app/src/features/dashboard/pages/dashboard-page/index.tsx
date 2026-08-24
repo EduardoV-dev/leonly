@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { APP_ROUTES } from "@/constants/routes";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { logServerError } from "@/lib/server-logger";
@@ -9,7 +10,15 @@ import { DashboardSidebar } from "./dashboard-sidebar";
 import { MobileHeader } from "./mobile-header";
 import { MobileNavigation } from "./mobile-navigation";
 
-export async function DashboardPage() {
+type DashboardPageProps = {
+  activeSection?: "dashboard" | "timeline";
+  children?: ReactNode;
+};
+
+export async function DashboardPage({
+  activeSection = "dashboard",
+  children,
+}: Readonly<DashboardPageProps> = {}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -38,9 +47,9 @@ export async function DashboardPage() {
     <main className={styles.page}>
       <div className={styles.shell}>
         <MobileHeader member={activeSpace.active_members[0]} />
-        <DashboardSidebar activeSpace={activeSpace} />
-        <DashboardContent activeSpace={activeSpace} />
-        <MobileNavigation />
+        <DashboardSidebar activeSection={activeSection} activeSpace={activeSpace} />
+        {children ?? <DashboardContent activeSpace={activeSpace} />}
+        <MobileNavigation activeSection={activeSection} />
       </div>
     </main>
   );

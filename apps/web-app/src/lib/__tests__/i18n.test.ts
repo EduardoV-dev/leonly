@@ -101,3 +101,17 @@ describe("spaceSetup namespace", () => {
     );
   });
 });
+
+describe("memories namespace", () => {
+  it("resolves memory creation translations in english and spanish", () => {
+    const englishT = i18n.getFixedT("en", "memories");
+    const spanishT = i18n.getFixedT("es", "memories");
+
+    expect(englishT("create.backToTimeline")).toBe("Go back to timeline");
+    expect(englishT("create.photos.uploadHelp", { count: 10, size: 5 })).toBe(
+      "Up to 10 JPEG, PNG, or WebP images, 5 MB each.",
+    );
+    expect(spanishT("create.actions.preserve")).toBe("Conservar recuerdo");
+    expect(spanishT("create.validation.photoCount", { count: 10 })).toBe("Elige hasta 10 fotos.");
+  });
+});

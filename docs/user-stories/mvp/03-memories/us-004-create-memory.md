@@ -16,7 +16,7 @@ An active member can create one visible timeline memory or one hidden memory in 
 ## Scope
 
 - Required title of 1 to 120 characters after trimming and a date-only memory date.
-- Optional description of up to 2,000 characters, location of up to 150 characters, and up to five photos.
+- Optional description of up to 2,000 characters, location of up to 150 characters, and up to 10 photos.
 - JPEG, PNG, and WebP photos of at most 5 MB each, with one selected cover when photos are present.
 - Visible timeline or shared Private Vault placement.
 - Client and server validation, single-flight submission, progress, success, and recoverable failure feedback.
@@ -46,11 +46,12 @@ An active member can create one visible timeline memory or one hidden memory in 
 - Repeated activation while a request is pending creates at most one memory.
 - Upload or persistence failure leaves no partial memory or accessible new photo and presents a retryable error without discarding valid input.
 
-## Decision Required
+## Decisions
 
-- Define the destination after successful creation for visible and hidden memories.
-- Define ordering for non-cover photos and whether members can reorder photos during creation.
-- Define retry or idempotency behavior when the client loses the result of a completed submission.
+- Successful visible and hidden creation returns the member to the timeline.
+- Non-cover photos preserve browser selection order; creation does not offer photo reordering.
+- The client retains a UUID idempotency key for unchanged retries so a lost response cannot create a
+  duplicate memory.
 
 ## Verification Notes
 

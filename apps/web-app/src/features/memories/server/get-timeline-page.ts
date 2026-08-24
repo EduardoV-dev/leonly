@@ -2,10 +2,10 @@ import { z } from "zod";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
+import { MAX_TIMELINE_PAGE_SIZE } from "../constants/timeline";
 import type { TimelineMemory, TimelinePage } from "../types/timeline";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
 
-const PAGE_SIZE = 20;
 const cursorSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
   id: z.uuid(),
@@ -90,6 +90,7 @@ async function isCurrentCursorAnchor(cursor: TimelineCursor, spaceId: string): P
 async function readTimelinePage(
   cursor: TimelineCursor | null,
   spaceId: string,
+  pageSize: number,
 ): Promise<TimelinePage> {
   const supabase = await createClient();
   let query = supabase
@@ -106,7 +107,7 @@ async function readTimelinePage(
     query = query.or(afterCursorFilter(cursor));
   }
 
-  const { data, error } = await query.limit(PAGE_SIZE + 1);
+  const { data, error } = await query.limit(pageSize + 1);
 
   if (error) {
     logServerError({ event: "supabase_operation_failed", operation: "get_timeline_page" }, error);
@@ -114,9 +115,9 @@ async function readTimelinePage(
   }
 
   const memories = await Promise.all(
-    ((data ?? []) as TimelineRow[]).slice(0, PAGE_SIZE).map(toTimelineMemory),
+    ((data ?? []) as TimelineRow[]).slice(0, pageSize).map(toTimelineMemory),
   );
-  const hasNextPage = (data ?? []).length > PAGE_SIZE;
+  const hasNextPage = (data ?? []).length > pageSize;
   const lastMemory = memories.at(-1);
 
   return {
@@ -126,7 +127,10 @@ async function readTimelinePage(
   };
 }
 
-export async function getTimelinePage(cursorValue: string | null): Promise<TimelinePage> {
+export async function getTimelinePage(
+  cursorValue: string | null,
+  pageSize = MAX_TIMELINE_PAGE_SIZE,
+): Promise<TimelinePage> {
   const activeSpace = await getActiveSpaceForCurrentUser();
 
   if (!activeSpace) {
@@ -137,11 +141,11 @@ export async function getTimelinePage(cursorValue: string | null): Promise<Timel
   const shouldReset = cursorValue !== null && cursor === null;
 
   if (cursor && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readTimelinePage(null, activeSpace.id);
+    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize);
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readTimelinePage(cursor, activeSpace.id);
+  const page = await readTimelinePage(cursor, activeSpace.id, pageSize);
   return shouldReset ? { ...page, cursorReset: true } : page;
 }
 

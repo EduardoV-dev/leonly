@@ -51,7 +51,7 @@ export function DashboardContent({ activeSpace }: DashboardContentProps) {
 
       <section className={styles.summarySection} id="gallery">
         <h2>Recent Memories</h2>
-        <MemoriesTimeline />
+        <MemoriesTimeline variant="recent" />
       </section>
 
       <section className={styles.summarySection} id="rankings">

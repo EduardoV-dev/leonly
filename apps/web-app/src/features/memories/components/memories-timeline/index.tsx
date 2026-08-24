@@ -1,12 +1,17 @@
 "use client";
 
-import { ImageIcon, RefreshCw } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import type { TimelineMemory, TimelinePage } from "../../types/timeline";
 import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memories-timeline.module.css";
 
 const SLOW_REQUEST_MS = 750;
+
+type MemoriesTimelineProps = Readonly<{
+  variant?: "full" | "recent";
+}>;
 
 type TimelineState = {
   isAppending: boolean;
@@ -28,9 +33,40 @@ const initialState: TimelineState = {
   pageError: false,
 };
 
-async function fetchTimeline(cursor: string | null): Promise<TimelinePage> {
-  const params = cursor ? `?${new URLSearchParams({ cursor })}` : "";
-  const response = await fetch(`/api/memories/timeline${params}`);
+type TimelineMonth = {
+  label: string;
+  memories: [TimelineMemory, ...TimelineMemory[]];
+};
+
+function groupMemoriesByMonth(memories: TimelineMemory[]): TimelineMonth[] {
+  const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+  const months: TimelineMonth[] = [];
+
+  for (const memory of memories) {
+    const label = monthFormatter.format(new Date(`${memory.memoryDate}T00:00:00`));
+    const currentMonth = months.at(-1);
+
+    if (currentMonth?.label === label) {
+      currentMonth.memories.push(memory);
+    } else {
+      months.push({ label, memories: [memory] });
+    }
+  }
+
+  return months;
+}
+
+async function fetchTimeline(cursor: string | null, limit: number | null): Promise<TimelinePage> {
+  const searchParams = new URLSearchParams();
+  if (cursor) {
+    searchParams.set("cursor", cursor);
+  }
+  if (limit !== null) {
+    searchParams.set("limit", String(limit));
+  }
+
+  const query = searchParams.size > 0 ? `?${searchParams}` : "";
+  const response = await fetch(`/api/memories/timeline${query}`);
 
   if (!response.ok) {
     throw new Error("Failed to load the memories timeline.");
@@ -39,7 +75,7 @@ async function fetchTimeline(cursor: string | null): Promise<TimelinePage> {
   return response.json() as Promise<TimelinePage>;
 }
 
-export function MemoriesTimeline() {
+export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
   const [state, setState] = useState<TimelineState>(initialState);
   const requestId = useRef(0);
 
@@ -64,7 +100,7 @@ export function MemoriesTimeline() {
     );
 
     try {
-      const page = await fetchTimeline(cursor);
+      const page = await fetchTimeline(cursor, variant === "recent" ? RECENT_MEMORIES_LIMIT : null);
       if (requestId.current !== currentRequestId) {
         return;
       }
@@ -133,32 +169,49 @@ export function MemoriesTimeline() {
     );
   }
 
+  const visibleMemories =
+    variant === "recent" ? state.memories.slice(0, RECENT_MEMORIES_LIMIT) : state.memories;
+  const months = groupMemoriesByMonth(visibleMemories);
+
   return (
     <div className={styles.timeline} aria-live="polite">
-      <div className={styles.toolbar}>
-        <p>{state.memories.length} shared memories</p>
-        <button type="button" onClick={() => void refresh()}>
-          <RefreshCw aria-hidden="true" /> Refresh
-        </button>
-      </div>
-      <div className={styles.cards}>
-        {state.memories.map((memory) => (
-          <MemorySummaryCard key={memory.id} memory={memory} />
-        ))}
-      </div>
-      {state.nextCursor ? (
+      {months.map((month) => {
+        return (
+          <section className={styles.month} key={month.label}>
+            <div className={styles.monthHeading}>
+              <h2>{month.label}</h2>
+              <span aria-hidden="true" />
+            </div>
+            {variant === "recent" ? (
+              <div className={styles.recentCards}>
+                {month.memories.map((memory) => (
+                  <MemorySummaryCard key={memory.id} memory={memory} variant="recent" />
+                ))}
+              </div>
+            ) : (
+              <div className={styles.monthCards}>
+                {month.memories.map((memory) => (
+                  <MemorySummaryCard key={memory.id} memory={memory} variant="timeline" />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+      {variant === "full" && state.nextCursor ? (
         <div className={styles.loadMore}>
           {state.nextPageError ? <p role="alert">We could not load more memories.</p> : null}
           <button
             type="button"
             disabled={state.isAppending}
             onClick={() => void loadPage(state.nextCursor, true)}
+            aria-label={state.nextPageError ? "Try loading more" : "Load more"}
           >
             {state.isAppending
               ? "Loading more..."
               : state.nextPageError
                 ? "Try loading more"
-                : "Load more"}
+                : "Load Earlier Memories"}
           </button>
         </div>
       ) : null}

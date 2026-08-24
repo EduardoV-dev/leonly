@@ -1,18 +1,11 @@
-import { format, isValid, parse } from "date-fns";
-import { enUS, es } from "date-fns/locale";
-import { ArrowRight, CalendarDays } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import type { Control } from "react-hook-form";
 import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { PastDatePicker } from "@/components/past-date-picker";
 import { Button as LoadingButton } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/shadcn-button";
 import { APP_ROUTES } from "@/constants/routes";
-import { normalizeLanguage } from "@/lib/i18n";
-import { cn } from "@/utils/merge-class-names";
 import { BackLink } from "../../../components/back-link";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
@@ -25,53 +18,21 @@ type CreateDateStepProps = {
   onContinue: () => void;
 };
 
-function parseStoredDate(value: string) {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsedDate = parse(value, "yyyy-MM-dd", new Date());
-
-  return isValid(parsedDate) ? parsedDate : undefined;
-}
-
-function isFutureDate(date: Date) {
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-
-  return date > today;
-}
-
 export function CreateDateStep({
   control,
   isSubmitting,
   onContinue,
   submitError,
 }: CreateDateStepProps) {
-  const { t, i18n } = useTranslation("spaceSetup");
-  const [open, setOpen] = useState(false);
-  const currentYear = new Date().getFullYear();
+  const { t } = useTranslation("spaceSetup");
+  const today = new Date();
+  const currentYear = today.getFullYear();
   const firstDayErrorId = "first-day-error";
-  const currentLanguage = normalizeLanguage(i18n.language);
-  const calendarLocale = currentLanguage === "es" ? es : enUS;
   const { field, fieldState } = useController({
     control,
     name: "firstDay",
   });
   const firstDayError = fieldState.error;
-  const selectedDate = useMemo(() => parseStoredDate(field.value), [field.value]);
-
-  const handleSelect = (date: Date | undefined) => {
-    if (date && isFutureDate(date)) {
-      return;
-    }
-
-    field.onChange(date ? format(date, "yyyy-MM-dd") : "");
-
-    if (date) {
-      setOpen(false);
-    }
-  };
 
   return (
     <form
@@ -91,48 +52,17 @@ export function CreateDateStep({
               {t("steps.date.firstDayLabel")}
             </FieldLabel>
             <FieldContent data-setup-field>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="first-day-trigger"
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      styles.input,
-                      styles.datePickerTrigger,
-                      !selectedDate && styles.datePickerPlaceholder,
-                    )}
-                    aria-describedby={firstDayError ? firstDayErrorId : undefined}
-                    aria-invalid={Boolean(firstDayError)}
-                  >
-                    <span>
-                      {selectedDate
-                        ? format(selectedDate, "PPP", { locale: calendarLocale })
-                        : t("steps.date.firstDayLabel")}
-                    </span>
-                    <CalendarDays data-icon="inline-end" aria-hidden="true" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="center" className={cn(styles.datePopover, "w-auto p-0")}>
-                  <Calendar
-                    key={currentLanguage}
-                    mode="single"
-                    selected={selectedDate}
-                    captionLayout="dropdown"
-                    startMonth={new Date(currentYear - 20, 0)}
-                    endMonth={new Date(currentYear, 11)}
-                    defaultMonth={selectedDate ?? new Date(currentYear, 0)}
-                    disabled={{ after: new Date() }}
-                    formatters={{
-                      formatMonthDropdown: (date) =>
-                        format(date, "LLL", { locale: calendarLocale }),
-                    }}
-                    locale={calendarLocale}
-                    onSelect={handleSelect}
-                    timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
-                  />
-                </PopoverContent>
-              </Popover>
+              <PastDatePicker
+                describedBy={firstDayError ? firstDayErrorId : undefined}
+                id="first-day-trigger"
+                isInvalid={Boolean(firstDayError)}
+                label={t("steps.date.firstDayLabel")}
+                latestDate={today}
+                onChange={field.onChange}
+                placeholder={t("steps.date.firstDayLabel")}
+                startMonth={new Date(currentYear - 20, 0)}
+                value={field.value}
+              />
               {firstDayError ? (
                 <p id={firstDayErrorId} className={styles.fieldError} role="alert">
                   {firstDayError.message}

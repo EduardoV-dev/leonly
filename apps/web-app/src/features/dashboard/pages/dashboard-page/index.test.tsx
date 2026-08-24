@@ -31,7 +31,11 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 vi.mock("@/features/memories/components/memories-timeline", () => ({
-  MemoriesTimeline: () => <div>Timeline memories</div>,
+  MemoriesTimeline: ({ variant }: { variant?: string }) => (
+    <div data-testid="timeline-memories" data-variant={variant}>
+      Timeline memories
+    </div>
+  ),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -101,9 +105,34 @@ describe("DashboardPage", () => {
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
     expect(screen.getAllByRole("img", { name: "Annie's avatar" })).not.toHaveLength(0);
     expect(screen.getByText("Timeline memories")).toBeInTheDocument();
+    expect(screen.getByTestId("timeline-memories")).toHaveAttribute("data-variant", "recent");
+    expect(screen.queryByRole("link", { name: "Add a memory" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No rated places yet" })).toBeInTheDocument();
     expect(screen.queryByText("Autumn in Paris")).not.toBeInTheDocument();
     expect(screen.queryByText("Casa Luna")).not.toBeInTheDocument();
+  });
+
+  it("renders route content inside the persistent app shell", async () => {
+    const page = await DashboardPage({ activeSection: "timeline", children: <p>Route content</p> });
+    const queryClient = new QueryClient();
+    render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
+
+    expect(screen.getByText("Route content")).toBeInTheDocument();
+    for (const dashboardLink of screen.getAllByRole("link", { name: "Dashboard" })) {
+      expect(dashboardLink).toHaveAttribute("href", "/");
+    }
+    for (const timelineLink of screen.getAllByRole("link", { name: "Timeline" })) {
+      expect(timelineLink).toHaveAttribute("href", "/timeline");
+      expect(timelineLink).toHaveAttribute("aria-current", "page");
+    }
+    for (const newEntryLink of screen.getAllByRole("link", { name: "New Entry" })) {
+      expect(newEntryLink).toHaveAttribute("href", "/timeline/new");
+    }
+    for (const placeholder of ["Places", "Vault", "Settings"]) {
+      for (const placeholderButton of screen.getAllByRole("button", { name: placeholder })) {
+        expect(placeholderButton).toBeDisabled();
+      }
+    }
   });
 
   it("renders an invitation state for a one-member space", async () => {

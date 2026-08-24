@@ -31,7 +31,7 @@ These rules apply to every story unless a story explicitly narrows them:
   amount and currency. A member may convert all items to one selected display currency and see their
   total using one current or cached timestamped rate snapshot; when conversion is unavailable,
   original values remain visible and no misleading mixed-currency total is shown.
-- Memory uploads allow up to five JPEG, PNG, or WebP images of at most 5 MB each. Place covers use the same type and per-file limit. The server verifies file content, storage is private to the active space, and partial failures clean up new objects. A memory creator selects the cover photo; an editor may select any retained or replacement photo as cover.
+- Memory uploads allow up to 10 JPEG, PNG, or WebP images of at most 5 MB each. Place covers use the same type and per-file limit. The server verifies file content, storage is private to the active space, and partial failures clean up new objects. A memory creator selects the cover photo; an editor may select any retained or replacement photo as cover.
 - User-facing MVP work targets WCAG 2.2 AA, including keyboard operation, visible focus, semantic names and states, associated validation, announced asynchronous feedback, non-color-only meaning, and reduced-motion support.
 - Leaving/removing members, closing spaces, ownership transfer, account deletion, advanced media editing, search, audit history, and realtime synchronization are post-MVP.
 

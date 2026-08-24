@@ -1,9 +1,11 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { authEn } from "@/locales/en/auth";
+import { memoriesEn } from "@/locales/en/memories";
 import { notFoundEn } from "@/locales/en/not-found";
 import { spaceSetupEn } from "@/locales/en/space-setup";
 import { authEs } from "@/locales/es/auth";
+import { memoriesEs } from "@/locales/es/memories";
 import { notFoundEs } from "@/locales/es/not-found";
 import { spaceSetupEs } from "@/locales/es/space-setup";
 
@@ -16,11 +18,13 @@ const LANGUAGES = {
 const resources = {
   [LANGUAGES.ENGLISH]: {
     auth: authEn,
+    memories: memoriesEn,
     notFound: notFoundEn,
     spaceSetup: spaceSetupEn,
   },
   [LANGUAGES.SPANISH]: {
     auth: authEs,
+    memories: memoriesEs,
     notFound: notFoundEs,
     spaceSetup: spaceSetupEs,
   },

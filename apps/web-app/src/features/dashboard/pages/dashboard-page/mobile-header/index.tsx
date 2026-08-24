@@ -1,4 +1,6 @@
-import { Heart, UsersRound } from "lucide-react";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./mobile-header.module.css";
@@ -14,14 +16,10 @@ export function MobileHeader({ member }: MobileHeaderProps) {
         <MemberAvatar member={member} />
         <span>Leonly</span>
       </div>
-      <div className={styles.actions}>
-        <button type="button" aria-label="Favorite memories">
-          <Heart aria-hidden="true" />
-        </button>
-        <button type="button" aria-label="Our profile">
-          <UsersRound aria-hidden="true" />
-        </button>
-      </div>
+      <Link className={styles.actions} href={APP_ROUTES.TIMELINE_NEW}>
+        <Plus aria-hidden="true" />
+        <span>New Entry</span>
+      </Link>
     </header>
   );
 }
