@@ -1,4 +1,15 @@
-import { BookHeart, LayoutGrid, LockKeyhole, MapPin, Plus, Settings } from "lucide-react";
+"use client";
+
+import {
+  BookHeart,
+  LayoutGrid,
+  LockKeyhole,
+  MapPin,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
@@ -8,11 +19,29 @@ import styles from "./dashboard-sidebar.module.css";
 type DashboardSidebarProps = {
   activeSection: "dashboard" | "timeline";
   activeSpace: ActiveSpace;
+  isCollapsed: boolean;
+  onCollapsedChange: () => void;
 };
 
-export function DashboardSidebar({ activeSection, activeSpace }: Readonly<DashboardSidebarProps>) {
+export function DashboardSidebar({
+  activeSection,
+  activeSpace,
+  isCollapsed,
+  onCollapsedChange,
+}: Readonly<DashboardSidebarProps>) {
+  const collapseLabel = isCollapsed ? "Expand sidebar" : "Collapse sidebar";
+
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.sidebar} data-collapsed={isCollapsed}>
+      <button
+        type="button"
+        className={styles.collapseToggle}
+        onClick={onCollapsedChange}
+        aria-label={collapseLabel}
+        title={collapseLabel}
+      >
+        {isCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+      </button>
       <div className={styles.identity}>
         <div className={styles.avatars}>
           {activeSpace.active_members.map((member) => (
@@ -24,7 +53,7 @@ export function DashboardSidebar({ activeSection, activeSpace }: Readonly<Dashbo
 
       <Link className={styles.newEntry} href={APP_ROUTES.TIMELINE_NEW}>
         <Plus aria-hidden="true" />
-        New Entry
+        <span className={styles.label}>New Entry</span>
       </Link>
 
       <nav className={styles.navigation} aria-label="Dashboard sections">
@@ -33,26 +62,26 @@ export function DashboardSidebar({ activeSection, activeSpace }: Readonly<Dashbo
           aria-current={activeSection === "dashboard" ? "page" : undefined}
         >
           <LayoutGrid aria-hidden="true" />
-          Dashboard
+          <span className={styles.label}>Dashboard</span>
         </Link>
         <Link
           href={APP_ROUTES.TIMELINE}
           aria-current={activeSection === "timeline" ? "page" : undefined}
         >
           <BookHeart aria-hidden="true" />
-          Timeline
+          <span className={styles.label}>Timeline</span>
         </Link>
         <button type="button" disabled>
           <MapPin aria-hidden="true" />
-          Places
+          <span className={styles.label}>Places</span>
         </button>
         <button type="button" disabled>
           <LockKeyhole aria-hidden="true" />
-          Vault
+          <span className={styles.label}>Vault</span>
         </button>
         <button type="button" disabled>
           <Settings aria-hidden="true" />
-          Settings
+          <span className={styles.label}>Settings</span>
         </button>
       </nav>
     </aside>

@@ -5,10 +5,7 @@ import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardContent } from "./dashboard-content";
-import styles from "./dashboard-page.module.css";
-import { DashboardSidebar } from "./dashboard-sidebar";
-import { MobileHeader } from "./mobile-header";
-import { MobileNavigation } from "./mobile-navigation";
+import { DashboardShell } from "./dashboard-shell";
 
 type DashboardPageProps = {
   activeSection?: "dashboard" | "timeline";
@@ -16,7 +13,7 @@ type DashboardPageProps = {
 };
 
 export async function DashboardPage({
-  activeSection = "dashboard",
+  activeSection,
   children,
 }: Readonly<DashboardPageProps> = {}) {
   const supabase = await createClient();
@@ -44,13 +41,8 @@ export async function DashboardPage({
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.shell}>
-        <MobileHeader member={activeSpace.active_members[0]} />
-        <DashboardSidebar activeSection={activeSection} activeSpace={activeSpace} />
-        {children ?? <DashboardContent activeSpace={activeSpace} />}
-        <MobileNavigation activeSection={activeSection} />
-      </div>
-    </main>
+    <DashboardShell activeSection={activeSection} activeSpace={activeSpace}>
+      {children ?? <DashboardContent activeSpace={activeSpace} />}
+    </DashboardShell>
   );
 }

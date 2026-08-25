@@ -40,6 +40,7 @@ vi.mock("@/features/memories/components/memories-timeline", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
+  usePathname: () => "/",
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
@@ -100,6 +101,7 @@ describe("DashboardPage", () => {
     await renderDashboardPage();
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
+    expect(screen.getByTitle("Forever Us")).toBeInTheDocument();
     expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
@@ -133,6 +135,16 @@ describe("DashboardPage", () => {
         expect(placeholderButton).toBeDisabled();
       }
     }
+  });
+
+  it("collapses and expands the desktop sidebar navigation", async () => {
+    await renderDashboardPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
   });
 
   it("renders an invitation state for a one-member space", async () => {
