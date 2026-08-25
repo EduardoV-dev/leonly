@@ -1,0 +1,161 @@
+.page {
+  display: grid;
+  gap: 2.25rem;
+  padding: 2rem 1.25rem 6rem;
+}
+
+.header,
+.month,
+.cards {
+  display: grid;
+  min-width: 0;
+}
+
+.header {
+  gap: 0.75rem;
+}
+
+.title {
+  width: min(100%, 20rem);
+  height: clamp(2.25rem, 5vw, 4rem);
+}
+
+.description {
+  width: min(100%, 28rem);
+  height: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.filters {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.filters > div {
+  width: 4.5rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 999px;
+}
+
+.sort {
+  width: 6rem;
+  height: 1rem;
+  flex: none;
+}
+
+.month {
+  gap: 1.4rem;
+}
+
+.monthHeading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.monthHeading > div {
+  width: 9rem;
+  height: 1.5rem;
+}
+
+.monthHeading span {
+  height: 1px;
+  flex: 1;
+  background: #dfcfcc;
+}
+
+.cards {
+  gap: clamp(2rem, 3vw, 3.5rem);
+}
+
+.card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 0.75rem;
+}
+
+.cardBody {
+  display: grid;
+  min-height: 14rem;
+  align-content: start;
+  gap: 0.7rem;
+  padding: 1.35rem;
+  border: 1px solid #eee6e3;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.metadata {
+  width: 100%;
+  height: 2.35rem;
+}
+
+.cardTitle {
+  width: min(70%, 13rem);
+  height: 1.6rem;
+}
+
+.copy,
+.copyShort {
+  height: 0.75rem;
+}
+
+.copy {
+  width: 92%;
+}
+
+.copyShort {
+  width: 62%;
+}
+
+@mixin screen-sm {
+  .page {
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+}
+
+@mixin screen-md {
+  .page {
+    padding: 3.6rem clamp(2.5rem, 5vw, 5rem);
+  }
+
+  .card {
+    grid-template-columns: minmax(0, 2fr) minmax(14rem, 0.9fr);
+    min-height: clamp(22rem, 32vw, 31rem);
+    gap: 1rem;
+  }
+
+  .cover,
+  .cardBody {
+    height: 100%;
+  }
+}
+
+@media (min-width: 1600px) {
+  .card {
+    width: 60%;
+  }
+
+  .card:nth-child(odd) {
+    justify-self: start;
+  }
+
+  .card:nth-child(even) {
+    justify-self: end;
+  }
+}

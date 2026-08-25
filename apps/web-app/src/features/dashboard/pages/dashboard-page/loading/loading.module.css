@@ -70,7 +70,7 @@
   gap: 1.1rem;
 }
 
-.shell [data-slot="skeleton"] {
+.content [data-slot="skeleton"] {
   background: #f0e5e3;
 }
 
