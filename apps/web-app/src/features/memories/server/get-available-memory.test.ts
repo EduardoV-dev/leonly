@@ -23,10 +23,12 @@ describe("getAvailableMemory", () => {
       data: {
         cover_photo_id: null,
         created_at: "2026-08-23T10:00:00.000Z",
+        creator_user_id: "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e",
         description: null,
         id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
         location: null,
         memory_date: "2026-08-20",
+        space_id: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
         title: "Private anniversary",
         visibility: "vault",
       },

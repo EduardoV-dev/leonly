@@ -61,4 +61,37 @@ export const memoriesEs = {
       saveFailed: "No pudimos guardar este recuerdo. Inténtalo de nuevo.",
     },
   },
+  detail: {
+    actions: {
+      backToTimeline: "Volver a la línea de tiempo",
+      nextPhoto: "Foto siguiente",
+      previousPhoto: "Foto anterior",
+      retry: "Intentar de nuevo",
+    },
+    creator: "Conservado por {{name}}",
+    error: {
+      description: "La historia sigue aquí. Simplemente no pudimos abrirla en este momento.",
+      eyebrow: "Una pausa en la historia",
+      heading: "No pudimos cargar este recuerdo",
+    },
+    gallery: {
+      label: "Fotos de {{title}}",
+      noPhotoDescription: "Esta historia fue conservada sin fotografías.",
+      noPhotoTitle: "Un recuerdo guardado en palabras",
+      photoAlt: "Foto {{position}} de {{total}} de {{title}}",
+      photoUnavailable: "La foto {{position}} no está disponible",
+      position: "{{position}} de {{total}}",
+      selectPhoto: "Mostrar la foto {{position}} de {{total}}",
+    },
+    loading: "Cargando recuerdo…",
+    notFound: {
+      description: "Puede que este recuerdo ya no esté disponible o que pertenezca a otro lugar.",
+      eyebrow: "Recuerdo no disponible",
+      heading: "Esta historia no se puede abrir",
+    },
+    visibility: {
+      timeline: "Recuerdo compartido",
+      vault: "Bóveda privada",
+    },
+  },
 } as const;

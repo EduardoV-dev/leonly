@@ -61,4 +61,37 @@ export const memoriesEn = {
       saveFailed: "We could not save this memory. Please try again.",
     },
   },
+  detail: {
+    actions: {
+      backToTimeline: "Back to timeline",
+      nextPhoto: "Next photo",
+      previousPhoto: "Previous photo",
+      retry: "Try again",
+    },
+    creator: "Preserved by {{name}}",
+    error: {
+      description: "The story is still here. We just could not open it right now.",
+      eyebrow: "A pause in the story",
+      heading: "We could not load this memory",
+    },
+    gallery: {
+      label: "Photos from {{title}}",
+      noPhotoDescription: "This story was preserved without photographs.",
+      noPhotoTitle: "A memory held in words",
+      photoAlt: "Photo {{position}} of {{total}} from {{title}}",
+      photoUnavailable: "Photo {{position}} is unavailable",
+      position: "{{position}} of {{total}}",
+      selectPhoto: "Show photo {{position}} of {{total}}",
+    },
+    loading: "Loading memory…",
+    notFound: {
+      description: "This memory may no longer be available, or it may belong somewhere else.",
+      eyebrow: "Memory unavailable",
+      heading: "This story cannot be opened",
+    },
+    visibility: {
+      timeline: "Shared memory",
+      vault: "Private vault",
+    },
+  },
 } as const;

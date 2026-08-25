@@ -141,7 +141,11 @@ describe("MemoriesTimeline", () => {
     expect(cover).toHaveAttribute("src", "https://storage.example/signed-cover");
     expect(screen.getByText("A sunny afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-extension-region]")).toHaveLength(3);
+    expect(document.querySelectorAll("[data-extension-region]")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Open Our picnic" })).toHaveAttribute(
+      "href",
+      `/memories/${memory.id}`,
+    );
 
     fireEvent.error(cover);
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();

@@ -1,0 +1,119 @@
+.page {
+  display: block;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.backLink {
+  width: 8rem;
+  height: 1rem;
+}
+
+.spread {
+  display: grid;
+  gap: 2.2rem;
+  margin-top: 2rem;
+}
+
+.photo {
+  min-height: 22rem;
+  aspect-ratio: 4 / 5;
+  border-radius: 0.9rem;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+}
+
+.thumbnails > div {
+  width: 4.35rem;
+  height: 3.4rem;
+}
+
+.story {
+  align-self: center;
+}
+
+.metadata {
+  width: 12rem;
+  height: 0.75rem;
+}
+
+.title,
+.titleShort {
+  height: 3.2rem;
+  margin-top: 1.2rem;
+}
+
+.titleShort {
+  width: 72%;
+  margin-top: 0.35rem;
+}
+
+.pill {
+  width: 7rem;
+  height: 1.75rem;
+  margin-top: 1.3rem;
+  border-radius: 999px;
+}
+
+.copy,
+.copyShort {
+  height: 0.9rem;
+  margin-top: 2rem;
+}
+
+.copy + .copy,
+.copyShort {
+  margin-top: 0.65rem;
+}
+
+.copyShort {
+  width: 68%;
+}
+
+.creator {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 2.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid #eadfdd;
+}
+
+.creator > div:first-child {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 50%;
+}
+
+.creator > div:last-child {
+  width: 8rem;
+  height: 0.8rem;
+}
+
+@mixin screen-sm {
+  .page {
+    padding: 2rem 2rem calc(6.5rem + env(safe-area-inset-bottom));
+  }
+
+  .photo {
+    min-height: 30rem;
+    aspect-ratio: 5 / 6;
+  }
+}
+
+@mixin screen-md {
+  .page {
+    padding: 2.75rem clamp(2.5rem, 5vw, 4.5rem) 4rem;
+  }
+
+  .spread {
+    grid-template-columns: minmax(18rem, 1.15fr) minmax(17rem, 0.85fr);
+    align-items: center;
+    gap: clamp(2.5rem, 5vw, 5rem);
+  }
+}

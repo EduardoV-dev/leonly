@@ -1,0 +1,248 @@
+.gallery {
+  min-width: 0;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  min-height: 22rem;
+  aspect-ratio: 4 / 5;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #e7dcda;
+  border-radius: 0.9rem;
+  background: #f8eeec;
+  box-shadow: 0 1.5rem 3.5rem rgb(90 61 59 / 0.12);
+}
+
+.stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoFallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  place-items: center;
+  color: #a78383;
+}
+
+.photoFallback svg {
+  width: 3rem;
+  height: 3rem;
+  stroke-width: 1.2;
+}
+
+.position {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.38rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.64);
+  border-radius: 999px;
+  background: rgb(37 35 35 / 0.68);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(0.35rem);
+}
+
+.navigation {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navigation button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.72);
+  border-radius: 50%;
+  background: rgb(255 253 252 / 0.9);
+  color: var(--auth-brand);
+  box-shadow: 0 0.5rem 1.25rem rgb(37 35 35 / 0.16);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.navigation button:hover {
+  background: #fff;
+  transform: translateY(-2px);
+}
+
+.navigation button:focus-visible,
+.thumbnail:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 3px;
+}
+
+.navigation svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.thumbnails {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.15rem 0.45rem;
+  border: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #c7aaaa transparent;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.thumbnail {
+  position: relative;
+  display: grid;
+  width: 4.35rem;
+  height: 3.4rem;
+  flex: 0 0 auto;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #dfd2d0;
+  border-radius: 0.45rem;
+  background: #f8eeec;
+  color: #9b7779;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.thumbnail:hover {
+  transform: translateY(-2px);
+}
+
+.thumbnail[aria-pressed="true"] {
+  border-color: var(--auth-brand);
+  box-shadow:
+    0 0 0 2px #fffdfc,
+    0 0 0 4px rgb(127 90 95 / 0.48);
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.thumbnail span {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.2rem;
+  display: grid;
+  width: 1.05rem;
+  height: 1.05rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(37 35 35 / 0.72);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.empty {
+  display: flex;
+  min-height: 22rem;
+  aspect-ratio: 4 / 5;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 2rem;
+  border: 1px solid #e7dcda;
+  border-radius: 0.9rem;
+  background: #f8eeec;
+  color: var(--auth-copy);
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #fffdfc;
+  color: var(--auth-brand);
+  box-shadow: 0 0.8rem 2rem rgb(90 61 59 / 0.1);
+}
+
+.emptyIcon svg {
+  width: 1.65rem;
+  height: 1.65rem;
+  stroke-width: 1.4;
+}
+
+.emptyTitle {
+  margin: 1.25rem 0 0;
+  color: var(--auth-heading);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.55rem;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.empty p {
+  max-width: 18rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+@mixin screen-sm {
+  .stage,
+  .empty {
+    min-height: 30rem;
+    aspect-ratio: 5 / 6;
+  }
+}
+
+@mixin screen-lg {
+  .stage,
+  .empty {
+    min-height: 35rem;
+    aspect-ratio: 4 / 5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation button,
+  .thumbnail {
+    transition: none;
+  }
+}
