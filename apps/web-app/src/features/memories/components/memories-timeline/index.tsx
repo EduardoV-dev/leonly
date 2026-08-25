@@ -1,6 +1,7 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import type { TimelineMemory, TimelinePage } from "../../types/timeline";
@@ -8,6 +9,24 @@ import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memories-timeline.module.css";
 
 const SLOW_REQUEST_MS = 750;
+
+const monthVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (index = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: Math.min(index, 5) * 0.04,
+      duration: 0.24,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
+};
+
+const reducedMotionVariants: Variants = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1 },
+};
 
 type MemoriesTimelineProps = Readonly<{
   variant?: "full" | "recent";
@@ -78,6 +97,8 @@ async function fetchTimeline(cursor: string | null, limit: number | null): Promi
 export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
   const [state, setState] = useState<TimelineState>(initialState);
   const requestId = useRef(0);
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const activeMonthVariants = shouldReduceMotion ? reducedMotionVariants : monthVariants;
 
   const loadPage = useEffectEvent(async (cursor: string | null, append: boolean) => {
     const currentRequestId = ++requestId.current;
@@ -175,27 +196,45 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
 
   return (
     <div className={styles.timeline} aria-live="polite">
-      {months.map((month) => {
+      {months.map((month, monthIndex) => {
         return (
-          <section className={styles.month} key={month.label}>
+          <motion.section
+            className={styles.month}
+            key={month.label}
+            variants={activeMonthVariants}
+            custom={monthIndex}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ amount: 0.15, once: true }}
+          >
             <div className={styles.monthHeading}>
               <h2>{month.label}</h2>
               <span aria-hidden="true" />
             </div>
             {variant === "recent" ? (
               <div className={styles.recentCards}>
-                {month.memories.map((memory) => (
-                  <MemorySummaryCard key={memory.id} memory={memory} variant="recent" />
+                {month.memories.map((memory, index) => (
+                  <MemorySummaryCard
+                    key={memory.id}
+                    memory={memory}
+                    variant="recent"
+                    entryIndex={index}
+                  />
                 ))}
               </div>
             ) : (
               <div className={styles.monthCards}>
-                {month.memories.map((memory) => (
-                  <MemorySummaryCard key={memory.id} memory={memory} variant="timeline" />
+                {month.memories.map((memory, index) => (
+                  <MemorySummaryCard
+                    key={memory.id}
+                    memory={memory}
+                    variant="timeline"
+                    entryIndex={index}
+                  />
                 ))}
               </div>
             )}
-          </section>
+          </motion.section>
         );
       })}
       {variant === "full" && state.nextCursor ? (

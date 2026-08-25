@@ -5,7 +5,9 @@
 
 .summaryLink {
   display: grid;
+  max-width: 100%;
   min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   color: inherit;
   text-decoration: none;
   touch-action: manipulation;
@@ -47,7 +49,8 @@
 }
 
 .timeline .cover {
-  min-height: 15rem;
+  width: 100%;
+  max-width: 100%;
   aspect-ratio: 16 / 10;
   border-radius: 0.75rem;
 }
@@ -58,6 +61,8 @@
 }
 
 .cover img {
+  display: block;
+  max-width: 100%;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -103,6 +108,7 @@
 .meta {
   display: flex;
   width: 100%;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.15rem;
@@ -128,11 +134,14 @@
 }
 
 .date {
+  min-width: 0;
   margin: 0;
   color: #9b7779;
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  text-align: right;
   text-transform: uppercase;
 }
 
@@ -158,11 +167,13 @@
 
 .description {
   display: -webkit-box;
+  min-width: 0;
   margin: 0.5rem 0 0;
   overflow: hidden;
   color: #554b4a;
   font-size: 0.9rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
 }
@@ -173,6 +184,8 @@
 
 .location {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
   gap: 0.25rem;
   margin: 0.55rem 0 0;
@@ -181,7 +194,13 @@
   font-weight: 700;
 }
 
+.location span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .location svg {
+  flex: none;
   width: 0.85rem;
   height: 0.85rem;
 }
@@ -202,17 +221,20 @@
 @mixin screen-md {
   .timeline .summaryLink {
     grid-template-columns: minmax(0, 2fr) minmax(14rem, 0.9fr);
+    height: clamp(22rem, 32vw, 31rem);
     align-items: stretch;
     gap: 1rem;
   }
 
   .timeline .cover {
-    min-height: 21.5rem;
-    aspect-ratio: auto;
+    min-height: 0;
+    height: 100%;
+    aspect-ratio: unset;
   }
 
   .timeline .cardBody {
-    min-height: 21.5rem;
+    min-height: 0;
+    height: 100%;
   }
 }
 

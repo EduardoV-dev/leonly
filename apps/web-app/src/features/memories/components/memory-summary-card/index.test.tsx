@@ -33,4 +33,12 @@ describe("MemorySummaryCard", () => {
     expect(screen.getByText("The park")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
   });
+
+  it("keeps an unbroken location value in a dedicated text element", () => {
+    const location = "averylonglocationwithoutanynaturalbreakpoints";
+
+    render(<MemorySummaryCard memory={{ ...memory, location }} />);
+
+    expect(screen.getByText(location).tagName).toBe("SPAN");
+  });
 });

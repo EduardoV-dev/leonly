@@ -1,37 +1,50 @@
-.timeline {
+.timeline,
+.month,
+.monthCards,
+.recentCards {
   display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.timeline {
   gap: 3rem;
 }
 
 .month {
-  display: grid;
   gap: 1.4rem;
 }
 
 .monthHeading {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 1rem;
 }
 
 .monthHeading h2 {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   color: #5b3138;
   font-family: "Fraunces", Georgia, serif;
   font-size: clamp(1.25rem, 3vw, 1.55rem);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .monthHeading span {
-  width: 100%;
+  min-width: 0;
+  flex: 1;
   height: 1px;
   background: #dfcfcc;
 }
 
-.monthCards,
+.monthCards {
+  gap: clamp(2rem, 3vw, 3.5rem);
+}
+
 .recentCards {
-  display: grid;
   gap: 1.25rem;
 }
 
@@ -49,6 +62,7 @@
 
 .feedback {
   display: grid;
+  min-width: 0;
   min-height: 10rem;
   place-items: center;
   align-content: center;
@@ -59,6 +73,7 @@
   background: #fffaf9;
   color: var(--auth-copy);
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .feedback h3,
@@ -111,5 +126,19 @@
 @mixin screen-lg {
   .recentCards {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .monthCards > article {
+    width: 60%;
+  }
+
+  .monthCards > article:nth-child(odd) {
+    justify-self: start;
+  }
+
+  .monthCards > article:nth-child(even) {
+    justify-self: end;
   }
 }
