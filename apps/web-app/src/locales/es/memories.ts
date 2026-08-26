@@ -89,6 +89,11 @@ export const memoriesEs = {
       eyebrow: "Recuerdo no disponible",
       heading: "Esta historia no se puede abrir",
     },
+    related: {
+      empty: "Más momentos compartidos aparecerán aquí a medida que crezca su línea de tiempo.",
+      eyebrow: "Otros recuerdos",
+      heading: "Más de nuestra historia",
+    },
     visibility: {
       timeline: "Recuerdo compartido",
       vault: "Bóveda privada",

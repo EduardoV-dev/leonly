@@ -14,7 +14,7 @@ type MemorySummaryCardProps = {
   count?: ReactNode;
   entryIndex?: number;
   memory: TimelineMemory;
-  variant?: "recent" | "timeline";
+  variant?: "recent" | "related" | "timeline";
 };
 
 type CardMotion = {

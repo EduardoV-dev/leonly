@@ -89,6 +89,11 @@ export const memoriesEn = {
       eyebrow: "Memory unavailable",
       heading: "This story cannot be opened",
     },
+    related: {
+      empty: "More shared moments will appear here as your timeline grows.",
+      eyebrow: "Other memories",
+      heading: "More from our story",
+    },
     visibility: {
       timeline: "Shared memory",
       vault: "Private vault",

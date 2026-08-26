@@ -17,7 +17,8 @@
   gap: 0.9rem;
 }
 
-.recent {
+.recent,
+.related {
   display: flex;
   height: 100%;
   min-height: 16rem;
@@ -28,7 +29,8 @@
   background: #fff;
 }
 
-.recent .summaryLink {
+.recent .summaryLink,
+.related .summaryLink {
   flex: 1;
   grid-template-rows: auto 1fr;
 }
@@ -55,7 +57,8 @@
   border-radius: 0.75rem;
 }
 
-.recent .cover {
+.recent .cover,
+.related .cover {
   position: relative;
   aspect-ratio: 4 / 3;
 }
@@ -65,7 +68,7 @@
   max-width: 100%;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 240ms ease-out;
 }
 
@@ -100,7 +103,8 @@
   border-radius: 0.75rem;
 }
 
-.recent .cardBody {
+.recent .cardBody,
+.related .cardBody {
   min-height: 11rem;
   padding: 1rem;
 }
@@ -114,7 +118,8 @@
   margin-bottom: 1.15rem;
 }
 
-.recent .meta {
+.recent .meta,
+.related .meta {
   margin-bottom: 0.9rem;
 }
 
@@ -161,7 +166,8 @@
   color: var(--auth-brand);
 }
 
-.recent .cardBody h3 {
+.recent .cardBody h3,
+.related .cardBody h3 {
   font-size: 1.2rem;
 }
 
@@ -178,7 +184,8 @@
   -webkit-line-clamp: 4;
 }
 
-.recent .description {
+.recent .description,
+.related .description {
   -webkit-line-clamp: 2;
 }
 
@@ -235,6 +242,24 @@
   .timeline .cardBody {
     min-height: 0;
     height: 100%;
+  }
+}
+
+@media (min-width: 100rem) {
+  .related .summaryLink {
+    grid-template-columns: minmax(12rem, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: minmax(0, 1fr);
+    height: clamp(13rem, 14vw, 16rem);
+  }
+
+  .related .cover {
+    height: 100%;
+    aspect-ratio: unset;
+  }
+
+  .related .cardBody {
+    height: 100%;
+    min-height: 0;
   }
 }
 

@@ -1,2 +1,3 @@
 export const MAX_TIMELINE_PAGE_SIZE = 20;
 export const RECENT_MEMORIES_LIMIT = 4;
+export const RELATED_MEMORIES_LIMIT = 3;

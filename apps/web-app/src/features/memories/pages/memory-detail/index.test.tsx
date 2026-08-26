@@ -32,11 +32,40 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByText(memory.description)).toBeInTheDocument();
     expect(screen.getByText("Preserved by Sarah")).toBeInTheDocument();
     expect(screen.getByText("Shared memory")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "More from our story" })).toBeInTheDocument();
+    expect(
+      screen.getByText("More shared moments will appear here as your timeline grows."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to timeline" })).toHaveAttribute(
       "href",
       "/timeline",
     );
     expect(document.querySelector("[data-extension-region]")).not.toBeInTheDocument();
+  });
+
+  it("renders related memories as accessible detail links", () => {
+    render(
+      <MemoryDetailPage
+        memory={memory}
+        relatedMemories={[
+          {
+            coverPhotoUrl: null,
+            createdAt: "2026-08-19T10:00:00.000Z",
+            description: "We packed a blanket and stayed all afternoon.",
+            id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+            location: "The riverbank",
+            memoryDate: "2026-08-18",
+            title: "Picnic by the river",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Open Picnic by the river" })).toHaveAttribute(
+      "href",
+      "/memories/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+    );
+    expect(screen.getByText("We packed a blanket and stayed all afternoon.")).toBeInTheDocument();
   });
 
   it("omits absent optional metadata and composes visibility-aware extension content", () => {
