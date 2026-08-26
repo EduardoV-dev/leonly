@@ -1,7 +1,17 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { CreateMemoryPage } from ".";
+
+function renderCreateMemoryPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <CreateMemoryPage />
+    </QueryClientProvider>,
+  );
+}
 
 const pushMock = vi.hoisted(() => vi.fn());
 
@@ -48,7 +58,7 @@ describe("CreateMemoryPage", () => {
         resolveRequest = resolve;
       }),
     );
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2020-08-20" } });
@@ -69,7 +79,7 @@ describe("CreateMemoryPage", () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }),
     );
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2020-08-20" } });
@@ -94,7 +104,7 @@ describe("CreateMemoryPage", () => {
         { status: 400 },
       ),
     );
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
 
     const preserveButton = screen.getByRole("button", { name: "Preserve Memory" });
     expect(preserveButton.closest("form")).toHaveAttribute("novalidate");
@@ -106,7 +116,7 @@ describe("CreateMemoryPage", () => {
   });
 
   it("keeps a visible route back to the timeline", () => {
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
 
     expect(screen.getByRole("link", { name: "Go back to timeline" })).toHaveAttribute(
       "href",
@@ -117,7 +127,7 @@ describe("CreateMemoryPage", () => {
 
   it("renders translated creation controls in spanish", async () => {
     await i18n.changeLanguage("es");
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
 
     expect(screen.getByRole("heading", { name: "Conservar un momento" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Volver a la línea de tiempo" })).toHaveAttribute(
@@ -132,7 +142,7 @@ describe("CreateMemoryPage", () => {
   });
 
   it("adds photo previews, changes the cover, and removes photos", () => {
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
     const photoInput = screen.getByLabelText(/Drag and drop your photos/i);
     const firstPhoto = new File(["first"], "first.png", { type: "image/png" });
     const secondPhoto = new File(["second"], "second.webp", { type: "image/webp" });
@@ -151,7 +161,7 @@ describe("CreateMemoryPage", () => {
   });
 
   it("rejects more than ten selected photos before submission", () => {
-    render(<CreateMemoryPage />);
+    renderCreateMemoryPage();
     const photos = Array.from(
       { length: 11 },
       (_, index) => new File([String(index)], `${index}.png`, { type: "image/png" }),

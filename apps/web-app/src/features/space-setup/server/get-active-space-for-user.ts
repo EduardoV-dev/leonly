@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,7 +18,7 @@ export type ActiveSpace = {
   start_date: string | null;
 };
 
-export async function getActiveSpaceForCurrentUser(): Promise<ActiveSpace | null> {
+export const getActiveSpaceForCurrentUser = cache(async (): Promise<ActiveSpace | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_active_space");
 
@@ -27,4 +28,4 @@ export async function getActiveSpaceForCurrentUser(): Promise<ActiveSpace | null
   }
 
   return data as ActiveSpace | null;
-}
+});

@@ -2,11 +2,12 @@
 
 import { ImageIcon } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
-import type { TimelineMemory, TimelinePage } from "../../types/timeline";
+import type { TimelineMemory } from "../../types/timeline";
 import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memories-timeline.module.css";
+import { useMemoriesTimeline } from "./use-memories-timeline";
 
 const SLOW_REQUEST_MS = 750;
 
@@ -32,26 +33,6 @@ type MemoriesTimelineProps = Readonly<{
   variant?: "full" | "recent";
 }>;
 
-type TimelineState = {
-  isAppending: boolean;
-  isInitialLoading: boolean;
-  isSlow: boolean;
-  memories: TimelineMemory[];
-  nextCursor: string | null;
-  pageError: boolean;
-  nextPageError: boolean;
-};
-
-const initialState: TimelineState = {
-  isAppending: false,
-  isInitialLoading: true,
-  isSlow: false,
-  memories: [],
-  nextCursor: null,
-  nextPageError: false,
-  pageError: false,
-};
-
 type TimelineMonth = {
   label: string;
   memories: [TimelineMemory, ...TimelineMemory[]];
@@ -75,112 +56,59 @@ function groupMemoriesByMonth(memories: TimelineMemory[]): TimelineMonth[] {
   return months;
 }
 
-async function fetchTimeline(cursor: string | null, limit: number | null): Promise<TimelinePage> {
-  const searchParams = new URLSearchParams();
-  if (cursor) {
-    searchParams.set("cursor", cursor);
-  }
-  if (limit !== null) {
-    searchParams.set("limit", String(limit));
-  }
-
-  const query = searchParams.size > 0 ? `?${searchParams}` : "";
-  const response = await fetch(`/api/memories/timeline${query}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to load the memories timeline.");
-  }
-
-  return response.json() as Promise<TimelinePage>;
-}
-
 export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
-  const [state, setState] = useState<TimelineState>(initialState);
-  const requestId = useRef(0);
+  const timelineQuery = useMemoriesTimeline(variant);
+  const [isSlow, setIsSlow] = useState(false);
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activeMonthVariants = shouldReduceMotion ? reducedMotionVariants : monthVariants;
 
-  const loadPage = useEffectEvent(async (cursor: string | null, append: boolean) => {
-    const currentRequestId = ++requestId.current;
-    const slowTimer = window.setTimeout(() => {
-      if (requestId.current === currentRequestId) {
-        setState((current) => ({ ...current, isSlow: true }));
-      }
-    }, SLOW_REQUEST_MS);
-
-    setState((current) =>
-      append
-        ? { ...current, isAppending: true, isSlow: false, nextPageError: false }
-        : {
-            ...current,
-            isInitialLoading: true,
-            isSlow: false,
-            nextPageError: false,
-            pageError: false,
-          },
-    );
-
-    try {
-      const page = await fetchTimeline(cursor, variant === "recent" ? RECENT_MEMORIES_LIMIT : null);
-      if (requestId.current !== currentRequestId) {
-        return;
-      }
-
-      setState((current) => ({
-        ...current,
-        isAppending: false,
-        isInitialLoading: false,
-        isSlow: false,
-        memories:
-          append && !page.cursorReset ? [...current.memories, ...page.memories] : page.memories,
-        nextCursor: page.nextCursor,
-      }));
-    } catch {
-      if (requestId.current === currentRequestId) {
-        setState((current) =>
-          append
-            ? { ...current, isAppending: false, isSlow: false, nextPageError: true }
-            : { ...current, isInitialLoading: false, isSlow: false, pageError: true },
-        );
-      }
-    } finally {
-      window.clearTimeout(slowTimer);
-    }
-  });
-
-  const refresh = useEffectEvent(() => loadPage(null, false));
-
   useEffect(() => {
-    void loadPage(null, false);
+    if (!timelineQuery.isPending) {
+      setIsSlow(false);
+      return;
+    }
 
-    const handlePageShow = () => void refresh();
-    window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, []);
+    const slowTimer = window.setTimeout(() => setIsSlow(true), SLOW_REQUEST_MS);
+    return () => window.clearTimeout(slowTimer);
+  }, [timelineQuery.isPending]);
 
-  if (state.isInitialLoading) {
+  if (timelineQuery.isPending) {
     return (
       <output className={styles.feedback} aria-label="Loading memories">
         <ImageIcon aria-hidden="true" />
         <span>
-          {state.isSlow ? "This is taking a little longer than usual." : "Opening your memories..."}
+          {isSlow ? "This is taking a little longer than usual." : "Opening your memories..."}
         </span>
       </output>
     );
   }
 
-  if (state.pageError) {
+  const pages = timelineQuery.data?.pages ?? [];
+
+  if (timelineQuery.isError && pages.length === 0) {
     return (
       <div className={styles.feedback} role="alert">
         <p>We could not load your memories.</p>
-        <button type="button" onClick={() => void refresh()}>
+        <button type="button" onClick={() => void timelineQuery.refetch()}>
           Try again
         </button>
       </div>
     );
   }
 
-  if (state.memories.length === 0) {
+  let resetPageIndex = -1;
+  for (let index = pages.length - 1; index >= 0; index -= 1) {
+    if (pages[index].cursorReset) {
+      resetPageIndex = index;
+      break;
+    }
+  }
+  const visiblePages = resetPageIndex === -1 ? pages : pages.slice(resetPageIndex);
+  const memories = visiblePages.flatMap((page) => page.memories);
+  const visibleMemories =
+    variant === "recent" ? memories.slice(0, RECENT_MEMORIES_LIMIT) : memories;
+
+  if (visibleMemories.length === 0) {
     return (
       <div className={styles.feedback}>
         <ImageIcon aria-hidden="true" />
@@ -190,8 +118,6 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
     );
   }
 
-  const visibleMemories =
-    variant === "recent" ? state.memories.slice(0, RECENT_MEMORIES_LIMIT) : state.memories;
   const months = groupMemoriesByMonth(visibleMemories);
 
   return (
@@ -237,18 +163,20 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
           </motion.section>
         );
       })}
-      {variant === "full" && state.nextCursor ? (
+      {variant === "full" && timelineQuery.hasNextPage ? (
         <div className={styles.loadMore}>
-          {state.nextPageError ? <p role="alert">We could not load more memories.</p> : null}
+          {timelineQuery.isFetchNextPageError ? (
+            <p role="alert">We could not load more memories.</p>
+          ) : null}
           <button
             type="button"
-            disabled={state.isAppending}
-            onClick={() => void loadPage(state.nextCursor, true)}
-            aria-label={state.nextPageError ? "Try loading more" : "Load more"}
+            disabled={timelineQuery.isFetchingNextPage}
+            onClick={() => void timelineQuery.fetchNextPage()}
+            aria-label={timelineQuery.isFetchNextPageError ? "Try loading more" : "Load more"}
           >
-            {state.isAppending
+            {timelineQuery.isFetchingNextPage
               ? "Loading more..."
-              : state.nextPageError
+              : timelineQuery.isFetchNextPageError
                 ? "Try loading more"
                 : "Load Earlier Memories"}
           </button>

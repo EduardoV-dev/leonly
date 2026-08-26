@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,6 +10,7 @@ import {
   MAX_MEMORY_PHOTO_COUNT,
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../constants/create-memory";
+import { memoryQueryKeys } from "../../constants/query-keys";
 
 type CreateMemoryValues = {
   description: string;
@@ -64,6 +66,7 @@ function createFormData(
 export function useCreateMemoryForm() {
   const { t } = useTranslation("memories");
   const router = useRouter();
+  const queryClient = useQueryClient();
   const idempotencyKey = useRef<string | null>(null);
   const [coverPhotoIndex, setCoverPhotoIndex] = useState<number | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -203,6 +206,7 @@ export function useCreateMemoryForm() {
         throw new Error(payload.error ?? t("create.validation.saveFailed"));
       }
 
+      await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
       router.push(APP_ROUTES.TIMELINE);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t("create.validation.saveFailed"));

@@ -1,4 +1,6 @@
+import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoriesTimeline } from ".";
 
@@ -19,15 +21,27 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+function renderTimeline(
+  timeline: ReactNode = <MemoriesTimeline />,
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
+  return {
+    queryClient,
+    ...render(<QueryClientProvider client={queryClient}>{timeline}</QueryClientProvider>),
+  };
+}
+
 describe("MemoriesTimeline", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn());
+    notifyManager.setScheduler((callback) => callback());
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    notifyManager.setScheduler((callback) => window.setTimeout(callback, 0));
   });
 
   it("shows slow feedback, then an empty state when the first page settles", async () => {
@@ -39,7 +53,7 @@ describe("MemoriesTimeline", () => {
         }),
     );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     expect(screen.getByRole("status", { name: "Loading memories" })).toBeInTheDocument();
 
     await act(async () => {
@@ -71,7 +85,7 @@ describe("MemoriesTimeline", () => {
         }),
       );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -100,7 +114,7 @@ describe("MemoriesTimeline", () => {
       .mockRejectedValueOnce(new Error("network failed"))
       .mockResolvedValueOnce(jsonResponse({ cursorReset: false, memories: [], nextCursor: null }));
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -131,7 +145,7 @@ describe("MemoriesTimeline", () => {
       }),
     );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -157,7 +171,7 @@ describe("MemoriesTimeline", () => {
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -191,7 +205,7 @@ describe("MemoriesTimeline", () => {
       }),
     );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -234,7 +248,7 @@ describe("MemoriesTimeline", () => {
       }),
     );
 
-    render(<MemoriesTimeline />);
+    renderTimeline();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -260,7 +274,7 @@ describe("MemoriesTimeline", () => {
       jsonResponse({ cursorReset: false, memories: recentMemories, nextCursor: "next" }),
     );
 
-    render(<MemoriesTimeline variant="recent" />);
+    renderTimeline(<MemoriesTimeline variant="recent" />);
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -270,5 +284,26 @@ describe("MemoriesTimeline", () => {
     expect(screen.getAllByRole("img", { name: /Cover for Recent memory/i })).toHaveLength(4);
     expect(screen.queryByRole("heading", { name: "Recent memory 5" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
+  });
+
+  it("reuses cached timeline data when remounted", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
+    );
+
+    const firstRender = renderTimeline();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    firstRender.unmount();
+
+    renderTimeline(<MemoriesTimeline />, firstRender.queryClient);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(screen.getByRole("heading", { name: "Our picnic" })).toBeInTheDocument();
   });
 });
