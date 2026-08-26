@@ -13,7 +13,13 @@ const memory = {
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   location: "The botanical gardens",
   memoryDate: "2026-08-20",
-  photos: [{ id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe", url: "https://storage.example/cover" }],
+  photos: [
+    {
+      coverUrl: "https://storage.example/cover-card",
+      detailUrl: "https://storage.example/cover-detail",
+      id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
+    },
+  ],
   title: "Among the flowers",
   visibility: "timeline" as const,
 };

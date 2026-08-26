@@ -1,24 +1,40 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, ImageIcon, Star } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MemoryDetailPhoto } from "../../types/memory-detail";
+import { MemoryPhotoLightbox } from "../memory-photo-lightbox";
 import styles from "./memory-photo-gallery.module.css";
+import ambientStyles from "./memory-photo-gallery-ambient.module.css";
 
 type MemoryPhotoGalleryProps = {
+  dateLabel: string;
+  dateTime: string;
+  description: string | null;
   photos: MemoryDetailPhoto[];
   title: string;
 };
 
-export function MemoryPhotoGallery({ photos, title }: Readonly<MemoryPhotoGalleryProps>) {
+export function MemoryPhotoGallery({
+  dateLabel,
+  dateTime,
+  description,
+  photos,
+  title,
+}: Readonly<MemoryPhotoGalleryProps>) {
   const { t } = useTranslation("memories");
-  const [failedPhotoIds, setFailedPhotoIds] = useState<Set<string>>(() => new Set());
+  const [failedCoverPhotoIds, setFailedCoverPhotoIds] = useState<Set<string>>(() => new Set());
+  const [failedDetailPhotoIds, setFailedDetailPhotoIds] = useState<Set<string>>(() => new Set());
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const photoCount = photos.length;
   const selectedPhoto = photos[selectedIndex];
-  const selectedUrl =
-    selectedPhoto && !failedPhotoIds.has(selectedPhoto.id) ? selectedPhoto.url : null;
+  const selectedDetailUrl =
+    selectedPhoto && !failedDetailPhotoIds.has(selectedPhoto.id) ? selectedPhoto.detailUrl : null;
+  const selectedCoverUrl =
+    selectedPhoto && !failedCoverPhotoIds.has(selectedPhoto.id) ? selectedPhoto.coverUrl : null;
+  const selectedUrl = selectedDetailUrl ?? selectedCoverUrl;
   const selectedPosition = selectedIndex + 1;
 
   if (!selectedPhoto) {
@@ -40,30 +56,56 @@ export function MemoryPhotoGallery({ photos, title }: Readonly<MemoryPhotoGaller
     setSelectedIndex((current) => (current + 1) % photoCount);
   };
   const markSelectedPhotoFailed = () => {
+    const setFailedPhotoIds = selectedDetailUrl ? setFailedDetailPhotoIds : setFailedCoverPhotoIds;
     setFailedPhotoIds((current) => new Set(current).add(selectedPhoto.id));
   };
   const markPhotoFailed = (photoId: string) => {
-    setFailedPhotoIds((current) => new Set(current).add(photoId));
+    setFailedCoverPhotoIds((current) => new Set(current).add(photoId));
   };
 
   return (
     <section className={styles.gallery} aria-label={t("detail.gallery.label", { title })}>
       <div className={styles.stage}>
+        <div className={ambientStyles.ambient} aria-hidden="true">
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+          <Heart />
+          <Star />
+        </div>
         {selectedUrl ? (
-          // biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time.
-          <img
-            key={selectedPhoto.id}
-            src={selectedUrl}
-            width={1200}
-            height={1500}
-            alt={t("detail.gallery.photoAlt", {
-              position: selectedPosition,
-              title,
-              total: photoCount,
-            })}
-            fetchPriority={selectedIndex === 0 ? "high" : "auto"}
-            onError={markSelectedPhotoFailed}
-          />
+          <button
+            type="button"
+            className={styles.photoTrigger}
+            onClick={() => setIsLightboxOpen(true)}
+            aria-label={t("detail.lightbox.open", { position: selectedPosition })}
+          >
+            {/* biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time. */}
+            <img
+              key={selectedPhoto.id}
+              src={selectedUrl}
+              width={1200}
+              height={1500}
+              alt={t("detail.gallery.photoAlt", {
+                position: selectedPosition,
+                title,
+                total: photoCount,
+              })}
+              fetchPriority={selectedIndex === 0 ? "high" : "auto"}
+              onError={markSelectedPhotoFailed}
+            />
+          </button>
         ) : (
           <div
             className={styles.photoFallback}
@@ -94,11 +136,30 @@ export function MemoryPhotoGallery({ photos, title }: Readonly<MemoryPhotoGaller
         ) : null}
       </div>
 
+      {isLightboxOpen ? (
+        <MemoryPhotoLightbox
+          dateLabel={dateLabel}
+          dateTime={dateTime}
+          description={description}
+          onClose={() => setIsLightboxOpen(false)}
+          onNext={selectNext}
+          onPhotoError={markSelectedPhotoFailed}
+          onPrevious={selectPrevious}
+          onSelect={setSelectedIndex}
+          photoIds={photos.map((photo) => photo.id)}
+          photoUrl={selectedUrl}
+          selectedIndex={selectedIndex}
+          title={title}
+        />
+      ) : null}
+
       {photoCount > 1 ? (
         <fieldset className={styles.thumbnails}>
           <legend className={styles.srOnly}>{t("detail.gallery.label", { title })}</legend>
           {photos.map((photo, index) => {
-            const thumbnailUrl = failedPhotoIds.has(photo.id) ? null : photo.url;
+            const thumbnailUrl = failedCoverPhotoIds.has(photo.id)
+              ? null
+              : (photo.coverUrl ?? photo.detailUrl);
             const position = index + 1;
 
             return (

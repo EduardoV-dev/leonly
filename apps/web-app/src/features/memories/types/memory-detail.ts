@@ -1,6 +1,7 @@
 export type MemoryDetailPhoto = {
+  coverUrl: string | null;
+  detailUrl: string | null;
   id: string;
-  url: string | null;
 };
 
 export type MemoryDetail = {

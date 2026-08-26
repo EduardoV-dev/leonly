@@ -3,8 +3,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const createAdminClientMock = vi.hoisted(() => vi.fn());
+const createMemoryPhotoVariantsMock = vi.hoisted(() =>
+  vi.fn(async () => ({ cover: Buffer.from("cover"), detail: Buffer.from("detail") })),
+);
 
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
+vi.mock("./create-memory-photo-variants", () => ({
+  createMemoryPhotoVariants: createMemoryPhotoVariantsMock,
+}));
 
 import { createMemory, validateCreateMemoryFormData } from "./create-memory";
 
@@ -86,7 +92,13 @@ describe("validateCreateMemoryFormData", () => {
 });
 
 describe("createMemory", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createMemoryPhotoVariantsMock.mockResolvedValue({
+      cover: Buffer.from("cover"),
+      detail: Buffer.from("detail"),
+    });
+  });
 
   function createAdminClient(rpc: ReturnType<typeof vi.fn>) {
     return { rpc, storage: { from: vi.fn() } };
@@ -165,6 +177,70 @@ describe("createMemory", () => {
       p_timezone: "UTC",
       p_title: "Our picnic",
       p_visibility: "timeline",
+    });
+  });
+
+  it("uploads the original, cover, and detail before finalizing a photo", async () => {
+    const formData = createFormData();
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const photo = new File([bytes], "memory.png", { type: "image/png" });
+    Object.defineProperty(photo, "arrayBuffer", { value: async () => bytes.buffer });
+    formData.append("photos", photo);
+    formData.set("coverPhotoIndex", "0");
+
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: [
+          {
+            attempt_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+            is_new: true,
+            memory_id: null,
+            status: "processing",
+          },
+        ],
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            cover_object_path: "space/attempt/photo/cover.webp",
+            detail_object_path: "space/attempt/photo/detail.webp",
+            object_path: "space/attempt/photo/original",
+          },
+        ],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", error: null });
+    const upload = vi.fn().mockResolvedValue({ error: null });
+    createAdminClientMock.mockReturnValue({
+      rpc,
+      storage: { from: vi.fn(() => ({ upload })) },
+    });
+
+    await expect(
+      createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", formData),
+    ).resolves.toEqual({ id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", reused: false });
+
+    expect(upload).toHaveBeenNthCalledWith(1, "space/attempt/photo/original", bytes.buffer, {
+      contentType: "image/png",
+      upsert: false,
+    });
+    expect(upload).toHaveBeenNthCalledWith(
+      2,
+      "space/attempt/photo/cover.webp",
+      Buffer.from("cover"),
+      { contentType: "image/webp", upsert: false },
+    );
+    expect(upload).toHaveBeenNthCalledWith(
+      3,
+      "space/attempt/photo/detail.webp",
+      Buffer.from("detail"),
+      { contentType: "image/webp", upsert: false },
+    );
+    expect(rpc).toHaveBeenCalledWith("mark_memory_photo_uploaded", {
+      p_photo_id: expect.any(String),
     });
   });
 });

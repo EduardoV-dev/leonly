@@ -11,11 +11,37 @@ const SIGNED_URL_TTL_SECONDS = 300;
 const creatorSchema = z.object({ display_name: z.string().min(1) });
 const photoRowsSchema = z.array(
   z.object({
+    cover_object_path: z.string().min(1).nullable(),
+    detail_object_path: z.string().min(1).nullable(),
     id: z.uuid(),
     object_path: z.string().min(1),
     position: z.number().int().nonnegative(),
   }),
 );
+
+async function signPhotoPaths(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  coverPath: string,
+  detailPath: string,
+): Promise<Pick<MemoryDetailPhoto, "coverUrl" | "detailUrl">> {
+  if (coverPath === detailPath) {
+    const { data, error } = await supabase.storage
+      .from("memory-photos")
+      .createSignedUrl(coverPath, SIGNED_URL_TTL_SECONDS);
+    const url = error ? null : (data?.signedUrl ?? null);
+    return { coverUrl: url, detailUrl: url };
+  }
+
+  const [coverResult, detailResult] = await Promise.all([
+    supabase.storage.from("memory-photos").createSignedUrl(coverPath, SIGNED_URL_TTL_SECONDS),
+    supabase.storage.from("memory-photos").createSignedUrl(detailPath, SIGNED_URL_TTL_SECONDS),
+  ]);
+
+  return {
+    coverUrl: coverResult.error ? null : (coverResult.data?.signedUrl ?? null),
+    detailUrl: detailResult.error ? null : (detailResult.data?.signedUrl ?? null),
+  };
+}
 
 export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | null> {
   try {
@@ -36,7 +62,7 @@ export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | 
         .maybeSingle(),
       supabase
         .from("memory_photos")
-        .select("id,object_path,position")
+        .select("id,object_path,cover_object_path,detail_object_path,position")
         .eq("memory_id", memory.id)
         .order("position", { ascending: true }),
     ]);
@@ -56,13 +82,15 @@ export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | 
       : photoRows;
     const photos: MemoryDetailPhoto[] = await Promise.all(
       orderedRows.map(async (photo) => {
-        const { data, error } = await supabase.storage
-          .from("memory-photos")
-          .createSignedUrl(photo.object_path, SIGNED_URL_TTL_SECONDS);
+        const urls = await signPhotoPaths(
+          supabase,
+          photo.cover_object_path ?? photo.object_path,
+          photo.detail_object_path ?? photo.object_path,
+        );
 
         return {
           id: photo.id,
-          url: error ? null : (data?.signedUrl ?? null),
+          ...urls,
         };
       }),
     );

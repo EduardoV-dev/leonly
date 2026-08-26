@@ -83,16 +83,22 @@ describe("getMemoryDetail", () => {
   it("promotes the cover and keeps the remaining persisted order", async () => {
     photosResult.data = [
       {
+        cover_object_path: "space/first-cover.webp",
+        detail_object_path: "space/first-detail.webp",
         id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
         object_path: "space/first.webp",
         position: 0,
       },
       {
+        cover_object_path: "space/second-cover.webp",
+        detail_object_path: "space/second-detail.webp",
         id: "cc2df916-833a-4f1b-b744-b7b4c176ae93",
         object_path: "space/second.webp",
         position: 1,
       },
       {
+        cover_object_path: "space/cover-card.webp",
+        detail_object_path: "space/cover-detail.webp",
         id: memory.coverPhotoId,
         object_path: "space/cover.webp",
         position: 2,
@@ -111,11 +117,15 @@ describe("getMemoryDetail", () => {
   it("keeps other photos available when one signing request fails", async () => {
     photosResult.data = [
       {
+        cover_object_path: "space/cover-card.webp",
+        detail_object_path: "space/cover-detail.webp",
         id: memory.coverPhotoId,
         object_path: "space/cover.webp",
         position: 0,
       },
       {
+        cover_object_path: "space/failed-cover.webp",
+        detail_object_path: "space/failed-detail.webp",
         id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
         object_path: "space/failed.webp",
         position: 1,
@@ -130,9 +140,39 @@ describe("getMemoryDetail", () => {
     const detail = await getMemoryDetail(memory.id);
 
     expect(detail?.photos).toEqual([
-      { id: memory.coverPhotoId, url: "https://storage.example/space/cover.webp" },
-      { id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452", url: null },
+      {
+        coverUrl: "https://storage.example/space/cover-card.webp",
+        detailUrl: "https://storage.example/space/cover-detail.webp",
+        id: memory.coverPhotoId,
+      },
+      {
+        coverUrl: null,
+        detailUrl: null,
+        id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+      },
     ]);
+  });
+
+  it("uses one original URL per legacy photo without variants", async () => {
+    photosResult.data = [
+      {
+        cover_object_path: null,
+        detail_object_path: null,
+        id: memory.coverPhotoId,
+        object_path: "space/original.webp",
+        position: 0,
+      },
+    ];
+
+    await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
+      photos: [
+        {
+          coverUrl: "https://storage.example/space/original.webp",
+          detailUrl: "https://storage.example/space/original.webp",
+        },
+      ],
+    });
+    expect(signedUrlMock).toHaveBeenCalledOnce();
   });
 
   it("throws a recoverable read failure for dependent database errors", async () => {

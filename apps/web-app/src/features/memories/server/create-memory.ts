@@ -4,6 +4,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAX_MEMORY_PHOTO_COUNT, MAX_MEMORY_PHOTO_SIZE_BYTES } from "../constants/create-memory";
+import {
+  createMemoryPhotoVariants,
+  type MemoryPhotoVariants,
+} from "./create-memory-photo-variants";
+import { cleanupMemoryCreationAttempt } from "./memory-photo-staging-cleanup";
+
+export { cleanupStaleMemoryPhotoStaging } from "./memory-photo-staging-cleanup";
 
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_LOCATION_LENGTH = 150;
@@ -16,6 +23,7 @@ type ValidatedPhoto = {
   bytes: ArrayBuffer;
   contentType: "image/jpeg" | "image/png" | "image/webp";
   digest: string;
+  variants: MemoryPhotoVariants;
 };
 
 type ValidatedMemoryInput = {
@@ -129,11 +137,18 @@ async function validatePhoto(file: File): Promise<ValidatedPhoto> {
     });
   }
 
-  return {
-    bytes,
-    contentType,
-    digest: createHash("sha256").update(Buffer.from(bytes)).digest("hex"),
-  };
+  try {
+    return {
+      bytes,
+      contentType,
+      digest: createHash("sha256").update(Buffer.from(bytes)).digest("hex"),
+      variants: await createMemoryPhotoVariants(bytes),
+    };
+  } catch {
+    throw new CreateMemoryError("Please review the highlighted fields.", {
+      photos: "One or more photos could not be processed.",
+    });
+  }
 }
 
 export async function validateCreateMemoryFormData(
@@ -181,7 +196,10 @@ export async function validateCreateMemoryFormData(
     });
   }
 
-  const photos = await Promise.all(files.map((file) => validatePhoto(file as File)));
+  const photos: ValidatedPhoto[] = [];
+  for (const file of files) {
+    photos.push(await validatePhoto(file as File));
+  }
   const coverPhotoIndexValue = formData.get("coverPhotoIndex");
   const coverPhotoIndex = photos.length === 0 ? null : Number(coverPhotoIndexValue);
   const hasInvalidCover =
@@ -223,44 +241,6 @@ export async function validateCreateMemoryFormData(
     title: title ?? "",
     visibility,
   };
-}
-
-async function cleanupAttempt(attemptId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("fail_memory_creation_attempt", {
-    p_attempt_id: attemptId,
-  });
-  if (error || !data) {
-    return;
-  }
-
-  const paths = (data as Array<{ object_path: string }>).map((item) => item.object_path);
-  if (paths.length === 0) {
-    return;
-  }
-
-  const { error: removeError } = await admin.storage.from("memory-photos").remove(paths);
-  if (!removeError) {
-    await admin.rpc("mark_memory_photo_staging_cleaned", { p_object_paths: paths });
-  }
-}
-
-export async function cleanupStaleMemoryPhotoStaging() {
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("list_stale_memory_photo_staging");
-  if (error || !data) {
-    return;
-  }
-
-  const paths = (data as Array<{ object_path: string }>).map((item) => item.object_path);
-  if (paths.length === 0) {
-    return;
-  }
-
-  const { error: removeError } = await admin.storage.from("memory-photos").remove(paths);
-  if (!removeError) {
-    await admin.rpc("mark_memory_photo_staging_cleaned", { p_object_paths: paths });
-  }
 }
 
 export async function createMemory(userId: string, idempotencyKey: string, formData: FormData) {
@@ -309,25 +289,55 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
   try {
     for (const [position, photo] of input.photos.entries()) {
       const photoId = photoIds[position];
-      const { data: stagingData, error: stagingError } = await admin.rpc("stage_memory_photo", {
-        p_attempt_id: reservation.attempt_id,
-        p_photo_id: photoId,
-        p_position: position,
-      });
-      const staging = stagingData?.[0] as { object_path?: string } | undefined;
+      const { data: stagingData, error: stagingError } = await admin.rpc(
+        "stage_memory_photo_variants",
+        {
+          p_attempt_id: reservation.attempt_id,
+          p_photo_id: photoId,
+          p_position: position,
+        },
+      );
+      const staging = stagingData?.[0] as
+        | {
+            cover_object_path?: string;
+            detail_object_path?: string;
+            object_path?: string;
+          }
+        | undefined;
 
-      if (stagingError || !staging?.object_path) {
+      if (
+        stagingError ||
+        !staging?.object_path ||
+        !staging.cover_object_path ||
+        !staging.detail_object_path
+      ) {
         throw new Error("Unable to stage the memory photo.");
       }
 
-      const { error: uploadError } = await admin.storage
-        .from("memory-photos")
-        .upload(staging.object_path, photo.bytes, {
-          contentType: photo.contentType,
-          upsert: false,
-        });
-      if (uploadError) {
-        throw new Error("Unable to upload the memory photo.");
+      const uploads = [
+        { bytes: photo.bytes, contentType: photo.contentType, path: staging.object_path },
+        {
+          bytes: photo.variants.cover,
+          contentType: "image/webp",
+          path: staging.cover_object_path,
+        },
+        {
+          bytes: photo.variants.detail,
+          contentType: "image/webp",
+          path: staging.detail_object_path,
+        },
+      ] as const;
+
+      for (const upload of uploads) {
+        const { error: uploadError } = await admin.storage
+          .from("memory-photos")
+          .upload(upload.path, upload.bytes, {
+            contentType: upload.contentType,
+            upsert: false,
+          });
+        if (uploadError) {
+          throw new Error("Unable to upload the memory photo.");
+        }
       }
 
       const { error: uploadedError } = await admin.rpc("mark_memory_photo_uploaded", {
@@ -357,7 +367,7 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
 
     return { id: memoryId, reused: false };
   } catch {
-    await cleanupAttempt(reservation.attempt_id);
+    await cleanupMemoryCreationAttempt(reservation.attempt_id);
     throw new CreateMemoryError("We could not save this memory. Please try again.", {}, 500);
   }
 }

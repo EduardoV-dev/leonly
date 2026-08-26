@@ -83,6 +83,15 @@ export const memoriesEn = {
       position: "{{position}} of {{total}}",
       selectPhoto: "Show photo {{position}} of {{total}}",
     },
+    lightbox: {
+      close: "Close photo viewer",
+      hideDetails: "Hide memory details",
+      label: "Photo viewer for {{title}}",
+      open: "Open photo {{position}} in full screen",
+      pagination: "Choose a photo",
+      position: "{{position}} / {{total}}",
+      showDetails: "Show memory details",
+    },
     loading: "Loading memory…",
     notFound: {
       description: "This memory may no longer be available, or it may belong somewhere else.",

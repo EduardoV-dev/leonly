@@ -83,6 +83,15 @@ export const memoriesEs = {
       position: "{{position}} de {{total}}",
       selectPhoto: "Mostrar la foto {{position}} de {{total}}",
     },
+    lightbox: {
+      close: "Cerrar visor de fotos",
+      hideDetails: "Ocultar detalles del recuerdo",
+      label: "Visor de fotos de {{title}}",
+      open: "Abrir la foto {{position}} en pantalla completa",
+      pagination: "Elegir una foto",
+      position: "{{position}} / {{total}}",
+      showDetails: "Mostrar detalles del recuerdo",
+    },
     loading: "Cargando recuerdo…",
     notFound: {
       description: "Puede que este recuerdo ya no esté disponible o que pertenezca a otro lugar.",

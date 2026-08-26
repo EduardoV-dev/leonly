@@ -1,39 +1,117 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemoryPhotoGallery } from ".";
 
 const photos = [
-  { id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe", url: "https://storage.example/cover" },
-  { id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452", url: "https://storage.example/second" },
-  { id: "cc2df916-833a-4f1b-b744-b7b4c176ae93", url: null },
+  {
+    coverUrl: "https://storage.example/cover-card",
+    detailUrl: "https://storage.example/cover-detail",
+    id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
+  },
+  {
+    coverUrl: "https://storage.example/second-card",
+    detailUrl: "https://storage.example/second-detail",
+    id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+  },
+  {
+    coverUrl: null,
+    detailUrl: null,
+    id: "cc2df916-833a-4f1b-b744-b7b4c176ae93",
+  },
 ];
+
+const galleryProps = {
+  dateLabel: "August 20, 2026",
+  dateTime: "2026-08-20",
+  description: "A sunny afternoon together.",
+  title: "Our picnic",
+};
 
 describe("MemoryPhotoGallery", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
+    HTMLDialogElement.prototype.showModal = function showModal() {
+      this.setAttribute("open", "");
+    };
+    HTMLDialogElement.prototype.close = function close() {
+      this.removeAttribute("open");
+    };
   });
 
   it("renders a calm no-photo presentation", () => {
-    render(<MemoryPhotoGallery photos={[]} title="Our picnic" />);
+    render(<MemoryPhotoGallery {...galleryProps} photos={[]} />);
 
     expect(screen.getByText("A memory held in words")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("shows one meaningful photo without unnecessary navigation", () => {
-    render(<MemoryPhotoGallery photos={[photos[0]]} title="Our picnic" />);
+    render(<MemoryPhotoGallery {...galleryProps} photos={[photos[0]]} />);
 
     expect(screen.getByRole("img", { name: "Photo 1 of 1 from Our picnic" })).toHaveAttribute(
       "src",
-      "https://storage.example/cover",
+      "https://storage.example/cover-detail",
     );
     expect(screen.queryByRole("button", { name: "Previous photo" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Next photo" })).not.toBeInTheDocument();
   });
 
+  it("renders ambient decorations behind the selected photo", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={[photos[0]]} />);
+
+    const image = screen.getByRole("img", { name: "Photo 1 of 1 from Our picnic" });
+    const stage = image.parentElement?.parentElement;
+    expect(stage?.querySelectorAll('[aria-hidden="true"] svg')).toHaveLength(16);
+  });
+
+  it("opens a lightbox with details hidden and closes it", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 in full screen" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Photo viewer for Our picnic" });
+    expect(within(dialog).getByText("1 / 2")).toBeInTheDocument();
+    expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
+
+    fireEvent.click(dialog);
+    expect(within(dialog).getByRole("heading", { name: galleryProps.title })).toBeInTheDocument();
+    expect(within(dialog).getByText(galleryProps.dateLabel)).toHaveAttribute(
+      "datetime",
+      galleryProps.dateTime,
+    );
+    expect(within(dialog).getByText(galleryProps.description)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close photo viewer" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("wraps lightbox controls and supports arrow-key navigation", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 in full screen" }));
+    const dialog = screen.getByRole("dialog", { name: "Photo viewer for Our picnic" });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Previous photo" }));
+    expect(within(dialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("img", { name: "Photo 2 of 2 from Our picnic" }),
+    ).toHaveAttribute("src", "https://storage.example/second-detail");
+
+    fireEvent.keyDown(dialog, { key: "ArrowRight" });
+    expect(within(dialog).getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Show photo 2 of 2" }));
+    expect(within(dialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("img", { name: "Photo 2 of 2 from Our picnic" }));
+    expect(within(dialog).getByText(galleryProps.description)).toBeInTheDocument();
+  });
+
   it("wraps navigation and exposes direct selected state", () => {
-    render(<MemoryPhotoGallery photos={photos} title="Our picnic" />);
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos} />);
 
     const previous = screen.getByRole("button", { name: "Previous photo" });
     const next = screen.getByRole("button", { name: "Next photo" });
@@ -50,7 +128,13 @@ describe("MemoryPhotoGallery", () => {
   });
 
   it("falls back for a failed image while other photos remain selectable", () => {
-    render(<MemoryPhotoGallery photos={photos.slice(0, 2)} title="Our picnic" />);
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    fireEvent.error(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
+    expect(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" })).toHaveAttribute(
+      "src",
+      "https://storage.example/cover-card",
+    );
 
     fireEvent.error(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
     expect(screen.getByRole("img", { name: "Photo 1 is unavailable" })).toBeInTheDocument();
@@ -58,7 +142,15 @@ describe("MemoryPhotoGallery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show photo 2 of 2" }));
     expect(screen.getByRole("img", { name: "Photo 2 of 2 from Our picnic" })).toHaveAttribute(
       "src",
-      "https://storage.example/second",
+      "https://storage.example/second-detail",
     );
+  });
+
+  it("uses cover variants for thumbnail selectors", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    expect(
+      screen.getByRole("button", { name: "Show photo 2 of 2" }).querySelector("img"),
+    ).toHaveAttribute("src", "https://storage.example/second-card");
   });
 });

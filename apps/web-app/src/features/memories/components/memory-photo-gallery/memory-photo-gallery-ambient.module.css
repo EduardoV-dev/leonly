@@ -1,0 +1,172 @@
+.ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  contain: paint;
+  pointer-events: none;
+}
+
+.ambient svg {
+  position: absolute;
+  bottom: -2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #b98b90;
+  fill: currentcolor;
+  opacity: 0;
+  stroke-width: 1.2;
+  animation: ambientFloat 10s linear infinite;
+}
+
+.ambient svg:nth-child(1) {
+  left: 5%;
+  animation-delay: -2s;
+  animation-duration: 11s;
+}
+
+.ambient svg:nth-child(2) {
+  left: 19%;
+  color: #b8a1c3;
+  animation-delay: -7s;
+  animation-duration: 13s;
+}
+
+.ambient svg:nth-child(3) {
+  left: 36%;
+  width: 0.9rem;
+  height: 0.9rem;
+  animation-delay: -5s;
+  animation-duration: 9s;
+}
+
+.ambient svg:nth-child(4) {
+  left: 64%;
+  color: #c4a5ad;
+  animation-delay: -9s;
+  animation-duration: 14s;
+}
+
+.ambient svg:nth-child(5) {
+  left: 81%;
+  width: 1rem;
+  height: 1rem;
+  animation-delay: -4s;
+  animation-duration: 12s;
+}
+
+.ambient svg:nth-child(6) {
+  left: 94%;
+  color: #a994b5;
+  animation-delay: -11s;
+  animation-duration: 15s;
+}
+
+.ambient svg:nth-child(7) {
+  left: 11%;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: #b8a1c3;
+  animation-delay: -8s;
+  animation-duration: 16s;
+}
+
+.ambient svg:nth-child(8) {
+  left: 28%;
+  width: 1.05rem;
+  height: 1.05rem;
+  animation-delay: -13s;
+  animation-duration: 12s;
+}
+
+.ambient svg:nth-child(9) {
+  left: 46%;
+  color: #a994b5;
+  animation-delay: -6s;
+  animation-duration: 14s;
+}
+
+.ambient svg:nth-child(10) {
+  left: 57%;
+  width: 0.75rem;
+  height: 0.75rem;
+  color: #c4a5ad;
+  animation-delay: -15s;
+  animation-duration: 17s;
+}
+
+.ambient svg:nth-child(11) {
+  left: 72%;
+  width: 1.1rem;
+  height: 1.1rem;
+  animation-delay: -3s;
+  animation-duration: 13s;
+}
+
+.ambient svg:nth-child(12) {
+  left: 88%;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #b8a1c3;
+  animation-delay: -10s;
+  animation-duration: 18s;
+}
+
+.ambient svg:nth-child(13) {
+  left: 2%;
+  width: 1rem;
+  height: 1rem;
+  animation-delay: -14s;
+  animation-duration: 15s;
+}
+
+.ambient svg:nth-child(14) {
+  left: 42%;
+  color: #a994b5;
+  animation-delay: -1s;
+  animation-duration: 11s;
+}
+
+.ambient svg:nth-child(15) {
+  left: 67%;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: #c4a5ad;
+  animation-delay: -12s;
+  animation-duration: 16s;
+}
+
+.ambient svg:nth-child(16) {
+  left: 98%;
+  width: 0.7rem;
+  height: 0.7rem;
+  color: #b8a1c3;
+  animation-delay: -5s;
+  animation-duration: 14s;
+}
+
+@keyframes ambientFloat {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+  }
+
+  12% {
+    opacity: 0.38;
+  }
+
+  82% {
+    opacity: 0.28;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(1.2rem, -48rem, 0) rotate(28deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient {
+    display: none;
+  }
+}

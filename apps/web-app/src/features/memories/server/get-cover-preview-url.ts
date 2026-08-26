@@ -6,7 +6,10 @@ import { getAvailableMemory } from "./get-available-memory";
 
 const SIGNED_URL_TTL_SECONDS = 300;
 const memoryIdSchema = z.uuid();
-const coverPhotoSchema = z.object({ object_path: z.string().min(1) });
+const coverPhotoSchema = z.object({
+  cover_object_path: z.string().min(1).nullable(),
+  object_path: z.string().min(1),
+});
 
 export async function getCoverPreviewUrl(memoryId: string): Promise<string | null> {
   if (!memoryIdSchema.safeParse(memoryId).success) {
@@ -22,7 +25,7 @@ export async function getCoverPreviewUrl(memoryId: string): Promise<string | nul
   const supabase = await createClient();
   const { data: photo, error: photoError } = await supabase
     .from("memory_photos")
-    .select("object_path")
+    .select("object_path,cover_object_path")
     .eq("id", memory.coverPhotoId)
     .eq("memory_id", memory.id)
     .maybeSingle();
@@ -35,10 +38,11 @@ export async function getCoverPreviewUrl(memoryId: string): Promise<string | nul
     return null;
   }
 
-  const { object_path: objectPath } = coverPhotoSchema.parse(photo);
+  const { cover_object_path: coverObjectPath, object_path: objectPath } =
+    coverPhotoSchema.parse(photo);
   const { data: signedUrl, error: signedUrlError } = await supabase.storage
     .from("memory-photos")
-    .createSignedUrl(objectPath, SIGNED_URL_TTL_SECONDS);
+    .createSignedUrl(coverObjectPath ?? objectPath, SIGNED_URL_TTL_SECONDS);
 
   if (signedUrlError) {
     return null;

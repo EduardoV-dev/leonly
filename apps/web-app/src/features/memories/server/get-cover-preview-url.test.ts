@@ -14,15 +14,20 @@ const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const coverPhotoId = "22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf";
 
 function createSupabaseClient({
+  coverObjectPath = "space-id/photo-id-cover.webp",
   objectPath = "space-id/photo-id.jpg",
   signingError = null,
 }: {
+  coverObjectPath?: string | null;
   objectPath?: string;
   signingError?: Error | null;
 } = {}) {
   const photoQuery = {
     eq: vi.fn(),
-    maybeSingle: vi.fn().mockResolvedValue({ data: { object_path: objectPath }, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { cover_object_path: coverObjectPath, object_path: objectPath },
+      error: null,
+    }),
   };
   photoQuery.eq.mockReturnValue(photoQuery);
   const createSignedUrl = vi.fn().mockResolvedValue({
@@ -61,7 +66,7 @@ describe("getCoverPreviewUrl", () => {
     );
     expect(photoQuery.eq).toHaveBeenCalledWith("id", coverPhotoId);
     expect(photoQuery.eq).toHaveBeenCalledWith("memory_id", memoryId);
-    expect(createSignedUrl).toHaveBeenCalledWith("space-id/photo-id.jpg", 300);
+    expect(createSignedUrl).toHaveBeenCalledWith("space-id/photo-id-cover.webp", 300);
     expect(calls).toEqual(["authorization", "signing"]);
   });
 
@@ -83,6 +88,7 @@ describe("getCoverPreviewUrl", () => {
 
   it("returns no URL when signing fails without exposing the persisted path", async () => {
     const { client, createSignedUrl } = createSupabaseClient({
+      coverObjectPath: "private-space/cover.webp",
       objectPath: "private-space/cover.jpg",
       signingError: new Error("storage unavailable"),
     });
@@ -90,6 +96,17 @@ describe("getCoverPreviewUrl", () => {
     createClientMock.mockResolvedValue(client);
 
     await expect(getCoverPreviewUrl(memoryId)).resolves.toBeNull();
-    expect(createSignedUrl).toHaveBeenCalledWith("private-space/cover.jpg", 300);
+    expect(createSignedUrl).toHaveBeenCalledWith("private-space/cover.webp", 300);
+  });
+
+  it("falls back to the original path for photos created before variants", async () => {
+    const { client, createSignedUrl } = createSupabaseClient({ coverObjectPath: null });
+    getAvailableMemoryMock.mockResolvedValue({ coverPhotoId, id: memoryId });
+    createClientMock.mockResolvedValue(client);
+
+    await expect(getCoverPreviewUrl(memoryId)).resolves.toBe(
+      "https://storage.example/signed-cover",
+    );
+    expect(createSignedUrl).toHaveBeenCalledWith("space-id/photo-id.jpg", 300);
   });
 });

@@ -118,7 +118,13 @@ export function MemoryDetailPage({
       <motion.div className={styles.layout} variants={activeLayoutVariants}>
         <motion.div className={styles.spread} variants={activeLayoutVariants}>
           <motion.div variants={activeGalleryVariants}>
-            <MemoryPhotoGallery photos={memory.photos} title={memory.title} />
+            <MemoryPhotoGallery
+              dateLabel={formattedDate}
+              dateTime={memory.memoryDate}
+              description={memory.description}
+              photos={memory.photos}
+              title={memory.title}
+            />
           </motion.div>
 
           <motion.article className={styles.story} variants={activeStoryVariants}>
