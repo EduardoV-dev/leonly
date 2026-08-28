@@ -1,0 +1,50 @@
+@media (min-width: 1600px) {
+  .page {
+    width: 100%;
+    max-width: none;
+    padding-right: clamp(3.5rem, 6vw, 8rem);
+    padding-left: clamp(3.5rem, 6vw, 8rem);
+  }
+
+  .intro {
+    max-width: 44rem;
+    margin-right: 0;
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .intro p {
+    margin-left: 0;
+  }
+
+  .form {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: clamp(2.5rem, 4vw, 5.5rem);
+    row-gap: 2.5rem;
+  }
+
+  .titleField {
+    grid-column: span 7;
+  }
+
+  .metadata {
+    grid-column: span 5;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: end;
+  }
+
+  .contentGrid {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.7fr) minmax(23rem, 0.8fr);
+    gap: clamp(3rem, 5vw, 6rem);
+  }
+
+  .detailsSection {
+    gap: 2.25rem;
+  }
+
+  .feedback,
+  .actions {
+    grid-column: 1 / -1;
+  }
+}

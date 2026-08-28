@@ -7,8 +7,12 @@ import type { MemoryDetail, MemoryDetailPhoto } from "../types/memory-detail";
 import { getAvailableMemory } from "./get-available-memory";
 
 const SIGNED_URL_TTL_SECONDS = 300;
+type MemoryVisibility = "timeline" | "vault";
 
-const creatorSchema = z.object({ display_name: z.string().min(1) });
+const creatorSchema = z.object({
+  display_name: z.string().min(1),
+  users: z.object({ avatar_url: z.string().url().nullable() }).nullable().catch(null),
+});
 const photoRowsSchema = z.array(
   z.object({
     cover_object_path: z.string().min(1).nullable(),
@@ -43,11 +47,14 @@ async function signPhotoPaths(
   };
 }
 
-export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | null> {
+export async function getMemoryDetailForVisibility(
+  memoryId: string,
+  expectedVisibility: MemoryVisibility,
+): Promise<MemoryDetail | null> {
   try {
     const memory = await getAvailableMemory(memoryId);
 
-    if (!memory) {
+    if (!memory || memory.visibility !== expectedVisibility) {
       return null;
     }
 
@@ -55,7 +62,7 @@ export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | 
     const [creatorResult, photosResult] = await Promise.all([
       supabase
         .from("space_members")
-        .select("display_name")
+        .select("display_name,users(avatar_url)")
         .eq("space_id", memory.spaceId)
         .eq("user_id", memory.creatorUserId)
         .is("deleted_at", null)
@@ -97,6 +104,7 @@ export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | 
 
     return {
       createdAt: memory.createdAt,
+      creatorAvatarUrl: creator.users?.avatar_url ?? null,
       creatorDisplayName: creator.display_name,
       description: memory.description,
       id: memory.id,
@@ -110,4 +118,8 @@ export async function getMemoryDetail(memoryId: string): Promise<MemoryDetail | 
     logServerError({ event: "memory_detail_failed", operation: "get_memory_detail" }, error);
     throw new Error("Failed to load the memory detail.", { cause: error });
   }
+}
+
+export function getMemoryDetail(memoryId: string): Promise<MemoryDetail | null> {
+  return getMemoryDetailForVisibility(memoryId, "timeline");
 }

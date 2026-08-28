@@ -1,0 +1,120 @@
+.page {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 2rem;
+  padding: 2rem 1.25rem 6rem;
+  background:
+    radial-gradient(circle at 92% 0%, rgb(231 216 235 / 0.48), transparent 24rem),
+    var(--auth-surface);
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid #e2d5e3;
+  border-radius: 1rem;
+  background: rgb(255 253 252 / 0.86);
+  box-shadow: 0 20px 55px rgb(84 55 79 / 0.08);
+}
+
+.seal {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border: 1px solid #d5c1d8;
+  border-radius: 50%;
+  background: #eee4f0;
+  color: #755577;
+}
+
+.seal svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  stroke-width: 1.6;
+}
+
+.introduction {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.eyebrow,
+.description,
+.sharedNote {
+  margin: 0;
+}
+
+.eyebrow {
+  color: #866989;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.introduction h1 {
+  margin: 0;
+  color: #4f354f;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.description {
+  max-width: 43rem;
+  color: #554b54;
+  font-size: clamp(0.98rem, 2vw, 1.1rem);
+  line-height: 1.55;
+}
+
+.sharedNote {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  background: #f5edf5;
+  color: #684d69;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.sharedNote svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@mixin screen-sm {
+  .page {
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+}
+
+@mixin screen-md {
+  .page {
+    gap: 2.75rem;
+    padding: 3.6rem clamp(2.5rem, 5vw, 5rem);
+  }
+
+  .hero {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: 1.25rem;
+    padding: 2rem;
+  }
+
+  .sharedNote {
+    grid-column: 2;
+  }
+}

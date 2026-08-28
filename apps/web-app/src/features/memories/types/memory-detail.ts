@@ -6,6 +6,7 @@ export type MemoryDetailPhoto = {
 
 export type MemoryDetail = {
   createdAt: string;
+  creatorAvatarUrl: string | null;
   creatorDisplayName: string;
   description: string | null;
   id: string;

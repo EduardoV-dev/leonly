@@ -17,7 +17,7 @@ import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-sidebar.module.css";
 
 type DashboardSidebarProps = {
-  activeSection: "dashboard" | "timeline";
+  activeSection: "dashboard" | "timeline" | "vault";
   activeSpace: ActiveSpace;
   isCollapsed: boolean;
   onCollapsedChange: () => void;
@@ -75,10 +75,10 @@ export function DashboardSidebar({
           <MapPin aria-hidden="true" />
           <span className={styles.label}>Places</span>
         </button>
-        <button type="button" disabled>
+        <Link href={APP_ROUTES.VAULT} aria-current={activeSection === "vault" ? "page" : undefined}>
           <LockKeyhole aria-hidden="true" />
           <span className={styles.label}>Vault</span>
-        </button>
+        </Link>
         <button type="button" disabled>
           <Settings aria-hidden="true" />
           <span className={styles.label}>Settings</span>

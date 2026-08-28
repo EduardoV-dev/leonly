@@ -2,6 +2,7 @@
   min-width: 0;
   width: 100%;
   margin: 0 auto;
+  overflow-x: clip;
   padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
 }
 
@@ -40,14 +41,20 @@
 
 .layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   margin-top: 1.5rem;
 }
 
 .spread {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: 2.2rem;
+}
+
+.spread > * {
+  min-width: 0;
 }
 
 .story {
@@ -151,18 +158,12 @@
 }
 
 .avatar {
-  display: grid;
   width: 2.55rem;
   height: 2.55rem;
   flex: 0 0 auto;
-  place-items: center;
   border: 1px solid #e2d3d0;
   border-radius: 50%;
-  background: #f6e7e5;
-  color: var(--auth-brand);
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1rem;
-  font-weight: 700;
+  object-fit: cover;
 }
 
 .creator p {
@@ -200,7 +201,7 @@
 
 .relatedGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }

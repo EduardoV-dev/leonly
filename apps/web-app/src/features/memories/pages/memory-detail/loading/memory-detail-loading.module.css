@@ -1,7 +1,10 @@
 .page {
   display: block;
+  width: 100%;
+  min-width: 0;
   max-width: 76rem;
   margin: 0 auto;
+  overflow-x: clip;
   padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
 }
 
@@ -12,11 +15,20 @@
 
 .spread {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 2.2rem;
   margin-top: 2rem;
 }
 
+.spread > * {
+  min-width: 0;
+}
+
 .photo {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 22rem;
   aspect-ratio: 4 / 5;
   border-radius: 0.9rem;
@@ -24,13 +36,18 @@
 
 .thumbnails {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 0.7rem;
   margin-top: 0.9rem;
+  overflow: hidden;
 }
 
 .thumbnails > div {
   width: 4.35rem;
   height: 3.4rem;
+  flex: 0 0 auto;
 }
 
 .story {
@@ -110,10 +127,12 @@
   .page {
     padding: 2.75rem clamp(2.5rem, 5vw, 4.5rem) 4rem;
   }
+}
 
+@media (min-width: 75rem) {
   .spread {
-    grid-template-columns: minmax(18rem, 1.15fr) minmax(17rem, 0.85fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.85fr);
     align-items: center;
-    gap: clamp(2.5rem, 5vw, 5rem);
+    gap: clamp(1.5rem, 2vw, 2rem);
   }
 }

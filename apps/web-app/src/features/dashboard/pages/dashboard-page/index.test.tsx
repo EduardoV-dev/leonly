@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DashboardContent } from "./dashboard-content";
 import { DashboardError } from "./error";
 import { DashboardPage } from "./index";
 import { DashboardLoading } from "./loading";
@@ -10,6 +11,7 @@ const getUserMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
 const axiosPostMock = vi.hoisted(() => vi.fn());
 const axiosIsAxiosErrorMock = vi.hoisted(() => vi.fn());
+const pathnameMock = vi.hoisted(() => vi.fn());
 
 vi.mock("axios", () => ({
   default: {
@@ -40,7 +42,7 @@ vi.mock("@/features/memories/components/memories-timeline", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: redirectMock,
-  usePathname: () => "/",
+  usePathname: pathnameMock,
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 
@@ -82,6 +84,7 @@ describe("DashboardPage", () => {
     vi.setSystemTime(new Date("2023-03-28T12:00:00Z"));
     getUserMock.mockResolvedValue({ data: { user: {} } });
     getActiveSpaceForCurrentUserMock.mockResolvedValue(activeSpace);
+    pathnameMock.mockReturnValue("/");
     axiosPostMock.mockResolvedValue({
       data: {
         invite_code: "newcode",
@@ -115,25 +118,47 @@ describe("DashboardPage", () => {
   });
 
   it("renders route content inside the persistent app shell", async () => {
-    const page = await DashboardPage({ activeSection: "timeline", children: <p>Route content</p> });
+    const page = await DashboardPage({
+      activeSection: "dashboard",
+      children: <DashboardContent />,
+    });
     const queryClient = new QueryClient();
     render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
 
-    expect(screen.getByText("Route content")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
     for (const dashboardLink of screen.getAllByRole("link", { name: "Dashboard" })) {
       expect(dashboardLink).toHaveAttribute("href", "/");
+      expect(dashboardLink).toHaveAttribute("aria-current", "page");
     }
     for (const timelineLink of screen.getAllByRole("link", { name: "Timeline" })) {
       expect(timelineLink).toHaveAttribute("href", "/timeline");
-      expect(timelineLink).toHaveAttribute("aria-current", "page");
+      expect(timelineLink).not.toHaveAttribute("aria-current");
+    }
+    for (const vaultLink of screen.getAllByRole("link", { name: "Vault" })) {
+      expect(vaultLink).toHaveAttribute("href", "/vault");
+      expect(vaultLink).not.toHaveAttribute("aria-current");
     }
     for (const newEntryLink of screen.getAllByRole("link", { name: "New Entry" })) {
       expect(newEntryLink).toHaveAttribute("href", "/timeline/new");
     }
-    for (const placeholder of ["Places", "Vault", "Settings"]) {
+    for (const placeholder of ["Places", "Settings"]) {
       for (const placeholderButton of screen.getAllByRole("button", { name: placeholder })) {
         expect(placeholderButton).toBeDisabled();
       }
+    }
+  });
+
+  it("marks Vault as current in desktop and mobile navigation", async () => {
+    pathnameMock.mockReturnValue("/vault");
+    const page = await DashboardPage({ children: <div>Vault route</div> });
+    render(page);
+
+    expect(screen.getByText("Vault route")).toBeInTheDocument();
+    for (const vaultLink of screen.getAllByRole("link", { name: "Vault" })) {
+      expect(vaultLink).toHaveAttribute("aria-current", "page");
+    }
+    for (const timelineLink of screen.getAllByRole("link", { name: "Timeline" })) {
+      expect(timelineLink).not.toHaveAttribute("aria-current");
     }
   });
 

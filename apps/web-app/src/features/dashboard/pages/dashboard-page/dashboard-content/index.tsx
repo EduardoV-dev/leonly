@@ -1,16 +1,15 @@
+"use client";
+
 import { Heart, MapPin } from "lucide-react";
 import { MemoriesTimeline } from "@/features/memories/components/memories-timeline";
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import { useDashboardActiveSpace } from "../dashboard-shell";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
 import { InviteManagement } from "./invite-management";
 import { RelationshipMilestone } from "./relationship-milestone";
 
-type DashboardContentProps = {
-  activeSpace: ActiveSpace;
-};
-
-export function DashboardContent({ activeSpace }: DashboardContentProps) {
+export function DashboardContent() {
+  const activeSpace = useDashboardActiveSpace();
   const memberNames = activeSpace.active_members.map((member) => member.display_name).join(" & ");
   const isWaitingForPartner = activeSpace.active_members.length === 1;
 

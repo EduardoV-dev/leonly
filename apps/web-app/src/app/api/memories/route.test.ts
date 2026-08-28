@@ -29,11 +29,13 @@ describe("POST /api/memories", () => {
     const body = new URLSearchParams({ creatorUserId: "other-user", spaceId: "other-space" });
 
     const request = new Request("http://localhost/api/memories", {
-      body,
+      body: body.toString(),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+      },
       method: "POST",
     });
-    request.headers.set("Content-Type", "application/x-www-form-urlencoded");
-    request.headers.set("Idempotency-Key", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0");
     const response = await POST(request);
 
     expect(createMemoryMock).toHaveBeenCalledWith(

@@ -1,9 +1,15 @@
 import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
+import { fileTypeFromBuffer } from "file-type";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { MAX_MEMORY_PHOTO_COUNT, MAX_MEMORY_PHOTO_SIZE_BYTES } from "../constants/create-memory";
+import {
+  ACCEPTED_MEMORY_PHOTO_EXTENSIONS,
+  ACCEPTED_MEMORY_PHOTO_TYPES,
+  MAX_MEMORY_PHOTO_COUNT,
+  MAX_MEMORY_PHOTO_SIZE_BYTES,
+} from "../constants/create-memory";
 import {
   createMemoryPhotoVariants,
   type MemoryPhotoVariants,
@@ -19,9 +25,17 @@ const MAX_TITLE_LENGTH = 120;
 const memoryDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const uuidSchema = z.uuid();
 
+type MemoryPhotoContentType = (typeof ACCEPTED_MEMORY_PHOTO_TYPES)[number];
+
+const extensionsByContentType: Record<MemoryPhotoContentType, readonly string[]> = {
+  "image/jpeg": ["jpg", "jpeg"],
+  "image/png": ["png"],
+  "image/webp": ["webp"],
+};
+
 type ValidatedPhoto = {
   bytes: ArrayBuffer;
-  contentType: "image/jpeg" | "image/png" | "image/webp";
+  contentType: MemoryPhotoContentType;
   digest: string;
   variants: MemoryPhotoVariants;
 };
@@ -94,32 +108,25 @@ function isRealCalendarDate(value: string) {
   return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 
-function detectImageContent(bytes: Uint8Array): ValidatedPhoto["contentType"] | null {
-  const isJpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  const isPng =
-    bytes.length >= 8 &&
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47 &&
-    bytes[4] === 0x0d &&
-    bytes[5] === 0x0a &&
-    bytes[6] === 0x1a &&
-    bytes[7] === 0x0a;
-  const isWebp =
-    bytes.length >= 12 &&
-    String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
-    String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
+function getPhotoExtension(fileName: string): string | null {
+  const extension = fileName.split(".").at(-1)?.toLowerCase();
 
-  if (isJpeg) {
-    return "image/jpeg";
-  }
+  return extension && extension !== fileName.toLowerCase() ? extension : null;
+}
 
-  if (isPng) {
-    return "image/png";
-  }
+function isAcceptedPhotoExtension(extension: string | null): extension is string {
+  return Boolean(
+    extension &&
+      ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
+        extension as (typeof ACCEPTED_MEMORY_PHOTO_EXTENSIONS)[number],
+      ),
+  );
+}
 
-  return isWebp ? "image/webp" : null;
+function isAcceptedPhotoContentType(contentType: string): contentType is MemoryPhotoContentType {
+  return ACCEPTED_MEMORY_PHOTO_TYPES.includes(
+    contentType as (typeof ACCEPTED_MEMORY_PHOTO_TYPES)[number],
+  );
 }
 
 async function validatePhoto(file: File): Promise<ValidatedPhoto> {
@@ -129,11 +136,25 @@ async function validatePhoto(file: File): Promise<ValidatedPhoto> {
     });
   }
 
+  const extension = getPhotoExtension(file.name);
+  if (!isAcceptedPhotoExtension(extension)) {
+    throw new CreateMemoryError("Please review the highlighted fields.", {
+      photos: "Photos must use a JPG, JPEG, PNG, or WebP extension.",
+    });
+  }
+
   const bytes = await file.arrayBuffer();
-  const contentType = detectImageContent(new Uint8Array(bytes));
-  if (!contentType) {
+  const detectedFileType = await fileTypeFromBuffer(new Uint8Array(bytes)).catch(() => undefined);
+  if (!detectedFileType || !isAcceptedPhotoContentType(detectedFileType.mime)) {
     throw new CreateMemoryError("Please review the highlighted fields.", {
       photos: "Photos must be JPEG, PNG, or WebP images.",
+    });
+  }
+
+  const contentType = detectedFileType.mime;
+  if (!extensionsByContentType[contentType].includes(extension)) {
+    throw new CreateMemoryError("Please review the highlighted fields.", {
+      photos: "Photo file extensions must match their image type.",
     });
   }
 

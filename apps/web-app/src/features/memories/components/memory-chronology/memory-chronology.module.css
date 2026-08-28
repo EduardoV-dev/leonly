@@ -1,0 +1,106 @@
+.timeline,
+.month,
+.monthCards,
+.recentCards {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.timeline {
+  gap: 3rem;
+}
+
+.month {
+  gap: 1.4rem;
+}
+
+.monthHeading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+}
+
+.monthHeading h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: #5b3138;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.25rem, 3vw, 1.55rem);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.monthHeading span {
+  min-width: 0;
+  flex: 1;
+  height: 1px;
+  background: #dfcfcc;
+}
+
+.monthCards {
+  gap: clamp(2rem, 3vw, 3.5rem);
+}
+
+.recentCards {
+  gap: 1.25rem;
+}
+
+.loadMore button {
+  min-height: 2.45rem;
+  padding: 0 1rem;
+  border: 1px solid #d8c4c2;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #80575a;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.loadMore {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  padding-top: 0.5rem;
+}
+
+.loadMore p {
+  margin: 0;
+  color: #9b3e4b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.loadMore button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+@mixin screen-md {
+  .recentCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@mixin screen-lg {
+  .recentCards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .monthCards > article {
+    width: 60%;
+  }
+
+  .monthCards > article:nth-child(odd) {
+    justify-self: start;
+  }
+
+  .monthCards > article:nth-child(even) {
+    justify-self: end;
+  }
+}

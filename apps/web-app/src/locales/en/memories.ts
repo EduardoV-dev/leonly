@@ -108,4 +108,44 @@ export const memoriesEn = {
       vault: "Private vault",
     },
   },
+  vault: {
+    actions: {
+      create: "Preserve a memory",
+      loadMore: "Load Earlier Memories",
+      loadingMore: "Loading more…",
+      retry: "Try again",
+      retryLoadMore: "Try loading more",
+    },
+    empty: {
+      description: "Memories kept out of the timeline will rest here, available to both of you.",
+      heading: "Your shared Vault is waiting",
+    },
+    error: {
+      description: "Your memories are still preserved. We just could not open the Vault right now.",
+      heading: "We could not open the Private Vault",
+      loadMore: "We could not load more Vault memories.",
+    },
+    hero: {
+      description:
+        "A quiet archive shared by both of you. These memories stay out of the timeline, never out of reach.",
+      eyebrow: "Shared archive",
+      heading: "Private Vault",
+      shared: "Visible to both active members",
+    },
+    loading: {
+      label: "Loading Private Vault",
+      slow: "This is taking a little longer than usual.",
+      standard: "Opening your shared archive…",
+    },
+    detail: {
+      actions: {
+        backToVault: "Back to Private Vault",
+      },
+      related: {
+        empty: "More memories from the shared Vault will appear here.",
+        eyebrow: "From the archive",
+        heading: "More from the Vault",
+      },
+    },
+  },
 } as const;

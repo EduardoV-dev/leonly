@@ -8,7 +8,7 @@ import { DashboardContent } from "./dashboard-content";
 import { DashboardShell } from "./dashboard-shell";
 
 type DashboardPageProps = {
-  activeSection?: "dashboard" | "timeline";
+  activeSection?: "dashboard" | "timeline" | "vault";
   children?: ReactNode;
 };
 
@@ -42,7 +42,7 @@ export async function DashboardPage({
 
   return (
     <DashboardShell activeSection={activeSection} activeSpace={activeSpace}>
-      {children ?? <DashboardContent activeSpace={activeSpace} />}
+      {children ?? <DashboardContent />}
     </DashboardShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookHeart, Heart, ImageIcon, MapPin } from "lucide-react";
+import { BookHeart, Heart, ImageIcon, LockKeyhole, MapPin } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -12,9 +12,10 @@ import styles from "./memory-summary-card.module.css";
 type MemorySummaryCardProps = {
   actions?: ReactNode;
   count?: ReactNode;
+  destination?: "timeline" | "vault";
   entryIndex?: number;
   memory: TimelineMemory;
-  variant?: "recent" | "related" | "timeline";
+  variant?: "recent" | "related" | "timeline" | "vault";
 };
 
 type CardMotion = {
@@ -76,6 +77,7 @@ function formatCompactDate(memoryDate: string): string {
 export function MemorySummaryCard({
   actions,
   count,
+  destination = "timeline",
   entryIndex = 0,
   memory,
   variant = "timeline",
@@ -88,6 +90,10 @@ export function MemorySummaryCard({
   const activeCoverVariants = shouldReduceMotion ? reducedMotionVariants : coverVariants;
   const activeBodyVariants = shouldReduceMotion ? reducedMotionVariants : bodyVariants;
   const activeContentVariants = shouldReduceMotion ? reducedMotionVariants : contentVariants;
+  const detailHref =
+    destination === "vault"
+      ? APP_ROUTES.VAULT_MEMORY_DETAIL(memory.id)
+      : APP_ROUTES.MEMORY_DETAIL(memory.id);
   const cardMotion: CardMotion = {
     delay: Math.min(entryIndex, 5) * 0.04,
     x: variant === "timeline" && entryIndex % 2 === 1 ? 18 : -18,
@@ -103,11 +109,7 @@ export function MemorySummaryCard({
       viewport={{ amount: 0.15, once: true }}
     >
       <motion.div variants={activeSummaryVariants}>
-        <Link
-          className={styles.summaryLink}
-          href={APP_ROUTES.MEMORY_DETAIL(memory.id)}
-          aria-label={`Open ${memory.title}`}
-        >
+        <Link className={styles.summaryLink} href={detailHref} aria-label={`Open ${memory.title}`}>
           <motion.div className={styles.cover} variants={activeCoverVariants}>
             {coverPhotoUrl ? (
               // biome-ignore lint/performance/noImgElement: Timeline cover URLs are authorized runtime URLs.
@@ -127,7 +129,11 @@ export function MemorySummaryCard({
           <motion.div className={styles.cardBody} variants={activeBodyVariants}>
             <motion.div className={styles.meta} variants={activeContentVariants}>
               <span className={styles.iconBadge}>
-                <BookHeart aria-hidden="true" />
+                {variant === "vault" ? (
+                  <LockKeyhole aria-hidden="true" />
+                ) : (
+                  <BookHeart aria-hidden="true" />
+                )}
               </span>
               <p className={styles.date}>{formatCompactDate(memory.memoryDate)}</p>
             </motion.div>

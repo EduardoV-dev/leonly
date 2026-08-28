@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { getRelatedMemories } from "./get-related-memories";
+import { getRelatedMemories, getRelatedMemoriesForVisibility } from "./get-related-memories";
 
 const getActiveSpaceMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
@@ -79,5 +79,24 @@ describe("getRelatedMemories", () => {
     createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
 
     await expect(getRelatedMemories(currentMemoryId)).resolves.toEqual([]);
+  });
+
+  it("supports the same recommendation query for Vault memories", async () => {
+    const query = createQuery([
+      {
+        created_at: "2026-08-23T10:00:00.000Z",
+        description: null,
+        id: relatedMemoryId,
+        location: null,
+        memory_date: "2026-08-20",
+        title: "Another hidden moment",
+      },
+    ]);
+    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+
+    await expect(getRelatedMemoriesForVisibility(currentMemoryId, "vault")).resolves.toHaveLength(
+      1,
+    );
+    expect(query.eq).toHaveBeenCalledWith("visibility", "vault");
   });
 });

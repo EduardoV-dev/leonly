@@ -18,7 +18,8 @@
 }
 
 .recent,
-.related {
+.related,
+.vault {
   display: flex;
   height: 100%;
   min-height: 16rem;
@@ -30,7 +31,8 @@
 }
 
 .recent .summaryLink,
-.related .summaryLink {
+.related .summaryLink,
+.vault .summaryLink {
   flex: 1;
   grid-template-rows: auto 1fr;
 }
@@ -58,7 +60,8 @@
 }
 
 .recent .cover,
-.related .cover {
+.related .cover,
+.vault .cover {
   position: relative;
   aspect-ratio: 4 / 3;
 }
@@ -104,7 +107,8 @@
 }
 
 .recent .cardBody,
-.related .cardBody {
+.related .cardBody,
+.vault .cardBody {
   min-height: 11rem;
   padding: 1rem;
 }
@@ -119,7 +123,8 @@
 }
 
 .recent .meta,
-.related .meta {
+.related .meta,
+.vault .meta {
   margin-bottom: 0.9rem;
 }
 
@@ -167,7 +172,8 @@
 }
 
 .recent .cardBody h3,
-.related .cardBody h3 {
+.related .cardBody h3,
+.vault .cardBody h3 {
   font-size: 1.2rem;
 }
 
@@ -185,8 +191,25 @@
 }
 
 .recent .description,
-.related .description {
+.related .description,
+.vault .description {
   -webkit-line-clamp: 2;
+}
+
+.vault {
+  border-color: #e3d7e5;
+  background: #fffdfc;
+  box-shadow: 0 14px 35px rgb(83 56 78 / 0.07);
+}
+
+.vault .cover {
+  background: #f5edf5;
+  color: #866989;
+}
+
+.vault .iconBadge {
+  background: #eee4f0;
+  color: #755577;
 }
 
 .location {

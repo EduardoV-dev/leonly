@@ -94,6 +94,25 @@ describe("CreateMemoryPage", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Our picnic");
   });
 
+  it("navigates to the new Vault detail after preserving a Vault memory", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }),
+    );
+    renderCreateMemoryPage();
+
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our hidden picnic" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2020-08-20" } });
+    fireEvent.click(screen.getByRole("radio", { name: /Private vault/i }));
+    const form = screen.getByRole("button", { name: "Preserve Memory" }).closest("form");
+    if (!form) {
+      throw new Error("Create-memory form is missing.");
+    }
+
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/vault/memory-id"));
+  });
+
   it("submits through application validation instead of browser validation", async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(
@@ -172,6 +191,18 @@ describe("CreateMemoryPage", () => {
     });
 
     expect(screen.getByText("Choose up to 10 photos.")).toBeInTheDocument();
+    expect(screen.getByText("0/10")).toBeInTheDocument();
+  });
+
+  it("rejects an unsupported file extension before submission", () => {
+    renderCreateMemoryPage();
+    const photo = new File(["image"], "memory.gif", { type: "image/gif" });
+
+    fireEvent.change(screen.getByLabelText(/Drag and drop your photos/i), {
+      target: { files: [photo] },
+    });
+
+    expect(screen.getByText("Photos must be JPEG, PNG, or WebP images.")).toBeInTheDocument();
     expect(screen.getByText("0/10")).toBeInTheDocument();
   });
 });

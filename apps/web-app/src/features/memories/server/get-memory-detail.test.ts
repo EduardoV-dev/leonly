@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { getMemoryDetail } from "./get-memory-detail";
+import { getVaultMemoryDetail } from "./get-vault-memory-detail";
 
 const { createClientMock, getAvailableMemoryMock, signedUrlMock, creatorResult, photosResult } =
   vi.hoisted(() => ({
@@ -44,7 +45,10 @@ function queryBuilder(result: typeof creatorResult | typeof photosResult) {
 describe("getMemoryDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    creatorResult.data = { display_name: "Sarah" };
+    creatorResult.data = {
+      display_name: "Sarah",
+      users: { avatar_url: "https://avatars.example/sarah.jpg" },
+    };
     creatorResult.error = null;
     photosResult.data = [];
     photosResult.error = null;
@@ -68,8 +72,9 @@ describe("getMemoryDetail", () => {
     expect(createClientMock).not.toHaveBeenCalled();
   });
 
-  it("returns complete timeline and Vault detail with the current creator name", async () => {
+  it("returns complete timeline and Vault detail through their visibility-specific resolvers", async () => {
     await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
+      creatorAvatarUrl: "https://avatars.example/sarah.jpg",
       creatorDisplayName: "Sarah",
       description: "A quiet afternoon together.",
       location: "The botanical gardens",
@@ -77,7 +82,14 @@ describe("getMemoryDetail", () => {
     });
 
     getAvailableMemoryMock.mockResolvedValue({ ...memory, visibility: "vault" });
-    await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({ visibility: "vault" });
+    await expect(getVaultMemoryDetail(memory.id)).resolves.toMatchObject({ visibility: "vault" });
+  });
+
+  it("does not load dependent data when the memory belongs to another detail route", async () => {
+    getAvailableMemoryMock.mockResolvedValue({ ...memory, visibility: "vault" });
+
+    await expect(getMemoryDetail(memory.id)).resolves.toBeNull();
+    expect(createClientMock).not.toHaveBeenCalled();
   });
 
   it("promotes the cover and keeps the remaining persisted order", async () => {

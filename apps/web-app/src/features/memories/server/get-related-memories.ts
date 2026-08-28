@@ -9,6 +9,7 @@ import type { TimelineMemory } from "../types/timeline";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
 
 const memoryIdSchema = z.uuid();
+type MemoryVisibility = "timeline" | "vault";
 const relatedMemoryRowsSchema = z.array(
   z.object({
     created_at: z.string(),
@@ -20,7 +21,10 @@ const relatedMemoryRowsSchema = z.array(
   }),
 );
 
-export async function getRelatedMemories(memoryId: string): Promise<TimelineMemory[]> {
+export async function getRelatedMemoriesForVisibility(
+  memoryId: string,
+  visibility: MemoryVisibility,
+): Promise<TimelineMemory[]> {
   if (!memoryIdSchema.safeParse(memoryId).success) {
     return [];
   }
@@ -37,7 +41,7 @@ export async function getRelatedMemories(memoryId: string): Promise<TimelineMemo
       .from("memories")
       .select("id,title,description,location,memory_date,created_at")
       .eq("space_id", activeSpace.id)
-      .eq("visibility", "timeline")
+      .eq("visibility", visibility)
       .neq("id", memoryId)
       .is("deleted_at", null)
       .order("memory_date", { ascending: false })
@@ -65,4 +69,8 @@ export async function getRelatedMemories(memoryId: string): Promise<TimelineMemo
     logServerError({ event: "related_memories_failed", operation: "get_related_memories" }, error);
     return [];
   }
+}
+
+export function getRelatedMemories(memoryId: string): Promise<TimelineMemory[]> {
+  return getRelatedMemoriesForVisibility(memoryId, "timeline");
 }

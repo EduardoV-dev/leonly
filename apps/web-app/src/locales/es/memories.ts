@@ -108,4 +108,46 @@ export const memoriesEs = {
       vault: "Bóveda privada",
     },
   },
+  vault: {
+    actions: {
+      create: "Conservar un recuerdo",
+      loadMore: "Cargar recuerdos anteriores",
+      loadingMore: "Cargando más…",
+      retry: "Intentar de nuevo",
+      retryLoadMore: "Intentar cargar más",
+    },
+    empty: {
+      description:
+        "Los recuerdos fuera de la línea de tiempo descansarán aquí, disponibles para ambos.",
+      heading: "Su bóveda compartida está esperando",
+    },
+    error: {
+      description:
+        "Sus recuerdos siguen conservados. Simplemente no pudimos abrir la bóveda ahora mismo.",
+      heading: "No pudimos abrir la bóveda privada",
+      loadMore: "No pudimos cargar más recuerdos de la bóveda.",
+    },
+    hero: {
+      description:
+        "Un archivo tranquilo compartido por ambos. Estos recuerdos quedan fuera de la línea de tiempo, nunca fuera de su alcance.",
+      eyebrow: "Archivo compartido",
+      heading: "Bóveda privada",
+      shared: "Visible para ambos miembros activos",
+    },
+    loading: {
+      label: "Cargando la bóveda privada",
+      slow: "Esto está tardando un poco más de lo habitual.",
+      standard: "Abriendo su archivo compartido…",
+    },
+    detail: {
+      actions: {
+        backToVault: "Volver a la bóveda privada",
+      },
+      related: {
+        empty: "Aquí aparecerán más recuerdos de su bóveda compartida.",
+        eyebrow: "Desde el archivo",
+        heading: "Más de la bóveda",
+      },
+    },
+  },
 } as const;

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import {
-  ACCEPTED_MEMORY_PHOTO_TYPES,
+  ACCEPTED_MEMORY_PHOTO_EXTENSIONS,
   MAX_MEMORY_PHOTO_COUNT,
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../constants/create-memory";
@@ -38,6 +38,18 @@ const initialValues: CreateMemoryValues = {
   title: "",
   visibility: "timeline",
 };
+
+function hasAcceptedPhotoExtension(photo: File): boolean {
+  const extension = photo.name.split(".").at(-1)?.toLowerCase();
+
+  return Boolean(
+    extension &&
+      extension !== photo.name.toLowerCase() &&
+      ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
+        extension as (typeof ACCEPTED_MEMORY_PHOTO_EXTENSIONS)[number],
+      ),
+  );
+}
 
 function createFormData(
   values: CreateMemoryValues,
@@ -116,14 +128,7 @@ export function useCreateMemoryForm() {
       return;
     }
 
-    if (
-      nextPhotos.some(
-        (photo) =>
-          !ACCEPTED_MEMORY_PHOTO_TYPES.includes(
-            photo.type as (typeof ACCEPTED_MEMORY_PHOTO_TYPES)[number],
-          ),
-      )
-    ) {
+    if (nextPhotos.some((photo) => !hasAcceptedPhotoExtension(photo))) {
       setFields((current) => ({
         ...current,
         photos: t("create.validation.photoType"),
@@ -207,7 +212,11 @@ export function useCreateMemoryForm() {
       }
 
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
-      router.push(APP_ROUTES.TIMELINE);
+      router.push(
+        values.visibility === "vault"
+          ? APP_ROUTES.VAULT_MEMORY_DETAIL(payload.id)
+          : APP_ROUTES.TIMELINE,
+      );
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t("create.validation.saveFailed"));
     } finally {

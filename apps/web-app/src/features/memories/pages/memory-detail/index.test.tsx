@@ -8,6 +8,7 @@ import { MemoryDetailNotFound } from "./not-found";
 
 const memory = {
   createdAt: "2026-08-23T10:00:00.000Z",
+  creatorAvatarUrl: "https://avatars.example/sarah.jpg",
   creatorDisplayName: "Sarah",
   description: "We found a quiet corner and stayed until sunset.",
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
@@ -37,6 +38,10 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByText("The botanical gardens")).toBeInTheDocument();
     expect(screen.getByText(memory.description)).toBeInTheDocument();
     expect(screen.getByText("Preserved by Sarah")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Sarah" })).toHaveAttribute(
+      "src",
+      "https://avatars.example/sarah.jpg",
+    );
     expect(screen.getByText("Shared memory")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More from our story" })).toBeInTheDocument();
     expect(

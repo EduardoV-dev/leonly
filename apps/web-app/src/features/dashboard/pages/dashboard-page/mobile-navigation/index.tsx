@@ -4,7 +4,7 @@ import { APP_ROUTES } from "@/constants/routes";
 import styles from "./mobile-navigation.module.css";
 
 type MobileNavigationProps = {
-  activeSection: "dashboard" | "timeline";
+  activeSection: "dashboard" | "timeline" | "vault";
 };
 
 export function MobileNavigation({ activeSection }: Readonly<MobileNavigationProps>) {
@@ -28,10 +28,10 @@ export function MobileNavigation({ activeSection }: Readonly<MobileNavigationPro
         <MapPin aria-hidden="true" />
         <span>Places</span>
       </button>
-      <button type="button" disabled>
+      <Link href={APP_ROUTES.VAULT} aria-current={activeSection === "vault" ? "page" : undefined}>
         <LockKeyhole aria-hidden="true" />
         <span>Vault</span>
-      </button>
+      </Link>
       <button type="button" disabled>
         <Settings aria-hidden="true" />
         <span>Settings</span>

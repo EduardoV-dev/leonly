@@ -14,6 +14,31 @@ vi.mock("./create-memory-photo-variants", () => ({
 
 import { createMemory, validateCreateMemoryFormData } from "./create-memory";
 
+function base64ToArrayBuffer(value: string): ArrayBuffer {
+  const bytes = Buffer.from(value, "base64");
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
+function bytesFromNumbers(values: number[]): ArrayBuffer {
+  return Uint8Array.from(values).buffer;
+}
+
+const photoFixtures = {
+  jpg: base64ToArrayBuffer(
+    "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKpAB//Z",
+  ),
+  png: base64ToArrayBuffer(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWP4//8/AAX+Av5Y8msOAAAAAElFTkSuQmCC",
+  ),
+  webp: base64ToArrayBuffer("UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA="),
+};
+
+function createPhoto(name: string, bytes: ArrayBuffer, type = "image/png"): File {
+  const photo = new File([bytes], name, { type });
+  Object.defineProperty(photo, "arrayBuffer", { value: async () => bytes });
+  return photo;
+}
+
 function createFormData(): FormData {
   const formData = new FormData();
   formData.set("title", "  Our picnic  ");
@@ -58,19 +83,9 @@ describe("validateCreateMemoryFormData", () => {
   });
 
   it("accepts ten photos and rejects an eleventh", async () => {
-    const createPng = (name: string) => {
-      const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-      const file = new File([bytes], name, {
-        type: "image/png",
-      });
-      Object.defineProperty(file, "arrayBuffer", {
-        value: async () => bytes.buffer,
-      });
-      return file;
-    };
     const validFormData = createFormData();
     for (let index = 0; index < 10; index += 1) {
-      validFormData.append("photos", createPng(`${index}.png`));
+      validFormData.append("photos", createPhoto(`${index}.png`, photoFixtures.png));
     }
     validFormData.set("coverPhotoIndex", "0");
 
@@ -81,12 +96,67 @@ describe("validateCreateMemoryFormData", () => {
 
     const invalidFormData = createFormData();
     for (let index = 0; index < 11; index += 1) {
-      invalidFormData.append("photos", createPng(`${index}.png`));
+      invalidFormData.append("photos", createPhoto(`${index}.png`, photoFixtures.png));
     }
     invalidFormData.set("coverPhotoIndex", "0");
 
     await expect(validateCreateMemoryFormData(invalidFormData)).rejects.toMatchObject({
       fields: { photos: "Choose up to 10 photos." },
+    });
+  });
+
+  it.each([
+    ["memory.jpg", photoFixtures.jpg, "image/jpeg"],
+    ["memory.JPEG", photoFixtures.jpg, "image/jpeg"],
+    ["memory.png", photoFixtures.png, "image/png"],
+    ["memory.webp", photoFixtures.webp, "image/webp"],
+  ])("accepts a matching %s image signature", async (name, bytes, contentType) => {
+    const formData = createFormData();
+    formData.append("photos", createPhoto(name, bytes));
+    formData.set("coverPhotoIndex", "0");
+
+    await expect(validateCreateMemoryFormData(formData)).resolves.toMatchObject({
+      photos: [expect.objectContaining({ contentType })],
+    });
+  });
+
+  it("ignores a spoofed browser MIME type when the image signature and extension match", async () => {
+    const formData = createFormData();
+    formData.append("photos", createPhoto("memory.png", photoFixtures.png, "application/pdf"));
+    formData.set("coverPhotoIndex", "0");
+
+    await expect(validateCreateMemoryFormData(formData)).resolves.toMatchObject({
+      photos: [expect.objectContaining({ contentType: "image/png" })],
+    });
+  });
+
+  it("rejects an unsupported extension before image processing", async () => {
+    const formData = createFormData();
+    formData.append("photos", createPhoto("memory.gif", photoFixtures.png));
+    formData.set("coverPhotoIndex", "0");
+
+    await expect(validateCreateMemoryFormData(formData)).rejects.toMatchObject({
+      fields: { photos: "Photos must use a JPG, JPEG, PNG, or WebP extension." },
+    });
+  });
+
+  it("rejects an image when its extension does not match the detected signature", async () => {
+    const formData = createFormData();
+    formData.append("photos", createPhoto("memory.jpg", photoFixtures.png));
+    formData.set("coverPhotoIndex", "0");
+
+    await expect(validateCreateMemoryFormData(formData)).rejects.toMatchObject({
+      fields: { photos: "Photo file extensions must match their image type." },
+    });
+  });
+
+  it("rejects random bytes with an allowed extension", async () => {
+    const formData = createFormData();
+    formData.append("photos", createPhoto("memory.png", bytesFromNumbers([0x00, 0x01, 0x02])));
+    formData.set("coverPhotoIndex", "0");
+
+    await expect(validateCreateMemoryFormData(formData)).rejects.toMatchObject({
+      fields: { photos: "Photos must be JPEG, PNG, or WebP images." },
     });
   });
 });
@@ -182,9 +252,8 @@ describe("createMemory", () => {
 
   it("uploads the original, cover, and detail before finalizing a photo", async () => {
     const formData = createFormData();
-    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    const photo = new File([bytes], "memory.png", { type: "image/png" });
-    Object.defineProperty(photo, "arrayBuffer", { value: async () => bytes.buffer });
+    const bytes = photoFixtures.png;
+    const photo = createPhoto("memory.png", bytes);
     formData.append("photos", photo);
     formData.set("coverPhotoIndex", "0");
 
@@ -223,7 +292,7 @@ describe("createMemory", () => {
       createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", formData),
     ).resolves.toEqual({ id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", reused: false });
 
-    expect(upload).toHaveBeenNthCalledWith(1, "space/attempt/photo/original", bytes.buffer, {
+    expect(upload).toHaveBeenNthCalledWith(1, "space/attempt/photo/original", bytes, {
       contentType: "image/png",
       upsert: false,
     });

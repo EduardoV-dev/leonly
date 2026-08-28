@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, LockKeyhole, MapPin, Save, Sparkles, X } from "lucide-react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { PastDatePicker } from "@/components/past-date-picker";
@@ -8,33 +9,85 @@ import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { APP_ROUTES } from "@/constants/routes";
 import styles from "./create-memory.module.css";
+import wideStyles from "./create-memory-wide.module.css";
 import { PhotoPicker } from "./photo-picker";
 import { useCreateMemoryForm } from "./use-create-memory-form";
+
+const pageVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { delayChildren: 0.04, staggerChildren: 0.06 },
+  },
+};
+
+const revealVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const formVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      delayChildren: 0.08,
+      duration: 0.24,
+      ease: [0.22, 1, 0.36, 1],
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const reducedMotionVariants: Variants = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1 },
+};
 
 export function CreateMemoryPage() {
   const { t } = useTranslation("memories");
   const form = useCreateMemoryForm();
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const activePageVariants = shouldReduceMotion ? reducedMotionVariants : pageVariants;
+  const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
+  const activeFormVariants = shouldReduceMotion ? reducedMotionVariants : formVariants;
 
   return (
-    <main className={styles.page}>
-      <Link className={styles.backLink} href={APP_ROUTES.TIMELINE}>
-        <ArrowLeft aria-hidden="true" />
-        {t("create.backToTimeline")}
-      </Link>
-      <header className={styles.intro}>
+    <motion.main
+      className={`${styles.page} ${wideStyles.page}`}
+      variants={activePageVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={activeRevealVariants}>
+        <Link className={styles.backLink} href={APP_ROUTES.TIMELINE}>
+          <ArrowLeft aria-hidden="true" />
+          {t("create.backToTimeline")}
+        </Link>
+      </motion.div>
+      <motion.header
+        className={`${styles.intro} ${wideStyles.intro}`}
+        variants={activeRevealVariants}
+      >
         <h1 id="create-memory-title">{t("create.heading")}</h1>
         <p>{t("create.intro")}</p>
-      </header>
+      </motion.header>
 
-      <form
-        className={styles.form}
+      <motion.form
+        className={`${styles.form} ${wideStyles.form}`}
         noValidate
+        variants={activeFormVariants}
         onSubmit={(event) => {
           event.preventDefault();
           void form.submit();
         }}
       >
-        <label className={`${styles.field} ${styles.titleField}`} htmlFor="memory-title">
+        <motion.label
+          className={`${styles.field} ${styles.titleField} ${wideStyles.titleField}`}
+          htmlFor="memory-title"
+          variants={activeRevealVariants}
+        >
           <span className={styles.fieldHeading}>
             <strong>{t("create.fields.title.label")}</strong>
             <small>{form.values.title.length}/120</small>
@@ -51,9 +104,12 @@ export function CreateMemoryPage() {
             placeholder={t("create.fields.title.placeholder")}
           />
           <FieldError id="memory-title-error">{form.fields.title}</FieldError>
-        </label>
+        </motion.label>
 
-        <div className={styles.metadata}>
+        <motion.div
+          className={`${styles.metadata} ${wideStyles.metadata}`}
+          variants={activeRevealVariants}
+        >
           <label className={styles.field} htmlFor="memory-date">
             <span className={styles.fieldHeading}>
               <strong>{t("create.fields.date.label")}</strong>
@@ -90,9 +146,12 @@ export function CreateMemoryPage() {
             </span>
             <FieldError id="memory-location-error">{form.fields.location}</FieldError>
           </label>
-        </div>
+        </motion.div>
 
-        <div className={styles.contentGrid}>
+        <motion.div
+          className={`${styles.contentGrid} ${wideStyles.contentGrid}`}
+          variants={activeRevealVariants}
+        >
           <PhotoPicker
             coverPhotoIndex={form.coverPhotoIndex}
             error={form.fields.photos}
@@ -102,7 +161,10 @@ export function CreateMemoryPage() {
             photos={form.photos}
           />
 
-          <section className={styles.detailsSection} aria-label={t("create.sections.details")}>
+          <section
+            className={`${styles.detailsSection} ${wideStyles.detailsSection}`}
+            aria-label={t("create.sections.details")}
+          >
             <label className={styles.field} htmlFor="memory-description">
               <span className={styles.fieldHeading}>
                 <strong>{t("create.fields.description.label")}</strong>
@@ -155,20 +217,27 @@ export function CreateMemoryPage() {
               <FieldError>{form.fields.visibility}</FieldError>
             </fieldset>
           </section>
-        </div>
+        </motion.div>
 
-        {form.submitError ? (
-          <div className={styles.submitError} role="alert">
-            {form.submitError}
-          </div>
-        ) : null}
-        {form.isSubmitting ? (
-          <p className={styles.progress} role="status">
-            {t("create.status.saving")}
-          </p>
+        {form.submitError || form.isSubmitting ? (
+          <motion.div className={wideStyles.feedback} variants={activeRevealVariants}>
+            {form.submitError ? (
+              <div className={styles.submitError} role="alert">
+                {form.submitError}
+              </div>
+            ) : null}
+            {form.isSubmitting ? (
+              <p className={styles.progress} role="status">
+                {t("create.status.saving")}
+              </p>
+            ) : null}
+          </motion.div>
         ) : null}
 
-        <footer className={styles.actions}>
+        <motion.footer
+          className={`${styles.actions} ${wideStyles.actions}`}
+          variants={activeRevealVariants}
+        >
           <Link href={APP_ROUTES.TIMELINE}>
             <X aria-hidden="true" />
             {t("create.actions.cancel")}
@@ -177,8 +246,8 @@ export function CreateMemoryPage() {
             {!form.isSubmitting ? <Save aria-hidden="true" /> : null}
             {t("create.actions.preserve")}
           </Button>
-        </footer>
-      </form>
-    </main>
+        </motion.footer>
+      </motion.form>
+    </motion.main>
   );
 }

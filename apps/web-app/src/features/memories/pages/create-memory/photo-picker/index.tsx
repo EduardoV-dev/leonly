@@ -2,11 +2,16 @@ import { Check, ImagePlus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FieldError } from "@/components/ui/field";
 import {
+  ACCEPTED_MEMORY_PHOTO_EXTENSIONS,
   MAX_MEMORY_PHOTO_COUNT,
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../../constants/create-memory";
 import type { SelectedMemoryPhoto } from "../use-create-memory-form";
 import styles from "./photo-picker.module.css";
+
+const photoInputAccept = ACCEPTED_MEMORY_PHOTO_EXTENSIONS.map((extension) => `.${extension}`).join(
+  ",",
+);
 
 type PhotoPickerProps = {
   coverPhotoIndex: number | null;
@@ -57,7 +62,7 @@ export function PhotoPicker({
         </small>
         <input
           id="memory-photos"
-          accept="image/jpeg,image/png,image/webp"
+          accept={photoInputAccept}
           aria-describedby={error ? "memory-photos-error" : undefined}
           aria-invalid={Boolean(error)}
           multiple
