@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemoryPhotoGallery } from ".";
 
@@ -28,9 +28,38 @@ const galleryProps = {
   title: "Our picnic",
 };
 
+const scrollIntoViewMock = vi.fn();
+
+class TestPointerEvent extends MouseEvent {
+  readonly pointerId: number;
+
+  constructor(type: string, eventInit: PointerEventInit = {}) {
+    super(type, eventInit);
+    this.pointerId = eventInit.pointerId ?? 0;
+  }
+}
+
+function swipe(element: Element, fromX: number, toX: number, fromY = 100, toY = 100) {
+  fireEvent.pointerDown(element, {
+    button: 0,
+    clientX: fromX,
+    clientY: fromY,
+    pointerId: 1,
+  });
+  fireEvent.pointerUp(element, {
+    button: 0,
+    clientX: toX,
+    clientY: toY,
+    pointerId: 1,
+  });
+}
+
 describe("MemoryPhotoGallery", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
+    scrollIntoViewMock.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
+    window.PointerEvent = TestPointerEvent as typeof PointerEvent;
     HTMLDialogElement.prototype.showModal = function showModal() {
       this.setAttribute("open", "");
     };
@@ -74,13 +103,16 @@ describe("MemoryPhotoGallery", () => {
     expect(within(dialog).getByText("1 / 2")).toBeInTheDocument();
     expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
 
-    fireEvent.click(dialog);
+    fireEvent.click(within(dialog).getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
     expect(within(dialog).getByRole("heading", { name: galleryProps.title })).toBeInTheDocument();
     expect(within(dialog).getByText(galleryProps.dateLabel)).toHaveAttribute(
       "datetime",
       galleryProps.dateTime,
     );
     expect(within(dialog).getByText(galleryProps.description)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
+    expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Close photo viewer" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -125,6 +157,65 @@ describe("MemoryPhotoGallery", () => {
     fireEvent.click(secondSelector);
     expect(secondSelector).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("img", { name: "Photo 2 of 3 from Our picnic" })).toBeInTheDocument();
+  });
+
+  it("changes photos with horizontal swipes without opening the lightbox", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    const photo = screen.getByRole("button", { name: "Open photo 1 in full screen" });
+    swipe(photo, 180, 80);
+    fireEvent.click(photo);
+
+    expect(screen.getByRole("img", { name: "Photo 2 of 2 from Our picnic" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    swipe(photo, 80, 180);
+    expect(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" })).toBeInTheDocument();
+  });
+
+  it("ignores short and mostly vertical pointer movements", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    const photo = screen.getByRole("button", { name: "Open photo 1 in full screen" });
+    swipe(photo, 100, 130);
+    swipe(photo, 100, 160, 100, 180);
+
+    expect(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" })).toBeInTheDocument();
+  });
+
+  it("keeps the selected thumbnail visible after selection changes", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    const secondSelector = screen.getByRole("button", { name: "Show photo 2 of 2" });
+    fireEvent.click(secondSelector);
+
+    expect(scrollIntoViewMock).toHaveBeenLastCalledWith({
+      block: "nearest",
+      inline: "nearest",
+    });
+    expect(scrollIntoViewMock.mock.contexts.at(-1)).toBe(secondSelector);
+  });
+
+  it("changes lightbox photos with swipes without toggling details", () => {
+    render(<MemoryPhotoGallery {...galleryProps} photos={photos.slice(0, 2)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 in full screen" }));
+    const dialog = screen.getByRole("dialog", { name: "Photo viewer for Our picnic" });
+    const photoToggle = within(dialog)
+      .getByRole("img", { name: "Photo 1 of 2 from Our picnic" })
+      .closest("button");
+    if (!photoToggle) {
+      throw new Error("Expected the lightbox photo to be interactive.");
+    }
+
+    swipe(photoToggle, 180, 80);
+    fireEvent.click(photoToggle);
+
+    expect(within(dialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
+
+    swipe(photoToggle, 80, 180);
+    expect(within(dialog).getByText("1 / 2")).toBeInTheDocument();
   });
 
   it("falls back for a failed image while other photos remain selectable", () => {

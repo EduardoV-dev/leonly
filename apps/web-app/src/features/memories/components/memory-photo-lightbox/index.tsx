@@ -1,8 +1,9 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, ImageIcon, Info, X } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useHorizontalSwipe } from "../../hooks/use-horizontal-swipe";
 import styles from "./memory-photo-lightbox.module.css";
 
 type MemoryPhotoLightboxProps = {
@@ -63,13 +64,14 @@ export function MemoryPhotoLightbox({
       onNext();
     }
   };
-  const revealDetails = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target instanceof Element && event.target.closest("button")) {
-      return;
-    }
-
-    setAreDetailsVisible(true);
+  const toggleDetails = () => {
+    setAreDetailsVisible((current) => !current);
   };
+  const swipeHandlers = useHorizontalSwipe({
+    isEnabled: photoCount > 1,
+    onSwipeLeft: onNext,
+    onSwipeRight: onPrevious,
+  });
 
   return (
     <dialog
@@ -77,7 +79,6 @@ export function MemoryPhotoLightbox({
       className={styles.dialog}
       aria-label={t("detail.lightbox.label", { title })}
       onClose={handleClose}
-      onClick={revealDetails}
       onKeyDown={handleKeyDown}
     >
       <div className={styles.shell} data-details-visible={areDetailsVisible || undefined}>
@@ -96,24 +97,37 @@ export function MemoryPhotoLightbox({
 
         <div className={styles.media}>
           {photoUrl ? (
-            // biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time.
-            <img
-              key={selectedIndex}
-              src={photoUrl}
-              width={1600}
-              height={1600}
-              alt={t("detail.gallery.photoAlt", {
-                position: selectedPosition,
-                title,
-                total: photoCount,
-              })}
-              onError={onPhotoError}
-            />
+            <button
+              type="button"
+              className={styles.photoToggle}
+              aria-controls="memory-lightbox-details"
+              aria-expanded={areDetailsVisible}
+              aria-label={t(
+                areDetailsVisible ? "detail.lightbox.hideDetails" : "detail.lightbox.showDetails",
+              )}
+              onClick={toggleDetails}
+              {...swipeHandlers}
+            >
+              {/* biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time. */}
+              <img
+                key={selectedIndex}
+                src={photoUrl}
+                width={1600}
+                height={1600}
+                alt={t("detail.gallery.photoAlt", {
+                  position: selectedPosition,
+                  title,
+                  total: photoCount,
+                })}
+                onError={onPhotoError}
+              />
+            </button>
           ) : (
             <div
               className={styles.photoFallback}
               role="img"
               aria-label={t("detail.gallery.photoUnavailable", { position: selectedPosition })}
+              {...swipeHandlers}
             >
               <ImageIcon aria-hidden="true" />
             </div>

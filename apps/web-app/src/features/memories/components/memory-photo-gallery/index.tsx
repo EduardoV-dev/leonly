@@ -1,8 +1,9 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Heart, ImageIcon, Star } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useHorizontalSwipe } from "../../hooks/use-horizontal-swipe";
 import type { MemoryDetailPhoto } from "../../types/memory-detail";
 import { MemoryPhotoLightbox } from "../memory-photo-lightbox";
 import styles from "./memory-photo-gallery.module.css";
@@ -28,6 +29,7 @@ export function MemoryPhotoGallery({
   const [failedDetailPhotoIds, setFailedDetailPhotoIds] = useState<Set<string>>(() => new Set());
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const photoCount = photos.length;
   const selectedPhoto = photos[selectedIndex];
   const selectedDetailUrl =
@@ -36,6 +38,25 @@ export function MemoryPhotoGallery({
     selectedPhoto && !failedCoverPhotoIds.has(selectedPhoto.id) ? selectedPhoto.coverUrl : null;
   const selectedUrl = selectedDetailUrl ?? selectedCoverUrl;
   const selectedPosition = selectedIndex + 1;
+
+  useEffect(() => {
+    thumbnailRefs.current[selectedIndex]?.scrollIntoView?.({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [selectedIndex]);
+
+  const selectPrevious = () => {
+    setSelectedIndex((current) => (current - 1 + photoCount) % photoCount);
+  };
+  const selectNext = () => {
+    setSelectedIndex((current) => (current + 1) % photoCount);
+  };
+  const swipeHandlers = useHorizontalSwipe({
+    isEnabled: photoCount > 1,
+    onSwipeLeft: selectNext,
+    onSwipeRight: selectPrevious,
+  });
 
   if (!selectedPhoto) {
     return (
@@ -49,12 +70,6 @@ export function MemoryPhotoGallery({
     );
   }
 
-  const selectPrevious = () => {
-    setSelectedIndex((current) => (current - 1 + photoCount) % photoCount);
-  };
-  const selectNext = () => {
-    setSelectedIndex((current) => (current + 1) % photoCount);
-  };
   const markSelectedPhotoFailed = () => {
     const setFailedPhotoIds = selectedDetailUrl ? setFailedDetailPhotoIds : setFailedCoverPhotoIds;
     setFailedPhotoIds((current) => new Set(current).add(selectedPhoto.id));
@@ -90,6 +105,7 @@ export function MemoryPhotoGallery({
             className={styles.photoTrigger}
             onClick={() => setIsLightboxOpen(true)}
             aria-label={t("detail.lightbox.open", { position: selectedPosition })}
+            {...swipeHandlers}
           >
             {/* biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time. */}
             <img
@@ -111,6 +127,7 @@ export function MemoryPhotoGallery({
             className={styles.photoFallback}
             role="img"
             aria-label={t("detail.gallery.photoUnavailable", { position: selectedPosition })}
+            {...swipeHandlers}
           >
             <ImageIcon aria-hidden="true" />
           </div>
@@ -170,6 +187,9 @@ export function MemoryPhotoGallery({
                 aria-label={t("detail.gallery.selectPhoto", { position, total: photoCount })}
                 className={styles.thumbnail}
                 onClick={() => setSelectedIndex(index)}
+                ref={(element) => {
+                  thumbnailRefs.current[index] = element;
+                }}
               >
                 {thumbnailUrl ? (
                   // biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time.
