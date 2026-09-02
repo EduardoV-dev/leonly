@@ -139,7 +139,7 @@ describe("DashboardPage", () => {
       expect(vaultLink).not.toHaveAttribute("aria-current");
     }
     for (const newEntryLink of screen.getAllByRole("link", { name: "New Entry" })) {
-      expect(newEntryLink).toHaveAttribute("href", "/timeline/new");
+      expect(newEntryLink).toHaveAttribute("href", "/memories/new");
     }
     for (const placeholder of ["Places", "Settings"]) {
       for (const placeholderButton of screen.getAllByRole("button", { name: placeholder })) {

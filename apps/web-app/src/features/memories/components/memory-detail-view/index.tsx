@@ -124,7 +124,6 @@ export function MemoryDetailView({
           {backLabel}
         </Link>
       </motion.div>
-
       <motion.div className={styles.layout} variants={activeLayoutVariants}>
         <motion.div className={styles.spread} variants={activeLayoutVariants}>
           <motion.div variants={activeGalleryVariants}>
@@ -176,15 +175,6 @@ export function MemoryDetailView({
               </motion.p>
             ) : null}
 
-            {actions ? (
-              <motion.section
-                data-extension-region="memory-actions"
-                data-visibility={memory.visibility}
-                variants={activeRevealVariants}
-              >
-                {actions}
-              </motion.section>
-            ) : null}
             {reactions ? (
               <motion.section
                 data-extension-region="memory-reactions"
@@ -202,16 +192,27 @@ export function MemoryDetailView({
               </motion.section>
             ) : null}
 
-            <motion.footer className={styles.creator} variants={activeRevealVariants}>
-              {memory.creatorAvatarUrl ? (
-                // biome-ignore lint/performance/noImgElement: Creator avatar URLs are authorized runtime URLs.
-                <img
-                  className={styles.avatar}
-                  src={memory.creatorAvatarUrl}
-                  alt={memory.creatorDisplayName}
-                />
+            <motion.footer
+              className={styles.attribution}
+              data-detail-footer="true"
+              variants={activeRevealVariants}
+            >
+              {actions ? (
+                <section data-extension-region="memory-actions" data-visibility={memory.visibility}>
+                  {actions}
+                </section>
               ) : null}
-              <p>{t("detail.creator", { name: memory.creatorDisplayName })}</p>
+              <div className={styles.creator}>
+                {memory.creatorAvatarUrl ? (
+                  // biome-ignore lint/performance/noImgElement: Creator avatar URLs are authorized runtime URLs.
+                  <img
+                    className={styles.avatar}
+                    src={memory.creatorAvatarUrl}
+                    alt={memory.creatorDisplayName}
+                  />
+                ) : null}
+                <p>{t("detail.creator", { name: memory.creatorDisplayName })}</p>
+              </div>
             </motion.footer>
           </motion.article>
         </motion.div>

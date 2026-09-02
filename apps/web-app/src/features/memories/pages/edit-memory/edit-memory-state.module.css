@@ -1,0 +1,56 @@
+.page {
+  display: grid;
+  min-height: 55vh;
+  place-items: center;
+  padding: 2rem 1rem calc(7rem + env(safe-area-inset-bottom));
+}
+.card {
+  width: min(100%, 34rem);
+  padding: 2rem;
+  border: 1px solid #eee4e1;
+  border-radius: 1rem;
+  background: #fff;
+  color: var(--auth-copy);
+  text-align: center;
+  box-shadow: 0 1.5rem 4rem rgb(91 62 63 / 0.07);
+}
+.card p {
+  margin: 0;
+  color: var(--auth-brand);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.card h1 {
+  margin: 0.5rem 0;
+  color: #5b3138;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2rem;
+  text-wrap: balance;
+}
+.card span {
+  display: block;
+  line-height: 1.55;
+}
+.card a,
+.card button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding: 0 1rem;
+  border: 1px solid var(--auth-brand);
+  border-radius: 0.55rem;
+  background: var(--auth-button-bg);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.card a:focus-visible,
+.card button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}

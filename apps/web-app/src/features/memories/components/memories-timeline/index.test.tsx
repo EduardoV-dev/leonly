@@ -160,6 +160,7 @@ describe("MemoriesTimeline", () => {
       "href",
       `/memories/${memory.id}`,
     );
+    expect(screen.queryByRole("link", { name: /edit/i })).not.toBeInTheDocument();
 
     fireEvent.error(cover);
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();

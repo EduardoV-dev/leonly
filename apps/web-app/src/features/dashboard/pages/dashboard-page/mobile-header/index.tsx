@@ -69,7 +69,7 @@ export function MobileHeader({ member, spaceName }: Readonly<MobileHeaderProps>)
           </span>
         </div>
       </div>
-      <Link className={styles.actions} href={APP_ROUTES.TIMELINE_NEW}>
+      <Link className={styles.actions} href={APP_ROUTES.MEMORIES_NEW}>
         <Plus aria-hidden="true" />
         <span>New Entry</span>
       </Link>

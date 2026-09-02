@@ -113,5 +113,9 @@ describe("memories namespace", () => {
     );
     expect(spanishT("create.actions.preserve")).toBe("Conservar recuerdo");
     expect(spanishT("create.validation.photoCount", { count: 10 })).toBe("Elige hasta 10 fotos.");
+    expect(englishT("detail.actions.edit")).toBe("Edit");
+    expect(spanishT("detail.actions.edit")).toBe("Editar");
+    expect(englishT("edit.success")).toBe("Memory updated.");
+    expect(spanishT("edit.success")).toBe("Recuerdo actualizado.");
   });
 });

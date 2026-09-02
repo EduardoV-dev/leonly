@@ -45,6 +45,13 @@ describe("VaultMemoryDetailPage", () => {
       "/vault",
     );
     expect(screen.getByRole("heading", { name: "More from the Vault" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      `/memories/${memory.id}/edit`,
+    );
+    expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
+      "Preserved by Sarah",
+    );
     expect(screen.getByRole("link", { name: "Open Picnic by the river" })).toHaveAttribute(
       "href",
       "/vault/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",

@@ -3,9 +3,7 @@ import { VaultMemoryDetailPage } from "@/features/memories/pages/vault-memory-de
 import { getRelatedVaultMemories } from "@/features/memories/server/get-related-vault-memories";
 import { getVaultMemoryDetail } from "@/features/memories/server/get-vault-memory-detail";
 
-type PageProps = {
-  params: Promise<{ memoryId: string }>;
-};
+type PageProps = { params: Promise<{ memoryId: string }> };
 
 export default async function Page({ params }: Readonly<PageProps>) {
   const { memoryId } = await params;

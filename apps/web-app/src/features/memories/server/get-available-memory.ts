@@ -13,6 +13,7 @@ export type AvailableMemory = {
   memoryDate: string;
   spaceId: string;
   title: string;
+  updatedAt: string;
   visibility: "timeline" | "vault";
 };
 
@@ -26,6 +27,7 @@ const availableMemorySchema = z.object({
   memory_date: z.string().date(),
   space_id: z.uuid(),
   title: z.string(),
+  updated_at: z.string(),
   visibility: z.enum(["timeline", "vault"]),
 });
 
@@ -56,6 +58,7 @@ export async function getAvailableMemory(memoryId: string): Promise<AvailableMem
     memoryDate: memory.memory_date,
     spaceId: memory.space_id,
     title: memory.title,
+    updatedAt: memory.updated_at,
     visibility: memory.visibility,
   };
 }

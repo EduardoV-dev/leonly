@@ -12,7 +12,7 @@ export const memoriesEn = {
       },
       description: {
         label: "The story",
-        placeholder: "It started when...",
+        placeholder: "It started when…",
       },
       location: {
         label: "Location",
@@ -20,7 +20,7 @@ export const memoriesEn = {
       },
       title: {
         label: "Title",
-        placeholder: "Rainy day in Paris...",
+        placeholder: "Rainy day in Paris…",
       },
     },
     heading: "Preserve a Moment",
@@ -52,7 +52,7 @@ export const memoriesEn = {
       details: "Memory details",
     },
     status: {
-      saving: "Saving your memory and photos...",
+      saving: "Saving your memory and photos…",
     },
     validation: {
       photoCount: "Choose up to {{count}} photos.",
@@ -61,9 +61,46 @@ export const memoriesEn = {
       saveFailed: "We could not save this memory. Please try again.",
     },
   },
+  edit: {
+    actions: {
+      save: "Save Changes",
+    },
+    backToDetail: "Back to memory",
+    conflict: {
+      description:
+        "Reload the current memory to protect your partner’s newer changes. Your draft will not overwrite them.",
+      heading: "This memory changed while you were editing.",
+      reload: "Reload Current Memory",
+      return: "Return to Detail",
+    },
+    error: {
+      description: "Your memory is unchanged. Try opening the editor again.",
+      eyebrow: "A pause in the story",
+      heading: "We could not open the memory editor",
+    },
+    eyebrow: "Memory Editor",
+    heading: "Refine This Memory",
+    intro: "Changes update this shared memory for both of you.",
+    photos: {
+      empty: "This memory will use its no-photo presentation.",
+      new: "New photo",
+      previewAlt: "Memory photo {{position}}",
+      saved: "Saved photo",
+      unavailable: "Photo preview unavailable",
+    },
+    status: {
+      saving: "Saving changes…",
+    },
+    success: "Memory updated.",
+    validation: {
+      photoCount: "Choose up to {{count}} photos in the final memory.",
+      saveFailed: "We could not update this memory. Please try again.",
+    },
+  },
   detail: {
     actions: {
       backToTimeline: "Back to timeline",
+      edit: "Edit",
       nextPhoto: "Next photo",
       previousPhoto: "Previous photo",
       retry: "Try again",

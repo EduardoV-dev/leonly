@@ -30,6 +30,7 @@ describe("getAvailableMemory", () => {
         memory_date: "2026-08-20",
         space_id: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
         title: "Private anniversary",
+        updated_at: "2026-08-23T11:00:00.000Z",
         visibility: "vault",
       },
       error: null,

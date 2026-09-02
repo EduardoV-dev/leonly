@@ -51,7 +51,7 @@ export function DashboardSidebar({
         <h1>{activeSpace.name}</h1>
       </div>
 
-      <Link className={styles.newEntry} href={APP_ROUTES.TIMELINE_NEW}>
+      <Link className={styles.newEntry} href={APP_ROUTES.MEMORIES_NEW}>
         <Plus aria-hidden="true" />
         <span className={styles.label}>New Entry</span>
       </Link>

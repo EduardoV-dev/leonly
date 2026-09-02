@@ -1,9 +1,13 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import styles from "./create-memory-loading.module.css";
 
-export function CreateMemoryLoading() {
+type CreateMemoryLoadingProps = { label?: string };
+
+export function CreateMemoryLoading({
+  label = "Loading new memory form",
+}: Readonly<CreateMemoryLoadingProps>) {
   return (
-    <output className={styles.page} aria-label="Loading new memory form">
+    <output className={styles.page} aria-label={label}>
       <Skeleton className={styles.backLink} />
       <header className={styles.intro}>
         <Skeleton className={styles.title} />

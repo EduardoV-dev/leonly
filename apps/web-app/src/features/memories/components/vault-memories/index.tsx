@@ -66,7 +66,7 @@ export function VaultMemories() {
         <Archive aria-hidden="true" />
         <h2>{t("vault.empty.heading")}</h2>
         <p>{t("vault.empty.description")}</p>
-        <Link href={APP_ROUTES.TIMELINE_NEW}>{t("vault.actions.create")}</Link>
+        <Link href={APP_ROUTES.MEMORIES_NEW}>{t("vault.actions.create")}</Link>
       </section>
     );
   }

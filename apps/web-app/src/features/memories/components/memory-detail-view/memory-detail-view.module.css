@@ -148,13 +148,20 @@
   white-space: pre-line;
 }
 
-.creator {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.attribution {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
   margin-top: auto;
   padding-top: 2.4rem;
   border-top: 1px solid #eadfdd;
+}
+
+.creator {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .avatar {
@@ -220,6 +227,22 @@
 
   .spread {
     gap: 3rem;
+  }
+
+  .attribution {
+    grid-template-areas: "creator actions";
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: stretch;
+  }
+
+  .attribution > [data-extension-region="memory-actions"] {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .creator {
+    grid-area: creator;
   }
 }
 

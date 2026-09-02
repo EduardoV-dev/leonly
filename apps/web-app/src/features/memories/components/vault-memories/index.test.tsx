@@ -80,7 +80,7 @@ describe("VaultMemories", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Preserve a memory" })).toHaveAttribute(
       "href",
-      "/timeline/new",
+      "/memories/new",
     );
   });
 
@@ -123,6 +123,7 @@ describe("VaultMemories", () => {
     );
     expect(document.querySelectorAll("[data-extension-region]")).toHaveLength(4);
     expect(screen.queryByRole("button", { name: /restore|edit|delete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /edit/i })).not.toBeInTheDocument();
   });
 
   it("offers a retry after an initial read failure", async () => {

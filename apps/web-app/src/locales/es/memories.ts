@@ -12,7 +12,7 @@ export const memoriesEs = {
       },
       description: {
         label: "La historia",
-        placeholder: "Todo empezó cuando...",
+        placeholder: "Todo empezó cuando…",
       },
       location: {
         label: "Ubicación",
@@ -20,7 +20,7 @@ export const memoriesEs = {
       },
       title: {
         label: "Título",
-        placeholder: "Día lluvioso en París...",
+        placeholder: "Día lluvioso en París…",
       },
     },
     heading: "Conservar un momento",
@@ -52,7 +52,7 @@ export const memoriesEs = {
       details: "Detalles del recuerdo",
     },
     status: {
-      saving: "Guardando tu recuerdo y tus fotos...",
+      saving: "Guardando tu recuerdo y tus fotos…",
     },
     validation: {
       photoCount: "Elige hasta {{count}} fotos.",
@@ -61,9 +61,46 @@ export const memoriesEs = {
       saveFailed: "No pudimos guardar este recuerdo. Inténtalo de nuevo.",
     },
   },
+  edit: {
+    actions: {
+      save: "Guardar cambios",
+    },
+    backToDetail: "Volver al recuerdo",
+    conflict: {
+      description:
+        "Recarga el recuerdo actual para proteger los cambios más recientes de tu pareja. Tu borrador no los sobrescribirá.",
+      heading: "Este recuerdo cambió mientras lo editabas.",
+      reload: "Recargar recuerdo actual",
+      return: "Volver al detalle",
+    },
+    error: {
+      description: "Tu recuerdo no cambió. Intenta abrir el editor de nuevo.",
+      eyebrow: "Una pausa en la historia",
+      heading: "No pudimos abrir el editor del recuerdo",
+    },
+    eyebrow: "Editor de recuerdos",
+    heading: "Refina este recuerdo",
+    intro: "Los cambios actualizan este recuerdo compartido para ambos.",
+    photos: {
+      empty: "Este recuerdo usará su presentación sin fotos.",
+      new: "Foto nueva",
+      previewAlt: "Foto {{position}} del recuerdo",
+      saved: "Foto guardada",
+      unavailable: "Vista previa de la foto no disponible",
+    },
+    status: {
+      saving: "Guardando cambios…",
+    },
+    success: "Recuerdo actualizado.",
+    validation: {
+      photoCount: "Elige hasta {{count}} fotos para el recuerdo final.",
+      saveFailed: "No pudimos actualizar este recuerdo. Inténtalo de nuevo.",
+    },
+  },
   detail: {
     actions: {
       backToTimeline: "Volver a la línea de tiempo",
+      edit: "Editar",
       nextPhoto: "Foto siguiente",
       previousPhoto: "Foto anterior",
       retry: "Intentar de nuevo",

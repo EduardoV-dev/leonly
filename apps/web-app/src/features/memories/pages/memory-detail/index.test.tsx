@@ -51,7 +51,15 @@ describe("MemoryDetailPage", () => {
       "href",
       "/timeline",
     );
-    expect(document.querySelector("[data-extension-region]")).not.toBeInTheDocument();
+    const editLink = screen.getByRole("link", { name: "Edit" });
+    const actionRegion = document.querySelector<HTMLElement>(
+      '[data-extension-region="memory-actions"]',
+    );
+    const detailFooter = document.querySelector<HTMLElement>('[data-detail-footer="true"]');
+    expect(editLink).toHaveAttribute("href", `/memories/${memory.id}/edit`);
+    expect(detailFooter).toContainElement(actionRegion);
+    expect(detailFooter?.firstElementChild).toBe(actionRegion);
+    expect(detailFooter).toHaveTextContent("Preserved by Sarah");
   });
 
   it("renders related memories as accessible detail links", () => {
@@ -119,5 +127,15 @@ describe("MemoryDetailPage", () => {
 
     rerender(<MemoryDetailLoading />);
     expect(screen.getByRole("status", { name: "Loading memory…" })).toBeInTheDocument();
+  });
+
+  it("uses the concise localized edit label", async () => {
+    await i18n.changeLanguage("es");
+    render(<MemoryDetailPage memory={memory} />);
+
+    expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
+      "href",
+      `/memories/${memory.id}/edit`,
+    );
   });
 });

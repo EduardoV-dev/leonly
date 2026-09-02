@@ -11,27 +11,11 @@ import {
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../constants/create-memory";
 import { memoryQueryKeys } from "../../constants/query-keys";
+import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
 
-type CreateMemoryValues = {
-  description: string;
-  location: string;
-  memoryDate: string;
-  title: string;
-  visibility: "timeline" | "vault";
-};
+type CreateMemoryResponse = { error?: string; fields?: Record<string, string>; id?: string };
 
-type CreateMemoryResponse = {
-  error?: string;
-  fields?: Record<string, string>;
-  id?: string;
-};
-
-export type SelectedMemoryPhoto = {
-  file: File;
-  previewUrl: string;
-};
-
-const initialValues: CreateMemoryValues = {
+const initialValues: MemoryEditorValues = {
   description: "",
   location: "",
   memoryDate: "",
@@ -41,7 +25,6 @@ const initialValues: CreateMemoryValues = {
 
 function hasAcceptedPhotoExtension(photo: File): boolean {
   const extension = photo.name.split(".").at(-1)?.toLowerCase();
-
   return Boolean(
     extension &&
       extension !== photo.name.toLowerCase() &&
@@ -52,9 +35,9 @@ function hasAcceptedPhotoExtension(photo: File): boolean {
 }
 
 function createFormData(
-  values: CreateMemoryValues,
-  photos: SelectedMemoryPhoto[],
-  coverPhotoIndex: number | null,
+  values: MemoryEditorValues,
+  photos: MemoryEditorPhoto[],
+  coverPhotoKey: string | null,
 ): FormData {
   const formData = new FormData();
   formData.set("title", values.title);
@@ -63,15 +46,15 @@ function createFormData(
   formData.set("memoryDate", values.memoryDate);
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
-
-  if (coverPhotoIndex !== null) {
+  const coverPhotoIndex = photos.findIndex((photo) => photo.key === coverPhotoKey);
+  if (coverPhotoIndex >= 0) {
     formData.set("coverPhotoIndex", String(coverPhotoIndex));
   }
-
   for (const photo of photos) {
-    formData.append("photos", photo.file);
+    if (photo.kind === "new") {
+      formData.append("photos", photo.file);
+    }
   }
-
   return formData;
 }
 
@@ -80,63 +63,56 @@ export function useCreateMemoryForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const idempotencyKey = useRef<string | null>(null);
-  const [coverPhotoIndex, setCoverPhotoIndex] = useState<number | null>(null);
+  const nextPhotoKey = useRef(0);
+  const previewUrls = useRef(new Set<string>());
+  const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const previewUrls = useRef(new Set<string>());
-  const [photos, setPhotos] = useState<SelectedMemoryPhoto[]>([]);
+  const [photos, setPhotos] = useState<MemoryEditorPhoto[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [values, setValues] = useState<CreateMemoryValues>(initialValues);
+  const [values, setValues] = useState<MemoryEditorValues>(initialValues);
 
   useEffect(
     () => () => {
-      for (const previewUrl of previewUrls.current) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      previewUrls.current.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     },
     [],
   );
 
-  const clearFieldError = (field: string) => {
-    setFields((current) => {
-      if (!current[field]) {
-        return current;
-      }
-
-      const nextFields = { ...current };
-      delete nextFields[field];
-      return nextFields;
-    });
-  };
-
-  const updateValue = <TKey extends keyof CreateMemoryValues>(
-    key: TKey,
-    value: CreateMemoryValues[TKey],
-  ) => {
+  const resetAttempt = () => {
     idempotencyKey.current = null;
-    clearFieldError(key);
     setSubmitError(null);
+  };
+  const clearFieldError = (field: string) =>
+    setFields((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  const updateValue = <TKey extends keyof MemoryEditorValues>(
+    key: TKey,
+    value: MemoryEditorValues[TKey],
+  ) => {
+    resetAttempt();
+    clearFieldError(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
-
-  const addPhotos = (nextPhotos: File[]) => {
-    if (photos.length + nextPhotos.length > MAX_MEMORY_PHOTO_COUNT) {
+  const addPhotos = (files: File[]) => {
+    if (photos.length + files.length > MAX_MEMORY_PHOTO_COUNT) {
       setFields((current) => ({
         ...current,
         photos: t("create.validation.photoCount", { count: MAX_MEMORY_PHOTO_COUNT }),
       }));
       return;
     }
-
-    if (nextPhotos.some((photo) => !hasAcceptedPhotoExtension(photo))) {
-      setFields((current) => ({
-        ...current,
-        photos: t("create.validation.photoType"),
-      }));
+    if (files.some((photo) => !hasAcceptedPhotoExtension(photo))) {
+      setFields((current) => ({ ...current, photos: t("create.validation.photoType") }));
       return;
     }
-
-    if (nextPhotos.some((photo) => photo.size > MAX_MEMORY_PHOTO_SIZE_BYTES)) {
+    if (files.some((photo) => photo.size > MAX_MEMORY_PHOTO_SIZE_BYTES)) {
       setFields((current) => ({
         ...current,
         photos: t("create.validation.photoSize", {
@@ -145,72 +121,52 @@ export function useCreateMemoryForm() {
       }));
       return;
     }
-
-    const additions = nextPhotos.map((file) => {
+    const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
-      return { file, previewUrl };
+      nextPhotoKey.current += 1;
+      return { file, key: `new-${nextPhotoKey.current}`, kind: "new", name: file.name, previewUrl };
     });
-
-    idempotencyKey.current = null;
+    resetAttempt();
     clearFieldError("photos");
-    setSubmitError(null);
     setPhotos((current) => [...current, ...additions]);
-    setCoverPhotoIndex((current) => current ?? (additions.length > 0 ? 0 : null));
+    setCoverPhotoKey((current) => current ?? additions[0]?.key ?? null);
   };
-
-  const removePhoto = (index: number) => {
-    const removedPhoto = photos[index];
-    if (!removedPhoto) {
-      return;
+  const removePhoto = (key: string) => {
+    const removed = photos.find((photo) => photo.key === key);
+    if (!removed) return;
+    if (removed.kind === "new") {
+      URL.revokeObjectURL(removed.previewUrl);
+      previewUrls.current.delete(removed.previewUrl);
     }
-
-    URL.revokeObjectURL(removedPhoto.previewUrl);
-    previewUrls.current.delete(removedPhoto.previewUrl);
-    idempotencyKey.current = null;
+    const remaining = photos.filter((photo) => photo.key !== key);
+    resetAttempt();
     clearFieldError("photos");
-    setSubmitError(null);
-    setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index));
-    setCoverPhotoIndex((current) => {
-      if (photos.length === 1) {
-        return null;
-      }
-      if (current === index) {
-        return 0;
-      }
-      return current !== null && current > index ? current - 1 : current;
-    });
+    setPhotos(remaining);
+    setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
-
-  const selectCoverPhoto = (index: number) => {
-    idempotencyKey.current = null;
+  const selectCoverPhoto = (key: string) => {
+    resetAttempt();
     clearFieldError("photos");
-    setCoverPhotoIndex(index);
+    setCoverPhotoKey(key);
   };
-
   const submit = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
+    if (isSubmitting) return;
     setFields({});
     setSubmitError(null);
     setIsSubmitting(true);
     idempotencyKey.current ??= crypto.randomUUID();
-
     try {
       const response = await fetch("/api/memories", {
-        body: createFormData(values, photos, coverPhotoIndex),
+        body: createFormData(values, photos, coverPhotoKey),
         headers: { "Idempotency-Key": idempotencyKey.current },
         method: "POST",
       });
       const payload = (await response.json()) as CreateMemoryResponse;
-
       if (!response.ok || !payload.id) {
         setFields(payload.fields ?? {});
         throw new Error(payload.error ?? t("create.validation.saveFailed"));
       }
-
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
       router.push(
         values.visibility === "vault"
@@ -225,16 +181,16 @@ export function useCreateMemoryForm() {
   };
 
   return {
-    coverPhotoIndex,
+    coverPhotoKey,
     fields,
-    addPhotos,
     isSubmitting,
     photos,
+    submitError,
+    values,
+    addPhotos,
     removePhoto,
     selectCoverPhoto,
     submit,
-    submitError,
     updateValue,
-    values,
   };
 }
