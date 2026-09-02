@@ -1,7 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { VaultMemoryDetailPage } from ".";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
 
 const memory = {
   createdAt: "2026-08-23T10:00:00.000Z",
@@ -13,6 +20,7 @@ const memory = {
   memoryDate: "2026-08-20",
   photos: [],
   title: "Among the hidden flowers",
+  version: "MjAyNi0wOC0yM1QxMDowMDowMC4wMDBa",
   visibility: "vault" as const,
 };
 
@@ -49,6 +57,7 @@ describe("VaultMemoryDetailPage", () => {
       "href",
       `/memories/${memory.id}/edit`,
     );
+    expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
       "Preserved by Sarah",
     );

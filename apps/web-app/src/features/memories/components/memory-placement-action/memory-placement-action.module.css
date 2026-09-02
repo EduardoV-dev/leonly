@@ -1,0 +1,37 @@
+.button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 1rem;
+  border: 1px solid #d8c2c0;
+  border-radius: 0.6rem;
+  background: #fff4f3;
+  color: #633940;
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+.button:hover:not(:disabled) {
+  border-color: var(--auth-brand);
+  background: #fff;
+}
+.button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+.button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.button svg {
+  width: 1rem;
+  height: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}

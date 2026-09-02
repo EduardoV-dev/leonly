@@ -101,11 +101,20 @@ export const memoriesEn = {
     actions: {
       backToTimeline: "Back to timeline",
       edit: "Edit",
+      moveToTimeline: "Move to Timeline",
+      moveToVault: "Move to Private Vault",
       nextPhoto: "Next photo",
       previousPhoto: "Previous photo",
       retry: "Try again",
     },
     creator: "Preserved by {{name}}",
+    placement: {
+      conflict: "This memory changed. Reloading the current version.",
+      failed: "We could not move this memory. Please try again.",
+      moving: "Moving memory…",
+      successTimeline: "Memory moved to Timeline.",
+      successVault: "Memory moved to Private Vault.",
+    },
     error: {
       description: "The story is still here. We just could not open it right now.",
       eyebrow: "A pause in the story",

@@ -151,10 +151,16 @@
 .attribution {
   display: grid;
   justify-items: start;
-  gap: 1rem;
+  gap: 1.5rem;
   margin-top: auto;
   padding-top: 2.4rem;
   border-top: 1px solid #eadfdd;
+}
+
+.attribution > [data-extension-region="memory-actions"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .creator {
@@ -227,22 +233,6 @@
 
   .spread {
     gap: 3rem;
-  }
-
-  .attribution {
-    grid-template-areas: "creator actions";
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    justify-items: stretch;
-  }
-
-  .attribution > [data-extension-region="memory-actions"] {
-    grid-area: actions;
-    justify-self: end;
-  }
-
-  .creator {
-    grid-area: creator;
   }
 }
 

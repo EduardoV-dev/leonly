@@ -9,6 +9,7 @@ type ErrorRecord = Record<string, unknown>;
 type RequestHeaders = Headers | Record<string, string | string[] | undefined>;
 
 export type NormalizedError = {
+  cause?: NormalizedError;
   code?: string;
   error_type: string;
   message: string;
@@ -42,6 +43,15 @@ function getSafeCode(error: ErrorRecord): string | undefined {
   return code;
 }
 
+function addSafeCause(normalizedError: NormalizedError, error: ErrorRecord): NormalizedError {
+  const cause = error.cause;
+  if (cause !== undefined && cause !== error && (cause instanceof Error || isRecord(cause))) {
+    normalizedError.cause = normalizeError(cause);
+  }
+
+  return normalizedError;
+}
+
 export function normalizeError(error: unknown): NormalizedError {
   if (error instanceof Error) {
     const errorRecord = error as Error & ErrorRecord;
@@ -59,7 +69,7 @@ export function normalizeError(error: unknown): NormalizedError {
       normalizedError.status = status;
     }
 
-    return normalizedError;
+    return addSafeCause(normalizedError, errorRecord);
   }
 
   if (isRecord(error)) {
@@ -79,7 +89,7 @@ export function normalizeError(error: unknown): NormalizedError {
       normalizedError.status = status;
     }
 
-    return normalizedError;
+    return addSafeCause(normalizedError, error);
   }
 
   return { error_type: "UnknownError", message: "Unknown server error" };

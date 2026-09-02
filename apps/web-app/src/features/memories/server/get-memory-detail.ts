@@ -5,6 +5,7 @@ import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryDetail, MemoryDetailPhoto } from "../types/memory-detail";
 import { getAvailableMemory } from "./get-available-memory";
+import { encodeMemoryVersion } from "./memory-version";
 
 const SIGNED_URL_TTL_SECONDS = 300;
 type MemoryVisibility = "timeline" | "vault";
@@ -112,6 +113,7 @@ export async function getMemoryDetailForVisibility(
       memoryDate: memory.memoryDate,
       photos,
       title: memory.title,
+      version: encodeMemoryVersion(memory.updatedAt),
       visibility: memory.visibility,
     };
   } catch (error) {

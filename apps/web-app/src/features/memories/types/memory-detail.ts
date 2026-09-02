@@ -14,5 +14,6 @@ export type MemoryDetail = {
   memoryDate: string;
   photos: MemoryDetailPhoto[];
   title: string;
+  version: string;
   visibility: "timeline" | "vault";
 };

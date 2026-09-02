@@ -28,4 +28,23 @@ describe("normalizeError", () => {
       message: "No rows returned for [REDACTED_EMAIL]",
     });
   });
+
+  it("keeps a sanitized cause for actionable server diagnostics", () => {
+    const error = new Error("Unable to place the memory.", {
+      cause: {
+        code: "PGRST202",
+        message: "Could not find function at https://supabase.example/rpc",
+      },
+    });
+
+    expect(normalizeError(error)).toEqual({
+      cause: {
+        code: "PGRST202",
+        error_type: "UnknownError",
+        message: "Could not find function at [REDACTED_URL]",
+      },
+      error_type: "Error",
+      message: "Unable to place the memory.",
+    });
+  });
 });

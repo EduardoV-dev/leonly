@@ -6,6 +6,13 @@ import { MemoryDetailError } from "./error";
 import { MemoryDetailLoading } from "./loading";
 import { MemoryDetailNotFound } from "./not-found";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
+
 const memory = {
   createdAt: "2026-08-23T10:00:00.000Z",
   creatorAvatarUrl: "https://avatars.example/sarah.jpg",
@@ -22,6 +29,7 @@ const memory = {
     },
   ],
   title: "Among the flowers",
+  version: "MjAyNi0wOC0yM1QxMDowMDowMC4wMDBa",
   visibility: "timeline" as const,
 };
 
@@ -52,6 +60,7 @@ describe("MemoryDetailPage", () => {
       "/timeline",
     );
     const editLink = screen.getByRole("link", { name: "Edit" });
+    expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
     const actionRegion = document.querySelector<HTMLElement>(
       '[data-extension-region="memory-actions"]',
     );
@@ -137,5 +146,6 @@ describe("MemoryDetailPage", () => {
       "href",
       `/memories/${memory.id}/edit`,
     );
+    expect(screen.getByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
   });
 });

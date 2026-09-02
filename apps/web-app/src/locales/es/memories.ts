@@ -101,11 +101,20 @@ export const memoriesEs = {
     actions: {
       backToTimeline: "Volver a la línea de tiempo",
       edit: "Editar",
+      moveToTimeline: "Mover a la línea de tiempo",
+      moveToVault: "Mover a la bóveda privada",
       nextPhoto: "Foto siguiente",
       previousPhoto: "Foto anterior",
       retry: "Intentar de nuevo",
     },
     creator: "Conservado por {{name}}",
+    placement: {
+      conflict: "Este recuerdo cambió. Recargando la versión actual.",
+      failed: "No pudimos mover este recuerdo. Inténtalo de nuevo.",
+      moving: "Moviendo recuerdo…",
+      successTimeline: "Recuerdo movido a la línea de tiempo.",
+      successVault: "Recuerdo movido a la bóveda privada.",
+    },
     error: {
       description: "La historia sigue aquí. Simplemente no pudimos abrirla en este momento.",
       eyebrow: "Una pausa en la historia",

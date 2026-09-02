@@ -28,6 +28,7 @@ const memory = {
   memoryDate: "2026-08-20",
   spaceId: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
   title: "Among the flowers",
+  updatedAt: "2026-08-23T10:00:00.000Z",
   visibility: "timeline" as const,
 };
 
