@@ -18,8 +18,8 @@ An active member can open an active memory from the timeline, the shared Private
 - Title, date, full description, location, creator's current active-membership display name, and photos with the selected cover first.
 - Keyboard-accessible photo navigation with semantic position and selection state.
 - Regions where US-010 and US-013 provide cursor-paginated comments and reaction controls.
-- A consistent action region where US-007 through US-009 and US-014 provide edit, move-to-Private-Vault,
-  restore, and delete actions.
+- A consistent action region where US-007, US-008, and US-014 provide edit, bidirectional placement,
+  and delete actions.
 - Loading, missing optional data, failed-read, and generic not-found states, including direct refresh.
 
 ## Business Rules
@@ -38,8 +38,8 @@ An active member can open an active memory from the timeline, the shared Private
 - Either active member can open a hidden memory through the shared Private Vault or an authorized direct URL, but the memory remains absent from timeline results.
 - The selected cover appears first, and photo navigation is keyboard accessible with semantic position and selection state.
 - Missing photos and optional metadata render valid fallback or empty states.
-- The action region reflects current visibility and supports actions delivered by US-007 through US-009
-  and US-014.
+- The action region reflects current visibility and supports actions delivered by US-007, US-008, and
+  US-014.
 - Comment and reaction regions remain available for visible and hidden memories as those later stories
   are delivered.
 - Missing, inactive, soft-deleted, and inaccessible IDs render the same generic not-found outcome without leaking data.

@@ -12,6 +12,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
+vi.mock("../../components/memory-comments", () => ({
+  MemoryComments: () => <p>Comments</p>,
+}));
 
 const memory = {
   createdAt: "2026-08-23T10:00:00.000Z",

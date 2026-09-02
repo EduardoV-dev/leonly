@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import { MemoryComments } from "../../components/memory-comments";
 import { MemoryDetailView, type MemoryDetailViewProps } from "../../components/memory-detail-view";
 import { MemoryEditLink } from "../../components/memory-edit-link";
 import { MemoryPlacementAction } from "../../components/memory-placement-action";
@@ -30,6 +31,7 @@ export function MemoryDetailPage(props: Readonly<MemoryDetailPageProps>) {
       }
       backHref={APP_ROUTES.TIMELINE}
       backLabel={t("detail.actions.backToTimeline")}
+      comments={props.comments ?? <MemoryComments memoryId={props.memory.id} />}
       relatedEmpty={t("detail.related.empty")}
       relatedEyebrow={t("detail.related.eyebrow")}
       relatedHeading={t("detail.related.heading")}

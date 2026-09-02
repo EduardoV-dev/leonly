@@ -2,6 +2,8 @@
 
 **Priority:** Must
 
+**Status:** Deprecated. US-008 delivers this behavior as the inverse direction of bidirectional memory placement.
+
 
 **Depends on:** US-003, US-005, US-006, US-008
 

@@ -1,0 +1,145 @@
+.form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.label {
+  color: #4f3f3e;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 7rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  resize: vertical;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ad8587;
+  border-radius: 0.8rem;
+  outline: 0;
+  background: #fffdfc;
+  color: #3f3534;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+.textarea::placeholder {
+  color: #786764;
+}
+
+.textarea:focus {
+  border-color: var(--auth-brand);
+  box-shadow: 0 0 0 4px rgb(184 43 73 / 0.16);
+}
+
+.textarea:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.helperRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.helper,
+.count,
+.overLimit {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.helper {
+  color: #786764;
+}
+
+.count,
+.overLimit {
+  flex: 0 0 auto;
+  color: #715e5c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.overLimit {
+  color: #713b43;
+  font-weight: 800;
+}
+
+.validation,
+.submitError {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  color: #713b43;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.validation svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.submitError {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d9b8bc;
+  border-radius: 0.6rem;
+  background: #fff4f3;
+}
+
+.submitError p {
+  margin: 0;
+}
+
+.submitError button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ad8587;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #633940;
+  font-size: 0.76rem;
+  font-weight: 800;
+  transition:
+    transform 180ms ease-out,
+    background-color 180ms ease-out;
+}
+
+.submitError button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.submit {
+  justify-self: end;
+}
+
+@media (max-width: 39.999rem) {
+  .helperRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .textarea,
+  .submitError button {
+    transition: none;
+  }
+}

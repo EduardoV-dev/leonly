@@ -58,7 +58,7 @@ These rules apply to every story unless a story explicitly narrows them:
 | US-006 | [View Private Vault](04-private-vault/us-006-view-private-vault.md) | US-003, US-004, US-005 |
 | US-007 | [Edit memory](03-memories/us-007-edit-memory.md) | US-004, US-005, US-006 |
 | US-008 | [Move memory to Private Vault](04-private-vault/us-008-move-memory-to-vault.md) | US-003, US-005, US-006 |
-| US-009 | [Restore memory](04-private-vault/us-009-restore-memory.md) | US-003, US-005, US-006, US-008 |
+| US-009 | [Restore memory](04-private-vault/us-009-restore-memory.md) (deprecated; delivered by US-008) | Superseded by US-008 |
 | US-010 | [Add comment](05-comments/us-010-add-comment.md) | US-005, US-006 |
 | US-011 | [Edit own comment](05-comments/us-011-edit-own-comment.md) | US-010 |
 | US-012 | [Delete own comment](05-comments/us-012-delete-own-comment.md) | US-010 |

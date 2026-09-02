@@ -1,0 +1,83 @@
+.loadMore {
+  display: inline-flex;
+  width: auto;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1rem;
+  margin-top: 1.25rem;
+  border-color: #ad8587;
+  border-radius: 0.65rem;
+  background: #fff4f3;
+  color: #633940;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.loadMore:hover:not(:disabled) {
+  border-color: var(--auth-brand);
+  background: #fff;
+}
+
+.spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: comment-spin 700ms linear infinite;
+}
+
+.error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 0.9rem;
+  margin-top: 1.25rem;
+  color: #713b43;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.retry {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #ad8587;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #633940;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.end {
+  margin: 1.25rem 0 0;
+  color: #806f6c;
+  font-size: 0.74rem;
+  text-align: center;
+}
+
+.retry:focus-visible,
+.loadMore:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadMore {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
+
+@keyframes comment-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
