@@ -1,10 +1,11 @@
 "use client";
 
-import { BookHeart, Heart, ImageIcon, LockKeyhole, MapPin } from "lucide-react";
+import { BookHeart, Heart, ImageIcon, LockKeyhole, MapPin, MessageCircle } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import type { TimelineMemory } from "../../types/timeline";
 import styles from "./memory-summary-card.module.css";
@@ -15,6 +16,7 @@ type MemorySummaryCardProps = {
   destination?: "timeline" | "vault";
   entryIndex?: number;
   memory: TimelineMemory;
+  reactions?: ReactNode;
   variant?: "recent" | "related" | "timeline" | "vault";
 };
 
@@ -80,8 +82,10 @@ export function MemorySummaryCard({
   destination = "timeline",
   entryIndex = 0,
   memory,
+  reactions,
   variant = "timeline",
 }: Readonly<MemorySummaryCardProps>) {
+  const { t } = useTranslation("memories");
   const [hasCoverLoadFailed, setHasCoverLoadFailed] = useState(false);
   const coverPhotoUrl = hasCoverLoadFailed ? null : memory.coverPhotoUrl;
   const shouldReduceMotion = Boolean(useReducedMotion());
@@ -101,7 +105,7 @@ export function MemorySummaryCard({
 
   return (
     <motion.article
-      className={`${styles.card} ${styles[variant]}`}
+      className={`${styles.card} ${styles[variant]} ${reactions ? styles.withReactions : ""}`}
       variants={activeCardVariants}
       custom={cardMotion}
       initial="hidden"
@@ -157,9 +161,14 @@ export function MemorySummaryCard({
           </motion.div>
         </Link>
       </motion.div>
-      <div className={styles.extensions} data-extension-region="memory-count">
-        {count}
-      </div>
+      <footer className={styles.footer}>
+        <div className={styles.commentCount} data-extension-region="memory-count">
+          <MessageCircle aria-hidden="true" />
+          {t("card.comments", { count: memory.commentCount })}
+          {count}
+        </div>
+        {reactions}
+      </footer>
       <div className={styles.extensions} data-extension-region="memory-actions">
         {actions}
       </div>

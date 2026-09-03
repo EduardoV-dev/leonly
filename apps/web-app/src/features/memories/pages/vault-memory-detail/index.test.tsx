@@ -12,6 +12,9 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("../../components/memory-comments", () => ({
   MemoryComments: () => <p>Comments</p>,
 }));
+vi.mock("../../components/memory-reactions", () => ({
+  MemoryReactions: () => <p>Reactions</p>,
+}));
 
 const memory = {
   createdAt: "2026-08-23T10:00:00.000Z",
@@ -21,6 +24,11 @@ const memory = {
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   location: "The botanical gardens",
   memoryDate: "2026-08-20",
+  reaction: {
+    counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+    currentReaction: null,
+    members: { cry: [], heart: [], laugh: [], star: [] },
+  },
   photos: [],
   title: "Among the hidden flowers",
   version: "MjAyNi0wOC0yM1QxMDowMDowMC4wMDBa",
@@ -38,6 +46,7 @@ describe("VaultMemoryDetailPage", () => {
         memory={memory}
         relatedMemories={[
           {
+            commentCount: 0,
             coverPhotoUrl: null,
             createdAt: "2026-08-19T10:00:00.000Z",
             description: "We packed a blanket and stayed all afternoon.",

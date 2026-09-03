@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MAX_TIMELINE_PAGE_SIZE } from "../constants/timeline";
 import type { TimelineMemory, TimelinePage } from "../types/timeline";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
+import { getMemoryReactionSummary } from "./memory-reactions";
 
 const cursorSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
@@ -21,6 +22,7 @@ type TimelineRow = {
   id: string;
   location: string | null;
   memory_date: string;
+  memory_comments: { count: number }[];
   title: string;
 };
 
@@ -43,14 +45,21 @@ function decodeCursor(cursor: string): TimelineCursor | null {
   }
 }
 
-async function toTimelineMemory(memory: TimelineRow): Promise<TimelineMemory> {
+async function toTimelineMemory(memory: TimelineRow, userId: string): Promise<TimelineMemory> {
+  const [coverPhotoUrl, reaction] = await Promise.all([
+    getCoverPreviewUrl(memory.id),
+    getMemoryReactionSummary(userId, memory.id),
+  ]);
+
   return {
-    coverPhotoUrl: await getCoverPreviewUrl(memory.id),
+    commentCount: memory.memory_comments[0]?.count ?? 0,
+    coverPhotoUrl,
     createdAt: memory.created_at,
     description: memory.description,
     id: memory.id,
     location: memory.location,
     memoryDate: memory.memory_date,
+    reaction,
     title: memory.title,
   };
 }
@@ -91,11 +100,12 @@ async function readTimelinePage(
   cursor: TimelineCursor | null,
   spaceId: string,
   pageSize: number,
+  userId: string,
 ): Promise<TimelinePage> {
   const supabase = await createClient();
   let query = supabase
     .from("memories")
-    .select("id,title,description,location,memory_date,created_at")
+    .select("id,title,description,location,memory_date,created_at,memory_comments(count)")
     .eq("space_id", spaceId)
     .eq("visibility", "timeline")
     .is("deleted_at", null)
@@ -115,7 +125,9 @@ async function readTimelinePage(
   }
 
   const memories = await Promise.all(
-    ((data ?? []) as TimelineRow[]).slice(0, pageSize).map(toTimelineMemory),
+    ((data ?? []) as TimelineRow[])
+      .slice(0, pageSize)
+      .map((memory) => toTimelineMemory(memory, userId)),
   );
   const hasNextPage = (data ?? []).length > pageSize;
   const lastMemory = memories.at(-1);
@@ -137,15 +149,21 @@ export async function getTimelinePage(
     throw new Error("No active space is available for the memories timeline.");
   }
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No active space is available for the memories timeline.");
+
   const cursor = cursorValue ? decodeCursor(cursorValue) : null;
   const shouldReset = cursorValue !== null && cursor === null;
 
   if (cursor && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize);
+    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize, user.id);
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readTimelinePage(cursor, activeSpace.id, pageSize);
+  const page = await readTimelinePage(cursor, activeSpace.id, pageSize, user.id);
   return shouldReset ? { ...page, cursorReset: true } : page;
 }
 

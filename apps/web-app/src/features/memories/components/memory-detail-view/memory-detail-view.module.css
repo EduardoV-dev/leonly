@@ -72,6 +72,12 @@
   justify-items: start;
 }
 
+.reactions {
+  z-index: 2;
+  align-self: flex-start;
+  margin-top: 1.5rem;
+}
+
 .metadata {
   display: flex;
   max-width: 100%;

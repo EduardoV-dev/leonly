@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import type { TimelineMemory } from "../../types/timeline";
+import { MemoryReactions } from "../memory-reactions";
 import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memory-chronology.module.css";
 
@@ -98,6 +99,11 @@ export function MemoryChronology({
                 entryIndex={index}
                 key={memory.id}
                 memory={memory}
+                reactions={
+                  memory.reaction ? (
+                    <MemoryReactions memoryId={memory.id} reaction={memory.reaction} />
+                  ) : undefined
+                }
                 variant={variant === "recent" ? "recent" : "timeline"}
               />
             ))}

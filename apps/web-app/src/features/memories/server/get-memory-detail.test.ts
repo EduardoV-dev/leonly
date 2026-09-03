@@ -5,16 +5,27 @@ vi.mock("server-only", () => ({}));
 import { getMemoryDetail } from "./get-memory-detail";
 import { getVaultMemoryDetail } from "./get-vault-memory-detail";
 
-const { createClientMock, getAvailableMemoryMock, signedUrlMock, creatorResult, photosResult } =
-  vi.hoisted(() => ({
-    createClientMock: vi.fn(),
-    getAvailableMemoryMock: vi.fn(),
-    signedUrlMock: vi.fn(),
-    creatorResult: { data: null as unknown, error: null as unknown },
-    photosResult: { data: null as unknown, error: null as unknown },
-  }));
+const {
+  createClientMock,
+  getAvailableMemoryMock,
+  getMemoryReactionSummaryMock,
+  signedUrlMock,
+  creatorResult,
+  photosResult,
+} = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  getAvailableMemoryMock: vi.fn(),
+  getMemoryReactionSummaryMock: vi.fn(),
+  signedUrlMock: vi.fn(),
+  creatorResult: { data: null as unknown, error: null as unknown },
+  photosResult: { data: null as unknown, error: null as unknown },
+}));
 
 vi.mock("./get-available-memory", () => ({ getAvailableMemory: getAvailableMemoryMock }));
+vi.mock("./memory-reactions", () => ({
+  getMemoryReactionSummary: getMemoryReactionSummaryMock,
+  MemoryReactionError: class MemoryReactionError extends Error {},
+}));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/server-logger", () => ({ logServerError: vi.fn() }));
 
@@ -54,11 +65,18 @@ describe("getMemoryDetail", () => {
     photosResult.data = [];
     photosResult.error = null;
     getAvailableMemoryMock.mockResolvedValue(memory);
+    getMemoryReactionSummaryMock.mockResolvedValue({
+      counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+      currentReaction: null,
+    });
     signedUrlMock.mockImplementation(async (path: string) => ({
       data: { signedUrl: `https://storage.example/${path}` },
       error: null,
     }));
     createClientMock.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: memory.creatorUserId } } }),
+      },
       from: vi.fn((table: string) =>
         table === "space_members" ? queryBuilder(creatorResult) : queryBuilder(photosResult),
       ),

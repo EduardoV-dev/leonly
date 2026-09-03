@@ -49,6 +49,7 @@ describe("getRelatedMemories", () => {
         id: relatedMemoryId,
         location: "The botanical gardens",
         memory_date: "2026-08-20",
+        memory_comments: [{ count: 2 }],
         title: "Among the flowers",
       },
     ]);
@@ -56,6 +57,7 @@ describe("getRelatedMemories", () => {
 
     await expect(getRelatedMemories(currentMemoryId)).resolves.toEqual([
       {
+        commentCount: 2,
         coverPhotoUrl: "https://storage.example/related-cover",
         createdAt: "2026-08-23T10:00:00.000Z",
         description: "A quiet afternoon together.",
@@ -89,6 +91,7 @@ describe("getRelatedMemories", () => {
         id: relatedMemoryId,
         location: null,
         memory_date: "2026-08-20",
+        memory_comments: [{ count: 0 }],
         title: "Another hidden moment",
       },
     ]);

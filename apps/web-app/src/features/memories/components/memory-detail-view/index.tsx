@@ -176,13 +176,11 @@ export function MemoryDetailView({
             ) : null}
 
             {reactions ? (
-              <motion.section
-                data-extension-region="memory-reactions"
-                variants={activeRevealVariants}
-              >
+              <motion.div className={styles.reactions} variants={activeRevealVariants}>
                 {reactions}
-              </motion.section>
+              </motion.div>
             ) : null}
+
             {comments ? (
               <motion.section
                 data-extension-region="memory-comments"

@@ -6,6 +6,7 @@ import { MemoryComments } from "../../components/memory-comments";
 import { MemoryDetailView, type MemoryDetailViewProps } from "../../components/memory-detail-view";
 import { MemoryEditLink } from "../../components/memory-edit-link";
 import { MemoryPlacementAction } from "../../components/memory-placement-action";
+import { MemoryReactions } from "../../components/memory-reactions";
 
 type MemoryDetailPageProps = Pick<
   MemoryDetailViewProps,
@@ -32,6 +33,11 @@ export function MemoryDetailPage(props: Readonly<MemoryDetailPageProps>) {
       backHref={APP_ROUTES.TIMELINE}
       backLabel={t("detail.actions.backToTimeline")}
       comments={props.comments ?? <MemoryComments memoryId={props.memory.id} />}
+      reactions={
+        props.reactions ?? (
+          <MemoryReactions memoryId={props.memory.id} reaction={props.memory.reaction} />
+        )
+      }
       relatedEmpty={t("detail.related.empty")}
       relatedEyebrow={t("detail.related.eyebrow")}
       relatedHeading={t("detail.related.heading")}

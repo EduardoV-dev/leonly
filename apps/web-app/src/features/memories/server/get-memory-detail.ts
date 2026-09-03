@@ -5,6 +5,7 @@ import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryDetail, MemoryDetailPhoto } from "../types/memory-detail";
 import { getAvailableMemory } from "./get-available-memory";
+import { getMemoryReactionSummary, MemoryReactionError } from "./memory-reactions";
 import { encodeMemoryVersion } from "./memory-version";
 
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -60,7 +61,12 @@ export async function getMemoryDetailForVisibility(
     }
 
     const supabase = await createClient();
-    const [creatorResult, photosResult] = await Promise.all([
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const [creatorResult, photosResult, reaction] = await Promise.all([
       supabase
         .from("space_members")
         .select("display_name,users(avatar_url)")
@@ -73,6 +79,7 @@ export async function getMemoryDetailForVisibility(
         .select("id,object_path,cover_object_path,detail_object_path,position")
         .eq("memory_id", memory.id)
         .order("position", { ascending: true }),
+      getMemoryReactionSummary(user.id, memory.id),
     ]);
 
     if (creatorResult.error || !creatorResult.data) {
@@ -112,11 +119,13 @@ export async function getMemoryDetailForVisibility(
       location: memory.location,
       memoryDate: memory.memoryDate,
       photos,
+      reaction,
       title: memory.title,
       version: encodeMemoryVersion(memory.updatedAt),
       visibility: memory.visibility,
     };
   } catch (error) {
+    if (error instanceof MemoryReactionError) return null;
     logServerError({ event: "memory_detail_failed", operation: "get_memory_detail" }, error);
     throw new Error("Failed to load the memory detail.", { cause: error });
   }

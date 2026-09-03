@@ -160,6 +160,19 @@ export const memoriesEn = {
       tryAgain: "Try again",
       heading: "Comments",
     },
+    reactions: {
+      count: "{{count}} reactions",
+      failed: "We couldn't update your reaction. Try again.",
+      heading: "Reactions",
+      open: "React to this memory",
+      select: "React with {{reaction}}",
+      types: {
+        cry: "Tearful",
+        heart: "Love",
+        laugh: "Laugh",
+        star: "Star",
+      },
+    },
     placement: {
       conflict: "This memory changed. Reloading the current version.",
       failed: "We could not move this memory. Please try again.",
@@ -205,6 +218,9 @@ export const memoriesEn = {
       timeline: "Shared memory",
       vault: "Private vault",
     },
+  },
+  card: {
+    comments: "{{count}} comments",
   },
   vault: {
     actions: {

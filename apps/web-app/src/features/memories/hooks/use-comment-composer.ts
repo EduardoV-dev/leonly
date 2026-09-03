@@ -98,7 +98,12 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       queryClient.setQueryData<MemoryCommentsData>(memoryQueryKeys.comments(memoryId), (data) =>
         prependCommentToData(data, comment),
       );
-      await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.comments(memoryId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.comments(memoryId) }),
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("full") }),
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("recent") }),
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.vault() }),
+      ]);
       setDraft("");
       setHasInteracted(false);
       setHasBlurred(false);

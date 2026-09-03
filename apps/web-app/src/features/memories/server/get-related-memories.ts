@@ -17,6 +17,7 @@ const relatedMemoryRowsSchema = z.array(
     id: z.uuid(),
     location: z.string().nullable(),
     memory_date: z.string().date(),
+    memory_comments: z.array(z.object({ count: z.number().int().nonnegative() })),
     title: z.string(),
   }),
 );
@@ -39,7 +40,7 @@ export async function getRelatedMemoriesForVisibility(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("memories")
-      .select("id,title,description,location,memory_date,created_at")
+      .select("id,title,description,location,memory_date,created_at,memory_comments(count)")
       .eq("space_id", activeSpace.id)
       .eq("visibility", visibility)
       .neq("id", memoryId)
@@ -56,6 +57,7 @@ export async function getRelatedMemoriesForVisibility(
     const memories = relatedMemoryRowsSchema.parse(data ?? []);
     return Promise.all(
       memories.map(async (memory) => ({
+        commentCount: memory.memory_comments[0]?.count ?? 0,
         coverPhotoUrl: await getCoverPreviewUrl(memory.id),
         createdAt: memory.created_at,
         description: memory.description,

@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "@/lib/i18n";
 import { MemorySummaryCard } from ".";
 
 const memory = {
+  commentCount: 3,
   coverPhotoUrl: null,
   createdAt: "2026-08-23T10:00:00.000Z",
   description: "A sunny afternoon together",
@@ -13,6 +15,10 @@ const memory = {
 };
 
 describe("MemorySummaryCard", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
   it("links its complete summary while keeping extension actions independent", () => {
     render(
       <MemorySummaryCard
@@ -29,6 +35,7 @@ describe("MemorySummaryCard", () => {
     expect(detailLink).toContainElement(screen.getByRole("heading", { name: "Our picnic" }));
     expect(detailLink).not.toContainElement(action);
     expect(screen.getByText("3 photos")).toBeInTheDocument();
+    expect(screen.getByText("3 comments")).toBeInTheDocument();
     expect(screen.getByText("A sunny afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();

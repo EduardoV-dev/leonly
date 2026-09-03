@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MAX_VAULT_PAGE_SIZE } from "../constants/vault";
 import type { VaultMemory, VaultPage } from "../types/vault";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
+import { getMemoryReactionSummary } from "./memory-reactions";
 
 const vaultCursorSchema = z
   .object({
@@ -25,6 +26,7 @@ type VaultRow = {
   id: string;
   location: string | null;
   memory_date: string;
+  memory_comments: { count: number }[];
   title: string;
 };
 
@@ -55,14 +57,21 @@ function afterCursorFilter(cursor: VaultCursor): string {
   ].join(",");
 }
 
-async function toVaultMemory(memory: VaultRow): Promise<VaultMemory> {
+async function toVaultMemory(memory: VaultRow, userId: string): Promise<VaultMemory> {
+  const [coverPhotoUrl, reaction] = await Promise.all([
+    getCoverPreviewUrl(memory.id),
+    getMemoryReactionSummary(userId, memory.id),
+  ]);
+
   return {
-    coverPhotoUrl: await getCoverPreviewUrl(memory.id),
+    commentCount: memory.memory_comments[0]?.count ?? 0,
+    coverPhotoUrl,
     createdAt: memory.created_at,
     description: memory.description,
     id: memory.id,
     location: memory.location,
     memoryDate: memory.memory_date,
+    reaction,
     title: memory.title,
   };
 }
@@ -95,11 +104,12 @@ async function readVaultPage(
   cursor: VaultCursor | null,
   spaceId: string,
   pageSize: number,
+  userId: string,
 ): Promise<VaultPage> {
   const supabase = await createClient();
   let query = supabase
     .from("memories")
-    .select("id,title,description,location,memory_date,created_at")
+    .select("id,title,description,location,memory_date,created_at,memory_comments(count)")
     .eq("space_id", spaceId)
     .eq("visibility", "vault")
     .is("deleted_at", null)
@@ -119,7 +129,7 @@ async function readVaultPage(
   }
 
   const memories = await Promise.all(
-    ((data ?? []) as VaultRow[]).slice(0, pageSize).map(toVaultMemory),
+    ((data ?? []) as VaultRow[]).slice(0, pageSize).map((memory) => toVaultMemory(memory, userId)),
   );
   const lastMemory = memories.at(-1);
 
@@ -137,15 +147,21 @@ export async function getVaultPage(cursorValue: string | null): Promise<VaultPag
     throw new Error("No active space is available for the Private Vault.");
   }
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No active space is available for the Private Vault.");
+
   const cursor = cursorValue ? decodeCursor(cursorValue) : null;
   const shouldReset = cursorValue !== null && cursor === null;
 
   if (cursor && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE);
+    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE, user.id);
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readVaultPage(cursor, activeSpace.id, MAX_VAULT_PAGE_SIZE);
+  const page = await readVaultPage(cursor, activeSpace.id, MAX_VAULT_PAGE_SIZE, user.id);
   return shouldReset ? { ...page, cursorReset: true } : page;
 }
 

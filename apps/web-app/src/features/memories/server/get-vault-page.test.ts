@@ -4,12 +4,14 @@ import { getVaultPage, vaultCursor } from "./get-vault-page";
 const getActiveSpaceMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
 const getCoverPreviewUrlMock = vi.hoisted(() => vi.fn());
+const getMemoryReactionSummaryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
   getActiveSpaceForCurrentUser: getActiveSpaceMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("./get-cover-preview-url", () => ({ getCoverPreviewUrl: getCoverPreviewUrlMock }));
+vi.mock("./memory-reactions", () => ({ getMemoryReactionSummary: getMemoryReactionSummaryMock }));
 vi.mock("server-only", () => ({}));
 
 const rows = Array.from({ length: 21 }, (_, index) => ({
@@ -18,6 +20,7 @@ const rows = Array.from({ length: 21 }, (_, index) => ({
   id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
   location: index === 0 ? "The coast" : null,
   memory_date: "2026-08-23",
+  memory_comments: [{ count: index }],
   title: `Vault memory ${index}`,
 }));
 
@@ -42,11 +45,18 @@ describe("getVaultPage", () => {
     vi.clearAllMocks();
     getActiveSpaceMock.mockResolvedValue({ id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" });
     getCoverPreviewUrlMock.mockResolvedValue(null);
+    getMemoryReactionSummaryMock.mockResolvedValue({
+      counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+      currentReaction: null,
+    });
   });
 
   it("uses fixed Vault eligibility, full ordering, private covers, and a 20-item boundary", async () => {
     const query = createQuery();
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
     getCoverPreviewUrlMock.mockResolvedValue("https://storage.example/vault-cover");
 
     const page = await getVaultPage(null);
@@ -60,6 +70,7 @@ describe("getVaultPage", () => {
     expect(query.limit).toHaveBeenCalledWith(21);
     expect(page.memories).toHaveLength(20);
     expect(page.memories[0]?.coverPhotoUrl).toBe("https://storage.example/vault-cover");
+    expect(page.memories[0]?.commentCount).toBe(0);
     expect(getCoverPreviewUrlMock).toHaveBeenCalledWith(rows[0]?.id);
     expect(vaultCursor.decode(page.nextCursor ?? "")).toMatchObject({ id: rows[19]?.id, v: 1 });
   });
@@ -74,15 +85,24 @@ describe("getVaultPage", () => {
     anchorQuery.is.mockReturnValue(anchorQuery);
     const pageQuery = createQuery([]);
     createClientMock
+      .mockResolvedValueOnce({
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })) })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => pageQuery) })) });
     const cursor = vaultCursor.encode({
       coverPhotoUrl: null,
+      commentCount: 0,
       createdAt: rows[0]?.created_at ?? "",
       description: null,
       id: rows[0]?.id ?? "",
       location: null,
       memoryDate: rows[0]?.memory_date ?? "",
+      reaction: {
+        counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+        currentReaction: null,
+        members: { cry: [], heart: [], laugh: [], star: [] },
+      },
       title: "Anchor",
     });
 
@@ -96,14 +116,20 @@ describe("getVaultPage", () => {
 
   it("returns no cursor for the final page", async () => {
     const query = createQuery(rows.slice(0, 4));
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
 
     await expect(getVaultPage(null)).resolves.toMatchObject({ nextCursor: null });
   });
 
   it("resets malformed and extra-field cursors without applying a predicate", async () => {
     const query = createQuery([]);
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
     const extraFieldCursor = Buffer.from(
       JSON.stringify({
         createdAt: "2026-08-23T10:00:00.000Z",
@@ -131,15 +157,24 @@ describe("getVaultPage", () => {
     anchorQuery.is.mockReturnValue(anchorQuery);
     const firstPageQuery = createQuery([]);
     createClientMock
+      .mockResolvedValueOnce({
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })) })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => firstPageQuery) })) });
     const cursor = vaultCursor.encode({
       coverPhotoUrl: null,
+      commentCount: 0,
       createdAt: "2026-08-23T10:00:00.000Z",
       description: null,
       id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
       location: null,
       memoryDate: "2026-08-23",
+      reaction: {
+        counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+        currentReaction: null,
+        members: { cry: [], heart: [], laugh: [], star: [] },
+      },
       title: "Anchor",
     });
 

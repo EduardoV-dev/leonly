@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
 import { getTimelinePage, timelineCursor } from "./get-timeline-page";
 
 const getActiveSpaceMock = vi.hoisted(() => vi.fn());
 const createClientMock = vi.hoisted(() => vi.fn());
 const getCoverPreviewUrlMock = vi.hoisted(() => vi.fn());
+const getMemoryReactionSummaryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
   getActiveSpaceForCurrentUser: getActiveSpaceMock,
@@ -12,6 +16,7 @@ vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 
 vi.mock("./get-cover-preview-url", () => ({ getCoverPreviewUrl: getCoverPreviewUrlMock }));
+vi.mock("./memory-reactions", () => ({ getMemoryReactionSummary: getMemoryReactionSummaryMock }));
 
 const rows = Array.from({ length: 21 }, (_, index) => ({
   cover: [],
@@ -20,6 +25,7 @@ const rows = Array.from({ length: 21 }, (_, index) => ({
   id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
   location: null,
   memory_date: "2026-08-23",
+  memory_comments: [{ count: index }],
   title: `Memory ${index}`,
 }));
 
@@ -44,11 +50,18 @@ describe("getTimelinePage", () => {
     vi.clearAllMocks();
     getActiveSpaceMock.mockResolvedValue({ id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" });
     getCoverPreviewUrlMock.mockResolvedValue(null);
+    getMemoryReactionSummaryMock.mockResolvedValue({
+      counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+      currentReaction: null,
+    });
   });
 
   it("uses the authorized active space, eligibility filters, full order, and a 20-item boundary", async () => {
     const query = createQuery();
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
     getCoverPreviewUrlMock.mockResolvedValue("https://storage.example/signed-cover");
 
     const page = await getTimelinePage(null);
@@ -62,6 +75,7 @@ describe("getTimelinePage", () => {
     expect(query.limit).toHaveBeenCalledWith(21);
     expect(page.memories).toHaveLength(20);
     expect(page.memories[0]?.coverPhotoUrl).toBe("https://storage.example/signed-cover");
+    expect(page.memories[0]?.commentCount).toBe(0);
     expect(getCoverPreviewUrlMock).toHaveBeenCalledWith(rows[0]?.id);
     expect(page.nextCursor).not.toBeNull();
     if (!page.nextCursor) {
@@ -72,7 +86,10 @@ describe("getTimelinePage", () => {
 
   it("uses a smaller page boundary for recent-memory summaries", async () => {
     const query = createQuery();
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
 
     const page = await getTimelinePage(null, 4);
 
@@ -84,7 +101,10 @@ describe("getTimelinePage", () => {
 
   it("resets malformed cursors without using them as a query predicate", async () => {
     const query = createQuery([]);
-    createClientMock.mockResolvedValue({ from: vi.fn(() => ({ select: vi.fn(() => query) })) });
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
 
     await expect(getTimelinePage("not-a-cursor")).resolves.toMatchObject({
       cursorReset: true,
@@ -103,10 +123,14 @@ describe("getTimelinePage", () => {
     anchorQuery.is.mockReturnValue(anchorQuery);
     const firstPageQuery = createQuery([]);
     createClientMock
+      .mockResolvedValueOnce({
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })) })
       .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => firstPageQuery) })) });
     const cursor = timelineCursor.encode({
       createdAt: "2026-08-23T10:00:00.000Z",
+      commentCount: 0,
       description: null,
       id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
       coverPhotoUrl: null,

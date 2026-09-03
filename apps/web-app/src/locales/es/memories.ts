@@ -160,6 +160,19 @@ export const memoriesEs = {
       tryAgain: "Intentar de nuevo",
       heading: "Comentarios",
     },
+    reactions: {
+      count: "{{count}} reacciones",
+      failed: "No pudimos actualizar tu reacción. Inténtalo de nuevo.",
+      heading: "Reacciones",
+      open: "Reaccionar a este recuerdo",
+      select: "Reaccionar con {{reaction}}",
+      types: {
+        cry: "Tristeza",
+        heart: "Amor",
+        laugh: "Risa",
+        star: "Estrella",
+      },
+    },
     placement: {
       conflict: "Este recuerdo cambió. Recargando la versión actual.",
       failed: "No pudimos mover este recuerdo. Inténtalo de nuevo.",
@@ -205,6 +218,9 @@ export const memoriesEs = {
       timeline: "Recuerdo compartido",
       vault: "Bóveda privada",
     },
+  },
+  card: {
+    comments: "{{count}} comentarios",
   },
   vault: {
     actions: {

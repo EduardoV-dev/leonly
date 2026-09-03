@@ -30,6 +30,13 @@
   background: #fff;
 }
 
+.recent.withReactions,
+.related.withReactions,
+.vault.withReactions {
+  overflow: visible;
+  z-index: 3;
+}
+
 .recent .summaryLink,
 .related .summaryLink,
 .vault .summaryLink {
@@ -64,6 +71,7 @@
 .vault .cover {
   position: relative;
   aspect-ratio: 4 / 3;
+  border-radius: 0.75rem 0.75rem 0 0;
 }
 
 .cover img {
@@ -242,6 +250,41 @@
   color: #c3a3a6;
   fill: currentcolor;
   stroke: none;
+}
+
+.footer {
+  display: flex;
+  min-height: 4.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #eee6e3;
+  background: #fffdfc;
+}
+
+.recent .footer,
+.related .footer,
+.vault .footer {
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.commentCount {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  color: #8a6768;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.commentCount svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  color: #b06b77;
 }
 
 .extensions {

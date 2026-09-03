@@ -1,0 +1,206 @@
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.trigger {
+  display: inline-flex;
+  min-width: 2.9rem;
+  min-height: 2.9rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid #cd8e98;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff8f4, #f9d9d9);
+  color: #864754;
+  box-shadow:
+    0 0.3rem 0.8rem rgb(138 100 103 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.85);
+  transition:
+    box-shadow 180ms ease-out,
+    border-color 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: #9b4d5c;
+  box-shadow: 0 0.45rem 1rem rgb(138 78 88 / 0.27);
+  transform: translateY(-2px) rotate(-3deg) scale(1.05);
+}
+
+.trigger:focus-visible,
+.choice:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.trigger:disabled,
+.choice:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.trigger > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0.1rem;
+  border-radius: 50%;
+  background: #fff;
+  color: #ae3951;
+  stroke-width: 2.4;
+}
+
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.summaryReaction {
+  position: relative;
+  display: grid;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: default;
+  font-size: 1rem;
+}
+
+.summaryReaction[data-current="true"] {
+  border-color: #d77787;
+  background: #fff1ee;
+  box-shadow: 0 0.16rem 0.45rem rgb(162 76 92 / 0.18);
+  transform: translateY(-1px) scale(1.08);
+}
+
+.summaryReaction::after {
+  position: absolute;
+  z-index: 11;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  width: max-content;
+  max-width: min(15rem, 75vw);
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.45rem;
+  background: #503d3d;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, 0.2rem);
+  transition:
+    opacity 140ms ease-out,
+    transform 140ms ease-out;
+  visibility: hidden;
+  white-space: normal;
+}
+
+.summaryReaction:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.memberNames {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.summary strong {
+  min-width: 1.2rem;
+  padding: 0.14rem 0.28rem;
+  border-radius: 999px;
+  background: #f2e2e0;
+  color: #6e464a;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.choices {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  width: max-content;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border: 1px solid #ead8d5;
+  border-radius: 999px;
+  background: #fffdfc;
+  box-shadow: 0 0.7rem 1.8rem rgb(95 64 63 / 0.18);
+}
+
+.choice {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.45rem;
+  line-height: 1;
+  transition:
+    background-color 160ms ease-out,
+    transform 160ms ease-out;
+}
+
+.choice:hover:not(:disabled) {
+  background: #fff0ee;
+  transform: translateY(-0.18rem) scale(1.08);
+}
+
+.choice[data-selected="true"] {
+  border: 2px solid #c64f64;
+  background: #ffe0df;
+  box-shadow:
+    inset 0 0 0 2px #fff,
+    0 0.25rem 0.6rem rgb(175 65 83 / 0.25);
+  transform: translateY(-0.18rem) scale(1.12);
+}
+
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .choice {
+    transition: none;
+  }
+
+  .trigger:hover:not(:disabled),
+  .choice:hover:not(:disabled),
+  .choice[data-selected="true"] {
+    transform: none;
+  }
+}
