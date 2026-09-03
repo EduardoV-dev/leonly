@@ -74,25 +74,21 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
   const selectReaction = (reactionType: MemoryReactionType) => {
     if (mutation.isPending) return;
 
-    startTransition(() => addOptimisticReaction(reactionType));
-    void mutation.react(reactionType).then((nextSummary) => {
+    startTransition(async () => {
+      addOptimisticReaction(reactionType);
+      const nextSummary = await mutation.react(reactionType);
       if (nextSummary) {
         setConfirmedReaction(nextSummary);
         setStatus("");
         setIsOpen(false);
         return;
       }
-      setConfirmedReaction((current) => ({
-        ...current,
-        counts: { ...current.counts },
-        members: { ...current.members },
-      }));
       setStatus(t("detail.reactions.failed"));
     });
   };
 
   const activeReactions = MEMORY_REACTION_TYPES.filter(
-    (reactionType) => summary.counts[reactionType] > 0,
+    (reactionType) => confirmedReaction.counts[reactionType] > 0,
   );
   const totalReactionCount = MEMORY_REACTION_TYPES.reduce(
     (total, reactionType) => total + summary.counts[reactionType],
@@ -114,6 +110,7 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
         className={styles.trigger}
         disabled={mutation.isPending}
         onClick={() => setIsOpen((open) => !open)}
+        title={t("detail.reactions.open")}
         type="button"
       >
         <SmilePlus aria-hidden="true" />

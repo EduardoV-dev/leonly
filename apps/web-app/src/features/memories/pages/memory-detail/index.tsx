@@ -3,9 +3,8 @@
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { MemoryComments } from "../../components/memory-comments";
+import { MemoryDetailActions } from "../../components/memory-detail-actions";
 import { MemoryDetailView, type MemoryDetailViewProps } from "../../components/memory-detail-view";
-import { MemoryEditLink } from "../../components/memory-edit-link";
-import { MemoryPlacementAction } from "../../components/memory-placement-action";
 import { MemoryReactions } from "../../components/memory-reactions";
 
 type MemoryDetailPageProps = Pick<
@@ -20,14 +19,11 @@ export function MemoryDetailPage(props: Readonly<MemoryDetailPageProps>) {
       {...props}
       actions={
         props.actions ?? (
-          <>
-            <MemoryPlacementAction
-              memoryId={props.memory.id}
-              version={props.memory.version}
-              visibility={props.memory.visibility}
-            />
-            <MemoryEditLink memoryId={props.memory.id} />
-          </>
+          <MemoryDetailActions
+            memoryId={props.memory.id}
+            version={props.memory.version}
+            visibility={props.memory.visibility}
+          />
         )
       }
       backHref={APP_ROUTES.TIMELINE}

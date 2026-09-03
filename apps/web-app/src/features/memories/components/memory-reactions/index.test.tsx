@@ -1,10 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
+import { memoryQueryKeys } from "../../constants/query-keys";
+import type { MemoryReactionSummary } from "../../types/memory-reaction";
 import { MemoryReactions } from ".";
 
 const refreshMock = vi.fn();
+const commentQuery = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: refreshMock }),
@@ -12,18 +15,26 @@ vi.mock("next/navigation", () => ({
 
 const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 
-function renderReactions() {
+function CommentQueryProbe() {
+  useQuery({
+    queryFn: commentQuery,
+    queryKey: memoryQueryKeys.comments(memoryId),
+  });
+  return null;
+}
+
+function renderReactions(
+  reaction: MemoryReactionSummary = {
+    counts: { cry: 0, heart: 1, laugh: 0, star: 0 },
+    currentReaction: "heart" as const,
+    members: { cry: [], heart: ["Alex", "Sam"], laugh: [], star: [] },
+  },
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryReactions
-        memoryId={memoryId}
-        reaction={{
-          counts: { cry: 0, heart: 1, laugh: 0, star: 0 },
-          currentReaction: "heart",
-          members: { cry: [], heart: ["Alex", "Sam"], laugh: [], star: [] },
-        }}
-      />
+      <MemoryReactions memoryId={memoryId} reaction={reaction} />
+      <CommentQueryProbe />
     </QueryClientProvider>,
   );
 }
@@ -32,6 +43,7 @@ describe("MemoryReactions", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
     refreshMock.mockReset();
+    commentQuery.mockReset().mockResolvedValue({ comments: [] });
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -93,5 +105,43 @@ describe("MemoryReactions", () => {
       "true",
     );
     expect(laugh).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("updates the count optimistically without rendering an unconfirmed reaction", () => {
+    vi.mocked(fetch).mockReturnValue(new Promise(() => {}));
+    renderReactions({
+      counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+      currentReaction: null,
+      members: { cry: [], heart: [], laugh: [], star: [] },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "React to this memory" }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "React with Star" }));
+
+    const summary = screen.getByRole("group", { name: "1 reactions" });
+    expect(summary).toHaveTextContent("1");
+    expect(within(summary).queryByText("⭐")).not.toBeInTheDocument();
+  });
+
+  it("does not refetch comments after updating a reaction", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          reaction: {
+            counts: { cry: 0, heart: 0, laugh: 0, star: 1 },
+            currentReaction: "star",
+            members: { cry: [], heart: [], laugh: [], star: ["Alex"] },
+          },
+        }),
+      ),
+    );
+    renderReactions();
+    await waitFor(() => expect(commentQuery).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "React with Star" }));
+
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+    expect(commentQuery).toHaveBeenCalledTimes(1);
   });
 });

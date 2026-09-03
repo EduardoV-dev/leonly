@@ -152,6 +152,8 @@ Follow existing patterns first. Keep edits minimal and local.
 - Framework stack: Vitest + Testing Library + `@testing-library/jest-dom`.
 - Test environment: `jsdom` configured in `apps/web-app/vitest.config.ts`.
 - Setup file: `apps/web-app/vitest.setup.ts`.
+- Do not add database integration tests or database test suites. Cover application behavior through the web
+  test suite instead.
 - Prefer accessible queries (`getByRole` + name) over brittle selectors.
 - Keep tests deterministic; mock timers/network when needed.
 

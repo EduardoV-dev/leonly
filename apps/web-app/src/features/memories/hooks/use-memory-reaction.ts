@@ -55,7 +55,13 @@ export function useMemoryReaction(memoryId: string, onUnavailable: () => void) {
       setErrorCode(error.code);
       if (error.code === "unavailable") onUnavailable();
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all }),
+    onSettled: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("full") }),
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("recent") }),
+        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.vault() }),
+      ]);
+    },
     onSuccess: () => {
       setErrorCode(null);
       setLastOutcome("success");

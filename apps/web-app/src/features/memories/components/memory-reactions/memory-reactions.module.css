@@ -7,19 +7,15 @@
 
 .trigger {
   display: inline-flex;
-  min-width: 2.9rem;
-  min-height: 2.9rem;
+  width: 2.75rem;
+  height: 2.75rem;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.5rem;
-  border: 1px solid #cd8e98;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fff8f4, #f9d9d9);
-  color: #864754;
-  box-shadow:
-    0 0.3rem 0.8rem rgb(138 100 103 / 0.18),
-    inset 0 1px 0 rgb(255 255 255 / 0.85);
+  padding: 0;
+  border: 1px solid #d8c2c0;
+  border-radius: 0.6rem;
+  background: #fff4f3;
+  color: #633940;
   transition:
     box-shadow 180ms ease-out,
     border-color 180ms ease-out,
@@ -27,9 +23,9 @@
 }
 
 .trigger:hover:not(:disabled) {
-  border-color: #9b4d5c;
-  box-shadow: 0 0.45rem 1rem rgb(138 78 88 / 0.27);
-  transform: translateY(-2px) rotate(-3deg) scale(1.05);
+  border-color: var(--auth-brand);
+  background: #fff;
+  transform: translateY(-2px);
 }
 
 .trigger:focus-visible,
@@ -45,13 +41,9 @@
 }
 
 .trigger > svg {
-  width: 1.4rem;
-  height: 1.4rem;
-  padding: 0.1rem;
-  border-radius: 50%;
-  background: #fff;
-  color: #ae3951;
-  stroke-width: 2.4;
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke-width: 2;
 }
 
 .summary {
@@ -142,7 +134,7 @@
   position: absolute;
   z-index: 10;
   top: calc(100% + 0.5rem);
-  right: 0;
+  left: 0;
   display: flex;
   width: max-content;
   gap: 0.2rem;

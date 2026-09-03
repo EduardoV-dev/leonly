@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemoryDetailPage } from ".";
@@ -8,9 +10,6 @@ import { MemoryDetailNotFound } from "./not-found";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
-vi.mock("@tanstack/react-query", () => ({
-  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 vi.mock("../../components/memory-comments", () => ({
   MemoryComments: () => <p>Comments</p>,
@@ -44,13 +43,18 @@ const memory = {
   visibility: "timeline" as const,
 };
 
+function renderDetail(content: ReactNode) {
+  const queryClient = new QueryClient();
+  return render(<QueryClientProvider client={queryClient}>{content}</QueryClientProvider>);
+}
+
 describe("MemoryDetailPage", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
   });
 
   it("renders the complete editorial story and timeline visibility", () => {
-    render(<MemoryDetailPage memory={memory} />);
+    renderDetail(<MemoryDetailPage memory={memory} />);
 
     expect(screen.getByRole("heading", { name: "Among the flowers" })).toBeInTheDocument();
     expect(screen.getByText("August 20, 2026")).toBeInTheDocument();
@@ -72,18 +76,22 @@ describe("MemoryDetailPage", () => {
     );
     const editLink = screen.getByRole("link", { name: "Edit" });
     expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     const actionRegion = document.querySelector<HTMLElement>(
       '[data-extension-region="memory-actions"]',
     );
+    const actionBar = document.querySelector<HTMLElement>(
+      '[data-extension-region="memory-action-bar"]',
+    );
     const detailFooter = document.querySelector<HTMLElement>('[data-detail-footer="true"]');
     expect(editLink).toHaveAttribute("href", `/memories/${memory.id}/edit`);
-    expect(detailFooter).toContainElement(actionRegion);
-    expect(detailFooter?.firstElementChild).toBe(actionRegion);
+    expect(actionBar).toContainElement(actionRegion);
+    expect(detailFooter).not.toContainElement(actionRegion);
     expect(detailFooter).toHaveTextContent("Preserved by Sarah");
   });
 
   it("renders related memories as accessible detail links", () => {
-    render(
+    renderDetail(
       <MemoryDetailPage
         memory={memory}
         relatedMemories={[
@@ -109,7 +117,7 @@ describe("MemoryDetailPage", () => {
   });
 
   it("omits absent optional metadata and composes visibility-aware extension content", () => {
-    render(
+    renderDetail(
       <MemoryDetailPage
         memory={{ ...memory, description: null, location: null, visibility: "vault" }}
         actions={<button type="button">Restore</button>}
@@ -152,12 +160,13 @@ describe("MemoryDetailPage", () => {
 
   it("uses the concise localized edit label", async () => {
     await i18n.changeLanguage("es");
-    render(<MemoryDetailPage memory={memory} />);
+    renderDetail(<MemoryDetailPage memory={memory} />);
 
     expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
       "href",
       `/memories/${memory.id}/edit`,
     );
     expect(screen.getByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quitar recuerdo" })).toBeInTheDocument();
   });
 });

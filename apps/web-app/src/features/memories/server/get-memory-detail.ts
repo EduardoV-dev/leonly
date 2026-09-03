@@ -5,10 +5,10 @@ import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryDetail, MemoryDetailPhoto } from "../types/memory-detail";
 import { getAvailableMemory } from "./get-available-memory";
+import { getMemoryPhotoUrl } from "./get-memory-photo";
 import { getMemoryReactionSummary, MemoryReactionError } from "./memory-reactions";
 import { encodeMemoryVersion } from "./memory-version";
 
-const SIGNED_URL_TTL_SECONDS = 300;
 type MemoryVisibility = "timeline" | "vault";
 
 const creatorSchema = z.object({
@@ -17,37 +17,10 @@ const creatorSchema = z.object({
 });
 const photoRowsSchema = z.array(
   z.object({
-    cover_object_path: z.string().min(1).nullable(),
-    detail_object_path: z.string().min(1).nullable(),
     id: z.uuid(),
-    object_path: z.string().min(1),
     position: z.number().int().nonnegative(),
   }),
 );
-
-async function signPhotoPaths(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  coverPath: string,
-  detailPath: string,
-): Promise<Pick<MemoryDetailPhoto, "coverUrl" | "detailUrl">> {
-  if (coverPath === detailPath) {
-    const { data, error } = await supabase.storage
-      .from("memory-photos")
-      .createSignedUrl(coverPath, SIGNED_URL_TTL_SECONDS);
-    const url = error ? null : (data?.signedUrl ?? null);
-    return { coverUrl: url, detailUrl: url };
-  }
-
-  const [coverResult, detailResult] = await Promise.all([
-    supabase.storage.from("memory-photos").createSignedUrl(coverPath, SIGNED_URL_TTL_SECONDS),
-    supabase.storage.from("memory-photos").createSignedUrl(detailPath, SIGNED_URL_TTL_SECONDS),
-  ]);
-
-  return {
-    coverUrl: coverResult.error ? null : (coverResult.data?.signedUrl ?? null),
-    detailUrl: detailResult.error ? null : (detailResult.data?.signedUrl ?? null),
-  };
-}
 
 export async function getMemoryDetailForVisibility(
   memoryId: string,
@@ -76,7 +49,7 @@ export async function getMemoryDetailForVisibility(
         .maybeSingle(),
       supabase
         .from("memory_photos")
-        .select("id,object_path,cover_object_path,detail_object_path,position")
+        .select("id,position")
         .eq("memory_id", memory.id)
         .order("position", { ascending: true }),
       getMemoryReactionSummary(user.id, memory.id),
@@ -95,20 +68,11 @@ export async function getMemoryDetailForVisibility(
     const orderedRows = coverPhoto
       ? [coverPhoto, ...photoRows.filter((photo) => photo.id !== coverPhoto.id)]
       : photoRows;
-    const photos: MemoryDetailPhoto[] = await Promise.all(
-      orderedRows.map(async (photo) => {
-        const urls = await signPhotoPaths(
-          supabase,
-          photo.cover_object_path ?? photo.object_path,
-          photo.detail_object_path ?? photo.object_path,
-        );
-
-        return {
-          id: photo.id,
-          ...urls,
-        };
-      }),
-    );
+    const photos: MemoryDetailPhoto[] = orderedRows.map((photo) => ({
+      coverUrl: getMemoryPhotoUrl(memory.id, photo.id, "cover"),
+      detailUrl: getMemoryPhotoUrl(memory.id, photo.id, "detail"),
+      id: photo.id,
+    }));
 
     return {
       createdAt: memory.createdAt,

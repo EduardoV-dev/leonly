@@ -1,8 +1,8 @@
 import type { MemoryReactionSummary } from "./memory-reaction";
 
 export type MemoryDetailPhoto = {
-  coverUrl: string | null;
-  detailUrl: string | null;
+  coverUrl: string;
+  detailUrl: string;
   id: string;
 };
 

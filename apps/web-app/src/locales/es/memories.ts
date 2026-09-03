@@ -78,9 +78,8 @@ export const memoriesEs = {
       eyebrow: "Una pausa en la historia",
       heading: "No pudimos abrir el editor del recuerdo",
     },
-    eyebrow: "Editor de recuerdos",
     heading: "Refina este recuerdo",
-    intro: "Los cambios actualizan este recuerdo compartido para ambos.",
+    intro: "Dale forma a los detalles que hacen suyo este recuerdo.",
     photos: {
       empty: "Este recuerdo usará su presentación sin fotos.",
       new: "Foto nueva",
@@ -108,6 +107,22 @@ export const memoriesEs = {
       retry: "Intentar de nuevo",
     },
     creator: "Conservado por {{name}}",
+    delete: {
+      action: "Quitar recuerdo",
+      cancel: "Conservar este recuerdo",
+      confirm: "Quitar recuerdo",
+      conflict: "Este recuerdo cambió. Tómense un momento para revisarlo antes de decidir.",
+      deleting: "Quitando…",
+      description:
+        "Dejará de formar parte de su historia compartida y ninguno de los dos podrá verlo.",
+      eyebrow: "Un recuerdo compartido",
+      failed: "No pudimos quitar este recuerdo. Sigue aquí, así que puedes intentarlo de nuevo.",
+      heading: "¿Dejar ir este recuerdo?",
+      pending: "Quitando este recuerdo de su historia compartida…",
+      retry: "Intentar quitarlo de nuevo",
+      success: "El recuerdo ya no forma parte de su historia compartida.",
+      unavailable: "Este recuerdo ya no está aquí.",
+    },
     comments: {
       add: "Comentar",
       added: "Comentario añadido.",

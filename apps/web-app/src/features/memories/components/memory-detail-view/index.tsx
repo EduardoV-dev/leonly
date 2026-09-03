@@ -175,19 +175,22 @@ export function MemoryDetailView({
               </motion.p>
             ) : null}
 
-            {reactions ? (
-              <motion.div className={styles.reactions} variants={activeRevealVariants}>
-                {reactions}
-              </motion.div>
-            ) : null}
-
-            {comments ? (
-              <motion.section
-                data-extension-region="memory-comments"
+            {reactions || actions ? (
+              <motion.div
+                className={styles.actionBar}
+                data-extension-region="memory-action-bar"
                 variants={activeRevealVariants}
               >
-                {comments}
-              </motion.section>
+                {reactions}
+                {actions ? (
+                  <section
+                    data-extension-region="memory-actions"
+                    data-visibility={memory.visibility}
+                  >
+                    {actions}
+                  </section>
+                ) : null}
+              </motion.div>
             ) : null}
 
             <motion.footer
@@ -195,11 +198,6 @@ export function MemoryDetailView({
               data-detail-footer="true"
               variants={activeRevealVariants}
             >
-              {actions ? (
-                <section data-extension-region="memory-actions" data-visibility={memory.visibility}>
-                  {actions}
-                </section>
-              ) : null}
               <div className={styles.creator}>
                 {memory.creatorAvatarUrl ? (
                   // biome-ignore lint/performance/noImgElement: Creator avatar URLs are authorized runtime URLs.
@@ -214,6 +212,16 @@ export function MemoryDetailView({
             </motion.footer>
           </motion.article>
         </motion.div>
+
+        {comments ? (
+          <motion.section
+            className={styles.comments}
+            data-extension-region="memory-comments"
+            variants={activeRevealVariants}
+          >
+            {comments}
+          </motion.section>
+        ) : null}
 
         <motion.section
           className={styles.related}

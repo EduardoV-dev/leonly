@@ -59,9 +59,10 @@ Creator attribution MUST NOT grant or broaden access to the memory.
 
 The system SHALL present every available photo belonging to the authorized memory. When a selected cover
 exists, it MUST appear first; all remaining photos MUST follow by persisted position ascending while keeping
-their relative order. The server MUST create short-lived signed URLs only after authorizing the parent
-memory and MUST NOT expose or accept an object path as authority. Missing photos and unavailable signed URLs
-MUST use an accessible fallback without exposing storage metadata or preventing other available photos from
+their relative order. Each photo MUST use an opaque same-origin media URL whose every request reauthorizes the
+parent memory before returning bytes. The browser MUST NOT receive or accept an object path, signed Storage
+credential, redirect, or client-supplied identity as authority. Missing photos and unavailable media responses
+MUST use an accessible fallback without exposing Storage metadata or preventing other available photos from
 being viewed.
 
 #### Scenario: Selected cover is not the first persisted photo
@@ -74,9 +75,9 @@ being viewed.
 - **WHEN** an authorized memory has no available photo metadata
 - **THEN** the detail view shows a valid accessible no-photo presentation
 
-#### Scenario: One photo URL is unavailable
+#### Scenario: One photo response is unavailable
 
-- **WHEN** one authorized photo cannot receive or load its short-lived signed URL
+- **WHEN** one authorized photo cannot deliver bytes through its reauthorizing media URL
 - **THEN** that photo position shows an accessible fallback while the remaining available photos stay usable
 
 ### Requirement: Accessible photo navigation
@@ -128,7 +129,7 @@ timeline and Vault detail views.
 The system SHALL provide a dedicated loading presentation while authorized detail is pending. A read failure
 that is not an unavailable outcome MUST render a retryable error, MUST NOT display stale detail as current,
 and MUST preserve the requested route for retry. Retrying or directly refreshing an authorized detail URL
-SHALL resolve access and issue current short-lived photo URLs again. Realtime partner updates are not
+SHALL resolve access again and issue current opaque photo media URLs. Realtime partner updates are not
 required.
 
 #### Scenario: Initial detail read is pending
@@ -144,7 +145,8 @@ required.
 #### Scenario: Authorized detail route is refreshed
 
 - **WHEN** a member directly refreshes or retries an authorized memory detail URL
-- **THEN** the system resolves authorization again and renders current detail with newly resolved photo URLs
+- **THEN** the system resolves authorization again and renders current detail with reauthorizing photo media
+  URLs
 
 ### Requirement: Detail reaction summary and controls
 

@@ -97,7 +97,6 @@ export function MemoryEditorForm({
         </Link>
       </motion.div>
       <motion.header className={`${styles.intro} ${wideStyles.intro}`} variants={activeVariants}>
-        {mode === "edit" ? <p className={styles.eyebrow}>{t("edit.eyebrow")}</p> : null}
         <h1>{t(mode === "create" ? "create.heading" : "edit.heading")}</h1>
         <p>{t(mode === "create" ? "create.intro" : "edit.intro")}</p>
       </motion.header>

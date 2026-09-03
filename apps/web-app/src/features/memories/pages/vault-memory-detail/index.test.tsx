@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
@@ -5,9 +6,6 @@ import { VaultMemoryDetailPage } from ".";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
-vi.mock("@tanstack/react-query", () => ({
-  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 vi.mock("../../components/memory-comments", () => ({
   MemoryComments: () => <p>Comments</p>,
@@ -41,22 +39,25 @@ describe("VaultMemoryDetailPage", () => {
   });
 
   it("reuses the memory detail UI with Vault navigation and Vault recommendations", () => {
+    const queryClient = new QueryClient();
     render(
-      <VaultMemoryDetailPage
-        memory={memory}
-        relatedMemories={[
-          {
-            commentCount: 0,
-            coverPhotoUrl: null,
-            createdAt: "2026-08-19T10:00:00.000Z",
-            description: "We packed a blanket and stayed all afternoon.",
-            id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-            location: "The riverbank",
-            memoryDate: "2026-08-18",
-            title: "Picnic by the river",
-          },
-        ]}
-      />,
+      <QueryClientProvider client={queryClient}>
+        <VaultMemoryDetailPage
+          memory={memory}
+          relatedMemories={[
+            {
+              commentCount: 0,
+              coverPhotoUrl: null,
+              createdAt: "2026-08-19T10:00:00.000Z",
+              description: "We packed a blanket and stayed all afternoon.",
+              id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+              location: "The riverbank",
+              memoryDate: "2026-08-18",
+              title: "Picnic by the river",
+            },
+          ]}
+        />
+      </QueryClientProvider>,
     );
 
     expect(screen.getByRole("heading", { name: "Among the hidden flowers" })).toBeInTheDocument();
@@ -70,6 +71,7 @@ describe("VaultMemoryDetailPage", () => {
       `/memories/${memory.id}/edit`,
     );
     expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
       "Preserved by Sarah",
     );

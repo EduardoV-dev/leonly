@@ -6,16 +6,8 @@
 }
 .intro {
   max-width: 42rem;
-  margin: 0 auto 1.75rem;
-  text-align: center;
-}
-.eyebrow {
-  margin: 0 0 0.45rem;
-  color: var(--auth-brand);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin: 0 0 1.75rem;
+  text-align: left;
 }
 .backLink {
   display: inline-flex;
@@ -48,9 +40,9 @@
   line-height: 1;
   text-wrap: balance;
 }
-.intro > p:not(.eyebrow) {
+.intro > p {
   max-width: 34rem;
-  margin: 0.75rem auto 0;
+  margin: 0.75rem 0 0;
   color: var(--auth-copy);
   font-size: 0.95rem;
   line-height: 1.55;
@@ -140,17 +132,6 @@
 .preserveButton:focus-visible {
   outline: 2px solid #b82b49;
   outline-offset: 2px;
-}
-.titleField input {
-  min-height: 3.8rem;
-  padding: 0 0 0.15rem;
-  border-width: 0 0 1px;
-  border-radius: 0;
-  background: transparent;
-  color: #5b3138;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(1.45rem, 4vw, 2rem);
-  font-weight: 600;
 }
 .inputWithIcon {
   position: relative;

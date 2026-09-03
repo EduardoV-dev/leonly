@@ -12,6 +12,7 @@ import type { MemoryPlacementTarget } from "../../types/memory-placement";
 import styles from "./memory-placement-action.module.css";
 
 type MemoryPlacementActionProps = {
+  disabled?: boolean;
   memoryId: string;
   version: string;
   visibility: "timeline" | "vault";
@@ -28,6 +29,7 @@ function targetFor(visibility: "timeline" | "vault"): MemoryPlacementTarget {
 }
 
 export function MemoryPlacementAction({
+  disabled = false,
   memoryId,
   version,
   visibility,
@@ -42,7 +44,7 @@ export function MemoryPlacementAction({
   );
 
   const place = async () => {
-    if (isSubmitting) return;
+    if (disabled || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -82,7 +84,12 @@ export function MemoryPlacementAction({
   };
 
   return (
-    <button className={styles.button} disabled={isSubmitting} onClick={place} type="button">
+    <button
+      className={styles.button}
+      disabled={disabled || isSubmitting}
+      onClick={place}
+      type="button"
+    >
       {target === "vault" ? <ArchiveX aria-hidden="true" /> : <ArchiveRestore aria-hidden="true" />}
       {isSubmitting ? t("detail.placement.moving") : label}
     </button>

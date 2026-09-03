@@ -1,0 +1,14 @@
+.actions,
+.iconActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions {
+  gap: 0.65rem;
+}
+
+.iconActions {
+  gap: 0.65rem;
+}

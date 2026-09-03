@@ -116,7 +116,7 @@ export function MemorySummaryCard({
         <Link className={styles.summaryLink} href={detailHref} aria-label={`Open ${memory.title}`}>
           <motion.div className={styles.cover} variants={activeCoverVariants}>
             {coverPhotoUrl ? (
-              // biome-ignore lint/performance/noImgElement: Timeline cover URLs are authorized runtime URLs.
+              // biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly.
               <img
                 src={coverPhotoUrl}
                 width={960}

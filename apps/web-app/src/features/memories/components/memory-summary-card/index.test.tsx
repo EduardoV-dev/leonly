@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemorySummaryCard } from ".";
@@ -47,5 +47,26 @@ describe("MemorySummaryCard", () => {
     render(<MemorySummaryCard memory={{ ...memory, location }} />);
 
     expect(screen.getByText(location).tagName).toBe("SPAN");
+  });
+
+  it.each(["timeline", "recent", "related", "vault"] as const)(
+    "does not expose deletion on the %s summary surface",
+    (variant) => {
+      render(<MemorySummaryCard memory={memory} variant={variant} />);
+
+      expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+    },
+  );
+
+  it("requests the authorized route directly and preserves its fallback on failure", () => {
+    const coverPhotoUrl = `/api/memories/${memory.id}/photos/22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf/cover`;
+    render(<MemorySummaryCard memory={{ ...memory, coverPhotoUrl }} />);
+
+    const cover = screen.getByRole("img", { name: "Cover for Our picnic" });
+    expect(cover).toHaveAttribute("src", coverPhotoUrl);
+    expect(cover).not.toHaveAttribute("src", expect.stringContaining("/_next/image"));
+
+    fireEvent.error(cover);
+    expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
   });
 });

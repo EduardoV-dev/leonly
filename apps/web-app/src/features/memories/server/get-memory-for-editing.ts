@@ -4,14 +4,12 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryEdit, MemoryEditPhoto } from "../types/memory-edit";
 import { getAvailableMemory } from "./get-available-memory";
+import { getMemoryPhotoUrl } from "./get-memory-photo";
 import { encodeMemoryVersion } from "./memory-version";
 
-const SIGNED_URL_TTL_SECONDS = 300;
 const photoRowsSchema = z.array(
   z.object({
-    detail_object_path: z.string().min(1).nullable(),
     id: z.uuid(),
-    object_path: z.string().min(1),
     position: z.number().int().nonnegative(),
   }),
 );
@@ -25,7 +23,7 @@ export async function getMemoryForEditing(memoryId: string): Promise<MemoryEdit 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("memory_photos")
-    .select("id,object_path,detail_object_path,position")
+    .select("id,position")
     .eq("memory_id", memory.id)
     .order("position", { ascending: true });
 
@@ -34,15 +32,10 @@ export async function getMemoryForEditing(memoryId: string): Promise<MemoryEdit 
   }
 
   const rows = photoRowsSchema.parse(data ?? []);
-  const photos: MemoryEditPhoto[] = await Promise.all(
-    rows.map(async (photo) => {
-      const path = photo.detail_object_path ?? photo.object_path;
-      const signed = await supabase.storage
-        .from("memory-photos")
-        .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-      return { id: photo.id, previewUrl: signed.error ? null : (signed.data?.signedUrl ?? null) };
-    }),
-  );
+  const photos: MemoryEditPhoto[] = rows.map((photo) => ({
+    id: photo.id,
+    previewUrl: getMemoryPhotoUrl(memory.id, photo.id, "detail"),
+  }));
 
   return {
     coverPhotoId: memory.coverPhotoId,

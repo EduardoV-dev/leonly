@@ -107,7 +107,7 @@ export function MemoryPhotoGallery({
             aria-label={t("detail.lightbox.open", { position: selectedPosition })}
             {...swipeHandlers}
           >
-            {/* biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time. */}
+            {/* biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly. */}
             <img
               key={selectedPhoto.id}
               src={selectedUrl}
@@ -192,7 +192,7 @@ export function MemoryPhotoGallery({
                 }}
               >
                 {thumbnailUrl ? (
-                  // biome-ignore lint/performance/noImgElement: Private signed URLs are resolved at request time.
+                  // biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly.
                   <img
                     src={thumbnailUrl}
                     alt=""

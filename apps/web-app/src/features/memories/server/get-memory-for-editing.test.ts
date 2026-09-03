@@ -2,10 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { createClientMock, getAvailableMemoryMock, signedUrlMock } = vi.hoisted(() => ({
+const { createClientMock, getAvailableMemoryMock } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   getAvailableMemoryMock: vi.fn(),
-  signedUrlMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
@@ -33,7 +32,6 @@ function client(photoRows: unknown[] = []) {
   query.eq.mockReturnValue(query);
   return {
     from: vi.fn(() => ({ select: vi.fn(() => query) })),
-    storage: { from: vi.fn(() => ({ createSignedUrl: signedUrlMock })) },
   };
 }
 
@@ -41,10 +39,6 @@ describe("getMemoryForEditing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getAvailableMemoryMock.mockResolvedValue(memory);
-    signedUrlMock.mockImplementation(async (path: string) => ({
-      data: { signedUrl: `https://storage.example/${path}` },
-      error: null,
-    }));
   });
 
   it.each(["malformed", "missing", "inactive", "other-space", "deleted"])(
@@ -83,6 +77,16 @@ describe("getMemoryForEditing", () => {
     ]);
     expect(result?.version).not.toContain(memory.updatedAt);
     expect(decodeMemoryVersion(result?.version ?? "")).toBe(memory.updatedAt);
-    expect(signedUrlMock).toHaveBeenNthCalledWith(2, "space/second/original", 300);
+    expect(result?.photos).toEqual([
+      {
+        id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+        previewUrl: `/api/memories/${memory.id}/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail`,
+      },
+      {
+        id: memory.coverPhotoId,
+        previewUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/detail`,
+      },
+    ]);
+    expect(JSON.stringify(result?.photos)).not.toContain("space/");
   });
 });

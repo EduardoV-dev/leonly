@@ -1,6 +1,6 @@
 export type MemoryEditPhoto = {
   id: string;
-  previewUrl: string | null;
+  previewUrl: string;
 };
 
 export type MemoryEdit = {

@@ -78,9 +78,8 @@ export const memoriesEn = {
       eyebrow: "A pause in the story",
       heading: "We could not open the memory editor",
     },
-    eyebrow: "Memory Editor",
     heading: "Refine This Memory",
-    intro: "Changes update this shared memory for both of you.",
+    intro: "Shape the details that make this memory yours.",
     photos: {
       empty: "This memory will use its no-photo presentation.",
       new: "New photo",
@@ -108,6 +107,22 @@ export const memoriesEn = {
       retry: "Try again",
     },
     creator: "Preserved by {{name}}",
+    delete: {
+      action: "Remove memory",
+      cancel: "Keep this memory",
+      confirm: "Remove memory",
+      conflict: "This memory changed. Take a moment to look it over before deciding.",
+      deleting: "Removing…",
+      description:
+        "It will no longer be part of your shared story, and neither of you will be able to see it.",
+      eyebrow: "A shared memory",
+      failed: "We could not remove this memory. It is still here, so you can try again.",
+      heading: "Let this memory go?",
+      pending: "Removing this memory from your shared story…",
+      retry: "Try removing it again",
+      success: "Memory removed from your shared story.",
+      unavailable: "This memory is no longer here.",
+    },
     comments: {
       add: "Comment",
       added: "Comment added.",

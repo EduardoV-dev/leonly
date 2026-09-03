@@ -37,47 +37,40 @@ interactive controls in those regions.
 - **WHEN** an eligible memory has a cover photo, description, and location
 - **THEN** its card displays all required and available summary fields
 
-#### Scenario: Cover URL cannot be resolved
-- **WHEN** an eligible memory has a cover photo but its signed cover URL is unavailable
-- **THEN** its card renders the existing accessible cover-photo fallback without exposing the photo's
-  `object_path`
+#### Scenario: Authorized cover response is unavailable
+- **WHEN** an eligible memory has a cover photo but its authorized cover response is unavailable
+- **THEN** its card renders the existing accessible cover-photo fallback without exposing Storage authority
 
 #### Scenario: Member opens a memory from its timeline card
 - **WHEN** a member activates an eligible memory card's detail link
 - **THEN** the interface navigates to that memory's UUID detail route
 
-#### Scenario: Later capability supplies card content
-- **WHEN** a later capability contributes a count or action to a card
+#### Scenario: A capability supplies card content
+- **WHEN** a capability contributes a count or action to a card
 - **THEN** that content is rendered in its designated extension region, remains independently
   interactive, and does not remove the timeline summary or detail link
 
 ### Requirement: Private cover-media delivery
-The system SHALL resolve a cover photo's short-lived signed URL only on the server after an authorized
-timeline or memory-detail read has established that the parent memory is available to the requesting
-member. The timeline and detail UI MUST use only the server-provided resolved URL for a cover preview
-and MUST NOT derive, construct, expose, or otherwise use a Storage URL from `object_path`. If a memory
-has no cover photo or signed URL resolution fails, the UI MUST render its existing accessible
-cover-photo fallback without exposing `object_path`. This delivery contract MUST NOT change the
-20-item UUID cursor, ordering, deleted-at eligibility, active-space authorization, Private Vault
-timeline exclusion, or generic not-found behavior.
+The system SHALL resolve an opaque same-origin cover media URL only after an authorized Timeline or detail
+read establishes that the parent memory is available to the requesting member. Every media request MUST
+reauthorize the parent memory before returning bytes. The UI MUST NOT receive, derive, construct, expose, or
+otherwise use a Storage object path, signed Storage credential, or redirect to a Storage URL. If a memory has
+no cover photo or authorized media delivery fails, the UI MUST render its existing accessible fallback. This
+delivery contract MUST NOT change pagination, ordering, eligibility, active-space authorization, Vault
+exclusion, or generic not-found behavior.
 
 #### Scenario: Authorized cover photo is displayed
-- **WHEN** an authorized timeline or detail read returns an available memory with a resolvable cover
-  photo
-- **THEN** the server returns a short-lived signed cover URL and the UI displays that URL as the cover
-  preview
+- **WHEN** an authorized Timeline or detail read returns an available memory with a resolvable cover photo
+- **THEN** the UI requests its opaque media URL and receives bytes only after current authorization succeeds
 
-#### Scenario: Cover photo is absent or signing fails
-- **WHEN** an authorized timeline or detail read has no cover photo or cannot resolve a signed cover
-  URL
-- **THEN** the response does not expose `object_path` and the UI renders the existing accessible
-  cover-photo fallback
+#### Scenario: Cover photo is absent or delivery fails
+- **WHEN** an authorized Timeline or detail read has no cover photo or cannot deliver its authorized media
+- **THEN** the response exposes no Storage authority and the UI renders the existing accessible fallback
 
 #### Scenario: Unavailable memory includes a cover photo
-- **WHEN** a timeline or detail read cannot establish that a memory is available to the requesting
-  member
-- **THEN** the server does not resolve or return a signed cover URL and preserves the existing timeline
-  exclusion or generic not-found outcome
+- **WHEN** a Timeline, detail, or media read cannot establish that a memory is currently available
+- **THEN** the server returns no photo bytes or Storage authority and preserves the existing exclusion or
+  generic not-found outcome
 
 ### Requirement: Deterministic bounded timeline pagination
 The system SHALL return timeline pages containing at most 20 eligible memories, ordered by memory

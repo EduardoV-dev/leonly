@@ -5,18 +5,24 @@ import { MemoryPhotoGallery } from ".";
 
 const photos = [
   {
-    coverUrl: "https://storage.example/cover-card",
-    detailUrl: "https://storage.example/cover-detail",
+    coverUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/cover",
+    detailUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/detail",
     id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
   },
   {
-    coverUrl: "https://storage.example/second-card",
-    detailUrl: "https://storage.example/second-detail",
+    coverUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/cover",
+    detailUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail",
     id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
   },
   {
-    coverUrl: null,
-    detailUrl: null,
+    coverUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/cover",
+    detailUrl:
+      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/detail",
     id: "cc2df916-833a-4f1b-b744-b7b4c176ae93",
   },
 ];
@@ -80,7 +86,7 @@ describe("MemoryPhotoGallery", () => {
 
     expect(screen.getByRole("img", { name: "Photo 1 of 1 from Our picnic" })).toHaveAttribute(
       "src",
-      "https://storage.example/cover-detail",
+      photos[0].detailUrl,
     );
     expect(screen.queryByRole("button", { name: "Previous photo" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Next photo" })).not.toBeInTheDocument();
@@ -129,7 +135,7 @@ describe("MemoryPhotoGallery", () => {
     expect(within(dialog).queryByText(galleryProps.description)).not.toBeInTheDocument();
     expect(
       within(dialog).getByRole("img", { name: "Photo 2 of 2 from Our picnic" }),
-    ).toHaveAttribute("src", "https://storage.example/second-detail");
+    ).toHaveAttribute("src", photos[1].detailUrl);
 
     fireEvent.keyDown(dialog, { key: "ArrowRight" });
     expect(within(dialog).getByText("1 / 2")).toBeInTheDocument();
@@ -148,6 +154,8 @@ describe("MemoryPhotoGallery", () => {
     const previous = screen.getByRole("button", { name: "Previous photo" });
     const next = screen.getByRole("button", { name: "Next photo" });
     fireEvent.click(previous);
+    fireEvent.error(screen.getByRole("img", { name: "Photo 3 of 3 from Our picnic" }));
+    fireEvent.error(screen.getByRole("img", { name: "Photo 3 of 3 from Our picnic" }));
     expect(screen.getByRole("img", { name: "Photo 3 is unavailable" })).toBeInTheDocument();
 
     fireEvent.click(next);
@@ -224,7 +232,7 @@ describe("MemoryPhotoGallery", () => {
     fireEvent.error(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
     expect(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" })).toHaveAttribute(
       "src",
-      "https://storage.example/cover-card",
+      photos[0].coverUrl,
     );
 
     fireEvent.error(screen.getByRole("img", { name: "Photo 1 of 2 from Our picnic" }));
@@ -233,7 +241,7 @@ describe("MemoryPhotoGallery", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show photo 2 of 2" }));
     expect(screen.getByRole("img", { name: "Photo 2 of 2 from Our picnic" })).toHaveAttribute(
       "src",
-      "https://storage.example/second-detail",
+      photos[1].detailUrl,
     );
   });
 
@@ -242,6 +250,6 @@ describe("MemoryPhotoGallery", () => {
 
     expect(
       screen.getByRole("button", { name: "Show photo 2 of 2" }).querySelector("img"),
-    ).toHaveAttribute("src", "https://storage.example/second-card");
+    ).toHaveAttribute("src", photos[1].coverUrl);
   });
 });

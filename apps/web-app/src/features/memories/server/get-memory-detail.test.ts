@@ -9,14 +9,12 @@ const {
   createClientMock,
   getAvailableMemoryMock,
   getMemoryReactionSummaryMock,
-  signedUrlMock,
   creatorResult,
   photosResult,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   getAvailableMemoryMock: vi.fn(),
   getMemoryReactionSummaryMock: vi.fn(),
-  signedUrlMock: vi.fn(),
   creatorResult: { data: null as unknown, error: null as unknown },
   photosResult: { data: null as unknown, error: null as unknown },
 }));
@@ -69,10 +67,6 @@ describe("getMemoryDetail", () => {
       counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
       currentReaction: null,
     });
-    signedUrlMock.mockImplementation(async (path: string) => ({
-      data: { signedUrl: `https://storage.example/${path}` },
-      error: null,
-    }));
     createClientMock.mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: memory.creatorUserId } } }),
@@ -80,7 +74,6 @@ describe("getMemoryDetail", () => {
       from: vi.fn((table: string) =>
         table === "space_members" ? queryBuilder(creatorResult) : queryBuilder(photosResult),
       ),
-      storage: { from: vi.fn(() => ({ createSignedUrl: signedUrlMock })) },
     });
   });
 
@@ -145,7 +138,7 @@ describe("getMemoryDetail", () => {
     ]);
   });
 
-  it("keeps other photos available when one signing request fails", async () => {
+  it("projects only opaque cover and detail route URLs", async () => {
     photosResult.data = [
       {
         cover_object_path: "space/cover-card.webp",
@@ -162,29 +155,25 @@ describe("getMemoryDetail", () => {
         position: 1,
       },
     ];
-    signedUrlMock.mockImplementation(async (path: string) =>
-      path.includes("failed")
-        ? { data: null, error: new Error("signing failed") }
-        : { data: { signedUrl: `https://storage.example/${path}` }, error: null },
-    );
-
     const detail = await getMemoryDetail(memory.id);
 
     expect(detail?.photos).toEqual([
       {
-        coverUrl: "https://storage.example/space/cover-card.webp",
-        detailUrl: "https://storage.example/space/cover-detail.webp",
+        coverUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/cover`,
+        detailUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/detail`,
         id: memory.coverPhotoId,
       },
       {
-        coverUrl: null,
-        detailUrl: null,
+        coverUrl: `/api/memories/${memory.id}/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/cover`,
+        detailUrl: `/api/memories/${memory.id}/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail`,
         id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
       },
     ]);
+    expect(JSON.stringify(detail?.photos)).not.toContain("space/");
+    expect(JSON.stringify(detail?.photos)).not.toContain("storage");
   });
 
-  it("uses one original URL per legacy photo without variants", async () => {
+  it("does not expose legacy original object paths", async () => {
     photosResult.data = [
       {
         cover_object_path: null,
@@ -198,12 +187,11 @@ describe("getMemoryDetail", () => {
     await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
       photos: [
         {
-          coverUrl: "https://storage.example/space/original.webp",
-          detailUrl: "https://storage.example/space/original.webp",
+          coverUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/cover`,
+          detailUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/detail`,
         },
       ],
     });
-    expect(signedUrlMock).toHaveBeenCalledOnce();
   });
 
   it("throws a recoverable read failure for dependent database errors", async () => {
