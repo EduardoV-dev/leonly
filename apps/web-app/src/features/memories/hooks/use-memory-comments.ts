@@ -91,6 +91,21 @@ export function prependCommentToData(
   };
 }
 
+export function replaceCommentInData(
+  data: MemoryCommentsData | undefined,
+  comment: MemoryComment,
+): MemoryCommentsData | undefined {
+  return (
+    data && {
+      pageParams: data.pageParams,
+      pages: data.pages.map((page) => ({
+        ...page,
+        comments: page.comments.map((entry) => (entry.id === comment.id ? comment : entry)),
+      })),
+    }
+  );
+}
+
 export function useMemoryComments(memoryId: string, onUnavailable?: () => void) {
   const query = useInfiniteQuery<
     MemoryCommentPage,

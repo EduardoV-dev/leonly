@@ -9,6 +9,7 @@ import { getCommentDraftState, useCommentComposer } from "./use-comment-composer
 import {
   flattenCommentPages,
   type MemoryCommentsData,
+  replaceCommentInData,
   selectCommentPages,
   useMemoryComments,
 } from "./use-memory-comments";
@@ -23,7 +24,10 @@ const comment = {
   body: "A note from the garden",
   createdAt: "2026-08-23T10:00:00.000Z",
   id: FIRST_ID,
+  isAuthor: true,
   memoryId: MEMORY_ID,
+  updatedAt: "2026-08-23T10:00:00.000Z",
+  version: 1,
 };
 
 function page(comments: (typeof comment)[], nextCursor: string | null = null): MemoryCommentPage {
@@ -77,6 +81,24 @@ describe("comment state hooks", () => {
       pageParams: [null],
       pages: [resetPage],
     });
+  });
+
+  it("replaces an updated comment in every loaded page by its identity", () => {
+    const data: MemoryCommentsData = {
+      pageParams: [null, "next"],
+      pages: [page([comment], "next"), page([{ ...comment, id: SECOND_ID }, comment])],
+    };
+    const updated = {
+      ...comment,
+      body: "Updated note",
+      updatedAt: "2026-08-23T11:00:00.000Z",
+      version: 2,
+    };
+
+    expect(flattenCommentPages(replaceCommentInData(data, updated))).toEqual([
+      updated,
+      { ...comment, id: SECOND_ID },
+    ]);
   });
 
   it("freezes a pending request and ignores double activation", async () => {

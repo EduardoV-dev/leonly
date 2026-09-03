@@ -46,7 +46,10 @@ describe("createComment", () => {
       body: "A note",
       createdAt: "2026-09-02T10:00:00.000Z",
       id: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
+      isAuthor: true,
       memoryId,
+      updatedAt: "2026-09-02T10:00:00.000Z",
+      version: 1,
     });
 
     expect(rpc).toHaveBeenCalledWith("create_memory_comment", {

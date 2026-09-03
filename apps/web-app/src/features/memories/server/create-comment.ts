@@ -63,7 +63,10 @@ function toMemoryComment(
     body: row.body,
     createdAt: row.created_at,
     id: row.comment_id,
+    isAuthor: true,
     memoryId: row.memory_id,
+    updatedAt: row.created_at,
+    version: 1,
   };
 }
 

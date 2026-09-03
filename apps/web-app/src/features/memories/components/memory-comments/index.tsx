@@ -71,6 +71,7 @@ export function MemoryComments({ memoryId }: Readonly<MemoryCommentsProps>) {
         locale={locale}
         onLoadMore={() => void history.fetchNextPage()}
         onRetry={() => void history.refetch()}
+        onUnavailable={handleUnavailable}
       />
       <p className={styles.announcement} aria-live="polite" role="status">
         {composer.isSubmitting ? t("detail.comments.adding") : announcement}

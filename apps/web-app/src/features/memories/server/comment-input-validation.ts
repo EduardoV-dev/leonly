@@ -30,6 +30,17 @@ export const createCommentInputSchema = z
 
 export type ValidatedCreateCommentInput = z.infer<typeof createCommentInputSchema>;
 
+export const updateCommentInputSchema = z
+  .object({
+    body: commentBodySchema,
+    commentId: z.uuid(),
+    expectedVersion: z.number().int().positive(),
+    memoryId: z.uuid(),
+  })
+  .strict();
+
+export type ValidatedUpdateCommentInput = z.infer<typeof updateCommentInputSchema>;
+
 export function createCommentRequestFingerprint(memoryId: string, body: string): string {
   return createHash("sha256").update(`${memoryId}:${body}`).digest("hex");
 }

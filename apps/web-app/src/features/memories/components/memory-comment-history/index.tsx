@@ -13,6 +13,7 @@ type MemoryCommentHistoryProps = {
   isLoading: boolean;
   loadedPageCount: number;
   onRetry: () => void;
+  onUnavailable?: () => void;
   onLoadMore: () => void;
   locale: string;
 };
@@ -27,6 +28,7 @@ export function MemoryCommentHistory({
   locale,
   onLoadMore,
   onRetry,
+  onUnavailable,
 }: Readonly<MemoryCommentHistoryProps>) {
   const { t } = useTranslation("memories");
 
@@ -66,7 +68,12 @@ export function MemoryCommentHistory({
     <>
       <ul className={styles.list} aria-label={t("detail.comments.historyLabel")}>
         {comments.map((comment) => (
-          <MemoryCommentItem key={comment.id} comment={comment} locale={locale} />
+          <MemoryCommentItem
+            key={comment.id}
+            comment={comment}
+            locale={locale}
+            onUnavailable={onUnavailable}
+          />
         ))}
       </ul>
       <MemoryCommentPagination

@@ -13,6 +13,10 @@ const creationFixMigration = readFileSync(
   ),
   "utf8",
 );
+const editingMigration = readFileSync(
+  resolve(process.cwd(), "../../supabase/migrations/20260902150000_memory_comment_editing.sql"),
+  "utf8",
+);
 
 describe("memory comments migration security contract", () => {
   it("stores normalized bounded comments with parent-space and retry invariants", () => {
@@ -63,5 +67,21 @@ describe("memory comments migration security contract", () => {
     expect(migration).toContain("'completed'::text");
     expect(migration).toContain("v_existing.deleted_at is not null");
     expect(migration).toContain("v_comment := v_existing");
+  });
+
+  it("uses server-owned metadata and a service-role-only conditional update RPC", () => {
+    expect(editingMigration).toContain("add column version integer not null default 1");
+    expect(editingMigration).toContain("add column updated_at timestamptz");
+    expect(editingMigration).toContain("create or replace function public.update_memory_comment(");
+    expect(editingMigration).toContain("perform private.require_service_role()");
+    expect(editingMigration).toContain("set search_path = ''");
+    expect(editingMigration).toContain("v_comment.author_user_id <> p_author_user_id");
+    expect(editingMigration).toContain("v_comment.version <> p_expected_version");
+    expect(editingMigration).toContain("version = comment.version + 1");
+    expect(editingMigration).toContain("grant execute on function public.update_memory_comment");
+    expect(editingMigration).toContain("to service_role;");
+    expect(editingMigration).not.toMatch(
+      /grant execute on function public\.update_memory_comment\([\s\S]*?to authenticated;/,
+    );
   });
 });

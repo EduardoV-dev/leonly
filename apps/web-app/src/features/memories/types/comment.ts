@@ -4,7 +4,10 @@ export type MemoryComment = {
   body: string;
   createdAt: string;
   id: string;
+  isAuthor: boolean;
   memoryId: string;
+  updatedAt: string;
+  version: number;
 };
 
 export type MemoryCommentPage = {

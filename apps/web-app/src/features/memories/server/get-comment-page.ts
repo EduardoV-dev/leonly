@@ -23,6 +23,8 @@ const commentRowsSchema = z.array(
       created_at: z.string().datetime({ offset: true }),
       id: z.uuid(),
       memory_id: z.uuid(),
+      updated_at: z.string().datetime({ offset: true }),
+      version: z.number().int().positive(),
     })
     .strict(),
 );
@@ -104,7 +106,7 @@ async function readCommentPage(
   const supabase = await createClient();
   let query = supabase
     .from("memory_comments")
-    .select("id,memory_id,author_user_id,body,created_at")
+    .select("id,memory_id,author_user_id,body,created_at,updated_at,version")
     .eq("memory_id", memoryId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -120,6 +122,12 @@ async function readCommentPage(
   }
 
   const rows = commentRowsSchema.parse(data ?? []);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new GetCommentPageError("This memory is unavailable.", 404, "unavailable");
+  }
   const pageRows = rows.slice(0, COMMENT_PAGE_SIZE);
   const authorIds = [...new Set(pageRows.map((row) => row.author_user_id))];
   const authorsResult = authorIds.length
@@ -150,7 +158,10 @@ async function readCommentPage(
       body: row.body,
       createdAt: row.created_at,
       id: row.id,
+      isAuthor: row.author_user_id === user.id,
       memoryId: row.memory_id,
+      updatedAt: row.updated_at,
+      version: row.version,
     };
   });
   const lastComment = comments.at(-1);

@@ -21,7 +21,10 @@ const comment = {
   body: "The flowers were still warm from the sun.",
   createdAt: "2026-08-23T10:00:00.000Z",
   id: FIRST_ID,
+  isAuthor: false,
   memoryId: MEMORY_ID,
+  updatedAt: "2026-08-23T10:00:00.000Z",
+  version: 1,
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -213,5 +216,73 @@ describe("MemoryComments", () => {
     fireEvent.submit(screen.getByRole("form"));
     await waitFor(() => expect(refreshMock).toHaveBeenCalledOnce());
     expect(queryClient.getQueryData(["memories", "comments", MEMORY_ID])).toBeUndefined();
+  });
+
+  it("lets only an author edit and reconciles a successful keyboard save", async () => {
+    const authoredComment = { ...comment, isAuthor: true };
+    const updatedComment = {
+      ...authoredComment,
+      body: "The flowers were brighter than I remembered.",
+      updatedAt: "2026-08-23T11:00:00.000Z",
+      version: 2,
+    };
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ comment: updatedComment }))
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [updatedComment], cursorReset: false, nextCursor: null }),
+      );
+    renderComments();
+    await settle();
+
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const textarea = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
+    fireEvent.change(textarea, { target: { value: updatedComment.body } });
+    fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+
+    await waitFor(() => expect(screen.getByText(updatedComment.body)).toBeInTheDocument());
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(screen.getByText("Comment updated.")).toHaveAttribute("role", "status");
+  });
+
+  it("preserves an outdated draft until the author refreshes or cancels", async () => {
+    const authoredComment = { ...comment, isAuthor: true };
+    const currentComment = {
+      ...authoredComment,
+      body: "Your partner's newer note.",
+      updatedAt: "2026-08-23T11:00:00.000Z",
+      version: 2,
+    };
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ code: "conflict" }, 409))
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [currentComment], cursorReset: false, nextCursor: null }),
+      );
+    renderComments();
+    await settle();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const textarea = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
+    fireEvent.change(textarea, { target: { value: "My preserved draft." } });
+    fireEvent.submit(textarea.closest("form") as HTMLFormElement);
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("changed while you were editing"),
+    );
+    expect(textarea).toHaveValue("My preserved draft.");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh comment" }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    expect(textarea).toHaveValue("My preserved draft.");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.getByText(currentComment.body)).toBeInTheDocument());
   });
 });
