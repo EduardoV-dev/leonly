@@ -6,9 +6,11 @@ import { i18n } from "@/lib/i18n";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryCommentPage } from "../types/comment";
 import { getCommentDraftState, useCommentComposer } from "./use-comment-composer";
+import { useCommentDeletion } from "./use-comment-deletion";
 import {
   flattenCommentPages,
   type MemoryCommentsData,
+  removeCommentFromData,
   replaceCommentInData,
   selectCommentPages,
   useMemoryComments,
@@ -99,6 +101,19 @@ describe("comment state hooks", () => {
       updated,
       { ...comment, id: SECOND_ID },
     ]);
+  });
+
+  it("removes a deleted comment from every loaded page without changing other entries", () => {
+    const secondComment = { ...comment, id: SECOND_ID };
+    const data: MemoryCommentsData = {
+      pageParams: [null, "next"],
+      pages: [page([comment], "next"), page([secondComment, comment])],
+    };
+
+    expect(removeCommentFromData(data, FIRST_ID)).toEqual({
+      pageParams: data.pageParams,
+      pages: [page([], "next"), page([secondComment])],
+    });
   });
 
   it("freezes a pending request and ignores double activation", async () => {
@@ -217,6 +232,71 @@ describe("comment state hooks", () => {
 
     await waitFor(() => expect(onUnavailable).toHaveBeenCalledOnce());
     expect(queryClient.getQueryData(memoryQueryKeys.comments(MEMORY_ID))).toBeUndefined();
+  });
+
+  it("reconciles deletion, retains retryable failures, and refreshes a conflict", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData<MemoryCommentsData>(memoryQueryKeys.comments(MEMORY_ID), {
+      pageParams: [null],
+      pages: [page([comment])],
+    });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({ deletedCommentId: FIRST_ID }))
+      .mockResolvedValueOnce(jsonResponse({ code: "failed" }, 500))
+      .mockResolvedValueOnce(jsonResponse({ code: "conflict" }, 409));
+    const { result } = renderHook(() => useCommentDeletion({ comment }), {
+      wrapper: wrapperFor(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.remove();
+    });
+    expect(
+      flattenCommentPages(queryClient.getQueryData(memoryQueryKeys.comments(MEMORY_ID))),
+    ).toEqual([]);
+    expect(result.current.outcome).toBe("success");
+
+    queryClient.setQueryData<MemoryCommentsData>(memoryQueryKeys.comments(MEMORY_ID), {
+      pageParams: [null],
+      pages: [page([comment])],
+    });
+    await act(async () => {
+      await result.current.remove();
+    });
+    expect(
+      flattenCommentPages(queryClient.getQueryData(memoryQueryKeys.comments(MEMORY_ID))),
+    ).toEqual([comment]);
+    expect(result.current.errorMessage).toBe("We couldn't delete your comment. Please try again.");
+
+    await act(async () => {
+      await result.current.remove();
+    });
+    expect(result.current.errorMessage).toBe("This comment changed. Refresh it before deleting.");
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
+      expect.objectContaining({
+        body: JSON.stringify({ expectedVersion: 1 }),
+        method: "DELETE",
+      }),
+    );
+  });
+
+  it("reconciles an indeterminate response before announcing deletion", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const refetchQueries = vi.spyOn(queryClient, "refetchQueries");
+    const onOutcome = vi.fn();
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
+    const { result } = renderHook(() => useCommentDeletion({ comment, onOutcome }), {
+      wrapper: wrapperFor(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.remove();
+    });
+
+    expect(refetchQueries).toHaveBeenCalledWith({ queryKey: memoryQueryKeys.comments(MEMORY_ID) });
+    expect(result.current.outcome).toBe("success");
+    expect(onOutcome).toHaveBeenCalledWith("success");
   });
 
   it("replaces query pages with the current first page after a reset response", async () => {

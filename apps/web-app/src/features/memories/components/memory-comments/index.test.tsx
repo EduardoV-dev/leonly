@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemoryComments } from ".";
@@ -147,6 +147,7 @@ describe("MemoryComments", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByText("0 / 1000")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Comment" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Delete comment" })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Comment added.");
     expect(screen.getAllByText(comment.body)).toHaveLength(1);
   });
@@ -249,6 +250,71 @@ describe("MemoryComments", () => {
       expect.objectContaining({ method: "PATCH" }),
     );
     expect(screen.getByText("Comment updated.")).toHaveAttribute("role", "status");
+  });
+
+  it("shows deletion only to authors and supports confirmation, cancellation, and focus restoration", async () => {
+    const authoredComment = { ...comment, isAuthor: true };
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ deletedCommentId: FIRST_ID }))
+      .mockResolvedValueOnce(jsonResponse({ comments: [], cursorReset: false, nextCursor: null }));
+    renderComments();
+    await settle();
+
+    const deleteTrigger = screen.getByRole("button", { name: "Delete comment" });
+    fireEvent.click(deleteTrigger);
+    const dialog = screen.getByRole("dialog");
+    expect(screen.getByRole("heading", { name: "Delete this comment?" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Delete comment" })).toHaveFocus();
+    fireEvent(dialog, new Event("cancel", { cancelable: true }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(deleteTrigger).toHaveFocus();
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(deleteTrigger);
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete comment" }),
+    );
+    await waitFor(() => expect(screen.queryByText(comment.body)).not.toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("Comment deleted.");
+    expect(screen.getByRole("heading", { name: "Comments" })).toHaveFocus();
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
+      expect.objectContaining({ method: "DELETE" }),
+    );
+  });
+
+  it("prevents author edit, close, and duplicate deletion while deletion is pending", async () => {
+    const authoredComment = { ...comment, isAuthor: true };
+    let resolveDelete: (response: Response) => void = () => undefined;
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveDelete = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ comments: [], cursorReset: false, nextCursor: null }));
+    renderComments();
+    await settle();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete comment" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete comment" }),
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: "Deleting…" })).toBeDisabled());
+    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Keep comment" })).toBeDisabled();
+    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    resolveDelete(jsonResponse({ deletedCommentId: FIRST_ID }));
+    await waitFor(() => expect(screen.queryByText(comment.body)).not.toBeInTheDocument());
   });
 
   it("preserves an outdated draft until the author refreshes or cancels", async () => {

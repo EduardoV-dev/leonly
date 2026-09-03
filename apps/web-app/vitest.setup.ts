@@ -17,3 +17,21 @@ Object.defineProperty(globalThis, "IntersectionObserver", {
   value: IntersectionObserverMock,
   writable: true,
 });
+
+Object.defineProperties(HTMLDialogElement.prototype, {
+  close: {
+    configurable: true,
+    value(this: HTMLDialogElement) {
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    },
+    writable: true,
+  },
+  showModal: {
+    configurable: true,
+    value(this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    },
+    writable: true,
+  },
+});

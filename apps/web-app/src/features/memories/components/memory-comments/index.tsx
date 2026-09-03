@@ -55,7 +55,9 @@ export function MemoryComments({ memoryId }: Readonly<MemoryCommentsProps>) {
   return (
     <section className={styles.section} aria-labelledby="memory-comments-heading">
       <header className={styles.header}>
-        <h2 id="memory-comments-heading">{t("detail.comments.heading")}</h2>
+        <h2 id="memory-comments-heading" tabIndex={-1}>
+          {t("detail.comments.heading")}
+        </h2>
         <p className={styles.description}>{t("detail.comments.description")}</p>
         {isSlow ? <p className={styles.slow}>{t("detail.comments.loading")}</p> : null}
       </header>
@@ -69,6 +71,16 @@ export function MemoryComments({ memoryId }: Readonly<MemoryCommentsProps>) {
         isLoading={isInitialLoading}
         loadedPageCount={history.loadedPageCount}
         locale={locale}
+        onDeleteOutcome={(outcome) => {
+          if (outcome === "success") {
+            setAnnouncement(t("detail.comments.delete.success"));
+            document.getElementById("memory-comments-heading")?.focus();
+          } else if (outcome === "conflict") {
+            setAnnouncement(t("detail.comments.delete.conflict"));
+          } else if (outcome === "failed") {
+            setAnnouncement(t("detail.comments.delete.failed"));
+          }
+        }}
         onLoadMore={() => void history.fetchNextPage()}
         onRetry={() => void history.refetch()}
         onUnavailable={handleUnavailable}

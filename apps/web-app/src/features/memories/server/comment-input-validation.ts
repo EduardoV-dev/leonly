@@ -41,6 +41,16 @@ export const updateCommentInputSchema = z
 
 export type ValidatedUpdateCommentInput = z.infer<typeof updateCommentInputSchema>;
 
+export const deleteCommentInputSchema = z
+  .object({
+    commentId: z.uuid(),
+    expectedVersion: z.number().int().positive(),
+    memoryId: z.uuid(),
+  })
+  .strict();
+
+export type ValidatedDeleteCommentInput = z.infer<typeof deleteCommentInputSchema>;
+
 export function createCommentRequestFingerprint(memoryId: string, body: string): string {
   return createHash("sha256").update(`${memoryId}:${body}`).digest("hex");
 }

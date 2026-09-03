@@ -75,6 +75,23 @@
   box-shadow: none;
 }
 
+.authorActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.45rem;
+}
+
+.deleteAction {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: #8d1f2d;
+  background: #fff0f1;
+  border-color: #bd7580;
+  box-shadow: none;
+}
+
 .editor {
   margin-top: 0.7rem;
 }
@@ -106,6 +123,7 @@
 
 .textarea:focus-visible,
 .editAction:focus-visible,
+.deleteAction:focus-visible,
 .cancel:focus-visible,
 .conflict button:focus-visible {
   outline: 3px solid #6d2934;

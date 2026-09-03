@@ -1,5 +1,6 @@
 import { BookOpen, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { CommentDeletionOutcome } from "../../hooks/use-comment-deletion";
 import type { MemoryComment } from "../../types/comment";
 import { MemoryCommentItem } from "../memory-comment-item";
 import { MemoryCommentPagination } from "../memory-comment-pagination";
@@ -12,6 +13,7 @@ type MemoryCommentHistoryProps = {
   isFetchingNextPage: boolean;
   isLoading: boolean;
   loadedPageCount: number;
+  onDeleteOutcome?: (outcome: CommentDeletionOutcome) => void;
   onRetry: () => void;
   onUnavailable?: () => void;
   onLoadMore: () => void;
@@ -25,6 +27,7 @@ export function MemoryCommentHistory({
   isFetchingNextPage,
   isLoading,
   loadedPageCount,
+  onDeleteOutcome,
   locale,
   onLoadMore,
   onRetry,
@@ -72,6 +75,7 @@ export function MemoryCommentHistory({
             key={comment.id}
             comment={comment}
             locale={locale}
+            onDeleteOutcome={onDeleteOutcome}
             onUnavailable={onUnavailable}
           />
         ))}

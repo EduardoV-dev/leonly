@@ -106,6 +106,21 @@ export function replaceCommentInData(
   );
 }
 
+export function removeCommentFromData(
+  data: MemoryCommentsData | undefined,
+  commentId: string,
+): MemoryCommentsData | undefined {
+  return (
+    data && {
+      pageParams: data.pageParams,
+      pages: data.pages.map((page) => ({
+        ...page,
+        comments: page.comments.filter((comment) => comment.id !== commentId),
+      })),
+    }
+  );
+}
+
 export function useMemoryComments(memoryId: string, onUnavailable?: () => void) {
   const query = useInfiniteQuery<
     MemoryCommentPage,

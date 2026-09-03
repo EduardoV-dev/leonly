@@ -17,6 +17,10 @@ const editingMigration = readFileSync(
   resolve(process.cwd(), "../../supabase/migrations/20260902150000_memory_comment_editing.sql"),
   "utf8",
 );
+const deletionMigration = readFileSync(
+  resolve(process.cwd(), "../../supabase/migrations/20260902160000_memory_comment_deletion.sql"),
+  "utf8",
+);
 
 describe("memory comments migration security contract", () => {
   it("stores normalized bounded comments with parent-space and retry invariants", () => {
@@ -82,6 +86,23 @@ describe("memory comments migration security contract", () => {
     expect(editingMigration).toContain("to service_role;");
     expect(editingMigration).not.toMatch(
       /grant execute on function public\.update_memory_comment\([\s\S]*?to authenticated;/,
+    );
+  });
+
+  it("soft-deletes only an active author comment at its rendered version", () => {
+    expect(deletionMigration).toContain("create or replace function public.delete_memory_comment(");
+    expect(deletionMigration).toContain("perform private.require_service_role()");
+    expect(deletionMigration).toContain("set search_path = ''");
+    expect(deletionMigration).toContain("comment.deleted_at is null");
+    expect(deletionMigration).toContain("memory.deleted_at is null");
+    expect(deletionMigration).toContain("v_comment.author_user_id <> p_author_user_id");
+    expect(deletionMigration).toContain("v_comment.version <> p_expected_version");
+    expect(deletionMigration).toContain("set deleted_at = timezone('utc', now())");
+    expect(deletionMigration).toContain("'conflict'::text");
+    expect(deletionMigration).toContain("grant execute on function public.delete_memory_comment");
+    expect(deletionMigration).toContain("to service_role;");
+    expect(deletionMigration).not.toMatch(
+      /grant execute on function public\.delete_memory_comment\([\s\S]*?to authenticated;/,
     );
   });
 });

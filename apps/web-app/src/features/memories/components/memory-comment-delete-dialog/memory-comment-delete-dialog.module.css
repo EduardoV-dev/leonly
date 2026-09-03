@@ -1,0 +1,78 @@
+.dialog {
+  width: min(100% - 2rem, 28rem);
+  padding: 0;
+  color: #4f4544;
+  background: #fffafa;
+  border: 1px solid #d6abaa;
+  border-radius: 0.9rem;
+  box-shadow: 0 1.5rem 4rem rgb(79 41 45 / 28%);
+}
+
+.dialog::backdrop {
+  background: rgb(57 34 35 / 58%);
+}
+
+.content {
+  padding: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  color: #8d1f2d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content h2 {
+  margin: 0;
+  color: var(--auth-heading);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.65rem;
+  line-height: 1.1;
+}
+
+.content > p:not(.eyebrow, .error) {
+  margin: 0.7rem 0 0;
+  color: #715e5c;
+  line-height: 1.55;
+}
+
+.error {
+  margin: 0.85rem 0 0;
+  color: #8d1f2d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.confirm {
+  color: #fff;
+  background: #8d1f2d;
+  border-color: #8d1f2d;
+}
+
+.cancel {
+  padding: 0;
+  color: #6d2934;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.confirm:focus-visible,
+.cancel:focus-visible {
+  outline: 3px solid #6d2934;
+  outline-offset: 3px;
+}

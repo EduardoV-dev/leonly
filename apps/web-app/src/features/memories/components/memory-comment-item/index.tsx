@@ -1,27 +1,41 @@
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { FormEvent } from "react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { MAX_COMMENT_LENGTH } from "../../constants/comments";
+import { type CommentDeletionOutcome, useCommentDeletion } from "../../hooks/use-comment-deletion";
 import { useCommentEditor } from "../../hooks/use-comment-editor";
 import type { MemoryComment } from "../../types/comment";
+import { MemoryCommentDeleteDialog } from "../memory-comment-delete-dialog";
 import styles from "./memory-comment-item.module.css";
 
 type MemoryCommentItemProps = {
   comment: MemoryComment;
   locale: string;
+  onDeleteOutcome?: (outcome: CommentDeletionOutcome) => void;
   onUnavailable?: () => void;
 };
 
 export function MemoryCommentItem({
   comment,
   locale,
+  onDeleteOutcome,
   onUnavailable,
 }: Readonly<MemoryCommentItemProps>) {
   const { t } = useTranslation("memories");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const deleteTriggerRef = useRef<HTMLDivElement>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const editor = useCommentEditor({ comment, onUnavailable });
+  const deletion = useCommentDeletion({
+    comment,
+    onOutcome: (outcome) => {
+      if (outcome === "success") setIsDeleteDialogOpen(false);
+      onDeleteOutcome?.(outcome);
+    },
+    onUnavailable,
+  });
   const timestamp = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -33,6 +47,11 @@ export function MemoryCommentItem({
     if (!editor.draftState.isValid) textareaRef.current?.focus();
     await editor.save();
     if (!editor.draftState.isValid) textareaRef.current?.focus();
+  };
+  const closeDeleteDialog = () => {
+    if (deletion.isDeleting) return;
+    setIsDeleteDialogOpen(false);
+    deleteTriggerRef.current?.querySelector<HTMLButtonElement>("button:last-child")?.focus();
   };
 
   return (
@@ -51,14 +70,26 @@ export function MemoryCommentItem({
           <time dateTime={comment.createdAt}>{timestamp}</time>
         </p>
         {comment.isAuthor && !editor.isEditing ? (
-          <Button
-            aria-label={t("detail.comments.edit.action")}
-            className={styles.editAction}
-            onClick={editor.startEditing}
-            size="compact"
-          >
-            <Pencil aria-hidden="true" />
-          </Button>
+          <div className={styles.authorActions} ref={deleteTriggerRef}>
+            <Button
+              aria-label={t("detail.comments.edit.action")}
+              className={styles.editAction}
+              disabled={deletion.isDeleting}
+              onClick={editor.startEditing}
+              size="compact"
+            >
+              <Pencil aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label={t("detail.comments.delete.action")}
+              className={styles.deleteAction}
+              disabled={deletion.isDeleting}
+              onClick={() => setIsDeleteDialogOpen(true)}
+              size="compact"
+            >
+              <Trash2 aria-hidden="true" />
+            </Button>
+          </div>
         ) : null}
       </div>
       {editor.isEditing ? (
@@ -128,6 +159,13 @@ export function MemoryCommentItem({
           {t("detail.comments.edit.updated")}
         </p>
       ) : null}
+      <MemoryCommentDeleteDialog
+        errorMessage={deletion.errorMessage}
+        isDeleting={deletion.isDeleting}
+        onCancel={closeDeleteDialog}
+        onConfirm={() => void deletion.remove()}
+        open={isDeleteDialogOpen}
+      />
     </li>
   );
 }
