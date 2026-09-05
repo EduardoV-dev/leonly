@@ -100,11 +100,13 @@ describe("MemoryReactions", () => {
         "We couldn't update your reaction. Try again.",
       ),
     );
-    expect(screen.getByRole("menuitemradio", { name: "React with Love" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(laugh).toHaveAttribute("aria-checked", "false");
+    await waitFor(() => {
+      expect(screen.getByRole("menuitemradio", { name: "React with Love" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+      expect(laugh).toHaveAttribute("aria-checked", "false");
+    });
   });
 
   it("updates the count optimistically without rendering an unconfirmed reaction", () => {

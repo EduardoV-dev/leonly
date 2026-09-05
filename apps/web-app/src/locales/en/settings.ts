@@ -1,0 +1,70 @@
+export const settingsEn = {
+  account: {
+    description: "Your authentication identity and current session.",
+    email: "Email",
+    heading: "Account",
+    provider: "Sign-in provider",
+    signOut: "Sign out of Leonly",
+    signOutError: "We could not sign you out. Please try again.",
+    signingOut: "Signing out…",
+    unavailable: "Unavailable",
+  },
+  actions: {
+    retry: "Try again",
+  },
+  error: {
+    description: "Your settings are still safe. We just could not open them right now.",
+    eyebrow: "A quiet interruption",
+    heading: "We could not load Settings",
+  },
+  hero: {
+    description: "The details that shape your shared space.",
+    eyebrow: "Sanctuary configuration",
+    heading: "Settings",
+  },
+  invite: {
+    active: "Partner invitation is active",
+    activeDescription: "Your partner can still use the current invitation to join.",
+    joined: "You are both here",
+    joinedDescription: "Both active members have joined this shared space.",
+    unavailable: "Partner invitation is unavailable",
+    unavailableDescription: "Your partner has not joined, and no active invitation is available.",
+  },
+  loading: "Loading Settings",
+  members: {
+    active: "Active",
+    avatar: "{{name}}'s avatar",
+    description: "Both members have equal shared-space permissions.",
+    heading: "Members",
+    joined: "Joined {{date}}",
+    partner: "Partner",
+    you: "You",
+  },
+  preferences: {
+    description: "Personal experience settings that belong only to your membership.",
+    displayName: "Display name",
+    displayNameHelp: "Used to identify you throughout your shared space.",
+    heading: "Your preferences",
+    language: "Interface language",
+    languageHelp: "Language selection will live here in a later settings update.",
+    ownership: "Only for you",
+  },
+  shared: {
+    description: "These details belong equally to both active members.",
+    heading: "Shared space",
+    name: "Space name",
+    ownership: "Shared by both of you",
+    startDate: "Our story began",
+  },
+  summary: {
+    date: "Our story began {{date}}",
+    oneMember: "A private place waiting for its second member.",
+    twoMembers: "A quiet home for the memories you share together.",
+  },
+  vault: {
+    action: "Explore Private Vault",
+    description:
+      "A shared archive for memories kept outside the Timeline, visible to both active members.",
+    heading: "Private Vault",
+  },
+} as const;

@@ -4,6 +4,7 @@ export const APP_ROUTES = {
   TIMELINE: "/timeline",
   MEMORIES_NEW: "/memories/new",
   VAULT: "/vault",
+  SETTINGS: "/settings",
   MEMORY_DETAIL: (memoryId: string) => `/memories/${memoryId}`,
   MEMORY_EDIT: (memoryId: string) => `/memories/${memoryId}/edit`,
   VAULT_MEMORY_DETAIL: (memoryId: string) => `/vault/${memoryId}`,

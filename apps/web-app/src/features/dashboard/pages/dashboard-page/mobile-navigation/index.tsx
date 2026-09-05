@@ -1,10 +1,11 @@
 import { BookHeart, LayoutGrid, LockKeyhole, MapPin, Settings } from "lucide-react";
 import Link from "next/link";
 import { APP_ROUTES } from "@/constants/routes";
+import type { DashboardSection } from "../dashboard-section";
 import styles from "./mobile-navigation.module.css";
 
 type MobileNavigationProps = {
-  activeSection: "dashboard" | "timeline" | "vault";
+  activeSection: DashboardSection;
 };
 
 export function MobileNavigation({ activeSection }: Readonly<MobileNavigationProps>) {
@@ -32,10 +33,13 @@ export function MobileNavigation({ activeSection }: Readonly<MobileNavigationPro
         <LockKeyhole aria-hidden="true" />
         <span>Vault</span>
       </Link>
-      <button type="button" disabled>
+      <Link
+        href={APP_ROUTES.SETTINGS}
+        aria-current={activeSection === "settings" ? "page" : undefined}
+      >
         <Settings aria-hidden="true" />
         <span>Settings</span>
-      </button>
+      </Link>
     </nav>
   );
 }

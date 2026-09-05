@@ -13,11 +13,12 @@ import {
 import Link from "next/link";
 import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import type { DashboardSection } from "../dashboard-section";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-sidebar.module.css";
 
 type DashboardSidebarProps = {
-  activeSection: "dashboard" | "timeline" | "vault";
+  activeSection: DashboardSection;
   activeSpace: ActiveSpace;
   isCollapsed: boolean;
   onCollapsedChange: () => void;
@@ -79,10 +80,13 @@ export function DashboardSidebar({
           <LockKeyhole aria-hidden="true" />
           <span className={styles.label}>Vault</span>
         </Link>
-        <button type="button" disabled>
+        <Link
+          href={APP_ROUTES.SETTINGS}
+          aria-current={activeSection === "settings" ? "page" : undefined}
+        >
           <Settings aria-hidden="true" />
           <span className={styles.label}>Settings</span>
-        </button>
+        </Link>
       </nav>
     </aside>
   );

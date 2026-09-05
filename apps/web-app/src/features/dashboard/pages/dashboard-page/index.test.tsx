@@ -138,13 +138,15 @@ describe("DashboardPage", () => {
       expect(vaultLink).toHaveAttribute("href", "/vault");
       expect(vaultLink).not.toHaveAttribute("aria-current");
     }
+    for (const settingsLink of screen.getAllByRole("link", { name: "Settings" })) {
+      expect(settingsLink).toHaveAttribute("href", "/settings");
+      expect(settingsLink).not.toHaveAttribute("aria-current");
+    }
     for (const newEntryLink of screen.getAllByRole("link", { name: "New Entry" })) {
       expect(newEntryLink).toHaveAttribute("href", "/memories/new");
     }
-    for (const placeholder of ["Places", "Settings"]) {
-      for (const placeholderButton of screen.getAllByRole("button", { name: placeholder })) {
-        expect(placeholderButton).toBeDisabled();
-      }
+    for (const placesButton of screen.getAllByRole("button", { name: "Places" })) {
+      expect(placesButton).toBeDisabled();
     }
   });
 
@@ -156,6 +158,21 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Vault route")).toBeInTheDocument();
     for (const vaultLink of screen.getAllByRole("link", { name: "Vault" })) {
       expect(vaultLink).toHaveAttribute("aria-current", "page");
+    }
+    for (const timelineLink of screen.getAllByRole("link", { name: "Timeline" })) {
+      expect(timelineLink).not.toHaveAttribute("aria-current");
+    }
+  });
+
+  it("marks Settings as current in desktop and mobile navigation", async () => {
+    pathnameMock.mockReturnValue("/settings");
+    const page = await DashboardPage({ children: <div>Settings route</div> });
+    render(page);
+
+    expect(screen.getByText("Settings route")).toBeInTheDocument();
+    for (const settingsLink of screen.getAllByRole("link", { name: "Settings" })) {
+      expect(settingsLink).toHaveAttribute("href", "/settings");
+      expect(settingsLink).toHaveAttribute("aria-current", "page");
     }
     for (const timelineLink of screen.getAllByRole("link", { name: "Timeline" })) {
       expect(timelineLink).not.toHaveAttribute("aria-current");

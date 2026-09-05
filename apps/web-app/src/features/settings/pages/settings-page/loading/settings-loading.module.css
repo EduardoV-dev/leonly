@@ -1,0 +1,103 @@
+.page {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 2rem;
+  padding: 2rem 1.25rem calc(6rem + env(safe-area-inset-bottom));
+  background: var(--auth-surface);
+}
+
+.hero,
+.rail,
+.sections,
+.section {
+  display: grid;
+}
+
+.hero {
+  gap: 0.6rem;
+}
+
+.eyebrow {
+  width: 9rem;
+  height: 0.7rem;
+}
+
+.title {
+  width: min(16rem, 70%);
+  height: 3.4rem;
+}
+
+.description {
+  width: min(24rem, 88%);
+  height: 1rem;
+}
+
+.layout,
+.rail,
+.sections {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 1rem;
+}
+
+.summary,
+.status,
+.vault,
+.section {
+  border: 1px solid rgb(223 212 210 / 0.7);
+  border-radius: 1rem;
+  background: rgb(255 253 252 / 0.78);
+}
+
+.summary {
+  height: 15rem;
+}
+
+.status {
+  height: 6rem;
+}
+
+.vault {
+  height: 9rem;
+}
+
+.section {
+  gap: 0.7rem;
+  padding: 1.35rem;
+}
+
+.sectionTitle {
+  width: 9rem;
+  height: 1.4rem;
+}
+
+.sectionCopy {
+  width: min(22rem, 75%);
+  height: 0.75rem;
+}
+
+.row {
+  height: 3.75rem;
+}
+
+@mixin screen-sm {
+  .page {
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+}
+
+@mixin screen-md {
+  .page {
+    gap: 2.5rem;
+    padding: 3.4rem clamp(2.25rem, 4.5vw, 4.5rem) 4rem;
+  }
+
+  .layout {
+    grid-template-columns: minmax(14rem, 0.72fr) minmax(22rem, 1.45fr);
+    align-items: start;
+    gap: 1.15rem;
+  }
+}

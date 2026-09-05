@@ -5,10 +5,11 @@ import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardContent } from "./dashboard-content";
+import type { DashboardSection } from "./dashboard-section";
 import { DashboardShell } from "./dashboard-shell";
 
 type DashboardPageProps = {
-  activeSection?: "dashboard" | "timeline" | "vault";
+  activeSection?: DashboardSection;
   children?: ReactNode;
 };
 

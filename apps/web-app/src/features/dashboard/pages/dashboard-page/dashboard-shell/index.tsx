@@ -5,12 +5,13 @@ import { createContext, type ReactNode, useContext, useState } from "react";
 import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import styles from "../dashboard-page.module.css";
+import type { DashboardSection } from "../dashboard-section";
 import { DashboardSidebar } from "../dashboard-sidebar";
 import { MobileHeader } from "../mobile-header";
 import { MobileNavigation } from "../mobile-navigation";
 
 type DashboardShellProps = {
-  activeSection?: "dashboard" | "timeline" | "vault";
+  activeSection?: DashboardSection;
   activeSpace: ActiveSpace;
   children: ReactNode;
 };
@@ -36,7 +37,13 @@ export function DashboardShell({
   const pathname = usePathname();
   const currentSection =
     activeSection ??
-    (pathname === "/" ? "dashboard" : pathname.startsWith(APP_ROUTES.VAULT) ? "vault" : "timeline");
+    (pathname === APP_ROUTES.HOME
+      ? "dashboard"
+      : pathname.startsWith(APP_ROUTES.VAULT)
+        ? "vault"
+        : pathname.startsWith(APP_ROUTES.SETTINGS)
+          ? "settings"
+          : "timeline");
 
   return (
     <main className={styles.page}>

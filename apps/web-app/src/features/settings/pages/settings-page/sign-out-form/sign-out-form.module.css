@@ -1,0 +1,64 @@
+.form {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.form button {
+  display: inline-flex;
+  min-height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #ddcecb;
+  border-radius: 0.75rem;
+  background: #fffaf8;
+  color: #754f54;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  transition:
+    background-color 180ms ease-out,
+    border-color 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.form button:hover:not(:disabled) {
+  border-color: #bd9da0;
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.form button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.form svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.error {
+  min-height: 1rem;
+  margin: 0;
+  color: var(--destructive);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form button {
+    transition: none;
+  }
+}

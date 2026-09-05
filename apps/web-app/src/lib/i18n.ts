@@ -3,10 +3,12 @@ import { initReactI18next } from "react-i18next";
 import { authEn } from "@/locales/en/auth";
 import { memoriesEn } from "@/locales/en/memories";
 import { notFoundEn } from "@/locales/en/not-found";
+import { settingsEn } from "@/locales/en/settings";
 import { spaceSetupEn } from "@/locales/en/space-setup";
 import { authEs } from "@/locales/es/auth";
 import { memoriesEs } from "@/locales/es/memories";
 import { notFoundEs } from "@/locales/es/not-found";
+import { settingsEs } from "@/locales/es/settings";
 import { spaceSetupEs } from "@/locales/es/space-setup";
 
 const LOCALE_STORAGE_KEY = "leonly.locale";
@@ -20,12 +22,14 @@ const resources = {
     auth: authEn,
     memories: memoriesEn,
     notFound: notFoundEn,
+    settings: settingsEn,
     spaceSetup: spaceSetupEn,
   },
   [LANGUAGES.SPANISH]: {
     auth: authEs,
     memories: memoriesEs,
     notFound: notFoundEs,
+    settings: settingsEs,
     spaceSetup: spaceSetupEs,
   },
 } as const;
