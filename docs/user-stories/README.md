@@ -5,6 +5,7 @@ scope, business rules, observable acceptance criteria, unresolved decisions, and
 needed to derive OpenSpec requirements, scenarios, and tasks.
 
 - [MVP user stories](mvp/README.md)
+- [Future user stories](future/README.md)
 
 ## Relationship to OpenSpec
 

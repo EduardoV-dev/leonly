@@ -1,6 +1,6 @@
-# US-025: View Shared-Space Dashboard
+# US-025: View Expanded Shared-Space Dashboard
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **OpenSpec:** [shared-space-dashboard](../../../../openspec/specs/shared-space-dashboard/spec.md)<br>
 **Depends on:** US-001, US-002, US-003, US-004, US-019, US-024
 

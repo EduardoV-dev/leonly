@@ -1,6 +1,6 @@
 # US-023: Delete Place
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-017 through US-022
 
 ## User Story

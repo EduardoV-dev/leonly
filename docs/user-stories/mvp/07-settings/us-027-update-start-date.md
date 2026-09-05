@@ -1,7 +1,7 @@
 # US-027: Update Start Date
 
 **Priority:** Must<br>
-**Depends on:** US-002, US-015, US-025
+**Depends on:** US-002, US-015
 
 ## User Story
 

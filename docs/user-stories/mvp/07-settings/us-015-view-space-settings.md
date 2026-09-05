@@ -11,13 +11,13 @@ shared and member-owned configuration.
 ## Intended Outcome
 
 The settings page presents the active space's shared settings, membership state, the current member's
-available personal settings, account context, and extension regions for the actions owned by US-016,
-US-024, and US-026 through US-028.
+available personal settings, account context, and extension regions for the actions owned by US-024,
+US-026 through US-028, and US-031.
 
 ## Scope
 
 - Space name, date-only start date, one-member or two-member invite status, and active members.
-- The current membership display name and an extension region for the US-016 currency preference.
+- The current membership display name and an extension region for the US-031 language preference.
 - Account context, a Private Vault link, and action regions for dependent settings stories.
 - Loading, missing optional data, generic not-found, no-space, error, and responsive states.
 
@@ -25,8 +25,8 @@ US-024, and US-026 through US-028.
 
 - The authenticated user may read settings only for their active space; authorization is derived on
   the server and enforced by RLS.
-- Both active members have equal control over shared settings. Display name and preferred currency
-  remain owned by the individual membership.
+- Both active members have equal control over shared settings. Display name and language remain
+  owned by the individual member.
 - A one-member active space prominently shows invite status and an extension point for the US-024
   action.
 - A two-member active space shows joined status and no actionable invite code.

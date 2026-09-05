@@ -1,6 +1,6 @@
 # US-016: Set Preferred Currency
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-001, US-015
 
 ## User Story

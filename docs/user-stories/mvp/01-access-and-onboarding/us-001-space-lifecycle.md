@@ -14,7 +14,8 @@ predictably so I enter the correct private state without exceeding active-space 
 An authenticated user without an active membership can create an active space or join one through a
 valid invite. Creation atomically establishes the first active membership and opens the authenticated
 dashboard route shell. Successful redemption atomically establishes the second active membership and
-opens the same route in its two-member state; US-025 supplies the complete dashboard summary.
+opens the same route in its two-member state. The expanded dashboard summary remains future work in
+US-025.
 
 ## Scope
 

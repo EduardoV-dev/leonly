@@ -1,6 +1,6 @@
 # US-020: View Place Detail
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-016 through US-019
 
 ## User Story

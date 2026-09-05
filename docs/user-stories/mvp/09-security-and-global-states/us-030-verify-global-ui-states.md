@@ -1,7 +1,7 @@
 # US-030: Verify Global Empty, Loading, and Error States
 
 **Priority:** Must<br>
-**Depends on:** US-001 through US-029
+**Depends on:** US-001 through US-015, US-024, US-026 through US-029, US-031
 
 ## User Story
 
@@ -16,8 +16,8 @@ local states and accessibility behavior; this story closes cross-flow gaps.
 
 ## Scope
 
-- Authentication, create/join setup, invitation, dashboard, timeline, memory detail and forms,
-  Private Vault, places and place detail, and settings.
+- Authentication, create/join setup, invitation, current dashboard shell, timeline, memory detail and
+  forms, Private Vault, and settings.
 - Field-level validation, mutation pending/success/error feedback, and retry where safe.
 - Initial navigation, direct refresh, background refresh, and offline-like request failure.
 

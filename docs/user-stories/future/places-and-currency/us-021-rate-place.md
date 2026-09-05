@@ -1,6 +1,6 @@
 # US-021: Rate Place
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-017, US-019, US-020
 
 ## User Story

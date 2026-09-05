@@ -1,7 +1,7 @@
 # US-028: Update My Display Name
 
 **Priority:** Must<br>
-**Depends on:** US-003, US-005, US-006, US-010, US-015, US-019, US-020, US-025
+**Depends on:** US-003, US-005, US-006, US-010, US-015
 
 ## User Story
 

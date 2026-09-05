@@ -1,6 +1,6 @@
 # US-022: Edit Place
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-017, US-020
 
 ## User Story

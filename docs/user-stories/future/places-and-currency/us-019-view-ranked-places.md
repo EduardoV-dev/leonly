@@ -1,6 +1,6 @@
 # US-019: View Ranked Places
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-001, US-016 through US-018
 
 ## User Story

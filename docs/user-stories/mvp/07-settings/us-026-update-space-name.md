@@ -1,7 +1,7 @@
 # US-026: Update Space Name
 
 **Priority:** Must<br>
-**Depends on:** US-015, US-025
+**Depends on:** US-015
 
 ## User Story
 

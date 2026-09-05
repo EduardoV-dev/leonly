@@ -1,6 +1,6 @@
 # US-018: Manage Place Expense Items and Converted Total
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-016, US-017
 
 ## User Story

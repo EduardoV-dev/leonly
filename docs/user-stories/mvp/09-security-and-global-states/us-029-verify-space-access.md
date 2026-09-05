@@ -1,7 +1,7 @@
 # US-029: Verify Active-Space Access Across MVP
 
 **Priority:** Must<br>
-**Depends on:** US-001 through US-028
+**Depends on:** US-001 through US-015, US-024, US-026 through US-028, US-031
 
 ## User Story
 
@@ -17,8 +17,7 @@ policies, server boundaries, and focused access tests; this story closes cross-f
 
 ## Scope
 
-- Spaces, memberships, memories, memory photos, comments, reactions, places, place expense items,
-  place ratings, settings, and storage objects.
+- Spaces, memberships, memories, memory photos, comments, reactions, settings, and storage objects.
 - Read, create, update, soft-delete, direct routes, aggregate queries, and file access.
 
 ## Business Rules
@@ -53,8 +52,8 @@ policies, server boundaries, and focused access tests; this story closes cross-f
 
 ## Decision Required
 
-- Define the operation-by-resource authorization matrix for member-owned comments, reactions,
-  ratings, display names, currency preferences, and shared place expense items.
+- Define the operation-by-resource authorization matrix for member-owned comments, reactions, and
+  display names, plus shared settings.
 - Define the HTTP status and response body used for the generic not-found outcome.
 
 ## Verification Notes

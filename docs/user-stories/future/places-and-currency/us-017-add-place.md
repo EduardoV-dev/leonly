@@ -1,6 +1,6 @@
 # US-017: Add Place
 
-**Priority:** Must<br>
+**Priority:** Future<br>
 **Depends on:** US-001, US-016
 
 ## User Story
