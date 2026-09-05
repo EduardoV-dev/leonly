@@ -1,0 +1,62 @@
+.value,
+.editor {
+  display: grid;
+  gap: 0.55rem;
+}
+.value {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.value p,
+.editor p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #755152;
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 0.72rem;
+}
+.editor label {
+  color: #826c6d;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.editor input {
+  height: 3.35rem;
+  min-width: 0;
+  padding: 0 0.85rem;
+  border: 1px solid #d8bfc0;
+  border-radius: 0.8rem;
+  background: #fffdfc;
+  color: #3e3132;
+  font:
+    700 0.98rem "Nunito Sans",
+    sans-serif;
+}
+.editor input:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+.actions,
+.conflict {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.conflict {
+  padding: 0.7rem;
+  border-radius: 0.65rem;
+  background: #fff0ef;
+}
+@media (max-width: 639px) {
+  .value {
+    grid-template-columns: 1fr;
+  }
+  .value button {
+    width: fit-content;
+  }
+  .actions > * {
+    flex: 1;
+  }
+}

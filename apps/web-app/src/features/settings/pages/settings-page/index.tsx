@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
@@ -20,6 +21,7 @@ import { SettingsMemberAvatar } from "./settings-member-avatar";
 import styles from "./settings-page.module.css";
 import railStyles from "./settings-rail.module.css";
 import { SignOutForm } from "./sign-out-form";
+import { SpaceNameEditor } from "./space-name-editor";
 
 type SettingsPageProps = {
   settings: SettingsReadModel;
@@ -45,6 +47,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   const { i18n, t } = useTranslation("settings");
   const language = i18n.resolvedLanguage === "es" ? "es" : "en";
   const currentMember = settings.activeMembers.find((member) => member.isCurrentMember);
+  const [spaceName, setSpaceName] = useState(settings.space.name);
 
   if (!currentMember) {
     throw new Error("Settings requires a current member.");
@@ -63,7 +66,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
       </header>
 
       <div className={styles.layout}>
-        <aside className={styles.rail} aria-label={settings.space.name}>
+        <aside className={styles.rail} aria-label={spaceName}>
           <section className={`${styles.card} ${railStyles.summaryCard}`}>
             <div className={railStyles.summaryAvatars}>
               {settings.activeMembers.map((member) => (
@@ -78,7 +81,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
               </span>
             </div>
             <span className={styles.sharedBadge}>{t("shared.ownership")}</span>
-            <h2>{settings.space.name}</h2>
+            <h2>{spaceName}</h2>
             <p className={railStyles.summaryDate}>
               <CalendarDays aria-hidden="true" />
               {t("summary.date", { date: startDate })}
@@ -129,7 +132,13 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                   <UsersRound aria-hidden="true" />
                   {t("shared.name")}
                 </dt>
-                <dd>{settings.space.name}</dd>
+                <dd>
+                  <SpaceNameEditor
+                    name={spaceName}
+                    onSaved={setSpaceName}
+                    updatedAt={settings.space.updatedAt}
+                  />
+                </dd>
               </div>
               <div className={styles.valueRow}>
                 <dt>

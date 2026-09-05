@@ -74,6 +74,18 @@ export const settingsEn = {
     ownership: "Shared by both of you",
     startDate: "Our story began",
   },
+  spaceName: {
+    acceptCurrent: "Use current name",
+    cancel: "Cancel",
+    conflict: "This space is now named {{name}}.",
+    edit: "Edit name",
+    failed: "We could not save this name. Try again.",
+    pending: "Saving…",
+    retry: "Retry saved name",
+    save: "Save name",
+    success: "Space name saved.",
+    validation: "Enter a name between 2 and 100 characters.",
+  },
   summary: {
     date: "Our story began {{date}}",
     oneMember: "A private place waiting for its second member.",

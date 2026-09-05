@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
@@ -10,7 +10,9 @@ vi.mock("../../server/sign-out-current-session", () => ({
   signOutCurrentSession: vi.fn(),
 }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const refreshMock = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
 const oneMemberSettings: SettingsReadModel = {
   account: { email: "leo@example.com", providerLabel: "Google" },
@@ -30,7 +32,11 @@ const oneMemberSettings: SettingsReadModel = {
     isAvailable: true,
   },
   membershipState: "one-member",
-  space: { name: "Leo's Sanctuary", startDate: "2025-04-27" },
+  space: {
+    name: "Leo's Sanctuary",
+    startDate: "2025-04-27",
+    updatedAt: "2026-09-05T16:00:00.000Z",
+  },
 };
 
 const twoMemberSettings: SettingsReadModel = {
@@ -52,6 +58,7 @@ const twoMemberSettings: SettingsReadModel = {
 
 describe("SettingsPage", () => {
   beforeEach(async () => {
+    vi.clearAllMocks();
     await act(() => i18n.changeLanguage("en"));
   });
 
@@ -138,6 +145,31 @@ describe("SettingsPage", () => {
       "/vault",
     );
     expect(screen.getByRole("button", { name: "Cerrar sesión en Leonly" })).toBeEnabled();
+  });
+
+  it("edits the shared name with labelled controls, validation, and an authoritative refresh", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ name: "Our archive", updatedAt: "2026-09-05T16:01:00.000Z" }),
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit name" }));
+    const input = screen.getByRole("textbox", { name: "Space name" });
+    expect(input).toHaveFocus();
+    fireEvent.change(input, { target: { value: " " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save name" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Enter a name between 2 and 100 characters.",
+    );
+
+    fireEvent.change(input, { target: { value: "Our archive" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save name" }));
+    await waitFor(() => expect(screen.getByText("Space name saved.")).toBeInTheDocument());
+    expect(screen.getAllByText("Our archive")).toHaveLength(2);
+    expect(refreshMock).toHaveBeenCalledOnce();
   });
 
   it("provides labelled loading and keyboard-accessible recovery states", () => {

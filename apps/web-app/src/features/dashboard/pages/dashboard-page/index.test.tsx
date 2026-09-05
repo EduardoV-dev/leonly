@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { DashboardContent } from "./dashboard-content";
+import { DashboardShell } from "./dashboard-shell";
 import { DashboardError } from "./error";
 import { DashboardPage } from "./index";
 import { DashboardLoading } from "./loading";
@@ -140,6 +141,27 @@ describe("DashboardPage", () => {
     for (const placesButton of screen.getAllByRole("button", { name: "Places" })) {
       expect(placesButton).toBeDisabled();
     }
+  });
+
+  it("renders the refreshed canonical name in dashboard, desktop navigation, and mobile navigation", () => {
+    const { rerender } = render(
+      <DashboardShell activeSpace={activeSpace} activeSection="dashboard">
+        <DashboardContent />
+      </DashboardShell>,
+    );
+
+    rerender(
+      <DashboardShell
+        activeSpace={{ ...activeSpace, name: "Our archive" }}
+        activeSection="dashboard"
+      >
+        <DashboardContent />
+      </DashboardShell>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Our archive" })).toBeInTheDocument();
+    expect(screen.getByTitle("Our archive")).toBeInTheDocument();
+    expect(screen.getByText("Sharing Our archive together.")).toBeInTheDocument();
   });
 
   it("marks Vault as current in desktop and mobile navigation", async () => {

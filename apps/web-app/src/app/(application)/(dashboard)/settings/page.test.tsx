@@ -20,7 +20,11 @@ const settings = {
   activeMembers: [],
   invite: { code: null, expiresAt: null, isAvailable: false },
   membershipState: "one-member" as const,
-  space: { name: "Our Space", startDate: "2025-04-27" },
+  space: {
+    name: "Our Space",
+    startDate: "2025-04-27",
+    updatedAt: "2026-09-05T16:00:00.000Z",
+  },
 };
 
 describe("Settings route", () => {

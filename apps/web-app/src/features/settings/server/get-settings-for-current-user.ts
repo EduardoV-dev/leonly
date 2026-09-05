@@ -31,6 +31,7 @@ const settingsRpcSchema = z
     invite_code_is_available: z.boolean(),
     name: z.string().min(1),
     start_date: z.iso.date(),
+    updated_at: z.string().datetime({ offset: true }),
   })
   .strict()
   .superRefine((settings, context) => {
@@ -63,6 +64,7 @@ export type SettingsReadModel = {
   space: {
     name: string;
     startDate: string;
+    updatedAt: string;
   };
 };
 
@@ -142,6 +144,7 @@ export async function getSettingsForCurrentUser(): Promise<SettingsReadResult> {
       space: {
         name: rpcSettings.name,
         startDate: rpcSettings.start_date,
+        updatedAt: rpcSettings.updated_at,
       },
     },
     status: "success",

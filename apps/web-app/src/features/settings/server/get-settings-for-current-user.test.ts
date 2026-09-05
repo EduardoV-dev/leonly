@@ -36,6 +36,7 @@ const rpcSettings = {
   invite_code_is_available: true,
   name: "Our Space",
   start_date: "2025-04-27",
+  updated_at: "2026-09-05T16:00:00.000Z",
 };
 
 function mockSupabase({
@@ -84,7 +85,11 @@ describe("getSettingsForCurrentUser", () => {
           isAvailable: true,
         },
         membershipState: "one-member",
-        space: { name: "Our Space", startDate: "2025-04-27" },
+        space: {
+          name: "Our Space",
+          startDate: "2025-04-27",
+          updatedAt: "2026-09-05T16:00:00.000Z",
+        },
       },
       status: "success",
     });

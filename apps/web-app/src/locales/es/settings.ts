@@ -77,6 +77,18 @@ export const settingsEs = {
     ownership: "Compartido por ambos",
     startDate: "Nuestra historia comenzó",
   },
+  spaceName: {
+    acceptCurrent: "Usar el nombre actual",
+    cancel: "Cancelar",
+    conflict: "Este espacio ahora se llama {{name}}.",
+    edit: "Editar nombre",
+    failed: "No pudimos guardar este nombre. Inténtelo de nuevo.",
+    pending: "Guardando…",
+    retry: "Reintentar con el nombre guardado",
+    save: "Guardar nombre",
+    success: "Nombre del espacio guardado.",
+    validation: "Ingrese un nombre de entre 2 y 100 caracteres.",
+  },
   summary: {
     date: "Nuestra historia comenzó el {{date}}",
     oneMember: "Un lugar privado que espera a su segundo miembro.",
