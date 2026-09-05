@@ -330,30 +330,27 @@
     padding: 3.4rem clamp(2.25rem, 4.5vw, 4.5rem) 4rem;
   }
 
-  .layout {
-    grid-template-columns: minmax(14rem, 0.72fr) minmax(22rem, 1.45fr);
-    align-items: start;
-    gap: 1.15rem;
-  }
-
-  .rail {
-    position: sticky;
-    top: 2rem;
-  }
-
   .card {
     padding: 1.35rem;
   }
 }
 
 @mixin screen-lg {
+  .card {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
   .layout {
     grid-template-columns: minmax(16rem, 0.72fr) minmax(27rem, 1.5fr);
+    align-items: start;
     gap: 1.35rem;
   }
 
-  .card {
-    padding: 1.5rem;
+  .rail {
+    position: sticky;
+    top: 2rem;
   }
 }
 

@@ -172,6 +172,16 @@ describe("SettingsPage", () => {
     expect(refreshMock).toHaveBeenCalledOnce();
   });
 
+  it("offers both members an accessible start-date editor that can be cancelled", () => {
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    const editDate = screen.getByRole("button", { name: "Edit start date" });
+    fireEvent.click(editDate);
+    expect(screen.getByRole("button", { name: "Our story began" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Edit start date" })).toHaveFocus();
+  });
+
   it("provides labelled loading and keyboard-accessible recovery states", () => {
     const onRetry = vi.fn();
     const { unmount } = render(<SettingsLoading />);

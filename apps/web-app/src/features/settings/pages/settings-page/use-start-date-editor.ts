@@ -1,45 +1,41 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { z } from "zod";
+import { parseCalendarDate } from "@/utils/calendar-date";
 
 const responseSchema = z.object({
-  name: z.string().min(2).max(100),
+  startDate: z.iso.date(),
   updatedAt: z.string().datetime({ offset: true }),
 });
 const conflictSchema = z.object({
   code: z.literal("conflict"),
-  name: z.string().min(2).max(100),
+  startDate: z.iso.date(),
   updatedAt: z.string().datetime({ offset: true }),
 });
 
-export function getSpaceNameError(name: string): "length" | null {
-  const length = Array.from(name.trim()).length;
-  return length < 2 || length > 100 ? "length" : null;
-}
-
-type UseSpaceNameEditorOptions = {
-  name: string;
+type UseStartDateEditorOptions = {
+  onSaved: (startDate: string, updatedAt: string) => void;
+  startDate: string;
   updatedAt: string;
-  onSaved: (name: string, updatedAt: string) => void;
 };
 
-export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEditorOptions) {
+export function useStartDateEditor({ startDate, updatedAt, onSaved }: UseStartDateEditorOptions) {
   const router = useRouter();
   const requestInFlight = useRef(false);
   const revisionRef = useRef(updatedAt);
-  const [canonicalName, setCanonicalName] = useState(name);
-  const [draft, setDraft] = useState(name);
+  const [canonicalStartDate, setCanonicalStartDate] = useState(startDate);
+  const [draft, setDraft] = useState(startDate);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isConflict, setIsConflict] = useState(false);
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
   const [outcome, setOutcome] = useState<"failed" | "success" | null>(null);
   const [, startTransition] = useTransition();
-  const validationError = getSpaceNameError(draft);
+  const validationError = parseCalendarDate(draft) === null;
 
   const startEditing = () => {
     revisionRef.current = updatedAt;
-    setDraft(canonicalName);
+    setDraft(canonicalStartDate);
     setHasAttemptedSave(false);
     setIsConflict(false);
     setOutcome(null);
@@ -52,19 +48,19 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
     setOutcome(null);
   };
   const cancel = () => {
-    setDraft(canonicalName);
+    setDraft(canonicalStartDate);
     setHasAttemptedSave(false);
     setIsConflict(false);
     setOutcome(null);
     setIsEditing(false);
   };
   const acceptCurrent = () => {
-    setDraft(canonicalName);
+    setDraft(canonicalStartDate);
     setHasAttemptedSave(false);
     setIsConflict(false);
     setOutcome(null);
     setIsEditing(false);
-    onSaved(canonicalName, revisionRef.current);
+    onSaved(canonicalStartDate, revisionRef.current);
   };
   const save = async () => {
     if (requestInFlight.current || isSaving) return;
@@ -77,8 +73,12 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
     setIsConflict(false);
     setOutcome(null);
     try {
-      const response = await fetch("/api/spaces/name", {
-        body: JSON.stringify({ expectedUpdatedAt: revisionRef.current, name: draft }),
+      const response = await fetch("/api/spaces/start-date", {
+        body: JSON.stringify({
+          expectedUpdatedAt: revisionRef.current,
+          startDate: draft,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
         headers: { "content-type": "application/json" },
         method: "PATCH",
       });
@@ -86,19 +86,19 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
       const success = responseSchema.safeParse(payload);
       if (response.ok && success.success) {
         revisionRef.current = success.data.updatedAt;
-        setCanonicalName(success.data.name);
-        setDraft(success.data.name);
+        setCanonicalStartDate(success.data.startDate);
+        setDraft(success.data.startDate);
         setHasAttemptedSave(false);
         setIsEditing(false);
         setOutcome("success");
-        onSaved(success.data.name, success.data.updatedAt);
+        onSaved(success.data.startDate, success.data.updatedAt);
         startTransition(() => router.refresh());
         return;
       }
       const conflict = conflictSchema.safeParse(payload);
       if (response.status === 409 && conflict.success) {
         revisionRef.current = conflict.data.updatedAt;
-        setCanonicalName(conflict.data.name);
+        setCanonicalStartDate(conflict.data.startDate);
         setIsConflict(true);
         return;
       }
@@ -114,7 +114,7 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
   return {
     acceptCurrent,
     cancel,
-    canonicalName,
+    canonicalStartDate,
     draft,
     hasAttemptedSave,
     isConflict,

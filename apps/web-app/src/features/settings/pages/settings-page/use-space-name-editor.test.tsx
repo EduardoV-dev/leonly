@@ -46,7 +46,7 @@ describe("useSpaceNameEditor", () => {
     expect(result.current.canonicalName).toBe("Our place");
     expect(result.current.draft).toBe("Our place");
     expect(result.current.isEditing).toBe(false);
-    expect(onSaved).toHaveBeenCalledWith("Our place");
+    expect(onSaved).toHaveBeenCalledWith("Our place", "2026-09-05T16:01:00.000Z");
     expect(refreshMock).toHaveBeenCalledOnce();
   });
 
@@ -103,6 +103,6 @@ describe("useSpaceNameEditor", () => {
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
       body: JSON.stringify({ expectedUpdatedAt: "2026-09-05T16:02:00.000Z", name: "Our retry" }),
     });
-    expect(onSaved).toHaveBeenLastCalledWith("Our retry");
+    expect(onSaved).toHaveBeenLastCalledWith("Our retry", "2026-09-05T16:03:00.000Z");
   });
 });

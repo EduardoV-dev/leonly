@@ -22,6 +22,7 @@ import styles from "./settings-page.module.css";
 import railStyles from "./settings-rail.module.css";
 import { SignOutForm } from "./sign-out-form";
 import { SpaceNameEditor } from "./space-name-editor";
+import { StartDateEditor } from "./start-date-editor";
 
 type SettingsPageProps = {
   settings: SettingsReadModel;
@@ -47,13 +48,13 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   const { i18n, t } = useTranslation("settings");
   const language = i18n.resolvedLanguage === "es" ? "es" : "en";
   const currentMember = settings.activeMembers.find((member) => member.isCurrentMember);
-  const [spaceName, setSpaceName] = useState(settings.space.name);
+  const [sharedSpace, setSharedSpace] = useState(settings.space);
 
   if (!currentMember) {
     throw new Error("Settings requires a current member.");
   }
 
-  const startDate = formatDateOnly(settings.space.startDate, language);
+  const startDate = formatDateOnly(sharedSpace.startDate, language);
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -66,7 +67,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
       </header>
 
       <div className={styles.layout}>
-        <aside className={styles.rail} aria-label={spaceName}>
+        <aside className={styles.rail} aria-label={sharedSpace.name}>
           <section className={`${styles.card} ${railStyles.summaryCard}`}>
             <div className={railStyles.summaryAvatars}>
               {settings.activeMembers.map((member) => (
@@ -81,7 +82,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
               </span>
             </div>
             <span className={styles.sharedBadge}>{t("shared.ownership")}</span>
-            <h2>{spaceName}</h2>
+            <h2>{sharedSpace.name}</h2>
             <p className={railStyles.summaryDate}>
               <CalendarDays aria-hidden="true" />
               {t("summary.date", { date: startDate })}
@@ -134,9 +135,11 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                 </dt>
                 <dd>
                   <SpaceNameEditor
-                    name={spaceName}
-                    onSaved={setSpaceName}
-                    updatedAt={settings.space.updatedAt}
+                    name={sharedSpace.name}
+                    onSaved={(name, updatedAt) =>
+                      setSharedSpace((space) => ({ ...space, name, updatedAt }))
+                    }
+                    updatedAt={sharedSpace.updatedAt}
                   />
                 </dd>
               </div>
@@ -145,7 +148,16 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                   <CalendarDays aria-hidden="true" />
                   {t("shared.startDate")}
                 </dt>
-                <dd>{startDate}</dd>
+                <dd>
+                  <StartDateEditor
+                    displayValue={startDate}
+                    onSaved={(startDate, updatedAt) =>
+                      setSharedSpace((space) => ({ ...space, startDate, updatedAt }))
+                    }
+                    startDate={sharedSpace.startDate}
+                    updatedAt={sharedSpace.updatedAt}
+                  />
+                </dd>
               </div>
             </dl>
           </section>

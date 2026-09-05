@@ -1,0 +1,39 @@
+.value,
+.editor {
+  display: grid;
+  gap: 0.55rem;
+}
+.value {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.value p,
+.editor p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #755152;
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 0.72rem;
+}
+.actions,
+.conflict {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.conflict {
+  padding: 0.7rem;
+  border-radius: 0.65rem;
+  background: #fff0ef;
+}
+@media (max-width: 639px) {
+  .value {
+    grid-template-columns: 1fr;
+  }
+  .value button {
+    width: fit-content;
+  }
+  .actions > * {
+    flex: 1;
+  }
+}

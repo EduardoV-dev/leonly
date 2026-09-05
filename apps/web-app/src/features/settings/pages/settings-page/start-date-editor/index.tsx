@@ -3,75 +3,83 @@
 import { Check, Pencil, RefreshCw, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { PastDatePicker } from "@/components/past-date-picker";
 import { Button } from "@/components/ui/shadcn-button";
-import { useSpaceNameEditor } from "../use-space-name-editor";
-import styles from "./space-name-editor.module.css";
+import { useStartDateEditor } from "../use-start-date-editor";
+import styles from "./start-date-editor.module.css";
 
-type SpaceNameEditorProps = {
-  name: string;
+type StartDateEditorProps = {
+  displayValue: string;
+  onSaved: (startDate: string, updatedAt: string) => void;
+  startDate: string;
   updatedAt: string;
-  onSaved: (name: string, updatedAt: string) => void;
 };
 
-export function SpaceNameEditor({ name, updatedAt, onSaved }: Readonly<SpaceNameEditorProps>) {
+export function StartDateEditor({
+  displayValue,
+  startDate,
+  updatedAt,
+  onSaved,
+}: Readonly<StartDateEditorProps>) {
   const { t } = useTranslation("settings");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const editor = useSpaceNameEditor({ name, onSaved, updatedAt });
+  const editor = useStartDateEditor({ onSaved, startDate, updatedAt });
+  const editButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (editor.isEditing) inputRef.current?.focus();
+    if (!editor.isEditing) editButtonRef.current?.focus();
   }, [editor.isEditing]);
 
   if (!editor.isEditing) {
     return (
       <div className={styles.value}>
-        <strong>{editor.canonicalName}</strong>
+        <strong>{displayValue}</strong>
         <Button
-          aria-label={t("spaceName.edit")}
+          aria-label={t("startDate.edit")}
           onClick={editor.startEditing}
+          ref={editButtonRef}
           size="sm"
           type="button"
           variant="outline"
         >
           <Pencil aria-hidden="true" />
-          {t("spaceName.edit")}
+          {t("startDate.edit")}
         </Button>
-        {editor.outcome === "success" ? <p role="status">{t("spaceName.success")}</p> : null}
+        {editor.outcome === "success" ? <p role="status">{t("startDate.success")}</p> : null}
       </div>
     );
   }
+
   const fieldError =
-    editor.hasAttemptedSave && editor.validationError ? t("spaceName.validation") : null;
+    editor.hasAttemptedSave && editor.validationError ? t("startDate.validation") : null;
   return (
     <div className={styles.editor}>
-      <label htmlFor="space-name">{t("shared.name")}</label>
-      <input
-        aria-describedby={fieldError ? "space-name-error" : undefined}
-        aria-invalid={Boolean(fieldError)}
-        disabled={editor.isSaving}
-        id="space-name"
-        onChange={(event) => editor.updateDraft(event.target.value)}
-        ref={inputRef}
+      <PastDatePicker
+        describedBy={fieldError ? "start-date-error" : undefined}
+        id="start-date"
+        isInvalid={Boolean(fieldError)}
+        label={t("shared.startDate")}
+        onChange={editor.updateDraft}
+        placeholder={t("startDate.placeholder")}
         value={editor.draft}
       />
       {fieldError ? (
-        <p id="space-name-error" role="alert">
+        <p id="start-date-error" role="alert">
           {fieldError}
         </p>
       ) : null}
       {editor.isConflict ? (
         <div className={styles.conflict} role="alert">
-          <p>{t("spaceName.conflict", { name: editor.canonicalName })}</p>
+          <p>{t("startDate.conflict", { date: editor.canonicalStartDate })}</p>
           <Button onClick={editor.acceptCurrent} size="sm" type="button" variant="outline">
-            {t("spaceName.acceptCurrent")}
+            {t("startDate.acceptCurrent")}
           </Button>
           <Button disabled={editor.isSaving} onClick={editor.save} size="sm" type="button">
             <RefreshCw aria-hidden="true" />
-            {t("spaceName.retry")}
+            {t("startDate.retry")}
           </Button>
         </div>
       ) : null}
-      {editor.outcome === "failed" ? <p role="alert">{t("spaceName.failed")}</p> : null}
+      {editor.outcome === "failed" ? <p role="alert">{t("startDate.failed")}</p> : null}
       <div className={styles.actions}>
         <Button
           disabled={editor.isSaving}
@@ -81,15 +89,15 @@ export function SpaceNameEditor({ name, updatedAt, onSaved }: Readonly<SpaceName
           variant="outline"
         >
           <X aria-hidden="true" />
-          {t("spaceName.cancel")}
+          {t("startDate.cancel")}
         </Button>
         <Button disabled={editor.isSaving} onClick={editor.save} size="sm" type="button">
           {editor.isSaving ? (
-            t("spaceName.pending")
+            t("startDate.pending")
           ) : (
             <>
               <Check aria-hidden="true" />
-              {t("spaceName.save")}
+              {t("startDate.save")}
             </>
           )}
         </Button>

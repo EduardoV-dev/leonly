@@ -11,6 +11,10 @@
   gap: 1.1rem;
 }
 
+.inviteSection {
+  margin-bottom: 1.1rem;
+}
+
 .milestoneCard {
   overflow: hidden;
   padding: 1.25rem;
@@ -207,6 +211,10 @@
   .heroGrid {
     grid-template-columns: minmax(0, 1.75fr) minmax(10.5rem, 0.82fr);
     gap: 1rem;
+  }
+
+  .inviteSection {
+    margin-bottom: 1.5rem;
   }
 
   .milestoneCard {

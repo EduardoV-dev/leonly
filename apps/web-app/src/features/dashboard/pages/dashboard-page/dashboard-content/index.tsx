@@ -21,11 +21,13 @@ export function DashboardContent() {
       </header>
 
       {isWaitingForPartner ? (
-        <PartnerInviteStatus
-          code={activeSpace.invite_code}
-          expiresAt={activeSpace.invite_code_expires_at}
-          membershipState="one-member"
-        />
+        <div className={styles.inviteSection}>
+          <PartnerInviteStatus
+            code={activeSpace.invite_code}
+            expiresAt={activeSpace.invite_code_expires_at}
+            membershipState="one-member"
+          />
+        </div>
       ) : null}
 
       <div className={styles.heroGrid}>
