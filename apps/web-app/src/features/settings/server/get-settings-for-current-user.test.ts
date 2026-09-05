@@ -19,6 +19,7 @@ const currentMember = {
   is_current_member: true,
   membership_id: CURRENT_MEMBERSHIP_ID,
   role: "owner",
+  updated_at: "2026-09-05T17:00:00.000Z",
 };
 const partnerMember = {
   avatar_url: null,
@@ -27,6 +28,7 @@ const partnerMember = {
   is_current_member: false,
   membership_id: PARTNER_MEMBERSHIP_ID,
   role: "partner",
+  updated_at: "2026-09-05T17:05:00.000Z",
 };
 const rpcSettings = {
   active_members: [currentMember],
@@ -77,6 +79,7 @@ describe("getSettingsForCurrentUser", () => {
             isCurrentMember: true,
             joinedAt: "2025-04-27T10:00:00.000Z",
             role: "owner",
+            updatedAt: "2026-09-05T17:00:00.000Z",
           },
         ],
         invite: {
@@ -118,6 +121,41 @@ describe("getSettingsForCurrentUser", () => {
     expect(result.settings.membershipState).toBe("two-member");
     expect(result.settings.activeMembers).toHaveLength(2);
     expect(result.settings.invite).toEqual({ code: null, expiresAt: null, isAvailable: false });
+  });
+
+  it("rejects malformed or expanded member payloads", async () => {
+    mockSupabase({
+      rpcData: {
+        ...rpcSettings,
+        active_members: [{ ...currentMember, updated_at: "not-a-timestamp" }],
+      },
+    });
+
+    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
+
+    mockSupabase({
+      rpcData: {
+        ...rpcSettings,
+        active_members: [{ ...currentMember, user_id: CURRENT_USER_ID }],
+      },
+    });
+
+    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
+    expect(logServerError).toHaveBeenCalledWith(
+      { event: "supabase_operation_failed", operation: "parse_active_space_settings" },
+      expect.anything(),
+    );
+  });
+
+  it("rejects member payloads without exactly one current member", async () => {
+    mockSupabase({
+      rpcData: {
+        ...rpcSettings,
+        active_members: [currentMember, { ...partnerMember, is_current_member: true }],
+      },
+    });
+
+    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
   });
 
   it("uses safe fallbacks for missing account, invite, and avatar data", async () => {

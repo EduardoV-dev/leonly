@@ -87,6 +87,38 @@ describe("getCommentPage", () => {
     });
   });
 
+  it("resolves a refreshed historical comment from the current membership name", async () => {
+    const commentRecord = row(1);
+    const originalCommentRecord = structuredClone(commentRecord);
+    const membership = authorRow();
+
+    function clientForCurrentMembership() {
+      const commentQuery = createQuery([commentRecord]);
+      const authorQuery = createQuery([structuredClone(membership)]);
+
+      return {
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        from: vi
+          .fn()
+          .mockReturnValueOnce({ select: vi.fn().mockReturnValue(commentQuery) })
+          .mockReturnValueOnce({ select: vi.fn().mockReturnValue(authorQuery) }),
+      };
+    }
+
+    createClientMock.mockImplementation(async () => clientForCurrentMembership());
+
+    await expect(getCommentPage(memoryId, null)).resolves.toMatchObject({
+      comments: [{ authorDisplayName: "Alex", id: commentRecord.id }],
+    });
+
+    membership.display_name = "Alex Rivera";
+
+    await expect(getCommentPage(memoryId, null)).resolves.toMatchObject({
+      comments: [{ authorDisplayName: "Alex Rivera", id: commentRecord.id }],
+    });
+    expect(commentRecord).toEqual(originalCommentRecord);
+  });
+
   it("applies the complete timestamp and UUID tuple after a valid cursor", async () => {
     const anchor = row(9);
     const cursor = commentCursor.encode({

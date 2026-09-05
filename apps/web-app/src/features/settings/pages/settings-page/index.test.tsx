@@ -24,6 +24,7 @@ const oneMemberSettings: SettingsReadModel = {
       isCurrentMember: true,
       joinedAt: "2025-04-27T10:00:00.000Z",
       role: "owner",
+      updatedAt: "2026-09-05T16:00:00.000Z",
     },
   ],
   invite: {
@@ -50,6 +51,7 @@ const twoMemberSettings: SettingsReadModel = {
       isCurrentMember: false,
       joinedAt: "2025-05-01T12:30:00.000Z",
       role: "partner",
+      updatedAt: "2026-09-05T16:00:30.000Z",
     },
   ],
   invite: { code: null, expiresAt: null, isAvailable: false },
@@ -144,6 +146,7 @@ describe("SettingsPage", () => {
       "href",
       "/vault",
     );
+    expect(screen.getByRole("button", { name: "Editar nombre visible" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Cerrar sesión en Leonly" })).toBeEnabled();
   });
 
@@ -170,6 +173,156 @@ describe("SettingsPage", () => {
     await waitFor(() => expect(screen.getByText("Space name saved.")).toBeInTheDocument());
     expect(screen.getAllByText("Our archive")).toHaveLength(2);
     expect(refreshMock).toHaveBeenCalledOnce();
+  });
+
+  it("offers a self-only display-name editor and keeps the partner read-only", () => {
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    expect(screen.getAllByRole("button", { name: "Edit display name" })).toHaveLength(1);
+    expect(screen.getByText("Annie Chen")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Annie Chen/i })).not.toBeInTheDocument();
+  });
+
+  it("supports focused, associated validation and keyboard form submission", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        displayName: "Leo Vance",
+        updatedAt: "2026-09-05T16:01:00.000Z",
+      }),
+      ok: true,
+      status: 200,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
+    const input = screen.getByRole("textbox", { name: "Display name" });
+    expect(input).toHaveFocus();
+    expect(input).toHaveAccessibleDescription("Used to identify you throughout your shared space.");
+    fireEvent.change(input, { target: { value: "x" } });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Enter a display name between 2 and 100 characters.");
+    expect(input.getAttribute("aria-describedby")?.split(" ")).toContain(alert.id);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "Leo Vance" } });
+    fireEvent.submit(input.closest("form") as HTMLFormElement);
+    await waitFor(() => expect(screen.getByText("Display name saved.")).toBeInTheDocument());
+  });
+
+  it("disables editing controls while pending and updates every current-member occurrence", async () => {
+    let resolveRequest!: (value: unknown) => void;
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
+    const input = screen.getByRole("textbox", { name: "Display name" });
+    fireEvent.change(input, { target: { value: "Leo Hart" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
+
+    await waitFor(() => expect(screen.getByText("Saving…", { selector: "p" })).toBeInTheDocument());
+    expect(input).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    resolveRequest({
+      json: async () => ({
+        displayName: "Leo Hart",
+        updatedAt: "2026-09-05T16:01:00.000Z",
+      }),
+      ok: true,
+      status: 200,
+    });
+    await waitFor(() => expect(screen.getAllByText("Leo Hart")).toHaveLength(2));
+    expect(screen.getAllByRole("img", { name: "Leo Hart's avatar" })).toHaveLength(2);
+    expect(screen.getByText("Annie Chen")).toBeInTheDocument();
+    expect(refreshMock).toHaveBeenCalledOnce();
+  });
+
+  it("cancels without a request and restores focus to the edit action", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Display name" }), {
+      target: { value: "Discard me" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByRole("button", { name: "Edit display name" })).toHaveFocus();
+    expect(screen.getAllByText("Leo Vance")).not.toHaveLength(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves conflict input and supports accepting the canonical name", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          code: "conflict",
+          displayName: "Leo Current",
+          updatedAt: "2026-09-05T16:01:00.000Z",
+        }),
+        ok: false,
+        status: 409,
+      }),
+    );
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
+    const input = screen.getByRole("textbox", { name: "Display name" });
+    fireEvent.change(input, { target: { value: "Leo Attempt" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Your current display name is now Leo Current.",
+      ),
+    );
+    expect(input).toHaveValue("Leo Attempt");
+    expect(screen.getByRole("button", { name: "Retry your name" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Use current name" }));
+    expect(screen.getAllByText("Leo Current")).toHaveLength(2);
+  });
+
+  it("announces failure, preserves input, and retries successfully", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        json: async () => ({
+          displayName: "Leo Retry",
+          updatedAt: "2026-09-05T16:01:00.000Z",
+        }),
+        ok: true,
+        status: 200,
+      });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SettingsPage settings={twoMemberSettings} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
+    const input = screen.getByRole("textbox", { name: "Display name" });
+    fireEvent.change(input, { target: { value: "Leo Retry" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "We could not save your display name. Try again.",
+      ),
+    );
+    expect(input).toHaveValue("Leo Retry");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
+    await waitFor(() => expect(screen.getByText("Display name saved.")).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("offers both members an accessible start-date editor that can be cancelled", () => {

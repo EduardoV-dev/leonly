@@ -97,6 +97,44 @@ describe("getMemoryDetail", () => {
     await expect(getVaultMemoryDetail(memory.id)).resolves.toMatchObject({ visibility: "vault" });
   });
 
+  it("resolves refreshed Timeline and Vault creator names without changing memory records", async () => {
+    const timelineMemory = structuredClone(memory);
+    const vaultMemory = { ...structuredClone(memory), visibility: "vault" as const };
+    const originalTimelineMemory = structuredClone(timelineMemory);
+    const originalVaultMemory = structuredClone(vaultMemory);
+
+    getAvailableMemoryMock.mockResolvedValue(timelineMemory);
+    await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
+      creatorDisplayName: "Sarah",
+      visibility: "timeline",
+    });
+
+    getAvailableMemoryMock.mockResolvedValue(vaultMemory);
+    await expect(getVaultMemoryDetail(memory.id)).resolves.toMatchObject({
+      creatorDisplayName: "Sarah",
+      visibility: "vault",
+    });
+
+    creatorResult.data = {
+      display_name: "Sarah Chen",
+      users: { avatar_url: "https://avatars.example/sarah.jpg" },
+    };
+
+    getAvailableMemoryMock.mockResolvedValue(timelineMemory);
+    await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
+      creatorDisplayName: "Sarah Chen",
+      visibility: "timeline",
+    });
+
+    getAvailableMemoryMock.mockResolvedValue(vaultMemory);
+    await expect(getVaultMemoryDetail(memory.id)).resolves.toMatchObject({
+      creatorDisplayName: "Sarah Chen",
+      visibility: "vault",
+    });
+    expect(timelineMemory).toEqual(originalTimelineMemory);
+    expect(vaultMemory).toEqual(originalVaultMemory);
+  });
+
   it("does not load dependent data when the memory belongs to another detail route", async () => {
     getAvailableMemoryMock.mockResolvedValue({ ...memory, visibility: "vault" });
 

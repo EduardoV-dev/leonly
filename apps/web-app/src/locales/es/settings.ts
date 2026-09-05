@@ -17,6 +17,18 @@ export const settingsEs = {
     eyebrow: "Una pausa tranquila",
     heading: "No pudimos cargar la configuración",
   },
+  displayName: {
+    acceptCurrent: "Usar el nombre actual",
+    cancel: "Cancelar",
+    conflict: "Su nombre visible actual ahora es {{name}}.",
+    edit: "Editar nombre visible",
+    failed: "No pudimos guardar su nombre visible. Inténtelo de nuevo.",
+    pending: "Guardando…",
+    retry: "Reintentar con su nombre",
+    save: "Guardar nombre visible",
+    success: "Nombre visible guardado.",
+    validation: "Ingrese un nombre visible de entre 2 y 100 caracteres.",
+  },
   hero: {
     description: "Los detalles que dan forma a su espacio compartido.",
     eyebrow: "Configuración del refugio",

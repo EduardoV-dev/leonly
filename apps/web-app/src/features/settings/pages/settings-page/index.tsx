@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
+import { DisplayNameEditor } from "./display-name-editor";
 import { SettingsMemberAvatar } from "./settings-member-avatar";
 import styles from "./settings-page.module.css";
 import railStyles from "./settings-rail.module.css";
@@ -47,7 +48,8 @@ function formatJoinedDate(value: string, language: string): string {
 export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   const { i18n, t } = useTranslation("settings");
   const language = i18n.resolvedLanguage === "es" ? "es" : "en";
-  const currentMember = settings.activeMembers.find((member) => member.isCurrentMember);
+  const [activeMembers, setActiveMembers] = useState(settings.activeMembers);
+  const currentMember = activeMembers.find((member) => member.isCurrentMember);
   const [sharedSpace, setSharedSpace] = useState(settings.space);
 
   if (!currentMember) {
@@ -70,7 +72,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
         <aside className={styles.rail} aria-label={sharedSpace.name}>
           <section className={`${styles.card} ${railStyles.summaryCard}`}>
             <div className={railStyles.summaryAvatars}>
-              {settings.activeMembers.map((member) => (
+              {activeMembers.map((member) => (
                 <SettingsMemberAvatar
                   key={member.id}
                   member={member}
@@ -78,7 +80,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                 />
               ))}
               <span className={railStyles.memberCount} aria-hidden="true">
-                {settings.activeMembers.length}
+                {activeMembers.length}
               </span>
             </div>
             <span className={styles.sharedBadge}>{t("shared.ownership")}</span>
@@ -170,7 +172,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
               </div>
             </div>
             <ul className={styles.memberList}>
-              {settings.activeMembers.map((member) => (
+              {activeMembers.map((member) => (
                 <li key={member.id}>
                   <SettingsMemberAvatar
                     member={member}
@@ -215,8 +217,17 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                   {t("preferences.displayName")}
                 </dt>
                 <dd>
-                  <strong>{currentMember.displayName}</strong>
-                  <span>{t("preferences.displayNameHelp")}</span>
+                  <DisplayNameEditor
+                    displayName={currentMember.displayName}
+                    onSaved={(displayName, updatedAt) =>
+                      setActiveMembers((members) =>
+                        members.map((member) =>
+                          member.isCurrentMember ? { ...member, displayName, updatedAt } : member,
+                        ),
+                      )
+                    }
+                    updatedAt={currentMember.updatedAt}
+                  />
                 </dd>
               </div>
               <div className={styles.valueRow}>

@@ -20,6 +20,7 @@ const settingsRpcSchema = z
             is_current_member: z.boolean(),
             membership_id: z.uuid(),
             role: z.enum(["owner", "partner"]),
+            updated_at: z.string().datetime({ offset: true }),
           })
           .strict(),
       )
@@ -47,6 +48,7 @@ export type SettingsMember = {
   isCurrentMember: boolean;
   joinedAt: string;
   role: "owner" | "partner";
+  updatedAt: string;
 };
 
 export type SettingsReadModel = {
@@ -127,6 +129,7 @@ export async function getSettingsForCurrentUser(): Promise<SettingsReadResult> {
     isCurrentMember: member.is_current_member,
     joinedAt: member.created_at,
     role: member.role,
+    updatedAt: member.updated_at,
   }));
   return {
     settings: {

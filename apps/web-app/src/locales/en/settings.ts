@@ -17,6 +17,18 @@ export const settingsEn = {
     eyebrow: "A quiet interruption",
     heading: "We could not load Settings",
   },
+  displayName: {
+    acceptCurrent: "Use current name",
+    cancel: "Cancel",
+    conflict: "Your current display name is now {{name}}.",
+    edit: "Edit display name",
+    failed: "We could not save your display name. Try again.",
+    pending: "Saving…",
+    retry: "Retry your name",
+    save: "Save display name",
+    success: "Display name saved.",
+    validation: "Enter a display name between 2 and 100 characters.",
+  },
   hero: {
     description: "The details that shape your shared space.",
     eyebrow: "Sanctuary configuration",
