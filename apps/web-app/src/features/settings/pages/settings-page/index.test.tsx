@@ -10,6 +10,8 @@ vi.mock("../../server/sign-out-current-session", () => ({
   signOutCurrentSession: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 const oneMemberSettings: SettingsReadModel = {
   account: { email: "leo@example.com", providerLabel: "Google" },
   activeMembers: [
@@ -24,7 +26,7 @@ const oneMemberSettings: SettingsReadModel = {
   ],
   invite: {
     code: "twofw3k3",
-    expiresAt: "2026-09-05T12:00:00.000Z",
+    expiresAt: "2099-09-05T12:00:00.000Z",
     isAvailable: true,
   },
   membershipState: "one-member",
@@ -53,16 +55,15 @@ describe("SettingsPage", () => {
     await act(() => i18n.changeLanguage("en"));
   });
 
-  it("presents one-member shared, personal, account, and Vault settings without exposing the code", () => {
+  it("presents actionable one-member invite management with shared, personal, account, and Vault settings", () => {
     render(<SettingsPage settings={oneMemberSettings} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Shared space" })).toBeInTheDocument();
     expect(screen.getByText("April 27, 2025")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Partner invitation is active" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("twofw3k3")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Invite your partner" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Partner invitation code")).toHaveValue("TWO-FW3K3");
+    expect(screen.getByRole("button", { name: "Copy code" })).toBeEnabled();
     expect(screen.getAllByRole("img", { name: "Leo Vance's avatar" })[0]).toHaveTextContent("LV");
     expect(screen.getByText("Only for you")).toBeInTheDocument();
     expect(screen.getByText("leo@example.com")).toBeInTheDocument();
@@ -120,9 +121,8 @@ describe("SettingsPage", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Partner invitation is unavailable" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Invite your partner" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create a new invitation" })).toBeEnabled();
     expect(screen.getAllByText("Unavailable")).toHaveLength(2);
     expect(screen.getByRole("heading", { name: "Members" })).toBeInTheDocument();
   });

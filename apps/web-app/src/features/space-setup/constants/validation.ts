@@ -7,6 +7,8 @@ export const DISPLAY_NAME_MAX_LENGTH = 100;
 export const SPACE_NAME_MIN_LENGTH = 2;
 export const SPACE_NAME_MAX_LENGTH = 100;
 export const INVITE_CODE_PATTERN = /^(LEO|LOV|MEM|OUR|DUO|TWO|JOY|SUN|LNY)-?[A-HJKMNP-Z2-9]{5}$/;
+const NORMALIZED_INVITE_CODE_PATTERN =
+  /^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$/;
 
 function getTrimmedLength(value: string) {
   return value.trim().length;
@@ -25,7 +27,14 @@ export function formatInviteCodeInput(value: string) {
 export function normalizeInviteCode(value: string) {
   const trimmedValue = value.replace(/^[\t\n\r\f\v ]+|[\t\n\r\f\v ]+$/g, "").toLowerCase();
 
-  return /^[a-z]{3}-[a-z2-9]{5}$/.test(trimmedValue) ? trimmedValue.replace("-", "") : trimmedValue;
+  const normalizedValue =
+    /^(leo|lov|mem|our|duo|two|joy|sun|lny)-[abcdefghjkmnpqrstuvwxyz23456789]{5}$/.test(
+      trimmedValue,
+    )
+      ? trimmedValue.replace("-", "")
+      : trimmedValue;
+
+  return NORMALIZED_INVITE_CODE_PATTERN.test(normalizedValue) ? normalizedValue : trimmedValue;
 }
 
 function isValidInviteCode(value: string) {
@@ -101,7 +110,7 @@ export function createJoinSpaceSetupSchema(t: SpaceSetupT) {
   return z.object({
     inviteCode: z
       .string()
-      .transform(formatInviteCodeInput)
+      .transform((value) => formatInviteCodeInput(normalizeInviteCode(value)))
       .refine((value) => value.length > 0, {
         message: t("validation.inviteCodeRequired"),
       })

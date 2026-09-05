@@ -2,10 +2,7 @@
 
 import {
   CalendarDays,
-  CheckCircle2,
   CircleUserRound,
-  Clock3,
-  KeyRound,
   Languages,
   LockKeyhole,
   Mail,
@@ -17,6 +14,7 @@ import {
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
 import { SettingsMemberAvatar } from "./settings-member-avatar";
 import styles from "./settings-page.module.css";
@@ -53,26 +51,6 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   }
 
   const startDate = formatDateOnly(settings.space.startDate, language);
-  const inviteCopy =
-    settings.membershipState === "two-member"
-      ? {
-          description: t("invite.joinedDescription"),
-          heading: t("invite.joined"),
-          icon: UsersRound,
-        }
-      : settings.invite.isAvailable
-        ? {
-            description: t("invite.activeDescription"),
-            heading: t("invite.active"),
-            icon: KeyRound,
-          }
-        : {
-            description: t("invite.unavailableDescription"),
-            heading: t("invite.unavailable"),
-            icon: Clock3,
-          };
-  const InviteIcon = inviteCopy.icon;
-
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -112,19 +90,11 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
             </p>
           </section>
 
-          <section
-            className={`${styles.card} ${railStyles.inviteCard}`}
-            aria-labelledby="invite-status"
-          >
-            <span className={railStyles.iconSeal} aria-hidden="true">
-              <InviteIcon />
-            </span>
-            <div>
-              <h2 id="invite-status">{inviteCopy.heading}</h2>
-              <p>{inviteCopy.description}</p>
-            </div>
-            <CheckCircle2 className={railStyles.statusCheck} aria-hidden="true" />
-          </section>
+          <PartnerInviteStatus
+            code={settings.invite.code}
+            expiresAt={settings.invite.expiresAt}
+            membershipState={settings.membershipState}
+          />
 
           <section
             className={`${styles.card} ${railStyles.vaultCard}`}

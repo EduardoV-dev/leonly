@@ -2,10 +2,10 @@
 
 import { Heart, MapPin } from "lucide-react";
 import { MemoriesTimeline } from "@/features/memories/components/memories-timeline";
+import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import { useDashboardActiveSpace } from "../dashboard-shell";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
-import { InviteManagement } from "./invite-management";
 import { RelationshipMilestone } from "./relationship-milestone";
 
 export function DashboardContent() {
@@ -19,6 +19,14 @@ export function DashboardContent() {
         <p>Welcome back, {memberNames}</p>
         <span>Here is your shared universe.</span>
       </header>
+
+      {isWaitingForPartner ? (
+        <PartnerInviteStatus
+          code={activeSpace.invite_code}
+          expiresAt={activeSpace.invite_code_expires_at}
+          membershipState="one-member"
+        />
+      ) : null}
 
       <div className={styles.heroGrid}>
         <section className={styles.milestoneCard} aria-label="Relationship milestone">
@@ -39,12 +47,6 @@ export function DashboardContent() {
               ? "Share your invite code when you are ready for them to join."
               : `Sharing ${activeSpace.name} together.`}
           </p>
-          {isWaitingForPartner ? (
-            <InviteManagement
-              inviteCode={activeSpace.invite_code}
-              inviteCodeExpiresAt={activeSpace.invite_code_expires_at}
-            />
-          ) : null}
         </section>
       </div>
 

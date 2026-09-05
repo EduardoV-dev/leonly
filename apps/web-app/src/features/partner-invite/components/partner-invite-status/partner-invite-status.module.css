@@ -1,0 +1,124 @@
+.card {
+  display: flex;
+  gap: 0.9rem;
+  border: 1px solid #ead8d6;
+  border-radius: 1rem;
+  background: #fffaf9;
+  padding: 1rem;
+}
+
+.iconSeal {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: #f6e3e2;
+  color: #8a6467;
+}
+
+.iconSeal svg {
+  width: 1.1rem;
+}
+
+.content {
+  min-width: 0;
+  flex: 1;
+}
+
+.content h2 {
+  margin: 0;
+  color: var(--auth-heading);
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.content > p {
+  margin: 0.3rem 0 0;
+  color: var(--auth-copy);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.codeControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.codeLabel {
+  grid-column: 1 / -1;
+  color: var(--auth-copy);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.code {
+  height: 3rem;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #dfc5c3;
+  border-radius: 0.7rem;
+  background: #fff4f3;
+  padding: 0.7rem 0.75rem;
+  color: #7f5a5f;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.codeControls > button {
+  height: 3rem;
+}
+
+.code:focus-visible,
+.content button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.content > button {
+  margin-top: 0.85rem;
+}
+
+.feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+.feedback svg {
+  width: 1rem;
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 420px) {
+  .card {
+    padding: 0.85rem;
+  }
+
+  .codeControls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
+}

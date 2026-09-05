@@ -31,6 +31,26 @@ export const settingsEs = {
     unavailableDescription:
       "Su pareja todavía no se unió y no hay una invitación activa disponible.",
   },
+  inviteManagement: {
+    codeLabel: "Código de invitación para su pareja",
+    copied: "Código de invitación copiado.",
+    copy: "Copiar código",
+    failed: "No pudimos crear una invitación nueva. Inténtelo de nuevo.",
+    heading: "Invite a su pareja",
+    joined: "Su pareja ya se unió. Actualizaremos este espacio ahora.",
+    joinedDescription: "Los dos miembros activos ya se unieron a este espacio compartido.",
+    joinedHeading: "Ambos están aquí",
+    manualCopy:
+      "La copia automática no está disponible. El código de invitación está seleccionado para que pueda copiarlo.",
+    pending: "Creando una nueva invitación...",
+    rateLimited:
+      "Demasiadas solicitudes de invitación. Inténtelo de nuevo en {{seconds}} segundos.",
+    regenerated: "Hay un nuevo código de invitación listo para compartir.",
+    regenerate: "Crear una nueva invitación",
+    unavailableDescription: "Su pareja todavía no se unió y esta invitación no está disponible.",
+    validDescription:
+      "Su pareja todavía no se unió. Este código sigue siendo válido hasta que lo haga.",
+  },
   loading: "Cargando la configuración",
   members: {
     active: "Activo",
