@@ -5,15 +5,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
 import { MemoryChronology } from "../memory-chronology";
 import { useVaultMemories } from "./use-vault-memories";
 import styles from "./vault-memories.module.css";
 
 const SLOW_REQUEST_MS = 750;
 
-export function VaultMemories() {
+type VaultMemoriesProps = Readonly<{
+  sort?: MemorySort;
+}>;
+
+export function VaultMemories({ sort = DEFAULT_MEMORY_SORT }: VaultMemoriesProps) {
   const { t } = useTranslation("memories");
-  const vaultQuery = useVaultMemories();
+  const vaultQuery = useVaultMemories(sort);
   const [isSlow, setIsSlow] = useState(false);
 
   useEffect(() => {
@@ -80,7 +85,7 @@ export function VaultMemories() {
         hasNextPage: Boolean(vaultQuery.hasNextPage),
         isError: vaultQuery.isFetchNextPageError,
         isLoading: vaultQuery.isFetchingNextPage,
-        loadLabel: t("vault.actions.loadMore"),
+        loadLabel: t(sort === "oldest" ? "vault.actions.loadLater" : "vault.actions.loadMore"),
         loadingLabel: t("vault.actions.loadingMore"),
         onLoad: () => void vaultQuery.fetchNextPage(),
         retryLabel: t("vault.actions.retryLoadMore"),

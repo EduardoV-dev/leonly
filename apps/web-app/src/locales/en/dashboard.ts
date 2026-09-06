@@ -41,16 +41,10 @@ export const dashboardEn = {
     vault: "Vault",
   },
   timeline: {
-    all: "All",
-    anniversaries: "Anniversaries",
-    dailyLife: "Daily Life",
     description: "A curated collection of our shared moments, carefully preserved.",
-    favorites: "Favorites",
-    filters: "Memory filters",
-    filterComingSoon: "{{filter}} filter coming soon",
     heading: "Our Timeline",
     newest: "Newest First",
+    oldest: "Oldest First",
     sort: "Sort by:",
-    trips: "Trips",
   },
 } as const;

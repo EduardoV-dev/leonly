@@ -1,0 +1,43 @@
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #55494a;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.selectWrapper {
+  position: relative;
+  display: grid;
+  align-items: center;
+}
+
+.selectWrapper select {
+  min-height: 2.35rem;
+  appearance: none;
+  padding: 0 2.15rem 0 0.8rem;
+  border: 1px solid #dac9c7;
+  border-radius: 0.8rem;
+  background: #fffdfc;
+  color: #4f3538;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.selectWrapper svg {
+  position: absolute;
+  right: 0.75rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  pointer-events: none;
+}
+
+.selectWrapper select:focus-visible {
+  border-color: #b82b49;
+  outline: 4px solid rgb(184 43 73 / 0.16);
+  outline-offset: 1px;
+}

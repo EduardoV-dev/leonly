@@ -1,4 +1,5 @@
 import { type InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
+import type { MemorySort } from "../../constants/memory-sort";
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import type { TimelinePage } from "../../types/timeline";
@@ -11,6 +12,7 @@ type TimelineQueryKey = ReturnType<typeof memoryQueryKeys.timeline>;
 async function fetchTimelinePage(
   cursor: string | null,
   variant: TimelineVariant,
+  sort: MemorySort,
 ): Promise<TimelinePage> {
   const searchParams = new URLSearchParams();
   if (cursor) {
@@ -18,6 +20,9 @@ async function fetchTimelinePage(
   }
   if (variant === "recent") {
     searchParams.set("limit", String(RECENT_MEMORIES_LIMIT));
+  }
+  if (sort === "oldest") {
+    searchParams.set("sort", sort);
   }
 
   const query = searchParams.size > 0 ? `?${searchParams}` : "";
@@ -30,7 +35,7 @@ async function fetchTimelinePage(
   return response.json() as Promise<TimelinePage>;
 }
 
-export function useMemoriesTimeline(variant: TimelineVariant) {
+export function useMemoriesTimeline(variant: TimelineVariant, sort: MemorySort) {
   return useInfiniteQuery<
     TimelinePage,
     Error,
@@ -40,8 +45,8 @@ export function useMemoriesTimeline(variant: TimelineVariant) {
   >({
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => fetchTimelinePage(pageParam, variant),
-    queryKey: memoryQueryKeys.timeline(variant),
+    queryFn: ({ pageParam }) => fetchTimelinePage(pageParam, variant, sort),
+    queryKey: memoryQueryKeys.timeline(variant, sort),
     retry: false,
     staleTime: SIGNED_URL_STALE_TIME,
   });

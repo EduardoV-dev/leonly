@@ -41,16 +41,10 @@ export const dashboardEs = {
     vault: "Bóveda",
   },
   timeline: {
-    all: "Todos",
-    anniversaries: "Aniversarios",
-    dailyLife: "Vida diaria",
     description: "Una colección cuidada de nuestros momentos compartidos, preservados con cariño.",
-    favorites: "Favoritos",
-    filters: "Filtros de recuerdos",
-    filterComingSoon: "El filtro {{filter}} estará disponible pronto",
     heading: "Nuestra línea de tiempo",
     newest: "Más recientes primero",
+    oldest: "Más antiguos primero",
     sort: "Ordenar por:",
-    trips: "Viajes",
   },
 } as const;

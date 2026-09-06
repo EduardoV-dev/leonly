@@ -28,7 +28,7 @@ describe("GET /api/memories/timeline", () => {
     });
     const response = await GET(new Request("http://localhost/api/memories/timeline?cursor=opaque"));
 
-    expect(getTimelinePageMock).toHaveBeenCalledWith("opaque");
+    expect(getTimelinePageMock).toHaveBeenCalledWith("opaque", undefined, "newest");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       cursorReset: false,
@@ -52,7 +52,7 @@ describe("GET /api/memories/timeline", () => {
 
     const response = await GET(new Request("http://localhost/api/memories/timeline?limit=4"));
 
-    expect(getTimelinePageMock).toHaveBeenCalledWith(null, 4);
+    expect(getTimelinePageMock).toHaveBeenCalledWith(null, 4, "newest");
     expect(response.status).toBe(200);
   });
 
@@ -61,6 +61,16 @@ describe("GET /api/memories/timeline", () => {
 
     expect(response.status).toBe(400);
     expect(getTimelinePageMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts supported sort orders and rejects arbitrary values", async () => {
+    getTimelinePageMock.mockResolvedValue({ cursorReset: false, memories: [], nextCursor: null });
+
+    await GET(new Request("http://localhost/api/memories/timeline?sort=oldest"));
+    expect(getTimelinePageMock).toHaveBeenCalledWith(null, undefined, "oldest");
+
+    const response = await GET(new Request("http://localhost/api/memories/timeline?sort=title"));
+    expect(response.status).toBe(400);
   });
 
   it("returns a generic retryable error when the authorized query fails", async () => {

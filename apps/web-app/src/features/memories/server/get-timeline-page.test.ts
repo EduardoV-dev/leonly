@@ -99,6 +99,56 @@ describe("getTimelinePage", () => {
     expect(page.nextCursor).not.toBeNull();
   });
 
+  it("orders and paginates oldest-first with an ascending tuple", async () => {
+    const query = createQuery();
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
+
+    const page = await getTimelinePage(null, undefined, "oldest");
+
+    expect(query.order).toHaveBeenNthCalledWith(1, "memory_date", { ascending: true });
+    expect(query.order).toHaveBeenNthCalledWith(2, "created_at", { ascending: true });
+    expect(query.order).toHaveBeenNthCalledWith(3, "id", { ascending: true });
+    expect(timelineCursor.decode(page.nextCursor ?? "")).toMatchObject({ sort: "oldest" });
+  });
+
+  it("uses an ascending cursor predicate for oldest-first pages", async () => {
+    const anchorQuery = {
+      eq: vi.fn(),
+      is: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: rows[0]?.id }, error: null }),
+    };
+    anchorQuery.eq.mockReturnValue(anchorQuery);
+    anchorQuery.is.mockReturnValue(anchorQuery);
+    const pageQuery = createQuery([]);
+    createClientMock
+      .mockResolvedValueOnce({
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      })
+      .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })) })
+      .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => pageQuery) })) });
+    const cursor = timelineCursor.encode(
+      {
+        createdAt: rows[0]?.created_at ?? "",
+        commentCount: 0,
+        description: null,
+        id: rows[0]?.id ?? "",
+        coverPhotoUrl: null,
+        location: null,
+        memoryDate: rows[0]?.memory_date ?? "",
+        title: "Anchor",
+      },
+      "oldest",
+    );
+
+    await getTimelinePage(cursor, undefined, "oldest");
+
+    expect(pageQuery.or).toHaveBeenCalledWith(expect.stringContaining("memory_date.gt."));
+    expect(pageQuery.or).toHaveBeenCalledWith(expect.stringContaining("id.gt."));
+  });
+
   it("resets malformed cursors without using them as a query predicate", async () => {
     const query = createQuery([]);
     createClientMock.mockResolvedValue({

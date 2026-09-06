@@ -249,6 +249,7 @@ export const memoriesEn = {
     },
     error: "We could not load your memories.",
     loadMoreError: "We could not load more memories.",
+    loadEarlier: "Load earlier memories",
     loadMore: "Load more",
     loading: "Loading memories",
     loadingPage: "Loading timeline",
@@ -262,6 +263,7 @@ export const memoriesEn = {
     actions: {
       create: "Preserve a memory",
       loadMore: "Load Earlier Memories",
+      loadLater: "Load Later Memories",
       loadingMore: "Loading more…",
       retry: "Try again",
       retryLoadMore: "Try loading more",
@@ -281,6 +283,11 @@ export const memoriesEn = {
       eyebrow: "Shared archive",
       heading: "Private Vault",
       shared: "Visible to both active members",
+    },
+    sort: {
+      label: "Sort by:",
+      newest: "Newest First",
+      oldest: "Oldest First",
     },
     loading: {
       label: "Loading Private Vault",

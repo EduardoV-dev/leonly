@@ -3,6 +3,7 @@
 import { ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import { MemoryChronology } from "../memory-chronology";
 import styles from "./memories-timeline.module.css";
@@ -11,12 +12,16 @@ import { useMemoriesTimeline } from "./use-memories-timeline";
 const SLOW_REQUEST_MS = 750;
 
 type MemoriesTimelineProps = Readonly<{
+  sort?: MemorySort;
   variant?: "full" | "recent";
 }>;
 
-export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
+export function MemoriesTimeline({
+  sort = DEFAULT_MEMORY_SORT,
+  variant = "full",
+}: MemoriesTimelineProps) {
   const { t } = useTranslation("memories");
-  const timelineQuery = useMemoriesTimeline(variant);
+  const timelineQuery = useMemoriesTimeline(variant, sort);
   const [isSlow, setIsSlow] = useState(false);
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
         isError: timelineQuery.isFetchNextPageError,
         isLoading: timelineQuery.isFetchingNextPage,
         loadAriaLabel: t("timeline.loadMore"),
-        loadLabel: t("vault.actions.loadMore"),
+        loadLabel: t(sort === "oldest" ? "timeline.loadEarlier" : "timeline.loadMore"),
         loadingLabel: t("timeline.loadingMore"),
         onLoad: () => void timelineQuery.fetchNextPage(),
         retryLabel: t("timeline.retryLoadMore"),

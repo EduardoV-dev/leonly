@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../constants/memory-sort";
 import { MAX_TIMELINE_PAGE_SIZE } from "../constants/timeline";
 import type { TimelineMemory, TimelinePage } from "../types/timeline";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
@@ -11,6 +12,7 @@ const cursorSchema = z.object({
   createdAt: z.string().datetime({ offset: true }),
   id: z.uuid(),
   memoryDate: z.string().date(),
+  sort: z.enum(["newest", "oldest"]),
   v: z.literal(1),
 });
 
@@ -26,12 +28,13 @@ type TimelineRow = {
   title: string;
 };
 
-function encodeCursor(memory: TimelineMemory): string {
+function encodeCursor(memory: TimelineMemory, sort: MemorySort = DEFAULT_MEMORY_SORT): string {
   return Buffer.from(
     JSON.stringify({
       createdAt: memory.createdAt,
       id: memory.id,
       memoryDate: memory.memoryDate,
+      sort,
       v: 1,
     }),
   ).toString("base64url");
@@ -64,11 +67,12 @@ async function toTimelineMemory(memory: TimelineRow, userId: string): Promise<Ti
   };
 }
 
-function afterCursorFilter(cursor: TimelineCursor): string {
+function afterCursorFilter(cursor: TimelineCursor, sort: MemorySort): string {
+  const comparison = sort === "newest" ? "lt" : "gt";
   return [
-    `memory_date.lt.${cursor.memoryDate}`,
-    `and(memory_date.eq.${cursor.memoryDate},created_at.lt.${cursor.createdAt})`,
-    `and(memory_date.eq.${cursor.memoryDate},created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+    `memory_date.${comparison}.${cursor.memoryDate}`,
+    `and(memory_date.eq.${cursor.memoryDate},created_at.${comparison}.${cursor.createdAt})`,
+    `and(memory_date.eq.${cursor.memoryDate},created_at.eq.${cursor.createdAt},id.${comparison}.${cursor.id})`,
   ].join(",");
 }
 
@@ -100,6 +104,7 @@ async function readTimelinePage(
   cursor: TimelineCursor | null,
   spaceId: string,
   pageSize: number,
+  sort: MemorySort,
   userId: string,
 ): Promise<TimelinePage> {
   const supabase = await createClient();
@@ -109,12 +114,12 @@ async function readTimelinePage(
     .eq("space_id", spaceId)
     .eq("visibility", "timeline")
     .is("deleted_at", null)
-    .order("memory_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false });
+    .order("memory_date", { ascending: sort === "oldest" })
+    .order("created_at", { ascending: sort === "oldest" })
+    .order("id", { ascending: sort === "oldest" });
 
   if (cursor) {
-    query = query.or(afterCursorFilter(cursor));
+    query = query.or(afterCursorFilter(cursor, sort));
   }
 
   const { data, error } = await query.limit(pageSize + 1);
@@ -135,13 +140,14 @@ async function readTimelinePage(
   return {
     cursorReset: false,
     memories,
-    nextCursor: hasNextPage && lastMemory ? encodeCursor(lastMemory) : null,
+    nextCursor: hasNextPage && lastMemory ? encodeCursor(lastMemory, sort) : null,
   };
 }
 
 export async function getTimelinePage(
   cursorValue: string | null,
   pageSize = MAX_TIMELINE_PAGE_SIZE,
+  sort: MemorySort = DEFAULT_MEMORY_SORT,
 ): Promise<TimelinePage> {
   const activeSpace = await getActiveSpaceForCurrentUser();
 
@@ -156,14 +162,20 @@ export async function getTimelinePage(
   if (!user) throw new Error("No active space is available for the memories timeline.");
 
   const cursor = cursorValue ? decodeCursor(cursorValue) : null;
-  const shouldReset = cursorValue !== null && cursor === null;
+  const shouldReset = cursorValue !== null && (cursor === null || cursor.sort !== sort);
 
-  if (cursor && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize, user.id);
+  if (cursor && cursor.sort === sort && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
+    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize, sort, user.id);
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readTimelinePage(cursor, activeSpace.id, pageSize, user.id);
+  const page = await readTimelinePage(
+    cursor?.sort === sort ? cursor : null,
+    activeSpace.id,
+    pageSize,
+    sort,
+    user.id,
+  );
   return shouldReset ? { ...page, cursorReset: true } : page;
 }
 

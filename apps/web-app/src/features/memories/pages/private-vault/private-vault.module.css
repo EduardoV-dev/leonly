@@ -94,6 +94,11 @@
   height: 1rem;
 }
 
+.sort {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @mixin screen-sm {
   .page {
     padding-right: 2rem;

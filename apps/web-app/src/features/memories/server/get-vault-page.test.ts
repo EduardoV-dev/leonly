@@ -114,6 +114,61 @@ describe("getVaultPage", () => {
     expect(pageQuery.or).toHaveBeenCalledWith(expect.stringContaining(`id.lt.${rows[0]?.id}`));
   });
 
+  it("orders and paginates oldest-first with an ascending tuple", async () => {
+    const query = createQuery();
+    createClientMock.mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+    });
+
+    const page = await getVaultPage(null, "oldest");
+
+    expect(query.order).toHaveBeenNthCalledWith(1, "memory_date", { ascending: true });
+    expect(query.order).toHaveBeenNthCalledWith(2, "created_at", { ascending: true });
+    expect(query.order).toHaveBeenNthCalledWith(3, "id", { ascending: true });
+    expect(vaultCursor.decode(page.nextCursor ?? "")).toMatchObject({ sort: "oldest" });
+  });
+
+  it("uses an ascending cursor predicate for oldest-first pages", async () => {
+    const anchorQuery = {
+      eq: vi.fn(),
+      is: vi.fn(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: rows[0]?.id }, error: null }),
+    };
+    anchorQuery.eq.mockReturnValue(anchorQuery);
+    anchorQuery.is.mockReturnValue(anchorQuery);
+    const pageQuery = createQuery([]);
+    createClientMock
+      .mockResolvedValueOnce({
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-id" } } }) },
+      })
+      .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })) })
+      .mockResolvedValueOnce({ from: vi.fn(() => ({ select: vi.fn(() => pageQuery) })) });
+    const cursor = vaultCursor.encode(
+      {
+        coverPhotoUrl: null,
+        commentCount: 0,
+        createdAt: rows[0]?.created_at ?? "",
+        description: null,
+        id: rows[0]?.id ?? "",
+        location: null,
+        memoryDate: rows[0]?.memory_date ?? "",
+        reaction: {
+          counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
+          currentReaction: null,
+          members: { cry: [], heart: [], laugh: [], star: [] },
+        },
+        title: "Anchor",
+      },
+      "oldest",
+    );
+
+    await getVaultPage(cursor, "oldest");
+
+    expect(pageQuery.or).toHaveBeenCalledWith(expect.stringContaining("memory_date.gt."));
+    expect(pageQuery.or).toHaveBeenCalledWith(expect.stringContaining("id.gt."));
+  });
+
   it("returns no cursor for the final page", async () => {
     const query = createQuery(rows.slice(0, 4));
     createClientMock.mockResolvedValue({

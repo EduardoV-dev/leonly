@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../constants/memory-sort";
 import { MAX_VAULT_PAGE_SIZE } from "../constants/vault";
 import type { VaultMemory, VaultPage } from "../types/vault";
 import { getCoverPreviewUrl } from "./get-cover-preview-url";
@@ -14,6 +15,7 @@ const vaultCursorSchema = z
     createdAt: z.string().datetime({ offset: true }),
     id: z.uuid(),
     memoryDate: z.string().date(),
+    sort: z.enum(["newest", "oldest"]),
     v: z.literal(1),
   })
   .strict();
@@ -30,12 +32,13 @@ type VaultRow = {
   title: string;
 };
 
-function encodeCursor(memory: VaultMemory): string {
+function encodeCursor(memory: VaultMemory, sort: MemorySort = DEFAULT_MEMORY_SORT): string {
   return Buffer.from(
     JSON.stringify({
       createdAt: memory.createdAt,
       id: memory.id,
       memoryDate: memory.memoryDate,
+      sort,
       v: 1,
     }),
   ).toString("base64url");
@@ -49,11 +52,12 @@ function decodeCursor(cursor: string): VaultCursor | null {
   }
 }
 
-function afterCursorFilter(cursor: VaultCursor): string {
+function afterCursorFilter(cursor: VaultCursor, sort: MemorySort): string {
+  const comparison = sort === "newest" ? "lt" : "gt";
   return [
-    `memory_date.lt.${cursor.memoryDate}`,
-    `and(memory_date.eq.${cursor.memoryDate},created_at.lt.${cursor.createdAt})`,
-    `and(memory_date.eq.${cursor.memoryDate},created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+    `memory_date.${comparison}.${cursor.memoryDate}`,
+    `and(memory_date.eq.${cursor.memoryDate},created_at.${comparison}.${cursor.createdAt})`,
+    `and(memory_date.eq.${cursor.memoryDate},created_at.eq.${cursor.createdAt},id.${comparison}.${cursor.id})`,
   ].join(",");
 }
 
@@ -104,6 +108,7 @@ async function readVaultPage(
   cursor: VaultCursor | null,
   spaceId: string,
   pageSize: number,
+  sort: MemorySort,
   userId: string,
 ): Promise<VaultPage> {
   const supabase = await createClient();
@@ -113,12 +118,12 @@ async function readVaultPage(
     .eq("space_id", spaceId)
     .eq("visibility", "vault")
     .is("deleted_at", null)
-    .order("memory_date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false });
+    .order("memory_date", { ascending: sort === "oldest" })
+    .order("created_at", { ascending: sort === "oldest" })
+    .order("id", { ascending: sort === "oldest" });
 
   if (cursor) {
-    query = query.or(afterCursorFilter(cursor));
+    query = query.or(afterCursorFilter(cursor, sort));
   }
 
   const { data, error } = await query.limit(pageSize + 1);
@@ -136,11 +141,15 @@ async function readVaultPage(
   return {
     cursorReset: false,
     memories,
-    nextCursor: (data ?? []).length > pageSize && lastMemory ? encodeCursor(lastMemory) : null,
+    nextCursor:
+      (data ?? []).length > pageSize && lastMemory ? encodeCursor(lastMemory, sort) : null,
   };
 }
 
-export async function getVaultPage(cursorValue: string | null): Promise<VaultPage> {
+export async function getVaultPage(
+  cursorValue: string | null,
+  sort: MemorySort = DEFAULT_MEMORY_SORT,
+): Promise<VaultPage> {
   const activeSpace = await getActiveSpaceForCurrentUser();
 
   if (!activeSpace) {
@@ -154,14 +163,20 @@ export async function getVaultPage(cursorValue: string | null): Promise<VaultPag
   if (!user) throw new Error("No active space is available for the Private Vault.");
 
   const cursor = cursorValue ? decodeCursor(cursorValue) : null;
-  const shouldReset = cursorValue !== null && cursor === null;
+  const shouldReset = cursorValue !== null && (cursor === null || cursor.sort !== sort);
 
-  if (cursor && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE, user.id);
+  if (cursor && cursor.sort === sort && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
+    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE, sort, user.id);
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readVaultPage(cursor, activeSpace.id, MAX_VAULT_PAGE_SIZE, user.id);
+  const page = await readVaultPage(
+    cursor?.sort === sort ? cursor : null,
+    activeSpace.id,
+    MAX_VAULT_PAGE_SIZE,
+    sort,
+    user.id,
+  );
   return shouldReset ? { ...page, cursorReset: true } : page;
 }
 

@@ -16,7 +16,7 @@ describe("GET /api/memories/vault", () => {
 
     const response = await GET(new Request("http://localhost/api/memories/vault?cursor=opaque"));
 
-    expect(getVaultPageMock).toHaveBeenCalledWith("opaque");
+    expect(getVaultPageMock).toHaveBeenCalledWith("opaque", "newest");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(page);
   });
@@ -26,7 +26,7 @@ describe("GET /api/memories/vault", () => {
 
     await GET(new Request(`http://localhost/api/memories/vault?cursor=${"a".repeat(513)}`));
 
-    expect(getVaultPageMock).toHaveBeenCalledWith("invalid");
+    expect(getVaultPageMock).toHaveBeenCalledWith("invalid", "newest");
   });
 
   it("returns a generic retryable error when the Vault query fails", async () => {
@@ -38,5 +38,15 @@ describe("GET /api/memories/vault", () => {
     await expect(response.json()).resolves.toEqual({
       error: "We could not load the Private Vault. Please try again.",
     });
+  });
+
+  it("accepts supported sort orders and rejects arbitrary values", async () => {
+    getVaultPageMock.mockResolvedValue({ cursorReset: false, memories: [], nextCursor: null });
+
+    await GET(new Request("http://localhost/api/memories/vault?sort=oldest"));
+    expect(getVaultPageMock).toHaveBeenCalledWith(null, "oldest");
+
+    const response = await GET(new Request("http://localhost/api/memories/vault?sort=title"));
+    expect(response.status).toBe(400);
   });
 });

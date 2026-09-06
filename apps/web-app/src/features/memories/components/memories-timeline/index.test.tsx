@@ -307,6 +307,20 @@ describe("MemoriesTimeline", () => {
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
 
+  it("requests a separate oldest-first chronology", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
+    );
+
+    renderTimeline(<MemoriesTimeline sort="oldest" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetch).toHaveBeenCalledWith("/api/memories/timeline?sort=oldest");
+  });
+
   it("reuses cached timeline data when remounted", async () => {
     vi.mocked(fetch).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),

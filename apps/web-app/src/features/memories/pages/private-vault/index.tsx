@@ -2,8 +2,11 @@
 
 import { LockKeyhole, UsersRound } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MemorySortSelect } from "../../components/memory-sort-select";
 import { VaultMemories } from "../../components/vault-memories";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
 import styles from "./private-vault.module.css";
 
 const pageVariants: Variants = {
@@ -26,6 +29,7 @@ export function PrivateVaultPage() {
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activePageVariants = shouldReduceMotion ? reducedMotionVariants : pageVariants;
   const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
+  const [sort, setSort] = useState<MemorySort>(DEFAULT_MEMORY_SORT);
 
   return (
     <motion.main
@@ -48,8 +52,17 @@ export function PrivateVaultPage() {
           {t("vault.hero.shared")}
         </p>
       </motion.header>
+      <motion.div className={styles.sort} variants={activeRevealVariants}>
+        <MemorySortSelect
+          label={t("vault.sort.label")}
+          newestLabel={t("vault.sort.newest")}
+          oldestLabel={t("vault.sort.oldest")}
+          onChange={setSort}
+          value={sort}
+        />
+      </motion.div>
       <motion.div variants={activeRevealVariants}>
-        <VaultMemories />
+        <VaultMemories sort={sort} />
       </motion.div>
     </motion.main>
   );

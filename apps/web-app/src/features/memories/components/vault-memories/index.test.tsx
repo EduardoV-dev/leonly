@@ -202,4 +202,15 @@ describe("VaultMemories", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch).toHaveBeenNthCalledWith(2, "/api/memories/vault");
   });
+
+  it("requests an oldest-first Vault chronology", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
+    );
+
+    renderVault(<VaultMemories sort="oldest" />);
+    await flushRequest();
+
+    expect(fetch).toHaveBeenCalledWith("/api/memories/vault?sort=oldest");
+  });
 });

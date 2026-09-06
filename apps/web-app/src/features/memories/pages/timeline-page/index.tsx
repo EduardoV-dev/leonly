@@ -1,9 +1,11 @@
 "use client";
 
-import { ChevronDown, Heart } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MemoriesTimeline } from "../../components/memories-timeline";
+import { MemorySortSelect } from "../../components/memory-sort-select";
+import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
 import styles from "./timeline-page.module.css";
 
 const pageVariants: Variants = {
@@ -29,6 +31,7 @@ export function TimelinePage() {
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activePageVariants = shouldReduceMotion ? reducedMotionVariants : pageVariants;
   const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
+  const [sort, setSort] = useState<MemorySort>(DEFAULT_MEMORY_SORT);
 
   return (
     <motion.main
@@ -42,47 +45,16 @@ export function TimelinePage() {
         <p className={styles.description}>{t("timeline.description")}</p>
       </motion.header>
       <motion.div className={styles.toolbar} variants={activeRevealVariants}>
-        <fieldset className={styles.filters} aria-label={t("timeline.filters")}>
-          <button type="button" aria-pressed="true">
-            {t("timeline.all")}
-          </button>
-          <button
-            type="button"
-            disabled
-            title={t("timeline.filterComingSoon", { filter: t("timeline.trips") })}
-          >
-            {t("timeline.trips")}
-          </button>
-          <button
-            type="button"
-            disabled
-            title={t("timeline.filterComingSoon", { filter: t("timeline.anniversaries") })}
-          >
-            {t("timeline.anniversaries")}
-          </button>
-          <button
-            type="button"
-            disabled
-            title={t("timeline.filterComingSoon", { filter: t("timeline.dailyLife") })}
-          >
-            {t("timeline.dailyLife")}
-          </button>
-          <button
-            type="button"
-            disabled
-            title={t("timeline.filterComingSoon", { filter: t("timeline.favorites") })}
-          >
-            <Heart aria-hidden="true" /> {t("timeline.favorites")}
-          </button>
-        </fieldset>
-        <p className={styles.sort}>
-          <span>{t("timeline.sort")}</span>
-          <strong>{t("timeline.newest")}</strong>
-          <ChevronDown aria-hidden="true" />
-        </p>
+        <MemorySortSelect
+          label={t("timeline.sort")}
+          newestLabel={t("timeline.newest")}
+          oldestLabel={t("timeline.oldest")}
+          onChange={setSort}
+          value={sort}
+        />
       </motion.div>
       <motion.div variants={activeRevealVariants}>
-        <MemoriesTimeline />
+        <MemoriesTimeline sort={sort} />
       </motion.div>
     </motion.main>
   );

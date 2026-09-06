@@ -249,6 +249,7 @@ export const memoriesEs = {
     },
     error: "No pudimos cargar tus recuerdos.",
     loadMoreError: "No pudimos cargar más recuerdos.",
+    loadEarlier: "Cargar recuerdos anteriores",
     loadMore: "Cargar más",
     loading: "Cargando recuerdos",
     loadingPage: "Cargando la línea de tiempo",
@@ -262,6 +263,7 @@ export const memoriesEs = {
     actions: {
       create: "Conservar un recuerdo",
       loadMore: "Cargar recuerdos anteriores",
+      loadLater: "Cargar recuerdos posteriores",
       loadingMore: "Cargando más…",
       retry: "Intentar de nuevo",
       retryLoadMore: "Intentar cargar más",
@@ -283,6 +285,11 @@ export const memoriesEs = {
       eyebrow: "Archivo compartido",
       heading: "Bóveda privada",
       shared: "Visible para ambos miembros activos",
+    },
+    sort: {
+      label: "Ordenar por:",
+      newest: "Más recientes primero",
+      oldest: "Más antiguos primero",
     },
     loading: {
       label: "Cargando la bóveda privada",

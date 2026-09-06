@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { PrivateVaultPage } from ".";
@@ -21,6 +21,10 @@ describe("PrivateVaultPage", () => {
     expect(
       screen.getByText(/These memories stay out of the timeline, never out of reach/i),
     ).toBeInTheDocument();
+    const sort = screen.getByLabelText("Sort by:");
+    expect(sort).toHaveValue("newest");
+    fireEvent.change(sort, { target: { value: "oldest" } });
+    expect(sort).toHaveValue("oldest");
     expect(screen.getByText("Vault memories")).toBeInTheDocument();
   });
 });
