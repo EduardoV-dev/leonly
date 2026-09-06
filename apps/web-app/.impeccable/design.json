@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-05T21:01:20-06:00",
+  "title": "Design System: Leonly",
+  "extensions": {
+    "colorMeta": {
+      "keepsake-burgundy": {
+        "role": "primary",
+        "displayName": "Keepsake Burgundy",
+        "canonical": "#8a6467",
+        "tonalRamp": [
+          "oklch(23% 0.035 15)",
+          "oklch(34% 0.045 15)",
+          "oklch(46% 0.055 15)",
+          "oklch(58% 0.06 15)",
+          "oklch(69% 0.05 15)",
+          "oklch(79% 0.035 15)",
+          "oklch(88% 0.02 15)",
+          "oklch(96% 0.008 15)"
+        ]
+      },
+      "brand-plum": {
+        "role": "primary",
+        "displayName": "Brand Plum",
+        "canonical": "#7f5a5f",
+        "tonalRamp": [
+          "oklch(22% 0.03 5)",
+          "oklch(33% 0.04 5)",
+          "oklch(44% 0.05 5)",
+          "oklch(55% 0.055 5)",
+          "oklch(67% 0.045 5)",
+          "oklch(78% 0.03 5)",
+          "oklch(88% 0.018 5)",
+          "oklch(96% 0.007 5)"
+        ]
+      },
+      "blush-paper": {
+        "role": "neutral",
+        "displayName": "Blush Paper",
+        "canonical": "#f5efee",
+        "tonalRamp": [
+          "oklch(18% 0.01 25)",
+          "oklch(30% 0.012 25)",
+          "oklch(42% 0.014 25)",
+          "oklch(55% 0.014 25)",
+          "oklch(68% 0.012 25)",
+          "oklch(80% 0.01 25)",
+          "oklch(90% 0.008 25)",
+          "oklch(97% 0.006 25)"
+        ]
+      },
+      "quiet-lavender": {
+        "role": "secondary",
+        "displayName": "Quiet Lavender",
+        "canonical": "#eee4f0",
+        "tonalRamp": [
+          "oklch(20% 0.025 320)",
+          "oklch(32% 0.032 320)",
+          "oklch(44% 0.038 320)",
+          "oklch(56% 0.04 320)",
+          "oklch(68% 0.035 320)",
+          "oklch(80% 0.025 320)",
+          "oklch(90% 0.015 320)",
+          "oklch(97% 0.007 320)"
+        ]
+      },
+      "warm-canvas": {
+        "role": "neutral",
+        "displayName": "Warm Canvas",
+        "canonical": "#fffdfc",
+        "tonalRamp": [
+          "oklch(18% 0.006 45)",
+          "oklch(30% 0.007 45)",
+          "oklch(42% 0.008 45)",
+          "oklch(55% 0.008 45)",
+          "oklch(68% 0.007 45)",
+          "oklch(80% 0.006 45)",
+          "oklch(90% 0.004 45)",
+          "oklch(99% 0.003 45)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Ink",
+        "canonical": "#252323",
+        "tonalRamp": [
+          "oklch(18% 0.006 25)",
+          "oklch(29% 0.007 25)",
+          "oklch(41% 0.007 25)",
+          "oklch(53% 0.006 25)",
+          "oklch(65% 0.005 25)",
+          "oklch(77% 0.004 25)",
+          "oklch(88% 0.003 25)",
+          "oklch(96% 0.002 25)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Editorial Display",
+        "purpose": "Setup and emotionally important page headings."
+      },
+      "headline": {
+        "displayName": "Editorial Headline",
+        "purpose": "Product identity and prominent section headings."
+      },
+      "title": {
+        "displayName": "Keepsake Title",
+        "purpose": "Memory and card titles."
+      },
+      "body": {
+        "displayName": "Dependable Body",
+        "purpose": "Instructions and primary descriptive copy."
+      },
+      "label": {
+        "displayName": "Compact Label",
+        "purpose": "Form labels, navigation, and metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "auth-shell",
+        "value": "0 22px 54px rgb(17 15 15 / 0.25)",
+        "purpose": "Lift the large setup shell against the dark canvas."
+      },
+      {
+        "name": "lifted-card",
+        "value": "0 24px 60px rgb(99 70 73 / 0.1)",
+        "purpose": "Lift important date and focused content cards."
+      },
+      {
+        "name": "vault-ambient",
+        "value": "0 14px 35px rgb(83 56 78 / 0.07)",
+        "purpose": "Give private-vault cards a subtle contextual distinction."
+      },
+      {
+        "name": "mobile-navigation",
+        "value": "0 -6px 20px rgb(67 47 48 / 0.05)",
+        "purpose": "Separate fixed mobile navigation from scrolling content."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "160ms ease-out",
+        "purpose": "Navigation and compact control state changes."
+      },
+      {
+        "name": "state-standard",
+        "value": "180ms ease-out",
+        "purpose": "Input, card title, and tab transitions."
+      },
+      {
+        "name": "entrance-soft",
+        "value": "220ms cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "One restrained staggered entrance sequence per screen."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one prominent action in a focused flow.",
+      "html": "<button class=\"ds-btn-primary\">CONTINUE</button>",
+      "css": ".ds-btn-primary { display: inline-flex; width: 100%; height: 3.5rem; align-items: center; justify-content: center; border: 1px solid var(--auth-button-border); border-radius: 0.6rem; background: var(--auth-button-bg); padding: 0 1rem; color: var(--auth-button-text); font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 700; transition: background-color 180ms ease-out, transform 180ms ease-out; } .ds-btn-primary:hover { background: #765256; transform: translateY(-2px); } .ds-btn-primary:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "A compact secondary action that does not compete with the primary action.",
+      "html": "<button class=\"ds-btn-quiet\">COPY CODE</button>",
+      "css": ".ds-btn-quiet { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; border: 0; border-radius: 0.7rem; background: rgb(127 90 95 / 0.13); padding: 0 1rem; color: var(--auth-brand); font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.88rem; font-weight: 800; transition: background-color 180ms ease-out, transform 180ms ease-out; } .ds-btn-quiet:hover { background: rgb(127 90 95 / 0.19); transform: translateY(-1px); } .ds-btn-quiet:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; } .ds-btn-quiet:active { transform: translateY(0); }"
+    },
+    {
+      "name": "Warm Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The canonical field for setup and focused forms.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-name\">SPACE NAME</label><input class=\"ds-input\" id=\"ds-name\" placeholder=\"Our story\" />",
+      "css": ".ds-field-label { display: block; margin-bottom: 0.55rem; color: var(--auth-brand); font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; } .ds-input { width: 100%; height: 3.35rem; border: 1px solid rgb(125 88 93 / 0.2); border-radius: 0.8rem; background: #f6f2ee; padding: 0 1rem; color: var(--auth-heading); font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 1rem; font-weight: 700; transition: border-color 180ms ease-out, box-shadow 180ms ease-out, background-color 180ms ease-out; } .ds-input:hover { border-color: rgb(125 88 93 / 0.38); } .ds-input:focus-visible { border-color: var(--auth-brand); outline: none; background: #fffaf7; box-shadow: 0 0 0 4px rgb(127 90 95 / 0.12); }"
+    },
+    {
+      "name": "Memory Card",
+      "kind": "card",
+      "refersTo": "card-memory",
+      "description": "A framed memory summary where photography and editorial title carry the emotion.",
+      "html": "<article class=\"ds-memory-card\"><div class=\"ds-memory-cover\" role=\"img\" aria-label=\"Memory cover placeholder\"></div><div class=\"ds-memory-body\"><span class=\"ds-memory-date\">SEP 5</span><h3>Our favorite afternoon</h3><p>A shared memory, kept close.</p></div></article>",
+      "css": ".ds-memory-card { overflow: hidden; border: 1px solid #eee6e3; border-radius: 0.75rem; background: #fff; color: var(--auth-heading); } .ds-memory-cover { aspect-ratio: 4 / 3; background: #fff4f3; transition: transform 240ms ease-out; } .ds-memory-card:hover .ds-memory-cover { transform: scale(1.025); } .ds-memory-card:focus-within { outline: 2px solid #b82b49; outline-offset: 4px; } .ds-memory-body { padding: 1rem; } .ds-memory-date { color: #9b7779; font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; } .ds-memory-body h3 { margin: 0.7rem 0 0; font-family: 'Fraunces', Georgia, serif; font-size: 1.2rem; font-weight: 600; line-height: 1.1; } .ds-memory-body p { margin: 0.5rem 0 0; color: #554b4a; font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.9rem; line-height: 1.5; }"
+    },
+    {
+      "name": "Setup Tabs",
+      "kind": "chip",
+      "description": "A quiet two-option selector with an editorial active state.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-active\">Create a space</button><button class=\"ds-tab\">Join a space</button></div>",
+      "css": ".ds-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid rgb(125 88 93 / 0.18); } .ds-tab { position: relative; min-height: 3.25rem; border: 0; background: transparent; padding: 0 0.6rem; color: var(--auth-copy); font-family: 'Fraunces', Georgia, serif; font-size: 1.1rem; font-weight: 700; transition: color 180ms ease-out; } .ds-tab:hover { color: var(--auth-brand); } .ds-tab:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; } .ds-tab-active { color: var(--auth-brand); } .ds-tab-active::after { position: absolute; right: 12%; bottom: -1px; left: 12%; height: 2px; background: var(--auth-brand); content: ''; }"
+    },
+    {
+      "name": "Desktop Navigation",
+      "kind": "nav",
+      "description": "The persistent application navigation shown from the medium breakpoint.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a class=\"ds-nav-active\" href=\"#\">Memories</a><a href=\"#\">Timeline</a><a href=\"#\">Private Vault</a><a href=\"#\">Settings</a></nav>",
+      "css": ".ds-nav { display: flex; width: 14.25rem; flex-direction: column; gap: 0.3rem; padding: 1.75rem 1rem; border-right: 1px solid #e9dfdd; background: rgb(255 253 252 / 0.5); } .ds-nav a { display: flex; min-height: 2.75rem; align-items: center; border-radius: 0.55rem; padding: 0 0.75rem; color: #584648; font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: background-color 160ms ease-out, color 160ms ease-out; } .ds-nav a:hover, .ds-nav-active { background: #e8e4e2; color: #7f3d4a; } .ds-nav a:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; } .ds-nav a:active { transform: scale(0.99); }"
+    },
+    {
+      "name": "Mobile Navigation",
+      "kind": "nav",
+      "description": "The safe-area-aware bottom navigation used on narrow screens.",
+      "html": "<nav class=\"ds-mobile-nav\" aria-label=\"Mobile navigation\"><a class=\"ds-mobile-active\" href=\"#\">HOME</a><a href=\"#\">TIMELINE</a><a href=\"#\">VAULT</a><a href=\"#\">SETTINGS</a></nav>",
+      "css": ".ds-mobile-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0.5rem 0.25rem; border-top: 1px solid #eee7e5; background: rgb(255 253 252 / 0.97); box-shadow: 0 -6px 20px rgb(67 47 48 / 0.05); } .ds-mobile-nav a { padding: 0.65rem 0.2rem; color: #a49a98; font-family: 'Nunito Sans', 'Segoe UI', sans-serif; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.02em; text-align: center; text-decoration: none; transition: color 160ms ease-out, transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-mobile-nav a:hover, .ds-mobile-active { color: #7f3d4a; } .ds-mobile-nav a:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; } .ds-mobile-nav a:active { transform: scale(0.97); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shared Keepsake",
+    "overview": "Leonly should feel like a carefully kept object shared by two people: warm, tactile, intimate, and quietly premium. Blush paper-like surfaces, framed photography, editorial headings, and restrained burgundy actions give persisted memories emotional weight without turning the product into a public scrapbook.\n\nThe interface stays calm and dependable. Generous whitespace and soft layers support reflection, while clear hierarchy, honest states, and conventional controls keep private workflows easy to use. Expression belongs in meaningful imagery and precise details, not decorative UI noise.",
+    "keyCharacteristics": [
+      "Warm paper surfaces rather than cold gray application chrome.",
+      "Editorial Fraunces headings paired with sturdy Nunito Sans controls and copy.",
+      "One scarce burgundy primary action, with lavender reserved for private-vault context.",
+      "Photography treated as content through deliberate framing and aspect ratios.",
+      "Soft, purposeful motion with complete reduced-motion behavior."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Use burgundy for the single primary action in a view; never introduce a competing saturated call-to-action color.",
+        "section": "colors"
+      },
+      {
+        "name": "The Private Lavender Rule",
+        "body": "Lavender signals vault context or quiet categorization. It never replaces burgundy as the product's primary voice.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Use Fraunces for emotional hierarchy and Nunito Sans for operation. Do not introduce a third font family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ambient-Only Rule",
+        "body": "A shadow must clarify layer or interaction state. Use a warm border or tonal surface when elevation is not semantically necessary.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reuse semantic variables and existing primitives before adding a token or component.",
+      "Do give each view one obvious burgundy primary action and quiet secondary actions.",
+      "Do preserve mobile bottom navigation, desktop sidebar, logical source order, and safe-area padding.",
+      "Do define honest empty, loading, unavailable, error, and success states using persisted product truth.",
+      "Do keep interactions between 160ms and 300ms and provide equivalent reduced-motion behavior.",
+      "Do use semantic landmarks, ordered headings, explicit labels, keyboard-operable controls, and visible focus states."
+    ],
+    "donts": [
+      "Don't introduce cold SaaS dashboard chrome, dense data tables, or hard pure-black contrast.",
+      "Don't add glassmorphism, unrelated gradients, generic stock-shadcn styling, or a third font.",
+      "Don't use lavender as the main call-to-action color or create multiple saturated CTAs.",
+      "Don't shadow every element, overuse pills, or add decorative motion without purpose.",
+      "Don't fabricate memories, people, places, metrics, testimonials, or proof.",
+      "Don't change global tokens, shared primitives, or navigation patterns without an approved design reason and coverage of existing consumers."
+    ]
+  }
+}

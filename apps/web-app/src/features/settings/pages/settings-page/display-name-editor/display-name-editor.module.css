@@ -4,6 +4,11 @@
   gap: 0.55rem;
 }
 
+.editor {
+  transform-origin: top;
+  animation: open-editor 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .value {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -96,10 +101,28 @@
   gap: 0.5rem;
 }
 
+@keyframes open-editor {
+  from {
+    opacity: 0.55;
+    clip-path: inset(0 0 18% 0 round 0.5rem);
+  }
+}
+
 .conflict {
   padding: 0.7rem;
   border-radius: 0.65rem;
   background: #fff0ef;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor {
+    animation: none;
+  }
+
+  .value button,
+  .editor button {
+    transition-duration: 100ms;
+  }
 }
 
 @media (max-width: 639px) {

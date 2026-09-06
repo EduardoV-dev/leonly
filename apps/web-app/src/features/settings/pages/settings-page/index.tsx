@@ -6,8 +6,6 @@ import {
   Languages,
   LockKeyhole,
   Mail,
-  ShieldCheck,
-  Sparkles,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -61,10 +59,6 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
-        <p className={styles.eyebrow}>
-          <Sparkles aria-hidden="true" />
-          {t("hero.eyebrow")}
-        </p>
         <h1>{t("hero.heading")}</h1>
         <p className={styles.heroDescription}>{t("hero.description")}</p>
       </header>
@@ -80,20 +74,11 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                   label={t("members.avatar", { name: member.displayName })}
                 />
               ))}
-              <span className={railStyles.memberCount} aria-hidden="true">
-                {activeMembers.length}
-              </span>
             </div>
-            <span className={styles.sharedBadge}>{t("shared.ownership")}</span>
             <h2>{sharedSpace.name}</h2>
             <p className={railStyles.summaryDate}>
               <CalendarDays aria-hidden="true" />
               {t("summary.date", { date: startDate })}
-            </p>
-            <p className={railStyles.summaryNote}>
-              {settings.membershipState === "one-member"
-                ? t("summary.oneMember")
-                : t("summary.twoMembers")}
             </p>
           </section>
 
@@ -122,7 +107,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
         </aside>
 
         <div className={styles.primaryColumn}>
-          <section className={styles.card} aria-labelledby="shared-settings-heading">
+          <section className={styles.section} aria-labelledby="shared-settings-heading">
             <div className={styles.sectionHeader}>
               <div>
                 <h2 id="shared-settings-heading">{t("shared.heading")}</h2>
@@ -165,7 +150,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
             </dl>
           </section>
 
-          <section className={styles.card} aria-labelledby="members-heading">
+          <section className={styles.section} aria-labelledby="members-heading">
             <div className={styles.sectionHeader}>
               <div>
                 <h2 id="members-heading">{t("members.heading")}</h2>
@@ -203,7 +188,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
             </ul>
           </section>
 
-          <section className={styles.card} aria-labelledby="preferences-heading">
+          <section className={styles.section} aria-labelledby="preferences-heading">
             <div className={styles.sectionHeader}>
               <div>
                 <h2 id="preferences-heading">{t("preferences.heading")}</h2>
@@ -243,13 +228,12 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
             </dl>
           </section>
 
-          <section className={styles.card} aria-labelledby="account-heading">
+          <section className={styles.section} aria-labelledby="account-heading">
             <div className={styles.sectionHeader}>
               <div>
                 <h2 id="account-heading">{t("account.heading")}</h2>
                 <p>{t("account.description")}</p>
               </div>
-              <ShieldCheck className={styles.sectionIcon} aria-hidden="true" />
             </div>
             <dl className={styles.accountDetails}>
               <div>
