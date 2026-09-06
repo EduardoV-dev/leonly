@@ -196,6 +196,8 @@ describe("DashboardPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Dashboard" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Create a memory" })).toHaveLength(2);
 
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();

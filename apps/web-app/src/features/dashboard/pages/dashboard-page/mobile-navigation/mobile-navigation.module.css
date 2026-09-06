@@ -5,47 +5,59 @@
   left: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 0.5rem 0.25rem calc(0.38rem + env(safe-area-inset-bottom));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.2rem;
+  padding: 0.45rem 0.45rem calc(0.4rem + env(safe-area-inset-bottom));
   border-top: 1px solid #eee7e5;
+  border-radius: 1rem 1rem 0 0;
   background: rgb(255 253 252 / 0.97);
   box-shadow: 0 -6px 20px rgb(67 47 48 / 0.05);
   backdrop-filter: blur(12px);
 }
 
-.navigation a,
-.navigation button {
+.navigation a {
+  position: relative;
   display: flex;
+  min-height: 3.6rem;
   min-width: 0;
   align-items: center;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.2rem;
   border: 0;
   background: transparent;
-  color: #a49a98;
-  font-size: 0.46rem;
-  font-weight: 700;
+  border-radius: 0.7rem;
+  color: #8f8280;
+  font-size: 0.64rem;
+  font-weight: 800;
   font-family: inherit;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   text-decoration: none;
   text-transform: uppercase;
   transition:
+    background-color 160ms ease,
     color 160ms ease,
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.navigation button:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-}
-
 .navigation a:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .navigation a[aria-current="page"] {
+  background: #f8efed;
   color: #7f3d4a;
+}
+
+.navigation a[aria-current="page"]::before {
+  position: absolute;
+  top: 0.18rem;
+  width: 1.35rem;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: var(--auth-button-bg);
+  content: "";
 }
 
 .navigation a:focus-visible {
@@ -54,13 +66,19 @@
 }
 
 .navigation svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  stroke-width: 1.7;
+  width: 1.2rem;
+  height: 1.2rem;
+  stroke-width: 1.8;
 }
 
 @mixin screen-md {
   .navigation {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation a {
+    transition: none;
   }
 }

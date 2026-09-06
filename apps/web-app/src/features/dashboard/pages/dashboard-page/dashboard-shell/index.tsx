@@ -48,7 +48,7 @@ export function DashboardShell({
   return (
     <main className={styles.page}>
       <div className={`${styles.shell} ${isSidebarCollapsed ? styles.collapsed : ""}`}>
-        <MobileHeader member={activeSpace.active_members[0]} spaceName={activeSpace.name} />
+        <MobileHeader members={activeSpace.active_members} spaceName={activeSpace.name} />
         <DashboardSidebar
           activeSection={currentSection}
           activeSpace={activeSpace}

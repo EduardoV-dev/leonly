@@ -53,7 +53,11 @@ export function DashboardSidebar({
         <h1>{activeSpace.name}</h1>
       </div>
 
-      <Link className={styles.newEntry} href={APP_ROUTES.MEMORIES_NEW}>
+      <Link
+        className={styles.newEntry}
+        href={APP_ROUTES.MEMORIES_NEW}
+        title={isCollapsed ? t("navigation.newEntry") : undefined}
+      >
         <ImagePlus aria-hidden="true" />
         <span className={styles.label}>{t("navigation.newEntry")}</span>
       </Link>
@@ -62,6 +66,7 @@ export function DashboardSidebar({
         <Link
           href={APP_ROUTES.HOME}
           aria-current={activeSection === "dashboard" ? "page" : undefined}
+          title={isCollapsed ? t("navigation.dashboard") : undefined}
         >
           <LayoutGrid aria-hidden="true" />
           <span className={styles.label}>{t("navigation.dashboard")}</span>
@@ -69,17 +74,23 @@ export function DashboardSidebar({
         <Link
           href={APP_ROUTES.TIMELINE}
           aria-current={activeSection === "timeline" ? "page" : undefined}
+          title={isCollapsed ? t("navigation.timeline") : undefined}
         >
           <BookHeart aria-hidden="true" />
           <span className={styles.label}>{t("navigation.timeline")}</span>
         </Link>
-        <Link href={APP_ROUTES.VAULT} aria-current={activeSection === "vault" ? "page" : undefined}>
+        <Link
+          href={APP_ROUTES.VAULT}
+          aria-current={activeSection === "vault" ? "page" : undefined}
+          title={isCollapsed ? t("navigation.vault") : undefined}
+        >
           <LockKeyhole aria-hidden="true" />
           <span className={styles.label}>{t("navigation.vault")}</span>
         </Link>
         <Link
           href={APP_ROUTES.SETTINGS}
           aria-current={activeSection === "settings" ? "page" : undefined}
+          title={isCollapsed ? t("navigation.settings") : undefined}
         >
           <Settings aria-hidden="true" />
           <span className={styles.label}>{t("navigation.settings")}</span>
