@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { APP_ROUTES } from "@/constants/routes";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
@@ -58,10 +59,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   const startDate = formatDateOnly(sharedSpace.startDate, language);
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <h1>{t("hero.heading")}</h1>
-        <p className={styles.heroDescription}>{t("hero.description")}</p>
-      </header>
+      <PageHeader title={t("hero.heading")} description={t("hero.description")} />
 
       <div className={styles.layout}>
         <aside className={styles.rail} aria-label={sharedSpace.name}>

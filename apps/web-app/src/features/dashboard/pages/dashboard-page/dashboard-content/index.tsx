@@ -2,6 +2,7 @@
 
 import { Heart, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { MemoriesTimeline } from "@/features/memories/components/memories-timeline";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import { useDashboardActiveSpace } from "../dashboard-shell";
@@ -17,10 +18,10 @@ export function DashboardContent() {
 
   return (
     <section className={styles.content} id="timeline">
-      <header className={styles.welcome}>
-        <p>{t("content.welcome", { names: memberNames })}</p>
-        <span>{t("content.welcomeDescription")}</span>
-      </header>
+      <PageHeader
+        title={t("content.welcome", { names: memberNames })}
+        description={t("content.welcomeDescription")}
+      />
 
       {isWaitingForPartner ? (
         <div className={styles.inviteSection}>

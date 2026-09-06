@@ -5,6 +5,7 @@ import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { PastDatePicker } from "@/components/past-date-picker";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
@@ -96,10 +97,12 @@ export function MemoryEditorForm({
           {t(mode === "create" ? "create.backToTimeline" : "edit.backToDetail")}
         </Link>
       </motion.div>
-      <motion.header className={`${styles.intro} ${wideStyles.intro}`} variants={activeVariants}>
-        <h1>{t(mode === "create" ? "create.heading" : "edit.heading")}</h1>
-        <p>{t(mode === "create" ? "create.intro" : "edit.intro")}</p>
-      </motion.header>
+      <motion.div variants={activeVariants}>
+        <PageHeader
+          description={t(mode === "create" ? "create.intro" : "edit.intro")}
+          title={t(mode === "create" ? "create.heading" : "edit.heading")}
+        />
+      </motion.div>
 
       <motion.form
         className={`${styles.form} ${wideStyles.form}`}

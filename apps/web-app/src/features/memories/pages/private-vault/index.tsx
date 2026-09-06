@@ -4,6 +4,7 @@ import { LockKeyhole, UsersRound } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { MemorySortSelect } from "../../components/memory-sort-select";
 import { VaultMemories } from "../../components/vault-memories";
 import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
@@ -38,20 +39,19 @@ export function PrivateVaultPage() {
       initial="hidden"
       animate="visible"
     >
-      <motion.header className={styles.hero} variants={activeRevealVariants}>
-        <span className={styles.seal} aria-hidden="true">
-          <LockKeyhole />
-        </span>
-        <div className={styles.introduction}>
-          <p className={styles.eyebrow}>{t("vault.hero.eyebrow")}</p>
-          <h1>{t("vault.hero.heading")}</h1>
-          <p className={styles.description}>{t("vault.hero.description")}</p>
-        </div>
-        <p className={styles.sharedNote}>
-          <UsersRound aria-hidden="true" />
-          {t("vault.hero.shared")}
-        </p>
-      </motion.header>
+      <motion.div variants={activeRevealVariants}>
+        <PageHeader
+          description={t("vault.hero.description")}
+          leading={<LockKeyhole aria-hidden="true" />}
+          title={t("vault.hero.heading")}
+          trailing={
+            <p className={styles.sharedNote}>
+              <UsersRound aria-hidden="true" />
+              {t("vault.hero.shared")}
+            </p>
+          }
+        />
+      </motion.div>
       <motion.div className={styles.sort} variants={activeRevealVariants}>
         <MemorySortSelect
           label={t("vault.sort.label")}

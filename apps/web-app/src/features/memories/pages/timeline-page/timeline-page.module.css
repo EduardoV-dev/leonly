@@ -7,32 +7,6 @@
   padding: 2rem 1.25rem 6rem;
 }
 
-.header {
-  display: grid;
-  min-width: 0;
-  gap: 0.45rem;
-}
-
-.eyebrow {
-  color: var(--auth-brand);
-  font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(2.25rem, 5vw, 4rem);
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  line-height: 0.96;
-  margin: 0;
-}
-
-.description {
-  color: #433a39;
-  font-family: "Nunito Sans", "Segoe UI", sans-serif;
-  font-size: clamp(1rem, 2.2vw, 1.2rem);
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 1.5;
-  margin: 0;
-}
-
 .toolbar {
   display: flex;
   min-width: 0;

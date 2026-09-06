@@ -5,6 +5,7 @@ import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import type { MemoryDetail } from "../../types/memory-detail";
 import type { TimelineMemory } from "../../types/timeline";
 import { MemoryPhotoGallery } from "../memory-photo-gallery";
@@ -137,37 +138,36 @@ export function MemoryDetailView({
           </motion.div>
 
           <motion.article className={styles.story} variants={activeStoryVariants}>
-            <motion.header className={styles.header} variants={activeRevealVariants}>
-              <motion.div className={styles.metadata} variants={activeRevealVariants}>
-                <p>
-                  <CalendarDays aria-hidden="true" />
-                  <time dateTime={memory.memoryDate}>{formattedDate}</time>
-                </p>
-                {memory.location ? (
-                  <p>
-                    <MapPin aria-hidden="true" />
-                    {memory.location}
+            <motion.div variants={activeRevealVariants}>
+              <PageHeader
+                supporting={
+                  <div className={styles.metadata}>
+                    <p>
+                      <CalendarDays aria-hidden="true" />
+                      <time dateTime={memory.memoryDate}>{formattedDate}</time>
+                    </p>
+                    {memory.location ? (
+                      <p>
+                        <MapPin aria-hidden="true" />
+                        {memory.location}
+                      </p>
+                    ) : null}
+                  </div>
+                }
+                title={memory.title}
+                titleId="memory-detail-title"
+                trailing={
+                  <p className={styles.visibility} data-visibility={memory.visibility}>
+                    {isVaultMemory ? (
+                      <LockKeyhole aria-hidden="true" />
+                    ) : (
+                      <UsersRound aria-hidden="true" />
+                    )}
+                    {t(`detail.visibility.${memory.visibility}`)}
                   </p>
-                ) : null}
-              </motion.div>
-
-              <motion.h1 id="memory-detail-title" variants={activeRevealVariants}>
-                {memory.title}
-              </motion.h1>
-
-              <motion.p
-                className={styles.visibility}
-                data-visibility={memory.visibility}
-                variants={activeRevealVariants}
-              >
-                {isVaultMemory ? (
-                  <LockKeyhole aria-hidden="true" />
-                ) : (
-                  <UsersRound aria-hidden="true" />
-                )}
-                {t(`detail.visibility.${memory.visibility}`)}
-              </motion.p>
-            </motion.header>
+                }
+              />
+            </motion.div>
 
             {memory.description ? (
               <motion.p className={styles.description} variants={activeRevealVariants}>

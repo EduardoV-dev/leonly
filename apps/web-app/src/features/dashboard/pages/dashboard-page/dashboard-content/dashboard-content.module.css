@@ -2,10 +2,6 @@
   padding: 0.85rem 0.65rem calc(5.8rem + env(safe-area-inset-bottom));
 }
 
-.welcome {
-  display: none;
-}
-
 .heroGrid {
   display: grid;
   gap: 1.1rem;
@@ -45,11 +41,6 @@
 .memberSummary h2,
 .summarySection > h2,
 .emptyState h3,
-.welcome p {
-  margin: 0;
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-}
-
 .milestoneCard h2 {
   margin-top: 0.35rem;
   font-size: clamp(2rem, 10vw, 2.6rem);
@@ -159,7 +150,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .welcome,
   .milestoneCard,
   .memberSummary,
   .summarySection {
@@ -189,23 +179,6 @@
 @mixin screen-md {
   .content {
     padding: 2.5rem clamp(2.25rem, 4vw, 4.5rem) 3.5rem;
-  }
-
-  .welcome {
-    display: block;
-    margin-bottom: 2.2rem;
-  }
-
-  .welcome p {
-    font-size: 1.6rem;
-    font-weight: 600;
-  }
-
-  .welcome span {
-    display: block;
-    margin-top: 0.35rem;
-    color: var(--auth-copy);
-    font-size: 1.05rem;
   }
 
   .heroGrid {

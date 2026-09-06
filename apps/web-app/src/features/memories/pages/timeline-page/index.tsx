@@ -3,6 +3,7 @@
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/page-header";
 import { MemoriesTimeline } from "../../components/memories-timeline";
 import { MemorySortSelect } from "../../components/memory-sort-select";
 import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
@@ -40,10 +41,9 @@ export function TimelinePage() {
       initial="hidden"
       animate="visible"
     >
-      <motion.header className={styles.header} variants={activeRevealVariants}>
-        <h1 className={styles.eyebrow}>{t("timeline.heading")}</h1>
-        <p className={styles.description}>{t("timeline.description")}</p>
-      </motion.header>
+      <motion.div variants={activeRevealVariants}>
+        <PageHeader title={t("timeline.heading")} description={t("timeline.description")} />
+      </motion.div>
       <motion.div className={styles.toolbar} variants={activeRevealVariants}>
         <MemorySortSelect
           label={t("timeline.sort")}
