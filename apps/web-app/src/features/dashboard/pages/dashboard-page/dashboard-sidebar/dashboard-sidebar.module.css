@@ -62,8 +62,9 @@
   border-radius: 0.45rem;
   background: var(--auth-button-bg);
   color: var(--auth-button-text);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
   text-decoration: none;
   transition:
     background-color 160ms ease,

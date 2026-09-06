@@ -1,11 +1,16 @@
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import styles from "./timeline-loading.module.css";
 
 const CARD_IDS = ["first", "second", "third"];
 
 export function TimelineLoading() {
+  const { t } = useTranslation("memories");
+
   return (
-    <output className={styles.page} aria-label="Loading timeline">
+    <output className={styles.page} aria-label={t("timeline.loadingPage")}>
       <header className={styles.header}>
         <Skeleton className={styles.title} />
         <Skeleton className={styles.description} />

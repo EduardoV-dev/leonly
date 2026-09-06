@@ -1,13 +1,16 @@
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import styles from "./create-memory-loading.module.css";
 
 type CreateMemoryLoadingProps = { label?: string };
 
-export function CreateMemoryLoading({
-  label = "Loading new memory form",
-}: Readonly<CreateMemoryLoadingProps>) {
+export function CreateMemoryLoading({ label }: Readonly<CreateMemoryLoadingProps>) {
+  const { t } = useTranslation("memories");
+
   return (
-    <output className={styles.page} aria-label={label}>
+    <output className={styles.page} aria-label={label ?? t("create.loading")}>
       <Skeleton className={styles.backLink} />
       <header className={styles.intro}>
         <Skeleton className={styles.title} />

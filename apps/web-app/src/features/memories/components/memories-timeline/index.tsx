@@ -2,6 +2,7 @@
 
 import { ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import { MemoryChronology } from "../memory-chronology";
 import styles from "./memories-timeline.module.css";
@@ -14,6 +15,7 @@ type MemoriesTimelineProps = Readonly<{
 }>;
 
 export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
+  const { t } = useTranslation("memories");
   const timelineQuery = useMemoriesTimeline(variant);
   const [isSlow, setIsSlow] = useState(false);
 
@@ -29,11 +31,9 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
 
   if (timelineQuery.isPending) {
     return (
-      <output className={styles.feedback} aria-label="Loading memories">
+      <output className={styles.feedback} aria-label={t("timeline.loading")}>
         <ImageIcon aria-hidden="true" />
-        <span>
-          {isSlow ? "This is taking a little longer than usual." : "Opening your memories..."}
-        </span>
+        <span>{isSlow ? t("timeline.loadingSlow") : t("timeline.loadingStandard")}</span>
       </output>
     );
   }
@@ -43,9 +43,9 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
   if (timelineQuery.isError && pages.length === 0) {
     return (
       <div className={styles.feedback} role="alert">
-        <p>We could not load your memories.</p>
+        <p>{t("timeline.error")}</p>
         <button type="button" onClick={() => void timelineQuery.refetch()}>
-          Try again
+          {t("timeline.retry")}
         </button>
       </div>
     );
@@ -67,8 +67,8 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
     return (
       <div className={styles.feedback}>
         <ImageIcon aria-hidden="true" />
-        <h3>No memories yet</h3>
-        <p>Your shared moments will appear here once memories are available.</p>
+        <h3>{t("timeline.empty.heading")}</h3>
+        <p>{t("timeline.empty.description")}</p>
       </div>
     );
   }
@@ -78,15 +78,15 @@ export function MemoriesTimeline({ variant = "full" }: MemoriesTimelineProps) {
       memories={visibleMemories}
       variant={variant}
       pagination={{
-        errorMessage: "We could not load more memories.",
+        errorMessage: t("timeline.loadMoreError"),
         hasNextPage: Boolean(timelineQuery.hasNextPage),
         isError: timelineQuery.isFetchNextPageError,
         isLoading: timelineQuery.isFetchingNextPage,
-        loadAriaLabel: "Load more",
-        loadLabel: "Load Earlier Memories",
-        loadingLabel: "Loading more...",
+        loadAriaLabel: t("timeline.loadMore"),
+        loadLabel: t("vault.actions.loadMore"),
+        loadingLabel: t("timeline.loadingMore"),
         onLoad: () => void timelineQuery.fetchNextPage(),
-        retryLabel: "Try loading more",
+        retryLabel: t("timeline.retryLoadMore"),
       }}
     />
   );

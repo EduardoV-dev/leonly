@@ -32,7 +32,7 @@ export const spaceSetupEs = {
     spaceNameRequired: "Ingresa un nombre para tu espacio.",
     spaceNameMin: "El nombre de tu espacio debe tener al menos {{count}} caracteres.",
     spaceNameMax: "El nombre de tu espacio debe tener {{count}} caracteres o menos.",
-    firstDayRequired: "Elige el primer día de su historia.",
+    firstDayRequired: "Elige el primer día de la historia de ustedes.",
     firstDayFuture: "Elige hoy o una fecha pasada.",
     inviteCodeRequired: "Ingresa un código de invitación.",
     inviteCodeInvalid: "El formato del código proporcionado no es válido.",
@@ -51,7 +51,7 @@ export const spaceSetupEs = {
     "create-date": {
       imageAlt: "Pareja caminando por un sendero costero cálido",
       caption: "Toda historia necesita un primer día.",
-      captionDetail: "Usaremos esa fecha para ordenar sus recuerdos desde el principio.",
+      captionDetail: "Usaremos esa fecha para ordenar tus recuerdos desde el principio.",
     },
     "create-invite": {
       imageAlt: "Pareja feliz sentada bajo una luz cálida",
@@ -73,33 +73,33 @@ export const spaceSetupEs = {
     start: {
       heading: "Empieza tu historia",
       description:
-        "Crea un espacio privado para sus recuerdos compartidos. Ingresa el nombre que verá tu pareja o déjalo vacío para usar tu nombre de Google.",
+        "Crea un espacio privado para tus recuerdos compartidos. Ingresa el nombre que verá tu pareja o déjalo vacío para usar tu nombre de Google.",
       displayNameLabel: "Tu nombre visible",
       optional: "Opcional",
       displayNamePlaceholder: "p. ej. Leo",
     },
     name: {
       heading: "Ponle nombre a tu espacio",
-      description: "Dale a su espacio compartido un nombre que se sienta de los dos.",
+      description: "Dale a tu espacio compartido un nombre que se sienta de los dos.",
       spaceNameLabel: "Nombre del espacio",
       spaceNamePlaceholder: "p. ej. Nuestro pequeño mundo",
     },
     date: {
-      heading: "¿Cuándo empezó su historia?",
+      heading: "¿Cuándo empezó la historia de ustedes?",
       description:
-        "Elige la fecha en la que empezó su historia para ordenar sus recuerdos desde ese día.",
+        "Elige la fecha en la que empezó la historia de ustedes para ordenar tus recuerdos desde ese día.",
       firstDayLabel: "Aniversario o primer encuentro",
-      note: "Usaremos esta fecha para ordenar sus recuerdos desde el primer día.",
+      note: "Usaremos esta fecha para ordenar tus recuerdos desde el primer día.",
     },
     invite: {
       heading: "Tu espacio ya está listo.",
       description:
-        "Comparte este código privado con tu pareja para invitarla a su espacio compartido.",
+        "Comparte este código privado con tu pareja para invitarla a tu espacio compartido.",
       codeLabel: "Código único de invitación",
       expiryNote: "Este código vence en 24 horas. Tu pareja lo usará mientras configura su cuenta.",
     },
     join: {
-      heading: "Únete a su espacio compartido",
+      heading: "Únete al espacio compartido de tu pareja",
       description:
         "Ingresa el código de invitación de tu pareja para entrar al espacio que creó para ti.",
       inviteCodeLabel: "Código de invitación",

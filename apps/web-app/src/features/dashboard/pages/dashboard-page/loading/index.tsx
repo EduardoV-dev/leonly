@@ -1,9 +1,14 @@
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import styles from "./loading.module.css";
 
 export function DashboardLoading() {
+  const { t } = useTranslation("dashboard");
+
   return (
-    <output className={styles.content} aria-label="Loading dashboard">
+    <output className={styles.content} aria-label={t("loading")}>
       <div className={styles.welcome}>
         <Skeleton className={styles.welcomeTitle} />
         <Skeleton className={styles.welcomeCopy} />

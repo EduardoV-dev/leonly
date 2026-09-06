@@ -2,6 +2,7 @@ import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/lib/i18n";
 import { MemoriesTimeline } from ".";
 
 const memory = {
@@ -32,7 +33,8 @@ function renderTimeline(
 }
 
 describe("MemoriesTimeline", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn());
     notifyManager.setScheduler((callback) => callback());
@@ -107,6 +109,24 @@ describe("MemoriesTimeline", () => {
     });
     expect(screen.getByRole("heading", { name: "Fresh page" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Our picnic" })).not.toBeInTheDocument();
+  });
+
+  it("updates month headings when the language changes", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
+    );
+
+    renderTimeline();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
+
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
+    expect(screen.getByRole("heading", { name: "Agosto de 2026" })).toBeInTheDocument();
   });
 
   it("offers a retry after an initial error", async () => {

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/lib/i18n";
 import { TimelinePage } from ".";
 
 vi.mock("../../components/memories-timeline", () => ({
@@ -7,6 +8,10 @@ vi.mock("../../components/memories-timeline", () => ({
 }));
 
 describe("TimelinePage", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
   it("renders the editorial timeline heading and honest placeholder filters", () => {
     render(<TimelinePage />);
 

@@ -135,12 +135,10 @@ describe("DashboardPage", () => {
       expect(settingsLink).toHaveAttribute("href", "/settings");
       expect(settingsLink).not.toHaveAttribute("aria-current");
     }
-    for (const newEntryLink of screen.getAllByRole("link", { name: "New Entry" })) {
+    for (const newEntryLink of screen.getAllByRole("link", { name: "Create a memory" })) {
       expect(newEntryLink).toHaveAttribute("href", "/memories/new");
     }
-    for (const placesButton of screen.getAllByRole("button", { name: "Places" })) {
-      expect(placesButton).toBeDisabled();
-    }
+    expect(screen.queryByRole("button", { name: "Places" })).not.toBeInTheDocument();
   });
 
   it("renders the refreshed canonical name in dashboard, desktop navigation, and mobile navigation", () => {

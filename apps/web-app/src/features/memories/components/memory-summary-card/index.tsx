@@ -70,10 +70,11 @@ const reducedMotionVariants: Variants = {
   visible: { opacity: 1 },
 };
 
-function formatCompactDate(memoryDate: string): string {
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(
-    new Date(`${memoryDate}T00:00:00`),
-  );
+function formatCompactDate(memoryDate: string, language: string): string {
+  return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-US", {
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${memoryDate}T00:00:00`));
 }
 
 export function MemorySummaryCard({
@@ -85,7 +86,7 @@ export function MemorySummaryCard({
   reactions,
   variant = "timeline",
 }: Readonly<MemorySummaryCardProps>) {
-  const { t } = useTranslation("memories");
+  const { i18n, t } = useTranslation("memories");
   const [hasCoverLoadFailed, setHasCoverLoadFailed] = useState(false);
   const coverPhotoUrl = hasCoverLoadFailed ? null : memory.coverPhotoUrl;
   const shouldReduceMotion = Boolean(useReducedMotion());
@@ -113,7 +114,11 @@ export function MemorySummaryCard({
       viewport={{ amount: 0.15, once: true }}
     >
       <motion.div variants={activeSummaryVariants}>
-        <Link className={styles.summaryLink} href={detailHref} aria-label={`Open ${memory.title}`}>
+        <Link
+          className={styles.summaryLink}
+          href={detailHref}
+          aria-label={t("card.open", { title: memory.title })}
+        >
           <motion.div className={styles.cover} variants={activeCoverVariants}>
             {coverPhotoUrl ? (
               // biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly.
@@ -121,11 +126,11 @@ export function MemorySummaryCard({
                 src={coverPhotoUrl}
                 width={960}
                 height={600}
-                alt={`Cover for ${memory.title}`}
+                alt={t("card.cover", { title: memory.title })}
                 onError={() => setHasCoverLoadFailed(true)}
               />
             ) : (
-              <span role="img" aria-label="No cover photo available">
+              <span role="img" aria-label={t("card.noCover")}>
                 <ImageIcon aria-hidden="true" />
               </span>
             )}
@@ -139,7 +144,9 @@ export function MemorySummaryCard({
                   <BookHeart aria-hidden="true" />
                 )}
               </span>
-              <p className={styles.date}>{formatCompactDate(memory.memoryDate)}</p>
+              <p className={styles.date}>
+                {formatCompactDate(memory.memoryDate, i18n.resolvedLanguage ?? "en")}
+              </p>
             </motion.div>
             <motion.h3 variants={activeContentVariants}>{memory.title}</motion.h3>
             {memory.description ? (

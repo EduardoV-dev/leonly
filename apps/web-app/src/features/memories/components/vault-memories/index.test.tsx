@@ -126,6 +126,18 @@ describe("VaultMemories", () => {
     expect(screen.queryByRole("link", { name: /edit/i })).not.toBeInTheDocument();
   });
 
+  it("renders Spanish month headings for Vault memories", async () => {
+    await i18n.changeLanguage("es");
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
+    );
+
+    renderVault();
+    await flushRequest();
+
+    expect(screen.getByRole("heading", { name: "Agosto de 2026" })).toBeInTheDocument();
+  });
+
   it("offers a retry after an initial read failure", async () => {
     vi.mocked(fetch)
       .mockRejectedValueOnce(new Error("network failed"))

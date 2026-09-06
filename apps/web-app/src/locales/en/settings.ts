@@ -60,6 +60,14 @@ export const settingsEn = {
     unavailableDescription: "Your partner has not joined and this invitation is unavailable.",
     validDescription: "Your partner has not joined yet. This code remains valid until they do.",
   },
+  languageSelector: {
+    changed: "Interface language changed to {{language}}.",
+    english: "English",
+    help: "This choice is saved only in this browser profile.",
+    legend: "Choose interface language",
+    pending: "Changing interface language…",
+    spanish: "Spanish",
+  },
   loading: "Loading Settings",
   members: {
     active: "Active",
@@ -76,7 +84,6 @@ export const settingsEn = {
     displayNameHelp: "Used to identify you throughout your shared space.",
     heading: "Your preferences",
     language: "Interface language",
-    languageHelp: "Language selection will live here in a later settings update.",
     ownership: "Only for you",
   },
   shared: {

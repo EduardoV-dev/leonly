@@ -2,6 +2,7 @@
 
 import { ChevronDown, Heart } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { MemoriesTimeline } from "../../components/memories-timeline";
 import styles from "./timeline-page.module.css";
 
@@ -24,6 +25,7 @@ const reducedMotionVariants: Variants = {
 };
 
 export function TimelinePage() {
+  const { t } = useTranslation("dashboard");
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activePageVariants = shouldReduceMotion ? reducedMotionVariants : pageVariants;
   const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
@@ -36,32 +38,46 @@ export function TimelinePage() {
       animate="visible"
     >
       <motion.header className={styles.header} variants={activeRevealVariants}>
-        <h1 className={styles.eyebrow}>Our Timeline</h1>
-        <p className={styles.description}>
-          A curated collection of our shared moments, carefully preserved.
-        </p>
+        <h1 className={styles.eyebrow}>{t("timeline.heading")}</h1>
+        <p className={styles.description}>{t("timeline.description")}</p>
       </motion.header>
       <motion.div className={styles.toolbar} variants={activeRevealVariants}>
-        <fieldset className={styles.filters} aria-label="Memory filters">
+        <fieldset className={styles.filters} aria-label={t("timeline.filters")}>
           <button type="button" aria-pressed="true">
-            All
+            {t("timeline.all")}
           </button>
-          <button type="button" disabled title="Trips filter coming soon">
-            Trips
+          <button
+            type="button"
+            disabled
+            title={t("timeline.filterComingSoon", { filter: t("timeline.trips") })}
+          >
+            {t("timeline.trips")}
           </button>
-          <button type="button" disabled title="Anniversaries filter coming soon">
-            Anniversaries
+          <button
+            type="button"
+            disabled
+            title={t("timeline.filterComingSoon", { filter: t("timeline.anniversaries") })}
+          >
+            {t("timeline.anniversaries")}
           </button>
-          <button type="button" disabled title="Daily Life filter coming soon">
-            Daily Life
+          <button
+            type="button"
+            disabled
+            title={t("timeline.filterComingSoon", { filter: t("timeline.dailyLife") })}
+          >
+            {t("timeline.dailyLife")}
           </button>
-          <button type="button" disabled title="Favorites filter coming soon">
-            <Heart aria-hidden="true" /> Favorites
+          <button
+            type="button"
+            disabled
+            title={t("timeline.filterComingSoon", { filter: t("timeline.favorites") })}
+          >
+            <Heart aria-hidden="true" /> {t("timeline.favorites")}
           </button>
         </fieldset>
         <p className={styles.sort}>
-          <span>Sort by:</span>
-          <strong>Newest First</strong>
+          <span>{t("timeline.sort")}</span>
+          <strong>{t("timeline.newest")}</strong>
           <ChevronDown aria-hidden="true" />
         </p>
       </motion.div>

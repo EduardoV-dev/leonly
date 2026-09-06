@@ -5,6 +5,7 @@ export const authEn = {
     "A private place for our shared memories, inside jokes, and everything we are building together.",
   continueWithGoogle: "Continue with Google",
   legal: "By continuing, you agree to our Terms of Service and Privacy Policy.",
+  loadingApplication: "Loading application",
   language: {
     english: "English",
     spanish: "Spanish",

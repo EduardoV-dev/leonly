@@ -18,6 +18,7 @@ import { APP_ROUTES } from "@/constants/routes";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
 import { DisplayNameEditor } from "./display-name-editor";
+import { LanguageSelector } from "./language-selector";
 import { SettingsMemberAvatar } from "./settings-member-avatar";
 import styles from "./settings-page.module.css";
 import railStyles from "./settings-rail.module.css";
@@ -236,7 +237,7 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
                   {t("preferences.language")}
                 </dt>
                 <dd>
-                  <span>{t("preferences.languageHelp")}</span>
+                  <LanguageSelector />
                 </dd>
               </div>
             </dl>

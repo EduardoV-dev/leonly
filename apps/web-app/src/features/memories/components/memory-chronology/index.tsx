@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import { useTranslation } from "react-i18next";
 import type { TimelineMemory } from "../../types/timeline";
 import { MemoryReactions } from "../memory-reactions";
 import { MemorySummaryCard } from "../memory-summary-card";
@@ -48,12 +49,19 @@ type MemoryChronologyProps = {
   variant?: "full" | "recent";
 };
 
-function groupMemoriesByMonth(memories: TimelineMemory[]): MemoryMonth[] {
-  const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+function groupMemoriesByMonth(memories: TimelineMemory[], language: string): MemoryMonth[] {
+  const monthFormatter = new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-US", {
+    month: "long",
+    year: "numeric",
+  });
   const months: MemoryMonth[] = [];
 
   for (const memory of memories) {
-    const label = monthFormatter.format(new Date(`${memory.memoryDate}T00:00:00`));
+    const formattedLabel = monthFormatter.format(new Date(`${memory.memoryDate}T00:00:00`));
+    const label =
+      language === "es"
+        ? formattedLabel.charAt(0).toLocaleUpperCase("es-ES") + formattedLabel.slice(1)
+        : formattedLabel;
     const currentMonth = months.at(-1);
 
     if (currentMonth?.label === label) {
@@ -72,9 +80,11 @@ export function MemoryChronology({
   pagination,
   variant = "full",
 }: Readonly<MemoryChronologyProps>) {
+  const { i18n } = useTranslation();
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activeMonthVariants = shouldReduceMotion ? reducedMotionVariants : monthVariants;
-  const months = groupMemoriesByMonth(memories);
+  const language = i18n.resolvedLanguage === "es" ? "es" : "en";
+  const months = groupMemoriesByMonth(memories, language);
 
   return (
     <div className={styles.timeline} aria-live="polite">

@@ -25,6 +25,7 @@ export const memoriesEs = {
     },
     heading: "Conservar un momento",
     intro: "Captura los matices de hoy. ¿Qué hizo que valiera la pena guardar este momento?",
+    loading: "Cargando el formulario de recuerdo nuevo",
     optional: "Opcional",
     photos: {
       cover: "Portada",
@@ -39,7 +40,7 @@ export const memoriesEs = {
     placement: {
       legend: "¿Dónde debería aparecer?",
       timeline: {
-        description: "Visible en su historia compartida",
+        description: "Visible en la historia que comparten",
         label: "Nuestra línea de tiempo",
       },
       vault: {
@@ -79,9 +80,10 @@ export const memoriesEs = {
       heading: "No pudimos abrir el editor del recuerdo",
     },
     heading: "Refina este recuerdo",
-    intro: "Dale forma a los detalles que hacen suyo este recuerdo.",
+    intro: "Dale forma a los detalles que hacen especial este recuerdo.",
+    loading: "Cargando el editor de recuerdos",
     photos: {
-      empty: "Este recuerdo usará su presentación sin fotos.",
+      empty: "Este recuerdo se mostrará sin fotos.",
       new: "Foto nueva",
       previewAlt: "Foto {{position}} del recuerdo",
       saved: "Foto guardada",
@@ -114,13 +116,13 @@ export const memoriesEs = {
       conflict: "Este recuerdo cambió. Tómense un momento para revisarlo antes de decidir.",
       deleting: "Quitando…",
       description:
-        "Dejará de formar parte de su historia compartida y ninguno de los dos podrá verlo.",
+        "Dejará de formar parte de la historia que comparten y ninguno de los dos podrá verlo.",
       eyebrow: "Un recuerdo compartido",
       failed: "No pudimos quitar este recuerdo. Sigue aquí, así que puedes intentarlo de nuevo.",
       heading: "¿Dejar ir este recuerdo?",
-      pending: "Quitando este recuerdo de su historia compartida…",
+      pending: "Quitando este recuerdo de la historia que comparten…",
       retry: "Intentar quitarlo de nuevo",
-      success: "El recuerdo ya no forma parte de su historia compartida.",
+      success: "El recuerdo ya no forma parte de la historia que comparten.",
       unavailable: "Este recuerdo ya no está aquí.",
     },
     comments: {
@@ -220,7 +222,7 @@ export const memoriesEs = {
     },
     loading: "Cargando recuerdo…",
     notFound: {
-      description: "Puede que este recuerdo ya no esté disponible o que pertenezca a otro lugar.",
+      description: "Tal vez este recuerdo ya no esté disponible o pertenezca a otro lugar.",
       eyebrow: "Recuerdo no disponible",
       heading: "Esta historia no se puede abrir",
     },
@@ -236,6 +238,25 @@ export const memoriesEs = {
   },
   card: {
     comments: "{{count}} comentarios",
+    cover: "Portada de {{title}}",
+    noCover: "No hay foto de portada disponible",
+    open: "Abrir {{title}}",
+  },
+  timeline: {
+    empty: {
+      description: "Tus momentos compartidos aparecerán aquí cuando haya recuerdos disponibles.",
+      heading: "Aún no hay recuerdos",
+    },
+    error: "No pudimos cargar tus recuerdos.",
+    loadMoreError: "No pudimos cargar más recuerdos.",
+    loadMore: "Cargar más",
+    loading: "Cargando recuerdos",
+    loadingPage: "Cargando la línea de tiempo",
+    loadingMore: "Cargando más…",
+    loadingSlow: "Esto está tardando un poco más de lo habitual.",
+    loadingStandard: "Abriendo tus recuerdos…",
+    retry: "Intentar de nuevo",
+    retryLoadMore: "Intentar cargar más",
   },
   vault: {
     actions: {
@@ -248,17 +269,17 @@ export const memoriesEs = {
     empty: {
       description:
         "Los recuerdos fuera de la línea de tiempo descansarán aquí, disponibles para ambos.",
-      heading: "Su bóveda compartida está esperando",
+      heading: "Tu bóveda compartida te está esperando",
     },
     error: {
       description:
-        "Sus recuerdos siguen conservados. Simplemente no pudimos abrir la bóveda ahora mismo.",
+        "Tus recuerdos siguen conservados. Simplemente no pudimos abrir la bóveda ahora mismo.",
       heading: "No pudimos abrir la bóveda privada",
       loadMore: "No pudimos cargar más recuerdos de la bóveda.",
     },
     hero: {
       description:
-        "Un archivo tranquilo compartido por ambos. Estos recuerdos quedan fuera de la línea de tiempo, nunca fuera de su alcance.",
+        "Un archivo tranquilo que comparten. Estos recuerdos quedan fuera de la línea de tiempo, pero siempre a tu alcance.",
       eyebrow: "Archivo compartido",
       heading: "Bóveda privada",
       shared: "Visible para ambos miembros activos",
@@ -266,14 +287,14 @@ export const memoriesEs = {
     loading: {
       label: "Cargando la bóveda privada",
       slow: "Esto está tardando un poco más de lo habitual.",
-      standard: "Abriendo su archivo compartido…",
+      standard: "Abriendo tu archivo compartido…",
     },
     detail: {
       actions: {
         backToVault: "Volver a la bóveda privada",
       },
       related: {
-        empty: "Aquí aparecerán más recuerdos de su bóveda compartida.",
+        empty: "Aquí aparecerán más recuerdos de tu bóveda compartida.",
         eyebrow: "Desde el archivo",
         heading: "Más de la bóveda",
       },

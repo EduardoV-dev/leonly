@@ -25,6 +25,7 @@ export const memoriesEn = {
     },
     heading: "Preserve a Moment",
     intro: "Capture the nuances of today. What made this moment worth holding onto?",
+    loading: "Loading new memory form",
     optional: "Optional",
     photos: {
       cover: "Cover",
@@ -80,6 +81,7 @@ export const memoriesEn = {
     },
     heading: "Refine This Memory",
     intro: "Shape the details that make this memory yours.",
+    loading: "Loading memory editor",
     photos: {
       empty: "This memory will use its no-photo presentation.",
       new: "New photo",
@@ -236,6 +238,25 @@ export const memoriesEn = {
   },
   card: {
     comments: "{{count}} comments",
+    cover: "Cover for {{title}}",
+    noCover: "No cover photo available",
+    open: "Open {{title}}",
+  },
+  timeline: {
+    empty: {
+      description: "Your shared moments will appear here once memories are available.",
+      heading: "No memories yet",
+    },
+    error: "We could not load your memories.",
+    loadMoreError: "We could not load more memories.",
+    loadMore: "Load more",
+    loading: "Loading memories",
+    loadingPage: "Loading timeline",
+    loadingMore: "Loading more…",
+    loadingSlow: "This is taking a little longer than usual.",
+    loadingStandard: "Opening your memories…",
+    retry: "Try again",
+    retryLoadMore: "Try loading more",
   },
   vault: {
     actions: {

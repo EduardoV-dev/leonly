@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getInclusiveCalendarDayCount } from "@/utils/calendar-date";
 import styles from "../dashboard-content.module.css";
 
@@ -11,6 +12,7 @@ type RelationshipMilestoneProps = {
 
 export function RelationshipMilestone({ startDate }: Readonly<RelationshipMilestoneProps>) {
   const router = useRouter();
+  const { i18n, t } = useTranslation("dashboard");
   const [today, setToday] = useState<Date | null>(null);
   const daysTogether = today ? getInclusiveCalendarDayCount(startDate, today) : undefined;
 
@@ -51,16 +53,16 @@ export function RelationshipMilestone({ startDate }: Readonly<RelationshipMilest
   }, []);
 
   if (daysTogether === undefined) {
-    return <h2 aria-label="Loading day count">&nbsp;</h2>;
+    return <h2 aria-label={t("milestone.loading")}> </h2>;
   }
 
   if (daysTogether === null) {
     return (
       <div className={styles.unavailableDate}>
-        <h2>Day count unavailable</h2>
-        <p>We could not use your space's start date.</p>
+        <h2>{t("milestone.unavailable")}</h2>
+        <p>{t("milestone.unavailableDescription")}</p>
         <button type="button" onClick={() => router.refresh()}>
-          Try again
+          {t("error.retry")}
         </button>
       </div>
     );
@@ -69,11 +71,14 @@ export function RelationshipMilestone({ startDate }: Readonly<RelationshipMilest
   return (
     <>
       <h2>
-        {daysTogether.toLocaleString()} {daysTogether === 1 ? "day" : "days"} together
+        {t("milestone.days", {
+          count: daysTogether,
+          formattedCount: daysTogether.toLocaleString(
+            i18n.resolvedLanguage === "es" ? "es-ES" : "en-US",
+          ),
+        })}
       </h2>
-      <p>
-        Every moment captured, every memory cherished. Your journey continues to unfold beautifully.
-      </p>
+      <p>{t("milestone.description")}</p>
     </>
   );
 }

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import type { SettingsReadModel } from "../../server/get-settings-for-current-user";
@@ -148,6 +149,32 @@ describe("SettingsPage", () => {
     );
     expect(screen.getByRole("button", { name: "Editar nombre visible" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Cerrar sesión en Leonly" })).toBeEnabled();
+    expect(screen.getByText("Tú")).toBeInTheDocument();
+  });
+
+  it("changes the browser-local interface language with native keyboard controls", async () => {
+    const user = userEvent.setup();
+    window.localStorage.removeItem("leonly.locale");
+    document.documentElement.lang = "en";
+    render(<SettingsPage settings={oneMemberSettings} />);
+
+    const english = screen.getByRole("radio", { name: "English" });
+    const spanish = screen.getByRole("radio", { name: "Spanish" });
+    expect(english).toBeChecked();
+    expect(spanish).not.toBeChecked();
+
+    english.focus();
+    await user.keyboard("{ArrowRight}");
+
+    await waitFor(() => expect(spanish).toBeChecked());
+    expect(spanish).toHaveFocus();
+    expect(window.localStorage.getItem("leonly.locale")).toBe("es");
+    expect(document.documentElement.lang).toBe("es");
+    expect(screen.getByText("El idioma de la interfaz cambió a Español.")).toBeInTheDocument();
+
+    await act(() => i18n.changeLanguage("en"));
+    window.localStorage.removeItem("leonly.locale");
+    document.documentElement.lang = "en";
   });
 
   it("edits the shared name with labelled controls, validation, and an authoritative refresh", async () => {

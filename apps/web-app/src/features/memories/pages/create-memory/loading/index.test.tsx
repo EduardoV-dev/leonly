@@ -1,8 +1,13 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { i18n } from "@/lib/i18n";
 import { CreateMemoryLoading } from ".";
 
 describe("CreateMemoryLoading", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
+  });
+
   it("renders a responsive new-memory form skeleton", () => {
     render(<CreateMemoryLoading />);
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { ImagePlus } from "lucide-react";
 import Link from "next/link";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import { MemberAvatar } from "../member-avatar";
@@ -14,6 +15,7 @@ type MobileHeaderProps = {
 };
 
 export function MobileHeader({ member, spaceName }: Readonly<MobileHeaderProps>) {
+  const { t } = useTranslation("dashboard");
   const nameViewportRef = useRef<HTMLDivElement>(null);
   const nameMeasureRef = useRef<HTMLSpanElement>(null);
   const [scrollDistance, setScrollDistance] = useState(0);
@@ -70,8 +72,8 @@ export function MobileHeader({ member, spaceName }: Readonly<MobileHeaderProps>)
         </div>
       </div>
       <Link className={styles.actions} href={APP_ROUTES.MEMORIES_NEW}>
-        <Plus aria-hidden="true" />
-        <span>New Entry</span>
+        <ImagePlus aria-hidden="true" />
+        <span>{t("navigation.newEntry")}</span>
       </Link>
     </header>
   );

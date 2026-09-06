@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemorySummaryCard } from ".";
@@ -68,5 +68,24 @@ describe("MemorySummaryCard", () => {
 
     fireEvent.error(cover);
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
+  });
+
+  it("updates interface copy and date formatting without changing memory content", async () => {
+    render(<MemorySummaryCard memory={memory} />);
+
+    expect(screen.getByRole("link", { name: "Open Our picnic" })).toBeInTheDocument();
+    expect(screen.getByText("Aug 20")).toBeInTheDocument();
+    expect(screen.getByText("Our picnic")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
+
+    expect(screen.getByRole("link", { name: "Abrir Our picnic" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "No hay foto de portada disponible" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("20 ago")).toBeInTheDocument();
+    expect(screen.getByText("Our picnic")).toBeInTheDocument();
   });
 });

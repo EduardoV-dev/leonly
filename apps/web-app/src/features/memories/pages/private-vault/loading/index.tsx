@@ -1,11 +1,16 @@
+"use client";
+
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import styles from "./private-vault-loading.module.css";
 
 const CARD_IDS = ["first", "second", "third", "fourth"];
 
 export function PrivateVaultLoading() {
+  const { t } = useTranslation("memories");
+
   return (
-    <output className={styles.page} aria-label="Loading Private Vault">
+    <output className={styles.page} aria-label={t("vault.loading.label")}>
       <header className={styles.hero}>
         <Skeleton className={styles.seal} />
         <div className={styles.introduction}>

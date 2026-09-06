@@ -2,15 +2,15 @@
 
 import {
   BookHeart,
+  ImagePlus,
   LayoutGrid,
   LockKeyhole,
-  MapPin,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
 import type { DashboardSection } from "../dashboard-section";
@@ -30,7 +30,8 @@ export function DashboardSidebar({
   isCollapsed,
   onCollapsedChange,
 }: Readonly<DashboardSidebarProps>) {
-  const collapseLabel = isCollapsed ? "Expand sidebar" : "Collapse sidebar";
+  const { t } = useTranslation("dashboard");
+  const collapseLabel = isCollapsed ? t("navigation.expand") : t("navigation.collapse");
 
   return (
     <aside className={styles.sidebar} data-collapsed={isCollapsed}>
@@ -53,39 +54,35 @@ export function DashboardSidebar({
       </div>
 
       <Link className={styles.newEntry} href={APP_ROUTES.MEMORIES_NEW}>
-        <Plus aria-hidden="true" />
-        <span className={styles.label}>New Entry</span>
+        <ImagePlus aria-hidden="true" />
+        <span className={styles.label}>{t("navigation.newEntry")}</span>
       </Link>
 
-      <nav className={styles.navigation} aria-label="Dashboard sections">
+      <nav className={styles.navigation} aria-label={t("navigation.sections")}>
         <Link
           href={APP_ROUTES.HOME}
           aria-current={activeSection === "dashboard" ? "page" : undefined}
         >
           <LayoutGrid aria-hidden="true" />
-          <span className={styles.label}>Dashboard</span>
+          <span className={styles.label}>{t("navigation.dashboard")}</span>
         </Link>
         <Link
           href={APP_ROUTES.TIMELINE}
           aria-current={activeSection === "timeline" ? "page" : undefined}
         >
           <BookHeart aria-hidden="true" />
-          <span className={styles.label}>Timeline</span>
+          <span className={styles.label}>{t("navigation.timeline")}</span>
         </Link>
-        <button type="button" disabled>
-          <MapPin aria-hidden="true" />
-          <span className={styles.label}>Places</span>
-        </button>
         <Link href={APP_ROUTES.VAULT} aria-current={activeSection === "vault" ? "page" : undefined}>
           <LockKeyhole aria-hidden="true" />
-          <span className={styles.label}>Vault</span>
+          <span className={styles.label}>{t("navigation.vault")}</span>
         </Link>
         <Link
           href={APP_ROUTES.SETTINGS}
           aria-current={activeSection === "settings" ? "page" : undefined}
         >
           <Settings aria-hidden="true" />
-          <span className={styles.label}>Settings</span>
+          <span className={styles.label}>{t("navigation.settings")}</span>
         </Link>
       </nav>
     </aside>

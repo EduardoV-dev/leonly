@@ -1,3 +1,4 @@
+import { afterEach, vi } from "vitest";
 import {
   detectLanguageFromLocales,
   i18n,
@@ -22,11 +23,14 @@ describe("i18n helpers", () => {
     expect(detectLanguageFromLocales(["fr-CA", "pt-BR"])).toBe("en");
   });
 
-  it("resolves initial language using saved locale first", () => {
+  it("resolves only exact saved languages before browser locales", () => {
     expect(resolveInitialLanguage("es", ["en-US"])).toBe("es");
     expect(resolveInitialLanguage("en", ["es-NI"])).toBe("en");
     expect(resolveInitialLanguage(null, ["es-NI"])).toBe("es");
     expect(resolveInitialLanguage(undefined, ["fr-FR"])).toBe("en");
+    expect(resolveInitialLanguage("es-MX", ["es-NI"])).toBe("en");
+    expect(resolveInitialLanguage("ES", ["es-NI"])).toBe("en");
+    expect(resolveInitialLanguage("", ["es-NI"])).toBe("en");
   });
 });
 
@@ -59,6 +63,25 @@ describe("initializeLanguage", () => {
       window.localStorage.removeItem("leonly.locale");
     }
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back safely when browser storage is unavailable", async () => {
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("Storage is unavailable");
+    });
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("Storage is unavailable");
+    });
+
+    await expect(initializeLanguage()).resolves.toBeUndefined();
+
+    expect(getItem).toHaveBeenCalledWith("leonly.locale");
+    expect(setItem).toHaveBeenCalledWith("leonly.locale", "en");
+    expect(document.documentElement.lang).toBe("en");
+  });
 });
 
 describe("notFound namespace", () => {
@@ -90,7 +113,7 @@ describe("spaceSetup namespace", () => {
     );
 
     expect(spanishT("steps.start.heading")).toBe("Empieza tu historia");
-    expect(spanishT("steps.join.heading")).toBe("Únete a su espacio compartido");
+    expect(spanishT("steps.join.heading")).toBe("Únete al espacio compartido de tu pareja");
     expect(spanishT("tabs.join")).toBe("Unirse con código");
     expect(spanishT("stepMarker.label", { step: 3, total: 3 })).toBe("Paso 3 de 3");
     expect(spanishT("actions.copyCode")).toBe("Copiar código");

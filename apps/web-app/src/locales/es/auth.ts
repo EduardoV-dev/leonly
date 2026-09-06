@@ -5,6 +5,7 @@ export const authEs = {
     "Un espacio privado para nuestros recuerdos, nuestras bromas internas y todo lo que estamos construyendo juntos.",
   continueWithGoogle: "Continuar con Google",
   legal: "Al continuar, aceptas nuestros Términos de servicio y nuestra Política de privacidad.",
+  loadingApplication: "Cargando la aplicación",
   language: {
     english: "Inglés",
     spanish: "Español",

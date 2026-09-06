@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { i18n } from "@/lib/i18n";
 import { RelationshipMilestone } from ".";
 
 const refreshMock = vi.hoisted(() => vi.fn());
@@ -9,7 +10,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("RelationshipMilestone", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     refreshMock.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 6, 23, 12));
