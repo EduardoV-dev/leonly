@@ -15,6 +15,43 @@
   font-family: "Nunito Sans", sans-serif;
   font-size: 0.72rem;
 }
+.value button,
+.editor button {
+  font-family: "Nunito Sans", sans-serif;
+  min-height: 2.65rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #ddcecb;
+  border-radius: 0.75rem;
+  background: #fffaf8;
+  box-shadow: none;
+  color: #754f54;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-transform: none;
+  transition:
+    background-color 180ms ease-out,
+    border-color 180ms ease-out,
+    transform 180ms ease-out;
+}
+.value button:hover:not(:disabled),
+.editor button:hover:not(:disabled) {
+  border-color: #bd9da0;
+  background: #fff;
+  transform: translateY(-1px);
+}
+.value button:focus-visible,
+.editor button:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+.value button:disabled,
+.editor button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
 .actions,
 .conflict {
   display: flex;
