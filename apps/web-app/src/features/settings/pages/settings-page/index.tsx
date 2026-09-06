@@ -6,6 +6,7 @@ import {
   Languages,
   LockKeyhole,
   Mail,
+  Settings,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -59,7 +60,11 @@ export function SettingsPage({ settings }: Readonly<SettingsPageProps>) {
   const startDate = formatDateOnly(sharedSpace.startDate, language);
   return (
     <div className={styles.page}>
-      <PageHeader title={t("hero.heading")} description={t("hero.description")} />
+      <PageHeader
+        description={t("hero.description")}
+        leading={<Settings aria-hidden="true" />}
+        title={t("hero.heading")}
+      />
 
       <div className={styles.layout}>
         <aside className={styles.rail} aria-label={sharedSpace.name}>

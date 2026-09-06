@@ -232,7 +232,6 @@ export const memoriesEn = {
       heading: "More from our story",
     },
     visibility: {
-      timeline: "Shared memory",
       vault: "Private vault",
     },
   },
@@ -282,7 +281,6 @@ export const memoriesEn = {
         "A quiet archive shared by both of you. These memories stay out of the timeline, never out of reach.",
       eyebrow: "Shared archive",
       heading: "Private Vault",
-      shared: "Visible to both active members",
     },
     sort: {
       label: "Sort by:",

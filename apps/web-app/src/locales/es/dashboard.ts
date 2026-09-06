@@ -1,12 +1,8 @@
 export const dashboardEs = {
   content: {
-    emptyPlaces: "Aún no hay lugares calificados",
-    emptyPlacesDescription:
-      "Tus lugares compartidos favoritos aparecerán aquí cuando haya calificaciones.",
     memberSummary: "Miembros del espacio",
     milestone: "Hito de la relación",
     milestoneReached: "Hito alcanzado",
-    placesHeading: "Nuestros lugares mejor calificados",
     recentMemories: "Recuerdos recientes",
     sharing: "Comparten {{name}} juntos.",
     waiting: "Esperando a tu persona",

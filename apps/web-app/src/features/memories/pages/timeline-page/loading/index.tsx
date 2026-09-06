@@ -11,18 +11,18 @@ export function TimelineLoading() {
 
   return (
     <output className={styles.page} aria-label={t("timeline.loadingPage")}>
-      <header className={styles.header}>
-        <Skeleton className={styles.title} />
-        <Skeleton className={styles.description} />
-      </header>
-      <div className={styles.toolbar}>
-        <div className={styles.filters}>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
-          <Skeleton />
+      <div className={styles.intro}>
+        <header className={styles.header}>
+          <Skeleton className={styles.leading} />
+          <div className={styles.headerContent}>
+            <Skeleton className={styles.title} />
+            <Skeleton className={styles.description} />
+          </div>
+        </header>
+        <div className={styles.toolbar}>
+          <Skeleton className={styles.sortLabel} />
+          <Skeleton className={styles.sortControl} />
         </div>
-        <Skeleton className={styles.sort} />
       </div>
       <section className={styles.month}>
         <div className={styles.monthHeading}>
@@ -32,12 +32,18 @@ export function TimelineLoading() {
         <div className={styles.cards}>
           {CARD_IDS.map((id) => (
             <article key={id} className={styles.card}>
-              <Skeleton className={styles.cover} />
-              <div className={styles.cardBody}>
-                <Skeleton className={styles.metadata} />
-                <Skeleton className={styles.cardTitle} />
-                <Skeleton className={styles.copy} />
-                <Skeleton className={styles.copyShort} />
+              <div className={styles.summary}>
+                <Skeleton className={styles.cover} />
+                <div className={styles.cardBody}>
+                  <Skeleton className={styles.metadata} />
+                  <Skeleton className={styles.cardTitle} />
+                  <Skeleton className={styles.copy} />
+                  <Skeleton className={styles.copyShort} />
+                </div>
+              </div>
+              <div className={styles.footer}>
+                <Skeleton />
+                <Skeleton />
               </div>
             </article>
           ))}

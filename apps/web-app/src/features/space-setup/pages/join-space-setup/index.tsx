@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
@@ -19,6 +20,7 @@ type SpaceJoinSetupPageProps = {
 
 export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const router = useRouter();
+  const { t } = useTranslation("spaceSetup");
   const {
     completeStep,
     form: { control, setError, getValues, trigger },
@@ -56,16 +58,11 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
       const payload = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(
-          payload.error || "We could not validate the invite code. Please try again.",
-        );
+        throw new Error(payload.error || t("errors.validateInviteCode"));
       }
     } catch (error) {
       setError("inviteCode", {
-        message:
-          error instanceof Error
-            ? error.message
-            : "We could not validate the invite code. Please try again.",
+        message: error instanceof Error ? error.message : t("errors.validateInviteCode"),
       });
       focusInvalidField("invite-code");
       setIsSubmittingCode(false);
@@ -107,7 +104,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
       const payload = (await response.json()) as { error?: string; field?: string };
 
       if (!response.ok) {
-        const message = payload.error || "We could not join this space. Please try again.";
+        const message = payload.error || t("errors.joinSpace");
 
         if (payload.field === "display_name") {
           setError("displayName", { message });
@@ -119,9 +116,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         throw new Error(message);
       }
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "We could not join this space. Please try again.",
-      );
+      setSubmitError(error instanceof Error ? error.message : t("errors.joinSpace"));
       setIsSubmittingJoin(false);
       return;
     }

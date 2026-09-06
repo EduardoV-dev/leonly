@@ -93,7 +93,7 @@ describe("DashboardPage", () => {
     vi.useRealTimers();
   });
 
-  it("renders active-space members with avatar fallbacks and truthful empty states", async () => {
+  it("renders active-space members and the recent memories section", async () => {
     await renderDashboardPage();
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Timeline memories")).toBeInTheDocument();
     expect(screen.getByTestId("timeline-memories")).toHaveAttribute("data-variant", "recent");
     expect(screen.queryByRole("link", { name: "Add a memory" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "No rated places yet" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Our Top Rated Places" })).not.toBeInTheDocument();
     expect(screen.queryByText("Autumn in Paris")).not.toBeInTheDocument();
     expect(screen.queryByText("Casa Luna")).not.toBeInTheDocument();
   });

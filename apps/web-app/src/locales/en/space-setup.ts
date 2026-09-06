@@ -37,6 +37,12 @@ export const spaceSetupEn = {
     inviteCodeRequired: "Enter an invite code.",
     inviteCodeInvalid: "The format of the code provided is invalid.",
   },
+  errors: {
+    completeSetup: "We could not complete setup. Please try again.",
+    createSpace: "We could not create your space. Please try again.",
+    joinSpace: "We could not join this space. Please try again.",
+    validateInviteCode: "We could not validate the invite code. Please try again.",
+  },
   story: {
     "create-start": {
       imageAlt: "A couple holding a small instant photo together",

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { Control } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { INVITE_CODE } from "../../components/space-setup-container/constants";
@@ -26,6 +27,7 @@ type SpaceCreateSetupPageProps = {
 
 export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   const router = useRouter();
+  const { t } = useTranslation("spaceSetup");
   const {
     clearState,
     completeStep,
@@ -115,7 +117,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
       const payload = (await response.json()) as { error?: string; field?: string };
 
       if (!response.ok) {
-        const message = payload.error || "We could not create your space. Please try again.";
+        const message = payload.error || t("errors.createSpace");
 
         if (payload.field === "start_date") {
           setError("firstDay", { message });
@@ -127,11 +129,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
         throw new Error(message);
       }
     } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "We could not create your space. Please try again.",
-      );
+      setSubmitError(error instanceof Error ? error.message : t("errors.createSpace"));
       setIsSubmitting(false);
       return;
     }

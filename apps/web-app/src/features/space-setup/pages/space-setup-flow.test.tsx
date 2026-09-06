@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { APP_ROUTES } from "@/constants/routes";
-import "@/lib/i18n";
+import { i18n } from "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { CreateSpaceInvitePage } from "./create-space-invite";
@@ -73,7 +73,8 @@ const joinState = (completedSteps: string[], displayName = "Leo") =>
   });
 
 describe("space setup flow validation and guards", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("en");
     navigationMock.push.mockReset();
     navigationMock.replace.mockReset();
     fetchMock.mockReset();

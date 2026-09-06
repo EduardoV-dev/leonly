@@ -107,6 +107,12 @@ describe("spaceSetup namespace", () => {
     expect(englishT("stepMarker.label", { step: 2, total: 3 })).toBe("Step 2 of 3");
     expect(englishT("actions.copyCode")).toBe("Copy Code");
     expect(englishT("actions.copied")).toBe("Copied");
+    expect(englishT("errors.createSpace")).toBe(
+      "We could not create your space. Please try again.",
+    );
+    expect(englishT("errors.validateInviteCode")).toBe(
+      "We could not validate the invite code. Please try again.",
+    );
     expect(englishT("story.create-start.caption")).toBe("Every great story has a beginning.");
     expect(englishT("validation.inviteCodeInvalid")).toBe(
       "The format of the code provided is invalid.",
@@ -118,6 +124,10 @@ describe("spaceSetup namespace", () => {
     expect(spanishT("stepMarker.label", { step: 3, total: 3 })).toBe("Paso 3 de 3");
     expect(spanishT("actions.copyCode")).toBe("Copiar código");
     expect(spanishT("actions.copied")).toBe("Copiado");
+    expect(spanishT("errors.createSpace")).toBe("No pudimos crear tu espacio. Inténtalo de nuevo.");
+    expect(spanishT("errors.validateInviteCode")).toBe(
+      "No pudimos verificar el código de invitación. Inténtalo de nuevo.",
+    );
     expect(spanishT("story.join-code.imageAlt")).toBe("Pareja tomada de la mano al aire libre");
     expect(spanishT("validation.inviteCodeInvalid")).toBe(
       "El formato del código proporcionado no es válido.",

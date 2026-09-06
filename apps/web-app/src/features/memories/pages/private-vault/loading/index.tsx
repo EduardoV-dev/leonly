@@ -11,27 +11,44 @@ export function PrivateVaultLoading() {
 
   return (
     <output className={styles.page} aria-label={t("vault.loading.label")}>
-      <header className={styles.hero}>
-        <Skeleton className={styles.seal} />
-        <div className={styles.introduction}>
-          <Skeleton className={styles.eyebrow} />
-          <Skeleton className={styles.title} />
-          <Skeleton className={styles.description} />
-          <Skeleton className={styles.descriptionShort} />
+      <div className={styles.intro}>
+        <header className={styles.header}>
+          <Skeleton className={styles.leading} />
+          <div className={styles.headerContent}>
+            <Skeleton className={styles.title} />
+            <Skeleton className={styles.description} />
+          </div>
+        </header>
+        <div className={styles.toolbar}>
+          <Skeleton className={styles.sortLabel} />
+          <Skeleton className={styles.sortControl} />
         </div>
-      </header>
-      <div className={styles.grid}>
-        {CARD_IDS.map((id) => (
-          <article className={styles.card} key={id}>
-            <Skeleton className={styles.cover} />
-            <div className={styles.body}>
-              <Skeleton className={styles.metadata} />
-              <Skeleton className={styles.cardTitle} />
-              <Skeleton className={styles.copy} />
-            </div>
-          </article>
-        ))}
       </div>
+      <section className={styles.month}>
+        <div className={styles.monthHeading}>
+          <Skeleton className={styles.title} />
+          <span aria-hidden="true" />
+        </div>
+        <div className={styles.cards}>
+          {CARD_IDS.map((id) => (
+            <article className={styles.card} key={id}>
+              <div className={styles.summary}>
+                <Skeleton className={styles.cover} />
+                <div className={styles.body}>
+                  <Skeleton className={styles.metadata} />
+                  <Skeleton className={styles.cardTitle} />
+                  <Skeleton className={styles.copy} />
+                  <Skeleton className={styles.copyShort} />
+                </div>
+              </div>
+              <div className={styles.footer}>
+                <Skeleton />
+                <Skeleton />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
     </output>
   );
 }

@@ -1,8 +1,10 @@
 .page {
   display: grid;
+  width: min(100%, 78rem);
   min-width: 0;
   align-content: start;
   gap: 2.25rem;
+  margin-inline: auto;
   padding: 2rem 1.25rem calc(6rem + env(safe-area-inset-bottom));
   background: var(--auth-surface);
 }

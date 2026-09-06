@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, LockKeyhole, MapPin, UsersRound } from "lucide-react";
+import { ArrowLeft, BookHeart, CalendarDays, LockKeyhole, MapPin } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -154,17 +154,16 @@ export function MemoryDetailView({
                     ) : null}
                   </div>
                 }
+                leading={<BookHeart aria-hidden="true" />}
                 title={memory.title}
                 titleId="memory-detail-title"
                 trailing={
-                  <p className={styles.visibility} data-visibility={memory.visibility}>
-                    {isVaultMemory ? (
+                  isVaultMemory ? (
+                    <p className={styles.visibility} data-visibility={memory.visibility}>
                       <LockKeyhole aria-hidden="true" />
-                    ) : (
-                      <UsersRound aria-hidden="true" />
-                    )}
-                    {t(`detail.visibility.${memory.visibility}`)}
-                  </p>
+                      {t(`detail.visibility.${memory.visibility}`)}
+                    </p>
+                  ) : undefined
                 }
               />
             </motion.div>

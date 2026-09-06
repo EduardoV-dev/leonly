@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LeonlyLogo } from "@/components/leonly-logo";
 import type { SpaceSetupSteps } from "../../types/setup-types";
-import { screenImages } from "./constants";
+import { SpaceSetupStoryContent } from "../space-setup-story-content";
 import styles from "./space-setup.module.css";
 
 const storyPanelVariants: Variants = {
@@ -59,7 +59,6 @@ type SpaceSetupContainerProps = {
 
 export function SpaceSetupContainer({ children, screen }: SpaceSetupContainerProps) {
   const { t } = useTranslation("spaceSetup");
-  const content = screenImages[screen];
   const shouldReduceMotion = useReducedMotion();
   const activeStoryPanelVariants = shouldReduceMotion ? reducedMotionVariants : storyPanelVariants;
   const activeContentPanelVariants = shouldReduceMotion
@@ -83,16 +82,7 @@ export function SpaceSetupContainer({ children, screen }: SpaceSetupContainerPro
               animate="center"
               exit="exit"
             >
-              <img
-                src={content.image}
-                alt={t(`story.${screen}.imageAlt`)}
-                className={styles.storyImage}
-              />
-              <div className={styles.storyShade} />
-              <div className={styles.storyCaption}>
-                <p>{t(`story.${screen}.caption`)}</p>
-                <span>{t(`story.${screen}.captionDetail`)}</span>
-              </div>
+              <SpaceSetupStoryContent screen={screen} />
             </motion.div>
           </AnimatePresence>
         </aside>

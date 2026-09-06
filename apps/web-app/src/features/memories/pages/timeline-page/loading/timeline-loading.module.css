@@ -1,18 +1,41 @@
 .page {
   display: grid;
-  gap: 2.25rem;
-  padding: 2rem 1.25rem 6rem;
+  width: min(100%, 78rem);
+  min-width: 0;
+  align-content: start;
+  gap: 2rem;
+  margin-inline: auto;
+  padding: 1rem 0.75rem calc(6.25rem + env(safe-area-inset-bottom));
 }
 
 .header,
+.intro,
+.headerContent,
 .month,
-.cards {
+.cards,
+.summary {
   display: grid;
   min-width: 0;
 }
 
+.intro {
+  gap: 1rem;
+}
+
 .header {
   gap: 0.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--auth-border);
+}
+
+.leading {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+}
+
+.headerContent {
+  gap: 0.45rem;
 }
 
 .title {
@@ -28,28 +51,19 @@
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: flex-end;
+  gap: 0.65rem;
 }
 
-.filters {
-  display: flex;
-  min-width: 0;
-  gap: 0.5rem;
-  overflow: hidden;
+.sortLabel {
+  width: 2.75rem;
+  height: 0.75rem;
 }
 
-.filters > div {
-  width: 4.5rem;
-  height: 2rem;
-  flex: none;
-  border-radius: 999px;
-}
-
-.sort {
-  width: 6rem;
-  height: 1rem;
-  flex: none;
+.sortControl {
+  width: 6.5rem;
+  height: 2.35rem;
+  border-radius: 0.8rem;
 }
 
 .month {
@@ -78,8 +92,7 @@
 }
 
 .card {
-  display: grid;
-  gap: 0.9rem;
+  min-width: 0;
 }
 
 .cover {
@@ -97,6 +110,10 @@
   border: 1px solid #eee6e3;
   border-radius: 0.75rem;
   background: #fff;
+}
+
+.summary {
+  gap: 0.9rem;
 }
 
 .metadata {
@@ -122,19 +139,52 @@
   width: 62%;
 }
 
+.footer {
+  display: flex;
+  min-height: 4.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #eee6e3;
+  background: #fffdfc;
+}
+
+.footer > div:first-child {
+  width: 5.5rem;
+  height: 0.75rem;
+}
+
+.footer > div:last-child {
+  width: 7rem;
+  height: 2rem;
+}
+
 @mixin screen-sm {
   .page {
-    padding-right: 2rem;
-    padding-left: 2rem;
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
   }
 }
 
 @mixin screen-md {
   .page {
-    padding: 3.6rem clamp(2.5rem, 5vw, 5rem);
+    gap: 3rem;
+    padding: 3rem clamp(2.25rem, 4vw, 4.5rem) 4.5rem;
   }
 
-  .card {
+  .header {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .intro {
+    gap: 1.25rem;
+  }
+
+  .summary {
     grid-template-columns: minmax(0, 2fr) minmax(14rem, 0.9fr);
     min-height: clamp(22rem, 32vw, 31rem);
     gap: 1rem;
@@ -143,6 +193,12 @@
   .cover,
   .cardBody {
     height: 100%;
+  }
+}
+
+@mixin screen-lg {
+  .page {
+    padding-top: 2.5rem;
   }
 }
 

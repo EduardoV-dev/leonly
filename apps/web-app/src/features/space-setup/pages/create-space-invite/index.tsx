@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -12,6 +13,7 @@ type CreateSpaceInvitePageProps = {
 };
 
 export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps) {
+  const { t } = useTranslation("spaceSetup");
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -35,12 +37,10 @@ export function CreateSpaceInvitePage({ inviteCode }: CreateSpaceInvitePageProps
       const payload = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "We could not complete setup. Please try again.");
+        throw new Error(payload.error || t("errors.completeSetup"));
       }
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "We could not complete setup. Please try again.",
-      );
+      setSubmitError(error instanceof Error ? error.message : t("errors.completeSetup"));
       setIsSubmitting(false);
       return;
     }

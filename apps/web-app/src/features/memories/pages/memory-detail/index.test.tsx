@@ -53,7 +53,7 @@ describe("MemoryDetailPage", () => {
     await i18n.changeLanguage("en");
   });
 
-  it("renders the complete editorial story and timeline visibility", () => {
+  it("renders the complete editorial story without redundant timeline visibility", () => {
     renderDetail(<MemoryDetailPage memory={memory} />);
 
     expect(screen.getByRole("heading", { name: "Among the flowers" })).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("MemoryDetailPage", () => {
       "src",
       "https://avatars.example/sarah.jpg",
     );
-    expect(screen.getByText("Shared memory")).toBeInTheDocument();
+    expect(screen.queryByText("Shared memory")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "More from our story" })).toBeInTheDocument();
     expect(
       screen.getByText("More shared moments will appear here as your timeline grows."),

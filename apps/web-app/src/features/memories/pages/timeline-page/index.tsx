@@ -1,5 +1,6 @@
 "use client";
 
+import { BookHeart } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,17 +42,21 @@ export function TimelinePage() {
       initial="hidden"
       animate="visible"
     >
-      <motion.div variants={activeRevealVariants}>
-        <PageHeader title={t("timeline.heading")} description={t("timeline.description")} />
-      </motion.div>
-      <motion.div className={styles.toolbar} variants={activeRevealVariants}>
-        <MemorySortSelect
-          label={t("timeline.sort")}
-          newestLabel={t("timeline.newest")}
-          oldestLabel={t("timeline.oldest")}
-          onChange={setSort}
-          value={sort}
+      <motion.div className={styles.intro} variants={activeRevealVariants}>
+        <PageHeader
+          description={t("timeline.description")}
+          leading={<BookHeart aria-hidden="true" />}
+          title={t("timeline.heading")}
         />
+        <div className={styles.toolbar}>
+          <MemorySortSelect
+            label={t("timeline.sort")}
+            newestLabel={t("timeline.newest")}
+            oldestLabel={t("timeline.oldest")}
+            onChange={setSort}
+            value={sort}
+          />
+        </div>
       </motion.div>
       <motion.div variants={activeRevealVariants}>
         <MemoriesTimeline sort={sort} />

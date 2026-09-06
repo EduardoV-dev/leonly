@@ -232,7 +232,6 @@ export const memoriesEs = {
       heading: "Más de nuestra historia",
     },
     visibility: {
-      timeline: "Recuerdo compartido",
       vault: "Bóveda privada",
     },
   },
@@ -284,7 +283,6 @@ export const memoriesEs = {
         "Un archivo tranquilo que comparten. Estos recuerdos quedan fuera de la línea de tiempo, pero siempre a tu alcance.",
       eyebrow: "Archivo compartido",
       heading: "Bóveda privada",
-      shared: "Visible para ambos miembros activos",
     },
     sort: {
       label: "Ordenar por:",

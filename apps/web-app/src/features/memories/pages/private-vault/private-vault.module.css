@@ -1,34 +1,18 @@
 .page {
   display: grid;
+  width: min(100%, 78rem);
   min-width: 0;
   align-content: start;
   gap: 2rem;
-  padding: 2rem 1.25rem 6rem;
-  background:
-    radial-gradient(circle at 92% 0%, rgb(231 216 235 / 0.48), transparent 24rem),
-    var(--auth-surface);
+  margin-inline: auto;
+  padding: 1rem 0.75rem calc(6.25rem + env(safe-area-inset-bottom));
+  background: var(--auth-surface);
 }
 
-.sharedNote {
-  margin: 0;
-}
-
-.sharedNote {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 999px;
-  background: #f5edf5;
-  color: #684d69;
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.sharedNote svg {
-  width: 1rem;
-  height: 1rem;
+.intro {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
 }
 
 .sort {
@@ -38,14 +22,24 @@
 
 @mixin screen-sm {
   .page {
-    padding-right: 2rem;
-    padding-left: 2rem;
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
   }
 }
 
 @mixin screen-md {
   .page {
-    gap: 2.75rem;
-    padding: 3.6rem clamp(2.5rem, 5vw, 5rem);
+    gap: 3rem;
+    padding: 3rem clamp(2.25rem, 4vw, 4.5rem) 4.5rem;
+  }
+
+  .intro {
+    gap: 1.25rem;
+  }
+}
+
+@mixin screen-lg {
+  .page {
+    padding-top: 2.5rem;
   }
 }

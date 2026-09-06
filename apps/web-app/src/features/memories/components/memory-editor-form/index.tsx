@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowLeft, LockKeyhole, MapPin, Save, Sparkles, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  LockKeyhole,
+  MapPin,
+  PencilLine,
+  Save,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
@@ -100,6 +109,9 @@ export function MemoryEditorForm({
       <motion.div variants={activeVariants}>
         <PageHeader
           description={t(mode === "create" ? "create.intro" : "edit.intro")}
+          leading={
+            mode === "create" ? <ImagePlus aria-hidden="true" /> : <PencilLine aria-hidden="true" />
+          }
           title={t(mode === "create" ? "create.heading" : "edit.heading")}
         />
       </motion.div>

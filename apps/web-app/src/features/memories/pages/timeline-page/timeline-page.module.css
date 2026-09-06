@@ -1,10 +1,18 @@
 .page {
   display: grid;
+  width: min(100%, 78rem);
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   align-content: start;
-  gap: 2.25rem;
-  padding: 2rem 1.25rem 6rem;
+  gap: 2rem;
+  margin-inline: auto;
+  padding: 1rem 0.75rem calc(6.25rem + env(safe-area-inset-bottom));
+}
+
+.intro {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
 }
 
 .toolbar {
@@ -13,9 +21,26 @@
   justify-content: flex-end;
 }
 
+@mixin screen-sm {
+  .page {
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+  }
+}
+
 @mixin screen-md {
   .page {
-    gap: 2.75rem;
-    padding: 3.6rem clamp(2.5rem, 5vw, 5rem);
+    gap: 3rem;
+    padding: 3rem clamp(2.25rem, 4vw, 4.5rem) 4.5rem;
+  }
+
+  .intro {
+    gap: 1.25rem;
+  }
+}
+
+@mixin screen-lg {
+  .page {
+    padding-top: 2.5rem;
   }
 }

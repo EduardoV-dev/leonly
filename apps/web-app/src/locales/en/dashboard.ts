@@ -1,12 +1,8 @@
 export const dashboardEn = {
   content: {
-    emptyPlaces: "No rated places yet",
-    emptyPlacesDescription:
-      "Your favorite shared places will appear here once ratings are available.",
     memberSummary: "Space members",
     milestone: "Relationship milestone",
     milestoneReached: "Milestone reached",
-    placesHeading: "Our Top Rated Places",
     recentMemories: "Recent Memories",
     sharing: "Sharing {{name}} together.",
     waiting: "Waiting for your person",

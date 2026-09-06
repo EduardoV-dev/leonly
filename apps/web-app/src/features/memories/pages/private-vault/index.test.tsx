@@ -17,7 +17,6 @@ describe("PrivateVaultPage", () => {
 
     expect(screen.getByRole("heading", { name: "Private Vault" })).toBeInTheDocument();
     expect(screen.getByText(/quiet archive shared by both of you/i)).toBeInTheDocument();
-    expect(screen.getByText("Visible to both active members")).toBeInTheDocument();
     expect(
       screen.getByText(/These memories stay out of the timeline, never out of reach/i),
     ).toBeInTheDocument();

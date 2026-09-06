@@ -1,6 +1,6 @@
 "use client";
 
-import { LockKeyhole, UsersRound } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,27 +39,21 @@ export function PrivateVaultPage() {
       initial="hidden"
       animate="visible"
     >
-      <motion.div variants={activeRevealVariants}>
+      <motion.div className={styles.intro} variants={activeRevealVariants}>
         <PageHeader
           description={t("vault.hero.description")}
           leading={<LockKeyhole aria-hidden="true" />}
           title={t("vault.hero.heading")}
-          trailing={
-            <p className={styles.sharedNote}>
-              <UsersRound aria-hidden="true" />
-              {t("vault.hero.shared")}
-            </p>
-          }
         />
-      </motion.div>
-      <motion.div className={styles.sort} variants={activeRevealVariants}>
-        <MemorySortSelect
-          label={t("vault.sort.label")}
-          newestLabel={t("vault.sort.newest")}
-          oldestLabel={t("vault.sort.oldest")}
-          onChange={setSort}
-          value={sort}
-        />
+        <div className={styles.sort}>
+          <MemorySortSelect
+            label={t("vault.sort.label")}
+            newestLabel={t("vault.sort.newest")}
+            oldestLabel={t("vault.sort.oldest")}
+            onChange={setSort}
+            value={sort}
+          />
+        </div>
       </motion.div>
       <motion.div variants={activeRevealVariants}>
         <VaultMemories sort={sort} />

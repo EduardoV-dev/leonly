@@ -12,9 +12,11 @@ export function SettingsLoading() {
   return (
     <output className={styles.page} aria-label={t("loading")}>
       <header className={styles.hero}>
-        <Skeleton className={styles.eyebrow} />
-        <Skeleton className={styles.title} />
-        <Skeleton className={styles.description} />
+        <Skeleton className={styles.leading} />
+        <div className={styles.heroContent}>
+          <Skeleton className={styles.title} />
+          <Skeleton className={styles.description} />
+        </div>
       </header>
       <div className={styles.layout}>
         <aside className={styles.rail}>

@@ -3,7 +3,7 @@ import styles from "./page-header.module.css";
 
 type PageHeaderProps = {
   description?: ReactNode;
-  leading?: ReactNode;
+  leading: ReactNode;
   supporting?: ReactNode;
   title: ReactNode;
   titleId?: string;
@@ -20,7 +20,7 @@ export function PageHeader({
 }: Readonly<PageHeaderProps>) {
   return (
     <header className={styles.root}>
-      {leading ? <div className={styles.leading}>{leading}</div> : null}
+      <div className={styles.leading}>{leading}</div>
       <div className={styles.content}>
         <h1 id={titleId}>{title}</h1>
         {description ? <p>{description}</p> : null}

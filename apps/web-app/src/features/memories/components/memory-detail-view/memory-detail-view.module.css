@@ -1,6 +1,6 @@
 .page {
   min-width: 0;
-  width: 100%;
+  width: min(100%, 78rem);
   margin: 0 auto;
   overflow-x: clip;
   padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
@@ -255,33 +255,8 @@
 }
 
 @media (min-width: 100rem) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr) clamp(26rem, 26vw, 36rem);
-    align-items: start;
-    gap: clamp(2.5rem, 3vw, 4rem);
-  }
-
-  .spread {
-    grid-template-columns: minmax(0, 1.1fr) minmax(22rem, 0.9fr);
-    align-items: start;
-  }
-
   .story {
     min-height: clamp(30rem, 54vh, 42rem);
-  }
-
-  .related {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-  }
-
-  .comments {
-    grid-column: 1 / -1;
-  }
-
-  .relatedGrid {
-    grid-template-columns: 1fr;
   }
 }
 
