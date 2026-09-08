@@ -254,17 +254,19 @@ describe("space setup flow validation and guards", () => {
   });
 
   it("shows a lookup error instead of advancing for an unknown invite code", async () => {
+    await i18n.changeLanguage("es");
     fetchMock.mockResolvedValue({
       json: async () => ({ error: "This invite is invalid or unavailable." }),
       ok: false,
+      status: 404,
     });
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
-
-    const inviteCodeInput = await screen.findByLabelText("Invite code");
+    const inviteCodeInput = await screen.findByLabelText("Código de invitación");
     fireEvent.change(inviteCodeInput, { target: { value: "lny7kmp2" } });
-    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
-
-    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /unirse al espacio/i }));
+    expect(
+      await screen.findByText("Este código de invitación no es válido o ya no está disponible."),
+    ).toBeInTheDocument();
     expect(navigationMock.push).not.toHaveBeenCalled();
   });
 
@@ -272,13 +274,12 @@ describe("space setup flow validation and guards", () => {
     fetchMock.mockResolvedValue({
       json: async () => ({ error: "Too many join attempts. Try again in 10 minutes." }),
       ok: false,
+      status: 429,
     });
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
-
     const inviteCodeInput = await screen.findByLabelText("Invite code");
     fireEvent.change(inviteCodeInput, { target: { value: "lny7kmp2" } });
     fireEvent.click(screen.getByRole("button", { name: /join space/i }));
-
     expect(
       await screen.findByText("Too many join attempts. Try again in 10 minutes."),
     ).toBeInTheDocument();

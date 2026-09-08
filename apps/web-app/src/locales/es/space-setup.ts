@@ -40,7 +40,10 @@ export const spaceSetupEs = {
   errors: {
     completeSetup: "No pudimos completar la configuración. Inténtalo de nuevo.",
     createSpace: "No pudimos crear tu espacio. Inténtalo de nuevo.",
+    invalidInviteCode: "El formato del código proporcionado no es válido.",
+    inviteUnavailable: "Este código de invitación no es válido o ya no está disponible.",
     joinSpace: "No pudimos unirte al espacio. Inténtalo de nuevo.",
+    joinRateLimited: "Demasiados intentos para unirse. Inténtalo de nuevo en 10 minutos.",
     validateInviteCode: "No pudimos verificar el código de invitación. Inténtalo de nuevo.",
   },
   story: {

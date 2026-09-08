@@ -40,7 +40,10 @@ export const spaceSetupEn = {
   errors: {
     completeSetup: "We could not complete setup. Please try again.",
     createSpace: "We could not create your space. Please try again.",
+    invalidInviteCode: "The format of the code provided is invalid.",
+    inviteUnavailable: "This invite is invalid or unavailable.",
     joinSpace: "We could not join this space. Please try again.",
+    joinRateLimited: "Too many join attempts. Try again in 10 minutes.",
     validateInviteCode: "We could not validate the invite code. Please try again.",
   },
   story: {

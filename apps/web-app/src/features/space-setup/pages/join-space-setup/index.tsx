@@ -18,6 +18,22 @@ type SpaceJoinSetupPageProps = {
   screen: SpaceSetupJoinSteps;
 };
 
+function getInviteCodeErrorMessage(status: number, fallback: string): string {
+  if (status === 400) {
+    return "errors.invalidInviteCode";
+  }
+
+  if (status === 404) {
+    return "errors.inviteUnavailable";
+  }
+
+  if (status === 429) {
+    return "errors.joinRateLimited";
+  }
+
+  return fallback;
+}
+
 export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
   const router = useRouter();
   const { t } = useTranslation("spaceSetup");
@@ -55,10 +71,9 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         },
         method: "POST",
       });
-      const payload = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || t("errors.validateInviteCode"));
+        throw new Error(t(getInviteCodeErrorMessage(response.status, "errors.validateInviteCode")));
       }
     } catch (error) {
       setError("inviteCode", {
