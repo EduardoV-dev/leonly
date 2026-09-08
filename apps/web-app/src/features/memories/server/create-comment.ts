@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { MemoryComment } from "../types/comment";
 import {
   createCommentInputSchema,
@@ -71,7 +71,6 @@ function toMemoryComment(
 }
 
 export async function createComment(
-  userId: string,
   memoryId: string,
   idempotencyKey: string,
   body: string,
@@ -98,9 +97,8 @@ export async function createComment(
   }
 
   const input = parsed.data;
-  const admin = createAdminClient();
-  const response = await admin.rpc("create_memory_comment", {
-    p_author_user_id: userId,
+  const supabase = await createClient();
+  const response = await supabase.rpc("create_memory_comment", {
     p_body: input.body,
     p_idempotency_key: input.idempotencyKey,
     p_memory_id: input.memoryId,
@@ -130,10 +128,14 @@ export async function createComment(
     });
   }
 
-  const authorProfileResult = await admin
+  if (!parsedRow.data.author_user_id) {
+    throw new Error("The completed comment outcome is invalid.");
+  }
+
+  const authorProfileResult = await supabase
     .from("users")
     .select("avatar_url")
-    .eq("id", userId)
+    .eq("id", parsedRow.data.author_user_id)
     .maybeSingle();
   if (authorProfileResult.error) {
     throw new Error("Unable to resolve the comment author profile.", {

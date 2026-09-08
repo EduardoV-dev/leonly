@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const createAdminClientMock = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
+const createClientMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 
 import { createComment } from "./create-comment";
 
@@ -38,9 +38,9 @@ describe("createComment", () => {
   it("validates, trims, fingerprints, and returns the canonical server comment", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: [completedRow("A note")], error: null });
     const admin = adminClient(rpc);
-    createAdminClientMock.mockReturnValue(admin);
+    createClientMock.mockResolvedValue(admin);
 
-    await expect(createComment(userId, memoryId, idempotencyKey, "  A note  ")).resolves.toEqual({
+    await expect(createComment(memoryId, idempotencyKey, "  A note  ")).resolves.toEqual({
       authorAvatarUrl: avatarUrl,
       authorDisplayName: "Alex",
       body: "A note",
@@ -53,7 +53,6 @@ describe("createComment", () => {
     });
 
     expect(rpc).toHaveBeenCalledWith("create_memory_comment", {
-      p_author_user_id: userId,
       p_body: "A note",
       p_idempotency_key: idempotencyKey,
       p_memory_id: memoryId,
@@ -64,9 +63,9 @@ describe("createComment", () => {
 
   it("uses no avatar when the profile image URL is invalid", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: [completedRow()], error: null });
-    createAdminClientMock.mockReturnValue(adminClient(rpc, { avatar_url: "not-a-url" }));
+    createClientMock.mockResolvedValue(adminClient(rpc, { avatar_url: "not-a-url" }));
 
-    await expect(createComment(userId, memoryId, idempotencyKey, "A note")).resolves.toMatchObject({
+    await expect(createComment(memoryId, idempotencyKey, "A note")).resolves.toMatchObject({
       authorAvatarUrl: null,
     });
   });
@@ -87,9 +86,9 @@ describe("createComment", () => {
       ],
       error: null,
     });
-    createAdminClientMock.mockReturnValue({ rpc });
+    createClientMock.mockResolvedValue({ rpc });
 
-    await expect(createComment(userId, memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
+    await expect(createComment(memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
       code: "unavailable",
       message: "This memory is unavailable.",
       status: 404,
@@ -97,10 +96,10 @@ describe("createComment", () => {
   });
 
   it("preserves validation failures before opening the admin boundary", async () => {
-    await expect(createComment(userId, memoryId, idempotencyKey, " \n ")).rejects.toMatchObject({
+    await expect(createComment(memoryId, idempotencyKey, " \n ")).rejects.toMatchObject({
       fields: { body: "Enter a comment." },
     });
-    expect(createAdminClientMock).not.toHaveBeenCalled();
+    expect(createClientMock).not.toHaveBeenCalled();
   });
 
   it("maps key reuse conflicts without exposing database details", async () => {
@@ -119,22 +118,22 @@ describe("createComment", () => {
       ],
       error: null,
     });
-    createAdminClientMock.mockReturnValue({ rpc });
+    createClientMock.mockResolvedValue({ rpc });
 
-    await expect(
-      createComment(userId, memoryId, idempotencyKey, "A different note"),
-    ).rejects.toMatchObject({
-      fields: { form: "The request key was already used for different content." },
-    });
+    await expect(createComment(memoryId, idempotencyKey, "A different note")).rejects.toMatchObject(
+      {
+        fields: { form: "The request key was already used for different content." },
+      },
+    );
   });
 
   it("preserves transport failures as the operational error cause", async () => {
     const rpcError = Object.assign(new Error("database detail"), { code: "42702" });
-    createAdminClientMock.mockReturnValue({
+    createClientMock.mockResolvedValue({
       rpc: vi.fn().mockResolvedValue({ data: null, error: rpcError }),
     });
 
-    await expect(createComment(userId, memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
+    await expect(createComment(memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
       cause: rpcError,
       message: "Unable to create the comment.",
     });

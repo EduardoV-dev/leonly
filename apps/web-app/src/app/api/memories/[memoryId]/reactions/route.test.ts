@@ -2,27 +2,36 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { createClientMock, logServerErrorMock, MemoryReactionErrorMock, toggleMemoryReactionMock } =
-  vi.hoisted(() => {
-    class TestMemoryReactionError extends Error {
-      constructor(
-        message: string,
-        readonly status: 404,
-        readonly code: "unavailable",
-      ) {
-        super(message);
-      }
+const {
+  createClientMock,
+  getAvailableMemoryMock,
+  logServerErrorMock,
+  MemoryReactionErrorMock,
+  toggleMemoryReactionMock,
+} = vi.hoisted(() => {
+  class TestMemoryReactionError extends Error {
+    constructor(
+      message: string,
+      readonly status: 404,
+      readonly code: "unavailable",
+    ) {
+      super(message);
     }
+  }
 
-    return {
-      createClientMock: vi.fn(),
-      logServerErrorMock: vi.fn(),
-      MemoryReactionErrorMock: TestMemoryReactionError,
-      toggleMemoryReactionMock: vi.fn(),
-    };
-  });
+  return {
+    createClientMock: vi.fn(),
+    getAvailableMemoryMock: vi.fn(),
+    logServerErrorMock: vi.fn(),
+    MemoryReactionErrorMock: TestMemoryReactionError,
+    toggleMemoryReactionMock: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
+vi.mock("@/features/memories/server/get-available-memory", () => ({
+  getAvailableMemory: getAvailableMemoryMock,
+}));
 vi.mock("@/lib/server-logger", () => ({
   createRequestLogger: vi.fn(() => ({ child: vi.fn() })),
   logServerError: logServerErrorMock,
@@ -64,13 +73,14 @@ describe("POST /api/memories/[memoryId]/reactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClientMock.mockResolvedValue(authenticatedClient());
+    getAvailableMemoryMock.mockResolvedValue({ id: MEMORY_ID });
     toggleMemoryReactionMock.mockResolvedValue(REACTION);
   });
 
   it("derives the member from the session and returns the confirmed reaction summary", async () => {
     const response = await POST(request(), context());
 
-    expect(toggleMemoryReactionMock).toHaveBeenCalledWith("member-id", MEMORY_ID, "heart");
+    expect(toggleMemoryReactionMock).toHaveBeenCalledWith(MEMORY_ID, "heart");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ reaction: REACTION });
   });
@@ -101,6 +111,18 @@ describe("POST /api/memories/[memoryId]/reactions", () => {
     expect(toggleMemoryReactionMock).not.toHaveBeenCalled();
   });
 
+  it("authorizes the memory before validating the reaction", async () => {
+    getAvailableMemoryMock.mockResolvedValue(null);
+    const inaccessibleRequest = request({ reactionType: "unsupported" });
+    const json = vi.spyOn(inaccessibleRequest, "json");
+
+    const response = await POST(inaccessibleRequest, context());
+
+    expect(response.status).toBe(404);
+    expect(json).not.toHaveBeenCalled();
+    expect(toggleMemoryReactionMock).not.toHaveBeenCalled();
+  });
+
   it.each(["inactive", "deleted", "other-space"])(
     "maps %s targets to the generic unavailable response",
     async () => {
@@ -112,8 +134,8 @@ describe("POST /api/memories/[memoryId]/reactions", () => {
 
       expect(response.status).toBe(404);
       await expect(response.json()).resolves.toEqual({
-        code: "unavailable",
-        error: "This memory is unavailable.",
+        code: "not_found",
+        error: "Resource not found.",
       });
     },
   );

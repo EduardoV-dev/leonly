@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getAvailableMemory } from "@/features/memories/server/get-available-memory";
 import { MemoryInputError } from "@/features/memories/server/memory-input-validation";
 import {
   MemoryReactionError,
   toggleMemoryReaction,
 } from "@/features/memories/server/memory-reactions";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,22 +27,21 @@ export async function POST(request: Request, context: RouteContext) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { code: "unavailable", error: "This memory is unavailable." },
-        { status: 404 },
-      );
+      return privateResourceNotFound();
     }
 
     const { memoryId } = await context.params;
+    if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
     const payload = reactionRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
       return NextResponse.json({ error: "Please choose a valid reaction." }, { status: 400 });
     }
 
-    const reaction = await toggleMemoryReaction(user.id, memoryId, payload.data.reactionType);
+    const reaction = await toggleMemoryReaction(memoryId, payload.data.reactionType);
     return NextResponse.json({ reaction });
   } catch (error) {
     if (error instanceof MemoryReactionError) {
+      if (error.code === "unavailable") return privateResourceNotFound();
       return NextResponse.json(
         { code: error.code, error: error.message },
         { status: error.status },

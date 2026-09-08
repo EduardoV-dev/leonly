@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { MemoryInputError, validateCreateMemoryFormData } from "./memory-input-validation";
 import { cleanupMemoryCreationAttempt } from "./memory-photo-staging-cleanup";
 
@@ -13,7 +13,7 @@ const uuidSchema = z.uuid();
 
 export const CreateMemoryError = MemoryInputError;
 
-export async function createMemory(userId: string, idempotencyKey: string, formData: FormData) {
+export async function createMemory(idempotencyKey: string, formData: FormData) {
   if (!uuidSchema.safeParse(idempotencyKey).success) {
     throw new CreateMemoryError("Please try again with a new form.", {
       form: "Invalid request key.",
@@ -21,11 +21,10 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
   }
 
   const input = await validateCreateMemoryFormData(formData);
-  const admin = createAdminClient();
-  const { data: reservationData, error: reservationError } = await admin.rpc(
+  const supabase = await createClient();
+  const { data: reservationData, error: reservationError } = await supabase.rpc(
     "reserve_memory_creation_attempt",
     {
-      p_creator_user_id: userId,
       p_idempotency_key: idempotencyKey,
       p_request_fingerprint: input.requestFingerprint,
     },
@@ -59,7 +58,7 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
   try {
     for (const [position, photo] of input.photos.entries()) {
       const photoId = photoIds[position];
-      const { data: stagingData, error: stagingError } = await admin.rpc(
+      const { data: stagingData, error: stagingError } = await supabase.rpc(
         "stage_memory_photo_variants",
         {
           p_attempt_id: reservation.attempt_id,
@@ -99,7 +98,7 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
       ] as const;
 
       for (const upload of uploads) {
-        const { error: uploadError } = await admin.storage
+        const { error: uploadError } = await supabase.storage
           .from("memory-photos")
           .upload(upload.path, upload.bytes, {
             contentType: upload.contentType,
@@ -110,7 +109,7 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
         }
       }
 
-      const { error: uploadedError } = await admin.rpc("mark_memory_photo_uploaded", {
+      const { error: uploadedError } = await supabase.rpc("mark_memory_photo_uploaded", {
         p_photo_id: photoId,
       });
       if (uploadedError) {
@@ -118,7 +117,7 @@ export async function createMemory(userId: string, idempotencyKey: string, formD
       }
     }
 
-    const { data: memoryId, error: finalizeError } = await admin.rpc(
+    const { data: memoryId, error: finalizeError } = await supabase.rpc(
       "finalize_memory_creation_attempt",
       {
         p_attempt_id: reservation.attempt_id,

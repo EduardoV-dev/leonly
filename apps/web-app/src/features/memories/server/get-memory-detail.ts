@@ -52,7 +52,7 @@ export async function getMemoryDetailForVisibility(
         .select("id,position")
         .eq("memory_id", memory.id)
         .order("position", { ascending: true }),
-      getMemoryReactionSummary(user.id, memory.id),
+      getMemoryReactionSummary(memory.id),
     ]);
 
     if (creatorResult.error || !creatorResult.data) {

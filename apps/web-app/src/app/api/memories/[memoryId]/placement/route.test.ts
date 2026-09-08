@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 const {
   createClientMock,
+  getAvailableMemoryMock,
   logServerErrorMock,
   MemoryPlacementErrorMock,
   MemoryPlacementInputErrorMock,
@@ -23,6 +24,7 @@ const {
 
   return {
     createClientMock: vi.fn(),
+    getAvailableMemoryMock: vi.fn(),
     logServerErrorMock: vi.fn(),
     MemoryPlacementErrorMock: TestMemoryPlacementError,
     MemoryPlacementInputErrorMock: TestMemoryPlacementInputError,
@@ -31,6 +33,9 @@ const {
 });
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
+vi.mock("@/features/memories/server/get-available-memory", () => ({
+  getAvailableMemory: getAvailableMemoryMock,
+}));
 vi.mock("@/lib/server-logger", () => ({
   createRequestLogger: vi.fn(() => ({ child: vi.fn() })),
   logServerError: logServerErrorMock,
@@ -73,7 +78,8 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClientMock.mockResolvedValue(client("member-id"));
-    placeMemoryMock.mockImplementation(async (_userId, _memoryId, targetVisibility) => ({
+    getAvailableMemoryMock.mockResolvedValue({ id: MEMORY_ID });
+    placeMemoryMock.mockImplementation(async (_memoryId, targetVisibility) => ({
       id: MEMORY_ID,
       version: EXPECTED_VERSION,
       visibility: targetVisibility,
@@ -88,12 +94,7 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
         context(),
       );
 
-      expect(placeMemoryMock).toHaveBeenCalledWith(
-        "member-id",
-        MEMORY_ID,
-        target,
-        EXPECTED_VERSION,
-      );
+      expect(placeMemoryMock).toHaveBeenCalledWith(MEMORY_ID, target, EXPECTED_VERSION);
       expect(response.status).toBe(200);
       await expect(response.json()).resolves.toMatchObject({ id: MEMORY_ID, visibility: target });
     },
@@ -114,6 +115,18 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
     expect(placeMemoryMock).not.toHaveBeenCalled();
   });
 
+  it("authorizes the target before validating placement fields", async () => {
+    getAvailableMemoryMock.mockResolvedValue(null);
+    const inaccessibleRequest = request({ targetVisibility: "other" });
+    const json = vi.spyOn(inaccessibleRequest, "json");
+
+    const response = await PATCH(inaccessibleRequest, context());
+
+    expect(response.status).toBe(404);
+    expect(json).not.toHaveBeenCalled();
+    expect(placeMemoryMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     [MEMORY_ID, { expectedVersion: "not-a-version", targetVisibility: "vault" }],
     [MEMORY_ID, { expectedVersion: EXPECTED_VERSION, targetVisibility: "other" }],
@@ -128,7 +141,10 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
     const response = await PATCH(request(), context("not-a-uuid"));
 
     expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toMatchObject({ code: "unavailable" });
+    await expect(response.json()).resolves.toEqual({
+      code: "not_found",
+      error: "Resource not found.",
+    });
     expect(placeMemoryMock).not.toHaveBeenCalled();
   });
 
@@ -143,7 +159,9 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
     const response = await PATCH(request(), context());
 
     expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toMatchObject({ code });
+    await expect(response.json()).resolves.toMatchObject({
+      code: code === "unavailable" ? "not_found" : code,
+    });
   });
 
   it("redacts unexpected placement failures from logs and responses", async () => {

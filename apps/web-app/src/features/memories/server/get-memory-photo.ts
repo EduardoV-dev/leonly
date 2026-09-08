@@ -1,7 +1,6 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getAvailableMemory } from "./get-available-memory";
 
@@ -57,8 +56,8 @@ export async function getMemoryPhoto(
     variant === "cover"
       ? (photo.data.cover_object_path ?? photo.data.object_path)
       : (photo.data.detail_object_path ?? photo.data.object_path);
-  const { data: object, error: downloadError } = await createAdminClient()
-    .storage.from("memory-photos")
+  const { data: object, error: downloadError } = await supabase.storage
+    .from("memory-photos")
     .download(objectPath);
 
   if (downloadError || !object) return null;

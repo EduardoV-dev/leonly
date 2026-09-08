@@ -7,6 +7,7 @@ import {
 } from "@/features/memories/server/delete-memory";
 import { getAvailableMemory } from "@/features/memories/server/get-available-memory";
 import { decodeMemoryVersion } from "@/features/memories/server/memory-version";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,26 +23,19 @@ type RouteContext = {
   params: Promise<{ memoryId: string }>;
 };
 
-function unavailableResponse(): NextResponse {
-  return NextResponse.json(
-    { code: "unavailable", error: "This memory is unavailable." },
-    { headers: DETAIL_READ_HEADERS, status: 404 },
-  );
-}
-
 export async function GET(request: Request, context: RouteContext): Promise<Response> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return unavailableResponse();
+    if (!user) return privateResourceNotFound();
 
     const { memoryId } = await context.params;
     const memory = await getAvailableMemory(memoryId);
     return memory
       ? new Response(null, { headers: DETAIL_READ_HEADERS, status: 204 })
-      : unavailableResponse();
+      : privateResourceNotFound();
   } catch {
     logServerError(
       { event: "memory_availability_failed", operation: "get_available_memory" },
@@ -102,7 +96,10 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return unavailableResponse();
+    if (!user) return privateResourceNotFound();
+
+    const { memoryId } = await context.params;
+    if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
 
     const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
     if (contentType !== "application/json") {
@@ -128,14 +125,14 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
       );
     }
 
-    const { memoryId } = await context.params;
-    await deleteMemory(user.id, memoryId, payload.data.expectedVersion);
+    await deleteMemory(memoryId, payload.data.expectedVersion);
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof DeletePayloadTooLargeError) {
       return NextResponse.json({ error: "The deletion request is too large." }, { status: 413 });
     }
     if (error instanceof MemoryDeletionError) {
+      if (error.code === "unavailable") return privateResourceNotFound();
       return NextResponse.json(
         { code: error.code, error: error.message },
         { status: error.status },

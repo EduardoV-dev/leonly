@@ -7,6 +7,7 @@ const {
   createCommentMock,
   CreateCommentErrorMock,
   getCommentPageMock,
+  getAvailableMemoryMock,
   logServerErrorMock,
   requestLoggerMock,
 } = vi.hoisted(() => {
@@ -25,12 +26,16 @@ const {
     createCommentMock: vi.fn(),
     CreateCommentErrorMock: TestCreateCommentError,
     getCommentPageMock: vi.fn(),
+    getAvailableMemoryMock: vi.fn(),
     logServerErrorMock: vi.fn(),
     requestLoggerMock: { child: vi.fn() },
   };
 });
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
+vi.mock("@/features/memories/server/get-available-memory", () => ({
+  getAvailableMemory: getAvailableMemoryMock,
+}));
 vi.mock("@/lib/server-logger", () => ({
   createRequestLogger: vi.fn(() => requestLoggerMock),
   logServerError: logServerErrorMock,
@@ -93,6 +98,7 @@ describe("memory comments route handlers", () => {
       cursorReset: false,
       nextCursor: null,
     });
+    getAvailableMemoryMock.mockResolvedValue({ id: MEMORY_ID });
     createCommentMock.mockResolvedValue(COMMENT);
   });
 
@@ -111,14 +117,13 @@ describe("memory comments route handlers", () => {
     });
   });
 
-  it("creates from the authenticated member and idempotency header", async () => {
+  it("authenticates before creating with the idempotency header", async () => {
     const response = await POST(
       request({ body: " A note " }, { "Idempotency-Key": "11111111-1111-4111-8111-111111111111" }),
       context(),
     );
 
     expect(createCommentMock).toHaveBeenCalledWith(
-      "member-id",
       MEMORY_ID,
       "11111111-1111-4111-8111-111111111111",
       " A note ",
@@ -137,10 +142,22 @@ describe("memory comments route handlers", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
-      code: "unavailable",
-      error: "This memory is unavailable.",
+      code: "not_found",
+      error: "Resource not found.",
     });
     expect(body).not.toHaveBeenCalled();
+    expect(createCommentMock).not.toHaveBeenCalled();
+  });
+
+  it("authorizes the memory before validating comment fields", async () => {
+    getAvailableMemoryMock.mockResolvedValue(null);
+    const inaccessibleRequest = request({ body: "A note", authorUserId: "forged" });
+    const json = vi.spyOn(inaccessibleRequest, "json");
+
+    const response = await POST(inaccessibleRequest, context());
+
+    expect(response.status).toBe(404);
+    expect(json).not.toHaveBeenCalled();
     expect(createCommentMock).not.toHaveBeenCalled();
   });
 
@@ -153,8 +170,8 @@ describe("memory comments route handlers", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
-      code: "unavailable",
-      error: "This memory is unavailable.",
+      code: "not_found",
+      error: "Resource not found.",
     });
   });
 

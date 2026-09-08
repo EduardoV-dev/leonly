@@ -85,7 +85,7 @@ describe("DELETE /api/memories/[memoryId]", () => {
   it("deletes as the authenticated member and returns no content", async () => {
     const response = await DELETE(request(), context());
 
-    expect(deleteMemoryMock).toHaveBeenCalledWith("member-id", MEMORY_ID, EXPECTED_VERSION);
+    expect(deleteMemoryMock).toHaveBeenCalledWith(MEMORY_ID, EXPECTED_VERSION);
     expect(response.status).toBe(204);
     expect(await response.text()).toBe("");
   });
@@ -98,7 +98,29 @@ describe("DELETE /api/memories/[memoryId]", () => {
     const response = await DELETE(unauthenticatedRequest, context("not-a-uuid"));
 
     expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toMatchObject({ code: "unavailable" });
+    await expect(response.json()).resolves.toEqual({
+      code: "not_found",
+      error: "Resource not found.",
+    });
+    expect(body).not.toHaveBeenCalled();
+    expect(deleteMemoryMock).not.toHaveBeenCalled();
+  });
+
+  it("authorizes the target before checking mutable request details", async () => {
+    getAvailableMemoryMock.mockResolvedValue(null);
+    const inaccessibleRequest = request(
+      { expectedVersion: "invalid" },
+      { "content-type": "text/plain" },
+    );
+    const body = vi.spyOn(inaccessibleRequest, "body", "get");
+
+    const response = await DELETE(inaccessibleRequest, context());
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      code: "not_found",
+      error: "Resource not found.",
+    });
     expect(body).not.toHaveBeenCalled();
     expect(deleteMemoryMock).not.toHaveBeenCalled();
   });
@@ -181,8 +203,8 @@ describe("DELETE /api/memories/[memoryId]", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
-      code: "unavailable",
-      error: "This memory is unavailable.",
+      code: "not_found",
+      error: "Resource not found.",
     });
   });
 
@@ -255,7 +277,10 @@ describe("GET /api/memories/[memoryId]", () => {
       const response = await GET(request(undefined, { "content-type": "" }), context());
 
       expect(response.status).toBe(404);
-      await expect(response.json()).resolves.toMatchObject({ code: "unavailable" });
+      await expect(response.json()).resolves.toEqual({
+        code: "not_found",
+        error: "Resource not found.",
+      });
     },
   );
 

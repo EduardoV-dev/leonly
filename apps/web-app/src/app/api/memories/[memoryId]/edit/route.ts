@@ -6,6 +6,7 @@ import {
   MemoryInputError,
 } from "@/features/memories/server/edit-memory";
 import { getAvailableMemory } from "@/features/memories/server/get-available-memory";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,15 +69,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "This memory is unavailable." }, { status: 404 });
+      return privateResourceNotFound();
     }
 
     const { memoryId } = await context.params;
     if (!(await getAvailableMemory(memoryId))) {
-      return NextResponse.json(
-        { code: "unavailable", error: "This memory is unavailable." },
-        { status: 404 },
-      );
+      return privateResourceNotFound();
     }
     const idempotencyKey = request.headers.get("Idempotency-Key") ?? "";
     const formData = await readBoundedFormData(request);
@@ -84,7 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       .then(cleanupStaleMemoryEdits)
       .catch(() => undefined);
 
-    const result = await editMemory(user.id, memoryId, idempotencyKey, formData);
+    const result = await editMemory(memoryId, idempotencyKey, formData);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof EditPayloadTooLargeError) {
@@ -94,6 +92,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
     if (error instanceof MemoryInputError) {
+      if (error instanceof EditMemoryError && error.code === "unavailable") {
+        return privateResourceNotFound();
+      }
       if (error.status >= 500) {
         logServerError(
           { event: "memory_edit_failed", operation: "edit_memory" },

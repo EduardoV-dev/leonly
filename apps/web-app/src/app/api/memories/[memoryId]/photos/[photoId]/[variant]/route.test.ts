@@ -39,6 +39,17 @@ function expectPrivateMediaHeaders(response: Response): void {
   expect(response.headers.get("location")).toBeNull();
 }
 
+async function expectNotFound(response: Response): Promise<void> {
+  expect(response.status).toBe(404);
+  await expect(response.json()).resolves.toEqual({
+    code: "not_found",
+    error: "Resource not found.",
+  });
+  expect(response.headers.get("cache-control")).toBe("private, no-store");
+  expect(response.headers.get("content-type")).toContain("application/json");
+  expect(response.headers.get("location")).toBeNull();
+}
+
 describe("GET /api/memories/[memoryId]/photos/[photoId]/[variant]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -62,17 +73,15 @@ describe("GET /api/memories/[memoryId]/photos/[photoId]/[variant]", () => {
     },
   );
 
-  it("returns the same empty unavailable response before resolving an unauthenticated target", async () => {
+  it("returns the generic response before resolving an unauthenticated target", async () => {
     createClientMock.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }) },
     });
 
     const response = await GET(request(), context());
 
-    expect(response.status).toBe(404);
-    expect(await response.text()).toBe("");
+    await expectNotFound(response);
     expect(getMemoryPhotoMock).not.toHaveBeenCalled();
-    expectPrivateMediaHeaders(response);
   });
 
   it.each([
@@ -86,9 +95,7 @@ describe("GET /api/memories/[memoryId]/photos/[photoId]/[variant]", () => {
 
       const response = await GET(request(variant), context(variant, memory, photo));
 
-      expect(response.status).toBe(404);
-      expect(await response.text()).toBe("");
-      expectPrivateMediaHeaders(response);
+      await expectNotFound(response);
     },
   );
 
@@ -97,9 +104,7 @@ describe("GET /api/memories/[memoryId]/photos/[photoId]/[variant]", () => {
 
     const response = await GET(request(), context());
 
-    expect(response.status).toBe(404);
-    expect(await response.text()).toBe("");
-    expect(response.headers.get("location")).toBeNull();
+    await expectNotFound(response);
     expect(logServerErrorMock).toHaveBeenCalledOnce();
   });
 });

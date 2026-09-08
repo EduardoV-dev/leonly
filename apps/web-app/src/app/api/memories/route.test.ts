@@ -23,7 +23,7 @@ function createSupabaseClient(userId: string | null) {
 describe("POST /api/memories", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("derives the actor from the authenticated session and never request payload identity", async () => {
+  it("authenticates the request without forwarding payload identity", async () => {
     createClientMock.mockResolvedValue(createSupabaseClient("member-id"));
     createMemoryMock.mockResolvedValue({ id: "memory-id", reused: false });
     const body = new URLSearchParams({ creatorUserId: "other-user", spaceId: "other-space" });
@@ -39,11 +39,10 @@ describe("POST /api/memories", () => {
     const response = await POST(request);
 
     expect(createMemoryMock).toHaveBeenCalledWith(
-      "member-id",
       "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
       expect.anything(),
     );
-    const receivedFormData = createMemoryMock.mock.calls[0]?.[2] as FormData;
+    const receivedFormData = createMemoryMock.mock.calls[0]?.[1] as FormData;
     expect(receivedFormData.get("creatorUserId")).toBe("other-user");
     expect(receivedFormData.get("spaceId")).toBe("other-space");
     expect(response.status).toBe(201);

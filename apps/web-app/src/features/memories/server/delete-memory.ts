@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { decodeMemoryVersion } from "./memory-version";
 
 const memoryIdSchema = z.uuid();
@@ -25,18 +25,14 @@ function unavailableError(): MemoryDeletionError {
   return new MemoryDeletionError("This memory is unavailable.", 404, "unavailable");
 }
 
-export async function deleteMemory(
-  userId: string,
-  memoryId: string,
-  expectedVersion: string,
-): Promise<void> {
+export async function deleteMemory(memoryId: string, expectedVersion: string): Promise<void> {
   if (!memoryIdSchema.safeParse(memoryId).success) throw unavailableError();
 
   const expectedUpdatedAt = decodeMemoryVersion(expectedVersion);
   if (!expectedUpdatedAt) throw new MemoryDeletionInputError("Invalid memory version.");
 
-  const response = await createAdminClient().rpc("delete_memory", {
-    p_actor_user_id: userId,
+  const supabase = await createClient();
+  const response = await supabase.rpc("delete_memory", {
     p_expected_updated_at: expectedUpdatedAt,
     p_memory_id: memoryId,
   });

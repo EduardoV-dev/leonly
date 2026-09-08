@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 const {
   cleanupMock,
   createClientMock,
@@ -99,15 +101,10 @@ describe("PATCH /api/memories/[memoryId]/edit", () => {
     });
   });
 
-  it("derives the actor from the authenticated session and passes bounded multipart input", async () => {
+  it("authenticates the request and passes bounded multipart input", async () => {
     const response = await PATCH(request(), context());
 
-    expect(editMemoryMock).toHaveBeenCalledWith(
-      "member-id",
-      MEMORY_ID,
-      IDEMPOTENCY_KEY,
-      expect.any(FormData),
-    );
+    expect(editMemoryMock).toHaveBeenCalledWith(MEMORY_ID, IDEMPOTENCY_KEY, expect.any(FormData));
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ id: MEMORY_ID, visibility: "vault" });
   });
@@ -130,7 +127,10 @@ describe("PATCH /api/memories/[memoryId]/edit", () => {
     expect(response.status).toBe(404);
     expect(body.parsed).toBe(false);
     expect(editMemoryMock).not.toHaveBeenCalled();
-    await expect(response.json()).resolves.toEqual({ error: "This memory is unavailable." });
+    await expect(response.json()).resolves.toEqual({
+      code: "not_found",
+      error: "Resource not found.",
+    });
   });
 
   it.each(["not-a-uuid", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0"])(
@@ -144,9 +144,9 @@ describe("PATCH /api/memories/[memoryId]/edit", () => {
       const response = await PATCH(request(), context(memoryId));
 
       expect(response.status).toBe(404);
-      await expect(response.json()).resolves.toMatchObject({
-        code: "unavailable",
-        error: "This memory is unavailable.",
+      await expect(response.json()).resolves.toEqual({
+        code: "not_found",
+        error: "Resource not found.",
       });
     },
   );

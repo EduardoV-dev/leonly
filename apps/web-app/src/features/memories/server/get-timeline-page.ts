@@ -48,10 +48,10 @@ function decodeCursor(cursor: string): TimelineCursor | null {
   }
 }
 
-async function toTimelineMemory(memory: TimelineRow, userId: string): Promise<TimelineMemory> {
+async function toTimelineMemory(memory: TimelineRow): Promise<TimelineMemory> {
   const [coverPhotoUrl, reaction] = await Promise.all([
     getCoverPreviewUrl(memory.id),
-    getMemoryReactionSummary(userId, memory.id),
+    getMemoryReactionSummary(memory.id),
   ]);
 
   return {
@@ -105,7 +105,6 @@ async function readTimelinePage(
   spaceId: string,
   pageSize: number,
   sort: MemorySort,
-  userId: string,
 ): Promise<TimelinePage> {
   const supabase = await createClient();
   let query = supabase
@@ -130,9 +129,7 @@ async function readTimelinePage(
   }
 
   const memories = await Promise.all(
-    ((data ?? []) as TimelineRow[])
-      .slice(0, pageSize)
-      .map((memory) => toTimelineMemory(memory, userId)),
+    ((data ?? []) as TimelineRow[]).slice(0, pageSize).map((memory) => toTimelineMemory(memory)),
   );
   const hasNextPage = (data ?? []).length > pageSize;
   const lastMemory = memories.at(-1);
@@ -165,7 +162,7 @@ export async function getTimelinePage(
   const shouldReset = cursorValue !== null && (cursor === null || cursor.sort !== sort);
 
   if (cursor && cursor.sort === sort && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize, sort, user.id);
+    const firstPage = await readTimelinePage(null, activeSpace.id, pageSize, sort);
     return { ...firstPage, cursorReset: true };
   }
 
@@ -174,7 +171,6 @@ export async function getTimelinePage(
     activeSpace.id,
     pageSize,
     sort,
-    user.id,
   );
   return shouldReset ? { ...page, cursorReset: true } : page;
 }

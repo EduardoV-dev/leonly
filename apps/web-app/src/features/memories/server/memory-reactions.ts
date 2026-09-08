@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { MemoryInputError } from "./memory-input-validation";
 import {
   type MemoryReactionType,
@@ -86,15 +86,12 @@ function toSummary(row: z.infer<typeof reactionSummaryRowSchema>): MemoryReactio
   };
 }
 
-export async function getMemoryReactionSummary(
-  userId: string,
-  memoryId: string,
-): Promise<MemoryReactionSummary> {
+export async function getMemoryReactionSummary(memoryId: string): Promise<MemoryReactionSummary> {
   if (!z.uuid().safeParse(memoryId).success) throw unavailableError();
 
-  const response = await createAdminClient().rpc("get_memory_reaction_summary", {
+  const supabase = await createClient();
+  const response = await supabase.rpc("get_memory_reaction_summary", {
     p_memory_id: memoryId,
-    p_user_id: userId,
   });
   if (response.error) {
     throw new Error("Unable to resolve the memory reactions.", { cause: response.error });
@@ -106,15 +103,14 @@ export async function getMemoryReactionSummary(
 }
 
 export async function toggleMemoryReaction(
-  userId: string,
   memoryId: string,
   reactionType: string,
 ): Promise<MemoryReactionSummary> {
   const input = parseInput(memoryId, reactionType);
-  const response = await createAdminClient().rpc("toggle_memory_reaction", {
+  const supabase = await createClient();
+  const response = await supabase.rpc("toggle_memory_reaction", {
     p_memory_id: input.memoryId,
     p_reaction_type: input.reactionType,
-    p_user_id: userId,
   });
   if (response.error) {
     throw new Error("Unable to update the memory reaction.", { cause: response.error });

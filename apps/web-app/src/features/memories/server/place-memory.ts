@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { MemoryPlacementResult, MemoryPlacementTarget } from "../types/memory-placement";
 import { decodeMemoryVersion, encodeMemoryVersion } from "./memory-version";
 
@@ -26,7 +26,6 @@ export class MemoryPlacementError extends Error {
 export class MemoryPlacementInputError extends Error {}
 
 export async function placeMemory(
-  userId: string,
   memoryId: string,
   targetVisibility: MemoryPlacementTarget,
   expectedVersion: string,
@@ -40,9 +39,8 @@ export async function placeMemory(
     throw new MemoryPlacementInputError("Invalid memory version.");
   }
 
-  const admin = createAdminClient();
-  const response = await admin.rpc("place_memory", {
-    p_actor_user_id: userId,
+  const supabase = await createClient();
+  const response = await supabase.rpc("place_memory", {
     p_expected_updated_at: expectedUpdatedAt,
     p_memory_id: memoryId,
     p_target_visibility: targetVisibility,

@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { MemoryEditResult } from "../types/memory-edit";
 import { validateEditMemoryFormData } from "./edit-memory-input";
 import { cleanupMemoryEditAttempt } from "./memory-edit-cleanup";
@@ -96,7 +96,6 @@ function completedResult(
 }
 
 export async function editMemory(
-  userId: string,
   memoryId: string,
   idempotencyKey: string,
   formData: FormData,
@@ -111,9 +110,8 @@ export async function editMemory(
   }
 
   const input = await validateEditMemoryFormData(formData);
-  const admin = createAdminClient();
-  const reservationResponse = await admin.rpc("reserve_memory_edit_attempt", {
-    p_editor_user_id: userId,
+  const supabase = await createClient();
+  const reservationResponse = await supabase.rpc("reserve_memory_edit_attempt", {
     p_expected_updated_at: input.expectedUpdatedAt,
     p_idempotency_key: idempotencyKey,
     p_memory_id: memoryId,
@@ -141,7 +139,7 @@ export async function editMemory(
   try {
     for (const [position, photo] of input.photos.entries()) {
       const photoId = photoIds[position];
-      const stagedResponse = await admin.rpc("stage_memory_edit_photo_variants", {
+      const stagedResponse = await supabase.rpc("stage_memory_edit_photo_variants", {
         p_attempt_id: reservation.attempt_id,
         p_photo_id: photoId,
         p_position: position,
@@ -168,7 +166,7 @@ export async function editMemory(
         },
       ] as const;
       for (const upload of uploads) {
-        const uploaded = await admin.storage
+        const uploaded = await supabase.storage
           .from("memory-photos")
           .upload(upload.path, upload.bytes, {
             contentType: upload.contentType,
@@ -179,7 +177,7 @@ export async function editMemory(
         }
       }
 
-      const marked = await admin.rpc("mark_memory_edit_photo_uploaded", {
+      const marked = await supabase.rpc("mark_memory_edit_photo_uploaded", {
         p_attempt_id: reservation.attempt_id,
         p_photo_id: photoId,
       });
@@ -190,7 +188,7 @@ export async function editMemory(
 
     const selectedCoverId =
       input.coverNewPhotoIndex === null ? input.coverPhotoId : photoIds[input.coverNewPhotoIndex];
-    const finalizedResponse = await admin.rpc("finalize_memory_edit_attempt", {
+    const finalizedResponse = await supabase.rpc("finalize_memory_edit_attempt", {
       p_attempt_id: reservation.attempt_id,
       p_cover_photo_id: selectedCoverId,
       p_description: input.description,

@@ -61,10 +61,10 @@ function afterCursorFilter(cursor: VaultCursor, sort: MemorySort): string {
   ].join(",");
 }
 
-async function toVaultMemory(memory: VaultRow, userId: string): Promise<VaultMemory> {
+async function toVaultMemory(memory: VaultRow): Promise<VaultMemory> {
   const [coverPhotoUrl, reaction] = await Promise.all([
     getCoverPreviewUrl(memory.id),
-    getMemoryReactionSummary(userId, memory.id),
+    getMemoryReactionSummary(memory.id),
   ]);
 
   return {
@@ -109,7 +109,6 @@ async function readVaultPage(
   spaceId: string,
   pageSize: number,
   sort: MemorySort,
-  userId: string,
 ): Promise<VaultPage> {
   const supabase = await createClient();
   let query = supabase
@@ -134,7 +133,7 @@ async function readVaultPage(
   }
 
   const memories = await Promise.all(
-    ((data ?? []) as VaultRow[]).slice(0, pageSize).map((memory) => toVaultMemory(memory, userId)),
+    ((data ?? []) as VaultRow[]).slice(0, pageSize).map((memory) => toVaultMemory(memory)),
   );
   const lastMemory = memories.at(-1);
 
@@ -166,7 +165,7 @@ export async function getVaultPage(
   const shouldReset = cursorValue !== null && (cursor === null || cursor.sort !== sort);
 
   if (cursor && cursor.sort === sort && !(await isCurrentCursorAnchor(cursor, activeSpace.id))) {
-    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE, sort, user.id);
+    const firstPage = await readVaultPage(null, activeSpace.id, MAX_VAULT_PAGE_SIZE, sort);
     return { ...firstPage, cursorReset: true };
   }
 
@@ -175,7 +174,6 @@ export async function getVaultPage(
     activeSpace.id,
     MAX_VAULT_PAGE_SIZE,
     sort,
-    user.id,
   );
   return shouldReset ? { ...page, cursorReset: true } : page;
 }

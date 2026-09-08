@@ -2,15 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { createAdminClientMock, createClientMock, downloadMock, getAvailableMemoryMock } =
-  vi.hoisted(() => ({
-    createAdminClientMock: vi.fn(),
-    createClientMock: vi.fn(),
-    downloadMock: vi.fn(),
-    getAvailableMemoryMock: vi.fn(),
-  }));
+const { createClientMock, downloadMock, getAvailableMemoryMock } = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  downloadMock: vi.fn(),
+  getAvailableMemoryMock: vi.fn(),
+}));
 
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("./get-available-memory", () => ({ getAvailableMemory: getAvailableMemoryMock }));
 
@@ -40,13 +37,11 @@ describe("getMemoryPhoto", () => {
     });
     createClientMock.mockResolvedValue({
       from: vi.fn(() => ({ select: vi.fn(() => query) })),
+      storage: { from: vi.fn(() => ({ download: downloadMock })) },
     });
     downloadMock.mockResolvedValue({
       data: { arrayBuffer: vi.fn().mockResolvedValue(bytes) },
       error: null,
-    });
-    createAdminClientMock.mockReturnValue({
-      storage: { from: vi.fn(() => ({ download: downloadMock })) },
     });
   });
 
@@ -64,12 +59,13 @@ describe("getMemoryPhoto", () => {
     const query = createPhotoQuery(null);
     createClientMock.mockResolvedValue({
       from: vi.fn(() => ({ select: vi.fn(() => query) })),
+      storage: { from: vi.fn(() => ({ download: downloadMock })) },
     });
 
     await expect(getMemoryPhoto(memoryId, photoId, "cover")).resolves.toBeNull();
     expect(query.eq).toHaveBeenCalledWith("id", photoId);
     expect(query.eq).toHaveBeenCalledWith("memory_id", memoryId);
-    expect(createAdminClientMock).not.toHaveBeenCalled();
+    expect(downloadMock).not.toHaveBeenCalled();
   });
 
   it.each(["missing", "inactive", "deleted", "cross-space", "foreign"])(

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       .then(cleanupStaleMemoryPhotoStaging)
       .catch(() => undefined);
     const idempotencyKey = request.headers.get("Idempotency-Key") ?? "";
-    const memory = await createMemory(user.id, idempotencyKey, await request.formData());
+    const memory = await createMemory(idempotencyKey, await request.formData());
     return NextResponse.json(memory, { status: memory.reused ? 200 : 201 });
   } catch (error) {
     if (error instanceof CreateMemoryError) {

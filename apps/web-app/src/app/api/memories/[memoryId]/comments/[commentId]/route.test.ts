@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const {
+  canMutateCommentMock,
   createClientMock,
   deleteCommentMock,
   DeleteCommentErrorMock,
@@ -32,6 +33,7 @@ const {
   }
 
   return {
+    canMutateCommentMock: vi.fn(),
     createClientMock: vi.fn(),
     deleteCommentMock: vi.fn(),
     DeleteCommentErrorMock: TestDeleteCommentError,
@@ -42,6 +44,9 @@ const {
 });
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
+vi.mock("@/features/memories/server/can-mutate-comment", () => ({
+  canMutateComment: canMutateCommentMock,
+}));
 vi.mock("@/lib/server-logger", () => ({
   createRequestLogger: vi.fn(() => ({ child: vi.fn() })),
   logServerError: logServerErrorMock,
@@ -86,23 +91,18 @@ describe("PATCH /api/memories/[memoryId]/comments/[commentId]", () => {
     createClientMock.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "member-id" } } }) },
     });
+    canMutateCommentMock.mockResolvedValue(true);
     updateCommentMock.mockResolvedValue({ id: COMMENT_ID });
     deleteCommentMock.mockResolvedValue(undefined);
   });
 
-  it("derives the actor from the session and passes only validated edit input", async () => {
+  it("authenticates and passes only validated edit input", async () => {
     const response = await PATCH(
       request({ body: " Updated note ", expectedVersion: 1 }),
       context(),
     );
 
-    expect(updateCommentMock).toHaveBeenCalledWith(
-      "member-id",
-      MEMORY_ID,
-      COMMENT_ID,
-      1,
-      " Updated note ",
-    );
+    expect(updateCommentMock).toHaveBeenCalledWith(MEMORY_ID, COMMENT_ID, 1, " Updated note ");
     expect(response.status).toBe(200);
   });
 
@@ -114,6 +114,18 @@ describe("PATCH /api/memories/[memoryId]/comments/[commentId]", () => {
     const json = vi.spyOn(unauthenticatedRequest, "json");
 
     const response = await PATCH(unauthenticatedRequest, context());
+
+    expect(response.status).toBe(404);
+    expect(json).not.toHaveBeenCalled();
+    expect(updateCommentMock).not.toHaveBeenCalled();
+  });
+
+  it("checks mutation ownership before validating edit fields", async () => {
+    canMutateCommentMock.mockResolvedValue(false);
+    const inaccessibleRequest = request({ body: "Updated note", expectedVersion: "invalid" });
+    const json = vi.spyOn(inaccessibleRequest, "json");
+
+    const response = await PATCH(inaccessibleRequest, context());
 
     expect(response.status).toBe(404);
     expect(json).not.toHaveBeenCalled();
@@ -133,8 +145,8 @@ describe("PATCH /api/memories/[memoryId]/comments/[commentId]", () => {
     const unavailable = await PATCH(request(), context());
     expect(unavailable.status).toBe(404);
     await expect(unavailable.json()).resolves.toEqual({
-      code: "unavailable",
-      error: "This memory is unavailable.",
+      code: "not_found",
+      error: "Resource not found.",
     });
   });
 
@@ -161,13 +173,14 @@ describe("DELETE /api/memories/[memoryId]/comments/[commentId]", () => {
     createClientMock.mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "member-id" } } }) },
     });
+    canMutateCommentMock.mockResolvedValue(true);
     deleteCommentMock.mockResolvedValue(undefined);
   });
 
-  it("derives the actor from the session and deletes using the submitted version", async () => {
+  it("authenticates and deletes using the submitted version", async () => {
     const response = await DELETE(deleteRequest({ expectedVersion: 2 }), context());
 
-    expect(deleteCommentMock).toHaveBeenCalledWith("member-id", MEMORY_ID, COMMENT_ID, 2);
+    expect(deleteCommentMock).toHaveBeenCalledWith(MEMORY_ID, COMMENT_ID, 2);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ deletedCommentId: COMMENT_ID });
   });
@@ -191,6 +204,18 @@ describe("DELETE /api/memories/[memoryId]/comments/[commentId]", () => {
     expect(json).not.toHaveBeenCalled();
   });
 
+  it("checks mutation ownership before validating deletion fields", async () => {
+    canMutateCommentMock.mockResolvedValue(false);
+    const inaccessibleRequest = deleteRequest({ expectedVersion: "invalid" });
+    const json = vi.spyOn(inaccessibleRequest, "json");
+
+    const response = await DELETE(inaccessibleRequest, context());
+
+    expect(response.status).toBe(404);
+    expect(json).not.toHaveBeenCalled();
+    expect(deleteCommentMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["non-author", 404, "unavailable"],
     ["already-deleted", 404, "unavailable"],
@@ -209,7 +234,9 @@ describe("DELETE /api/memories/[memoryId]/comments/[commentId]", () => {
     const response = await DELETE(deleteRequest(), context());
 
     expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toMatchObject({ code });
+    await expect(response.json()).resolves.toMatchObject({
+      code: code === "unavailable" ? "not_found" : code,
+    });
   });
 
   it("logs unexpected failures while returning a generic retryable response", async () => {

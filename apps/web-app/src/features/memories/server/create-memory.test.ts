@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const createAdminClientMock = vi.hoisted(() => vi.fn());
+const createClientMock = vi.hoisted(() => vi.fn());
 const createMemoryPhotoVariantsMock = vi.hoisted(() =>
   vi.fn(async () => ({ cover: Buffer.from("cover"), detail: Buffer.from("detail") })),
 );
 
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("./create-memory-photo-variants", () => ({
   createMemoryPhotoVariants: createMemoryPhotoVariantsMock,
 }));
@@ -170,7 +170,7 @@ describe("createMemory", () => {
     });
   });
 
-  function createAdminClient(rpc: ReturnType<typeof vi.fn>) {
+  function requestClient(rpc: ReturnType<typeof vi.fn>) {
     return { rpc, storage: { from: vi.fn() } };
   }
 
@@ -186,10 +186,10 @@ describe("createMemory", () => {
       ],
       error: null,
     });
-    createAdminClientMock.mockReturnValue(createAdminClient(rpc));
+    createClientMock.mockResolvedValue(requestClient(rpc));
 
     await expect(
-      createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
+      createMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
     ).resolves.toEqual({ id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", reused: true });
 
     expect(rpc).toHaveBeenCalledTimes(1);
@@ -208,10 +208,10 @@ describe("createMemory", () => {
       ],
       error: null,
     });
-    createAdminClientMock.mockReturnValue(createAdminClient(rpc));
+    createClientMock.mockResolvedValue(requestClient(rpc));
 
     await expect(
-      createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
+      createMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
     ).rejects.toMatchObject({ status: 409 });
 
     expect(rpc).toHaveBeenCalledTimes(1);
@@ -232,10 +232,10 @@ describe("createMemory", () => {
         error: null,
       })
       .mockResolvedValueOnce({ data: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", error: null });
-    createAdminClientMock.mockReturnValue(createAdminClient(rpc));
+    createClientMock.mockResolvedValue(requestClient(rpc));
 
     await expect(
-      createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
+      createMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
     ).resolves.toEqual({ id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", reused: false });
 
     expect(rpc).toHaveBeenLastCalledWith("finalize_memory_creation_attempt", {
@@ -283,14 +283,15 @@ describe("createMemory", () => {
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", error: null });
     const upload = vi.fn().mockResolvedValue({ error: null });
-    createAdminClientMock.mockReturnValue({
+    createClientMock.mockResolvedValue({
       rpc,
       storage: { from: vi.fn(() => ({ upload })) },
     });
 
-    await expect(
-      createMemory("member-id", "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", formData),
-    ).resolves.toEqual({ id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed", reused: false });
+    await expect(createMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", formData)).resolves.toEqual({
+      id: "3ddf312a-e682-4cd8-91f9-9a2a230241ed",
+      reused: false,
+    });
 
     expect(upload).toHaveBeenNthCalledWith(1, "space/attempt/photo/original", bytes, {
       contentType: "image/png",

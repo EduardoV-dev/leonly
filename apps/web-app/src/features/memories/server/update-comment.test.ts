@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const createAdminClientMock = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
+const createClientMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 
 import { updateComment } from "./update-comment";
 
@@ -37,9 +37,9 @@ describe("updateComment", () => {
 
   it("normalizes and conditionally updates through the service RPC", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: [completedRow()], error: null });
-    createAdminClientMock.mockReturnValue(adminClient(rpc));
+    createClientMock.mockResolvedValue(adminClient(rpc));
 
-    await expect(updateComment(userId, memoryId, commentId, 1, " Updated note ")).resolves.toEqual({
+    await expect(updateComment(memoryId, commentId, 1, " Updated note ")).resolves.toEqual({
       authorAvatarUrl: null,
       authorDisplayName: "Alex",
       body: "Updated note",
@@ -51,7 +51,6 @@ describe("updateComment", () => {
       version: 2,
     });
     expect(rpc).toHaveBeenCalledWith("update_memory_comment", {
-      p_author_user_id: userId,
       p_body: "Updated note",
       p_comment_id: commentId,
       p_expected_version: 1,
@@ -62,7 +61,7 @@ describe("updateComment", () => {
   it.each(["unavailable", "conflict"] as const)(
     "maps %s without a completed row",
     async (outcome) => {
-      createAdminClientMock.mockReturnValue({
+      createClientMock.mockResolvedValue({
         rpc: vi.fn().mockResolvedValue({
           data: [
             {
@@ -81,9 +80,7 @@ describe("updateComment", () => {
         }),
       });
 
-      await expect(
-        updateComment(userId, memoryId, commentId, 1, "Updated note"),
-      ).rejects.toMatchObject({
+      await expect(updateComment(memoryId, commentId, 1, "Updated note")).rejects.toMatchObject({
         code: outcome,
         status: outcome === "conflict" ? 409 : 404,
       });
@@ -91,9 +88,9 @@ describe("updateComment", () => {
   );
 
   it("rejects invalid text before opening the admin boundary", async () => {
-    await expect(updateComment(userId, memoryId, commentId, 1, " \n ")).rejects.toMatchObject({
+    await expect(updateComment(memoryId, commentId, 1, " \n ")).rejects.toMatchObject({
       fields: { body: "Enter a comment." },
     });
-    expect(createAdminClientMock).not.toHaveBeenCalled();
+    expect(createClientMock).not.toHaveBeenCalled();
   });
 });

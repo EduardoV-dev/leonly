@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { canMutateComment } from "@/features/memories/server/can-mutate-comment";
 import { DeleteCommentError, deleteComment } from "@/features/memories/server/delete-comment";
 import { MemoryInputError } from "@/features/memories/server/memory-input-validation";
 import { UpdateCommentError, updateComment } from "@/features/memories/server/update-comment";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,20 +31,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { code: "unavailable", error: "This memory is unavailable." },
-        { status: 404 },
-      );
+      return privateResourceNotFound();
     }
 
     const { commentId, memoryId } = await context.params;
+    if (!(await canMutateComment(memoryId, commentId))) return privateResourceNotFound();
     const payload = updateCommentRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
       return NextResponse.json({ error: "Please review the highlighted fields." }, { status: 400 });
     }
 
     const comment = await updateComment(
-      user.id,
       memoryId,
       commentId,
       payload.data.expectedVersion,
@@ -51,6 +50,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json({ comment });
   } catch (error) {
     if (error instanceof UpdateCommentError) {
+      if (error.code === "unavailable") return privateResourceNotFound();
       return NextResponse.json(
         { code: error.code, error: error.message },
         { status: error.status },
@@ -84,13 +84,11 @@ export async function DELETE(request: Request, context: RouteContext) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { code: "unavailable", error: "This memory is unavailable." },
-        { status: 404 },
-      );
+      return privateResourceNotFound();
     }
 
     const { commentId, memoryId } = await context.params;
+    if (!(await canMutateComment(memoryId, commentId))) return privateResourceNotFound();
     const payload = deleteCommentRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
       return NextResponse.json(
@@ -99,10 +97,11 @@ export async function DELETE(request: Request, context: RouteContext) {
       );
     }
 
-    await deleteComment(user.id, memoryId, commentId, payload.data.expectedVersion);
+    await deleteComment(memoryId, commentId, payload.data.expectedVersion);
     return NextResponse.json({ deletedCommentId: commentId });
   } catch (error) {
     if (error instanceof DeleteCommentError) {
+      if (error.code === "unavailable") return privateResourceNotFound();
       return NextResponse.json(
         { code: error.code, error: error.message },
         { status: error.status },

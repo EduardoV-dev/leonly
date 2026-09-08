@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { MemoryComment } from "../types/comment";
 import { updateCommentInputSchema } from "./comment-input-validation";
 import { MemoryInputError } from "./memory-input-validation";
@@ -40,7 +40,6 @@ function unavailableError(): UpdateCommentError {
 }
 
 export async function updateComment(
-  userId: string,
   memoryId: string,
   commentId: string,
   expectedVersion: number,
@@ -60,9 +59,8 @@ export async function updateComment(
   }
 
   const input = parsed.data;
-  const admin = createAdminClient();
-  const response = await admin.rpc("update_memory_comment", {
-    p_author_user_id: userId,
+  const supabase = await createClient();
+  const response = await supabase.rpc("update_memory_comment", {
     p_body: input.body,
     p_comment_id: input.commentId,
     p_expected_version: input.expectedVersion,
@@ -103,7 +101,7 @@ export async function updateComment(
     throw new Error("The completed comment outcome is invalid.");
   }
 
-  const profileResult = await admin
+  const profileResult = await supabase
     .from("users")
     .select("avatar_url")
     .eq("id", row.author_user_id)

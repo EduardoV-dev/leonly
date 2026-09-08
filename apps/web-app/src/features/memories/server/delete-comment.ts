@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { deleteCommentInputSchema } from "./comment-input-validation";
 import { MemoryInputError } from "./memory-input-validation";
 
@@ -24,7 +24,6 @@ function unavailableError(): DeleteCommentError {
 }
 
 export async function deleteComment(
-  userId: string,
   memoryId: string,
   commentId: string,
   expectedVersion: number,
@@ -42,8 +41,8 @@ export async function deleteComment(
   }
 
   const input = parsed.data;
-  const response = await createAdminClient().rpc("delete_memory_comment", {
-    p_author_user_id: userId,
+  const supabase = await createClient();
+  const response = await supabase.rpc("delete_memory_comment", {
     p_comment_id: input.commentId,
     p_expected_version: input.expectedVersion,
     p_memory_id: input.memoryId,

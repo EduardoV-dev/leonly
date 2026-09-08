@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { cleanupMock, createAdminClientMock, validateInputMock } = vi.hoisted(() => ({
+const { cleanupMock, createClientMock, validateInputMock } = vi.hoisted(() => ({
   cleanupMock: vi.fn(),
-  createAdminClientMock: vi.fn(),
+  createClientMock: vi.fn(),
   validateInputMock: vi.fn(),
 }));
 
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("./edit-memory-input", () => ({ validateEditMemoryFormData: validateInputMock }));
 vi.mock("./memory-edit-cleanup", () => ({
   cleanupMemoryEditAttempt: cleanupMock,
@@ -18,7 +18,6 @@ vi.mock("./memory-edit-cleanup", () => ({
 import { editMemory } from "./edit-memory";
 import { decodeMemoryVersion } from "./memory-version";
 
-const USER_ID = "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e";
 const MEMORY_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const ATTEMPT_ID = "3ddf312a-e682-4cd8-91f9-9a2a230241ed";
 const IDEMPOTENCY_KEY = "64d44f34-c5fe-482a-b65b-f91d0173b7fe";
@@ -75,9 +74,9 @@ describe("editMemory", () => {
       error: null,
     });
     const client = admin(rpc);
-    createAdminClientMock.mockReturnValue(client);
+    createClientMock.mockResolvedValue(client);
 
-    const result = await editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData());
+    const result = await editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData());
 
     expect(result).toMatchObject({ id: MEMORY_ID, reused: true, visibility: "timeline" });
     expect(decodeMemoryVersion(result.version)).toBe(UPDATED_AT);
@@ -95,11 +94,12 @@ describe("editMemory", () => {
       error: null,
     });
     const client = admin(rpc);
-    createAdminClientMock.mockReturnValue(client);
+    createClientMock.mockResolvedValue(client);
 
-    await expect(
-      editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData()),
-    ).rejects.toMatchObject({ code, status });
+    await expect(editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData())).rejects.toMatchObject({
+      code,
+      status,
+    });
     expect(client.storage.from).not.toHaveBeenCalled();
     expect(cleanupMock).not.toHaveBeenCalled();
   });
@@ -119,11 +119,13 @@ describe("editMemory", () => {
         ],
         error: null,
       });
-    createAdminClientMock.mockReturnValue(admin(rpc));
+    createClientMock.mockResolvedValue(admin(rpc));
 
-    await expect(
-      editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData()),
-    ).resolves.toMatchObject({ id: MEMORY_ID, reused: false, visibility: "vault" });
+    await expect(editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData())).resolves.toMatchObject({
+      id: MEMORY_ID,
+      reused: false,
+      visibility: "vault",
+    });
     expect(rpc).toHaveBeenLastCalledWith("finalize_memory_edit_attempt", {
       p_attempt_id: ATTEMPT_ID,
       p_cover_photo_id: null,
@@ -176,9 +178,9 @@ describe("editMemory", () => {
         error: null,
       });
     const upload = vi.fn().mockResolvedValue({ error: null });
-    createAdminClientMock.mockReturnValue(admin(rpc, upload));
+    createClientMock.mockResolvedValue(admin(rpc, upload));
 
-    await editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData());
+    await editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData());
 
     expect(upload).toHaveBeenCalledTimes(3);
     expect(rpc).toHaveBeenCalledWith("mark_memory_edit_photo_uploaded", {
@@ -206,11 +208,12 @@ describe("editMemory", () => {
         ],
         error: null,
       });
-    createAdminClientMock.mockReturnValue(admin(rpc));
+    createClientMock.mockResolvedValue(admin(rpc));
 
-    await expect(
-      editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData()),
-    ).rejects.toMatchObject({ code: "conflict", status: 409 });
+    await expect(editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData())).rejects.toMatchObject({
+      code: "conflict",
+      status: 409,
+    });
     expect(cleanupMock).toHaveBeenCalledWith(ATTEMPT_ID);
   });
 
@@ -241,11 +244,11 @@ describe("editMemory", () => {
         error: null,
       });
     const upload = vi.fn().mockResolvedValue({ error: new Error("storage failed") });
-    createAdminClientMock.mockReturnValue(admin(rpc, upload));
+    createClientMock.mockResolvedValue(admin(rpc, upload));
 
-    await expect(
-      editMemory(USER_ID, MEMORY_ID, IDEMPOTENCY_KEY, new FormData()),
-    ).rejects.toMatchObject({ status: 500 });
+    await expect(editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData())).rejects.toMatchObject({
+      status: 500,
+    });
     expect(cleanupMock).toHaveBeenCalledWith(ATTEMPT_ID);
   });
 });

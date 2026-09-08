@@ -1,4 +1,5 @@
 import { getMemoryPhoto } from "@/features/memories/server/get-memory-photo";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,21 +13,17 @@ type RouteContext = {
   params: Promise<{ memoryId: string; photoId: string; variant: string }>;
 };
 
-function unavailableResponse(): Response {
-  return new Response(null, { headers: MEDIA_HEADERS, status: 404 });
-}
-
 export async function GET(request: Request, context: RouteContext): Promise<Response> {
   try {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return unavailableResponse();
+    if (!user) return privateResourceNotFound();
 
     const { memoryId, photoId, variant } = await context.params;
     const photo = await getMemoryPhoto(memoryId, photoId, variant);
-    if (!photo) return unavailableResponse();
+    if (!photo) return privateResourceNotFound();
 
     return new Response(photo, { headers: MEDIA_HEADERS });
   } catch (error) {
@@ -35,6 +32,6 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       error,
       createRequestLogger(request),
     );
-    return unavailableResponse();
+    return privateResourceNotFound();
   }
 }

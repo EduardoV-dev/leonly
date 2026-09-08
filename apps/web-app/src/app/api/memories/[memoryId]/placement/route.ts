@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getAvailableMemory } from "@/features/memories/server/get-available-memory";
 import { decodeMemoryVersion } from "@/features/memories/server/memory-version";
 import {
   MemoryPlacementError,
   MemoryPlacementInputError,
   placeMemory,
 } from "@/features/memories/server/place-memory";
+import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,16 +32,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "This memory is unavailable." }, { status: 404 });
+      return privateResourceNotFound();
     }
 
     const { memoryId } = await context.params;
     if (!memoryIdSchema.safeParse(memoryId).success) {
-      return NextResponse.json(
-        { code: "unavailable", error: "This memory is unavailable." },
-        { status: 404 },
-      );
+      return privateResourceNotFound();
     }
+    if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
 
     let body: unknown;
     try {
@@ -59,7 +59,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const result = await placeMemory(
-      user.id,
       memoryId,
       payload.data.targetVisibility,
       payload.data.expectedVersion,
@@ -67,6 +66,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof MemoryPlacementError) {
+      if (error.code === "unavailable") return privateResourceNotFound();
       return NextResponse.json(
         { code: error.code, error: error.message },
         { status: error.status },
