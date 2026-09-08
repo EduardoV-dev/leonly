@@ -90,6 +90,7 @@ describe("getMemoryDetail", () => {
       creatorDisplayName: "Sarah",
       description: "A quiet afternoon together.",
       location: "The botanical gardens",
+      updatedAt: memory.updatedAt,
       visibility: "timeline",
     });
 

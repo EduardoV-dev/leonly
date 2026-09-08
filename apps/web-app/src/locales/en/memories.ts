@@ -5,6 +5,11 @@ export const memoriesEn = {
       preserve: "Preserve Memory",
     },
     backToTimeline: "Go back to timeline",
+    draft: {
+      exitWarning: "Leave this page and discard your saved draft?",
+      restored: "Your saved draft was restored.",
+      restoredWithPhotos: "Your written changes were restored. Add these photos again: {{photos}}.",
+    },
     fields: {
       date: {
         label: "Date",
@@ -60,6 +65,7 @@ export const memoriesEn = {
       photoSize: "Each photo must be {{size}} MB or smaller.",
       photoType: "Photos must be JPEG, PNG, or WebP images.",
       saveFailed: "We could not save this memory. Please try again.",
+      serverInvalid: "Please review the highlighted fields.",
     },
   },
   edit: {
@@ -96,6 +102,7 @@ export const memoriesEn = {
     validation: {
       photoCount: "Choose up to {{count}} photos in the final memory.",
       saveFailed: "We could not update this memory. Please try again.",
+      serverInvalid: "Please review the highlighted fields.",
     },
   },
   detail: {
@@ -108,6 +115,7 @@ export const memoriesEn = {
       previousPhoto: "Previous photo",
       retry: "Try again",
     },
+    created: "Memory created on",
     creator: "Preserved by {{name}}",
     delete: {
       action: "Remove memory",
@@ -125,6 +133,7 @@ export const memoriesEn = {
       success: "Memory removed from your shared story.",
       unavailable: "This memory is no longer here.",
     },
+    updated: "Memory last updated on",
     comments: {
       add: "Comment",
       added: "Comment added.",
@@ -243,6 +252,7 @@ export const memoriesEn = {
   },
   timeline: {
     empty: {
+      action: "Preserve your first memory",
       description: "Your shared moments will appear here once memories are available.",
       heading: "No memories yet",
     },

@@ -11,6 +11,7 @@ import {
 type SignInCopyProps = {
   entranceVariants: Variants;
   isLoginPending: boolean;
+  loginError: string | null;
   onLogin: () => void;
   shouldReduceMotion: boolean;
   t: (key: string) => string;
@@ -19,6 +20,7 @@ type SignInCopyProps = {
 export function SignInCopy({
   entranceVariants,
   isLoginPending,
+  loginError,
   onLogin,
   shouldReduceMotion,
   t,
@@ -45,10 +47,21 @@ export function SignInCopy({
         custom={staggerDelays.button}
         className="mt-10"
       >
-        <Button onClick={onLogin} loading={isLoginPending}>
+        <Button
+          aria-describedby={loginError ? "google-login-error" : undefined}
+          onClick={onLogin}
+          loading={isLoginPending}
+        >
           <FcGoogle className="h-6 w-6" aria-hidden="true" />
           {t("continueWithGoogle")}
         </Button>
+        <p
+          className="mt-3 min-h-6 text-sm font-semibold leading-relaxed text-destructive"
+          id="google-login-error"
+          role={loginError ? "alert" : undefined}
+        >
+          {loginError}
+        </p>
       </motion.div>
 
       <motion.p

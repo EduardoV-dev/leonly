@@ -5,6 +5,12 @@ export const memoriesEs = {
       preserve: "Conservar recuerdo",
     },
     backToTimeline: "Volver a la línea de tiempo",
+    draft: {
+      exitWarning: "¿Quieres salir de esta página y descartar el borrador guardado?",
+      restored: "Restauramos tu borrador guardado.",
+      restoredWithPhotos:
+        "Restauramos tus cambios escritos. Vuelve a añadir estas fotos: {{photos}}.",
+    },
     fields: {
       date: {
         label: "Fecha",
@@ -60,6 +66,7 @@ export const memoriesEs = {
       photoSize: "Cada foto debe ocupar {{size}} MB o menos.",
       photoType: "Las fotos deben ser imágenes JPEG, PNG o WebP.",
       saveFailed: "No pudimos guardar este recuerdo. Inténtalo de nuevo.",
+      serverInvalid: "Revisa los campos marcados.",
     },
   },
   edit: {
@@ -96,6 +103,7 @@ export const memoriesEs = {
     validation: {
       photoCount: "Elige hasta {{count}} fotos para el recuerdo final.",
       saveFailed: "No pudimos actualizar este recuerdo. Inténtalo de nuevo.",
+      serverInvalid: "Revisa los campos marcados.",
     },
   },
   detail: {
@@ -108,6 +116,7 @@ export const memoriesEs = {
       previousPhoto: "Foto anterior",
       retry: "Intentar de nuevo",
     },
+    created: "Recuerdo creado el",
     creator: "Conservado por {{name}}",
     delete: {
       action: "Quitar recuerdo",
@@ -125,6 +134,7 @@ export const memoriesEs = {
       success: "El recuerdo ya no forma parte de la historia que comparten.",
       unavailable: "Este recuerdo ya no está aquí.",
     },
+    updated: "Última actualización del recuerdo el",
     comments: {
       add: "Comentar",
       added: "Comentario añadido.",
@@ -243,6 +253,7 @@ export const memoriesEs = {
   },
   timeline: {
     empty: {
+      action: "Conserva tu primer recuerdo",
       description: "Tus momentos compartidos aparecerán aquí cuando haya recuerdos disponibles.",
       heading: "Aún no hay recuerdos",
     },

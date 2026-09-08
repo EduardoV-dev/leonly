@@ -27,6 +27,10 @@ export type CommentDraftState = {
 
 export type CommentComposerState = ReturnType<typeof useCommentComposer>;
 
+export function cropCommentDraft(draft: string): string {
+  return Array.from(draft).slice(0, MAX_COMMENT_LENGTH).join("");
+}
+
 export function getCommentDraftState(draft: string): CommentDraftState {
   const count = Array.from(draft).length;
   const trimmedCount = Array.from(draft.trim()).length;
@@ -121,7 +125,7 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       idempotencyKeyRef.current = null;
       submittedBodyRef.current = null;
       setHasInteracted(true);
-      setDraft(value);
+      setDraft(cropCommentDraft(value));
       setSubmitError(null);
       setLastOutcome(null);
     },

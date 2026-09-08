@@ -171,19 +171,23 @@
 
 @mixin screen-md {
   .sidebar {
-    display: flex;
+    display: block;
     min-height: 100%;
-    flex-direction: column;
-    gap: 1.25rem;
+  }
+
+  .content {
     position: sticky;
     top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
     height: 100svh;
     padding: 1.5rem 1rem 1.25rem;
     border-right: 1px solid #e9dfdd;
     background: rgb(255 253 252 / 0.72);
   }
 
-  .sidebar[data-collapsed="true"] {
+  .sidebar[data-collapsed="true"] .content {
     align-items: center;
     padding-right: 0.75rem;
     padding-left: 0.75rem;
@@ -224,7 +228,7 @@
 }
 
 @mixin screen-lg {
-  .sidebar {
+  .content {
     padding-right: 1.2rem;
     padding-left: 1.2rem;
   }

@@ -69,6 +69,10 @@ describe("MemoriesTimeline", () => {
       await Promise.resolve();
     });
     expect(screen.getByRole("heading", { name: "No memories yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Preserve your first memory" })).toHaveAttribute(
+      "href",
+      "/memories/new",
+    );
   });
 
   it("retains cards after a load-more failure and replaces them after a cursor reset", async () => {
@@ -147,6 +151,10 @@ describe("MemoriesTimeline", () => {
       await Promise.resolve();
     });
     expect(screen.getByRole("heading", { name: "No memories yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Preserve your first memory" })).toHaveAttribute(
+      "href",
+      "/memories/new",
+    );
   });
 
   it("renders server-provided cover URLs and summary fields, then falls back when the preview fails", async () => {

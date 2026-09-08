@@ -34,7 +34,10 @@ export async function POST(request: Request, context: RouteContext) {
     if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
     const payload = reactionRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
-      return NextResponse.json({ error: "Please choose a valid reaction." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Please choose a valid reaction." },
+        { status: 400 },
+      );
     }
 
     const reaction = await toggleMemoryReaction(memoryId, payload.data.reactionType);
@@ -49,7 +52,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
     if (error instanceof MemoryInputError) {
       return NextResponse.json(
-        { error: error.message, fields: error.fields },
+        { code: error.code, error: error.message, fields: error.fields },
         { status: error.status },
       );
     }
@@ -60,7 +63,10 @@ export async function POST(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not update your reaction. Please try again." },
+      {
+        code: "memory_reaction_failed",
+        error: "We could not update your reaction. Please try again.",
+      },
       { status: 500 },
     );
   }

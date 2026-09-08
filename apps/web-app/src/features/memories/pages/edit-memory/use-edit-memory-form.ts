@@ -12,12 +12,18 @@ import {
 } from "../../constants/create-memory";
 import { MAX_EDIT_MEMORY_PHOTO_COUNT } from "../../constants/edit-memory";
 import { memoryQueryKeys } from "../../constants/query-keys";
+import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEdit } from "../../types/memory-edit";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import {
+  clearMemoryDraft,
+  getEditMemoryDraftKey,
+  readMemoryDraft,
+  writeMemoryDraft,
+} from "../../utils/memory-draft-storage";
 
 type EditResponse = {
-  code?: "conflict" | "pending" | "unavailable";
-  error?: string;
+  code?: "conflict" | "pending" | "unavailable" | "validation_failed";
   fields?: Record<string, string>;
   id?: string;
   visibility?: "timeline" | "vault";
@@ -92,38 +98,67 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const idempotencyKey = useRef<string | null>(null);
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
+  const storageKey = getEditMemoryDraftKey(memory.id, memory.version);
   const initialDraft = toDraft(memory);
   const [values, setValues] = useState<MemoryEditorValues>(initialDraft.values);
   const [photos, setPhotos] = useState<MemoryEditorPhoto[]>(initialDraft.photos);
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(initialDraft.coverPhotoKey);
+  const [draftWasRestored, setDraftWasRestored] = useState(false);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
   const [isConflict, setIsConflict] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [restoredPhotoNames, setRestoredPhotoNames] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     const draft = toDraft(memory);
+    const storedDraft = readMemoryDraft(storageKey);
     previewUrls.current.forEach((url) => {
       URL.revokeObjectURL(url);
     });
     previewUrls.current.clear();
-    setValues(draft.values);
-    setPhotos(draft.photos);
-    setCoverPhotoKey(draft.coverPhotoKey);
+    const retainedPhotoIds = new Set(storedDraft?.retainedPhotoIds);
+    const restoredPhotos = storedDraft
+      ? draft.photos.filter((photo) => photo.kind === "retained" && retainedPhotoIds.has(photo.id))
+      : draft.photos;
+    const restoredCoverKey = storedDraft?.coverPhotoId
+      ? `retained-${storedDraft.coverPhotoId}`
+      : null;
+    setValues(storedDraft?.values ?? draft.values);
+    setPhotos(restoredPhotos);
+    setCoverPhotoKey(
+      restoredPhotos.some((photo) => photo.key === restoredCoverKey)
+        ? restoredCoverKey
+        : (restoredPhotos[0]?.key ?? null),
+    );
+    setDraftWasRestored(Boolean(storedDraft));
+    setRestoredPhotoNames(storedDraft?.newPhotoNames ?? []);
     setFields({});
+    setHasLoadedDraft(true);
     setIsConflict(false);
-    setIsDirty(false);
+    setIsDirty(Boolean(storedDraft));
     setSubmitError(null);
     idempotencyKey.current = null;
-  }, [memory]);
+  }, [memory, storageKey]);
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isDirty) event.preventDefault();
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
+    if (!hasLoadedDraft || !isDirty) return;
+    const coverPhoto = photos.find((photo) => photo.key === coverPhotoKey);
+    writeMemoryDraft(storageKey, {
+      coverPhotoId: coverPhoto?.kind === "retained" ? coverPhoto.id : null,
+      newPhotoNames: [
+        ...new Set([
+          ...restoredPhotoNames,
+          ...photos.filter((photo) => photo.kind === "new").map((photo) => photo.name),
+        ]),
+      ],
+      retainedPhotoIds: photos
+        .filter((photo) => photo.kind === "retained")
+        .map((photo) => photo.id),
+      values,
+    });
+  }, [coverPhotoKey, hasLoadedDraft, isDirty, photos, restoredPhotoNames, storageKey, values]);
   useEffect(
     () => () => {
       previewUrls.current.forEach((url) => {
@@ -132,6 +167,16 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     },
     [],
   );
+
+  const discardDraft = () => {
+    clearMemoryDraft(storageKey);
+    setIsDirty(false);
+  };
+  useMemoryDraftProtection({
+    isDirty,
+    message: t("create.draft.exitWarning"),
+    onDiscard: discardDraft,
+  });
 
   const clearFieldError = (field: string) =>
     setFields((current) => {
@@ -187,6 +232,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
       };
     });
     changeDraft("photos");
+    const selectedNames = new Set(files.map((file) => file.name));
+    setRestoredPhotoNames((current) => current.filter((name) => !selectedNames.has(name)));
     setPhotos((current) => [...current, ...additions]);
     setCoverPhotoKey((current) => current ?? additions[0]?.key ?? null);
   };
@@ -206,7 +253,10 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     changeDraft("photos");
     setCoverPhotoKey(key);
   };
-  const reload = () => router.refresh();
+  const reload = () => {
+    discardDraft();
+    router.refresh();
+  };
   const submit = async () => {
     if (isSubmitting) return;
     setFields({});
@@ -221,6 +271,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
       });
       const payload = (await response.json()) as EditResponse;
       if (payload.code === "unavailable") {
+        discardDraft();
         router.refresh();
         return;
       }
@@ -229,12 +280,23 @@ export function useEditMemoryForm(memory: MemoryEdit) {
         return;
       }
       if (!response.ok) {
-        setFields(payload.fields ?? {});
-        throw new Error(payload.error ?? t("edit.validation.saveFailed"));
+        setFields(
+          Object.fromEntries(
+            Object.keys(payload.fields ?? {}).map((field) => [
+              field,
+              t("edit.validation.serverInvalid"),
+            ]),
+          ),
+        );
+        throw new Error(
+          payload.code === "validation_failed"
+            ? t("edit.validation.serverInvalid")
+            : t("edit.validation.saveFailed"),
+        );
       }
       const finalVisibility = payload.visibility ?? values.visibility;
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
-      setIsDirty(false);
+      discardDraft();
       toast.success(t("edit.success"));
       router.push(detailRoute(memory.id, finalVisibility));
     } catch (error) {
@@ -247,6 +309,11 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   return {
     addPhotos,
     coverPhotoKey,
+    draftNotice: draftWasRestored
+      ? restoredPhotoNames.length > 0
+        ? t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") })
+        : t("create.draft.restored")
+      : null,
     fields,
     isConflict,
     isSubmitting,

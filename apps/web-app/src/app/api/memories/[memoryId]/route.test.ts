@@ -230,6 +230,7 @@ describe("DELETE /api/memories/[memoryId]", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
+      code: "invalid_request",
       error: "Please reload this memory and try again.",
     });
   });
@@ -241,6 +242,7 @@ describe("DELETE /api/memories/[memoryId]", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_delete_failed",
       error: "We could not delete this memory. Please try again.",
     });
     expect(logServerErrorMock).toHaveBeenCalledWith(
@@ -300,6 +302,7 @@ describe("GET /api/memories/[memoryId]", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_availability_failed",
       error: "We could not check this memory. Please try again.",
     });
     expect(JSON.stringify(logServerErrorMock.mock.calls)).not.toContain("private target state");

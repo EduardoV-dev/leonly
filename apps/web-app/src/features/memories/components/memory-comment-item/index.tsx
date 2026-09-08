@@ -1,8 +1,11 @@
+import { formatDistanceToNow } from "date-fns";
+import { enUS, es } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { normalizeLanguage } from "@/lib/i18n";
 import { MAX_COMMENT_LENGTH } from "../../constants/comments";
 import { type CommentDeletionOutcome, useCommentDeletion } from "../../hooks/use-comment-deletion";
 import { useCommentEditor } from "../../hooks/use-comment-editor";
@@ -36,10 +39,15 @@ export function MemoryCommentItem({
     },
     onUnavailable,
   });
-  const timestamp = new Intl.DateTimeFormat(locale, {
+  const createdAt = new Date(comment.createdAt);
+  const exactTimestamp = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(comment.createdAt));
+  }).format(createdAt);
+  const relativeTimestamp = formatDistanceToNow(createdAt, {
+    addSuffix: true,
+    locale: normalizeLanguage(locale) === "es" ? es : enUS,
+  });
   const error = editor.hasAttemptedSave ? editor.draftState.error : null;
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
@@ -67,7 +75,9 @@ export function MemoryCommentItem({
         ) : null}
         <p className={styles.metadata}>
           <strong>{comment.authorDisplayName}</strong>
-          <time dateTime={comment.createdAt}>{timestamp}</time>
+          <time dateTime={comment.createdAt} title={exactTimestamp}>
+            {relativeTimestamp}
+          </time>
         </p>
         {comment.isAuthor && !editor.isEditing ? (
           <div className={styles.authorActions} ref={deleteTriggerRef}>

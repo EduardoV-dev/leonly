@@ -171,6 +171,7 @@ describe("PATCH /api/memories/[memoryId]/placement", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_placement_failed",
       error: "We could not move this memory. Please try again.",
     });
     expect(logServerErrorMock.mock.calls[0]?.[1]).toMatchObject({

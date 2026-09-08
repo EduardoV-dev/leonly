@@ -243,12 +243,19 @@ describe("editMemory", () => {
         ],
         error: null,
       });
-    const upload = vi.fn().mockResolvedValue({ error: new Error("storage failed") });
+    const uploadError = new Error("storage failed");
+    const upload = vi.fn().mockResolvedValue({ error: uploadError });
     createClientMock.mockResolvedValue(admin(rpc, upload));
 
-    await expect(editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData())).rejects.toMatchObject({
+    const error = await editMemory(MEMORY_ID, IDEMPOTENCY_KEY, new FormData()).catch((failure) =>
+      Promise.resolve(failure),
+    );
+
+    expect(error).toMatchObject({
       status: 500,
     });
+    expect(error).toHaveProperty("cause.message", "Memory edit photo upload failed.");
+    expect(error).toHaveProperty("cause.cause.cause", uploadError);
     expect(cleanupMock).toHaveBeenCalledWith(ATTEMPT_ID);
   });
 });

@@ -199,6 +199,15 @@
   color: var(--destructive);
   font-size: 0.85rem;
 }
+.draftNotice {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--auth-border);
+  border-radius: 0.65rem;
+  background: #fff4f3;
+  color: var(--auth-copy);
+  font-size: 0.85rem;
+}
 .conflict {
   padding: 1rem;
   border: 1px solid #d8b2b6;

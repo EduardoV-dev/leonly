@@ -53,8 +53,10 @@ export class MemoryInputError extends Error {
     message: string,
     readonly fields: Record<string, string> = {},
     readonly status = 400,
+    readonly code = "validation_failed",
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
   }
 }
 
@@ -71,7 +73,8 @@ function asTrimmedText(
     invalidField(field, "Required.");
   }
 
-  const trimmedValue = value.trim();
+  // Multipart form parsing expands textarea line breaks from \n to \r\n.
+  const trimmedValue = value.replace(/\r\n?/g, "\n").trim();
   if (field === "title" && trimmedValue.length === 0) {
     invalidField(field, "Required.");
   }

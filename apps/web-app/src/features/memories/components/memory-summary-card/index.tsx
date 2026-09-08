@@ -1,6 +1,6 @@
 "use client";
 
-import { BookHeart, Heart, ImageIcon, LockKeyhole, MapPin, MessageCircle } from "lucide-react";
+import { BookHeart, ImageIcon, LockKeyhole, MapPin, MessageCircle } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -74,6 +74,7 @@ function formatCompactDate(memoryDate: string, language: string): string {
   return new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-US", {
     day: "numeric",
     month: "short",
+    year: "numeric",
   }).format(new Date(`${memoryDate}T00:00:00`));
 }
 
@@ -113,7 +114,7 @@ export function MemorySummaryCard({
       whileInView="visible"
       viewport={{ amount: 0.15, once: true }}
     >
-      <motion.div variants={activeSummaryVariants}>
+      <motion.div className={styles.summary} variants={activeSummaryVariants}>
         <Link
           className={styles.summaryLink}
           href={detailHref}
@@ -144,9 +145,9 @@ export function MemorySummaryCard({
                   <BookHeart aria-hidden="true" />
                 )}
               </span>
-              <p className={styles.date}>
+              <time className={styles.date} dateTime={memory.memoryDate}>
                 {formatCompactDate(memory.memoryDate, i18n.resolvedLanguage ?? "en")}
-              </p>
+              </time>
             </motion.div>
             <motion.h3 variants={activeContentVariants}>{memory.title}</motion.h3>
             {memory.description ? (
@@ -159,11 +160,6 @@ export function MemorySummaryCard({
                 <MapPin aria-hidden="true" />
                 <span>{memory.location}</span>
               </motion.p>
-            ) : null}
-            {variant === "timeline" ? (
-              <motion.div variants={activeContentVariants}>
-                <Heart className={styles.favorite} aria-hidden="true" />
-              </motion.div>
             ) : null}
           </motion.div>
         </Link>

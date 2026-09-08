@@ -52,6 +52,15 @@ describe("validateEditMemoryFormData", () => {
     });
   });
 
+  it("accepts a 2,000-character description after multipart line break normalization", async () => {
+    const value = formData();
+    value.set("description", `${"a".repeat(1998)}\r\nb`);
+
+    await expect(validateEditMemoryFormData(value)).resolves.toMatchObject({
+      description: `${"a".repeat(1998)}\nb`,
+    });
+  });
+
   it("allows removing every photo only with no cover", async () => {
     await expect(validateEditMemoryFormData(formData())).resolves.toMatchObject({
       coverNewPhotoIndex: null,

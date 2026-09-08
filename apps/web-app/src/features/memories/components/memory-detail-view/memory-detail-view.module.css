@@ -181,6 +181,24 @@
   font-weight: 700;
 }
 
+.auditDates {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.auditDates p {
+  margin: 0;
+  color: var(--auth-copy);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.auditDates time {
+  color: var(--auth-heading);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
 .related {
   min-width: 0;
   margin-top: 3.5rem;

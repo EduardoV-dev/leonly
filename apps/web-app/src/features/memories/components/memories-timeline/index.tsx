@@ -1,8 +1,10 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { APP_ROUTES } from "@/constants/routes";
 import { DEFAULT_MEMORY_SORT, type MemorySort } from "../../constants/memory-sort";
 import { RECENT_MEMORIES_LIMIT } from "../../constants/timeline";
 import { MemoryChronology } from "../memory-chronology";
@@ -74,6 +76,7 @@ export function MemoriesTimeline({
         <ImageIcon aria-hidden="true" />
         <h3>{t("timeline.empty.heading")}</h3>
         <p>{t("timeline.empty.description")}</p>
+        <Link href={APP_ROUTES.MEMORIES_NEW}>{t("timeline.empty.action")}</Link>
       </div>
     );
   }

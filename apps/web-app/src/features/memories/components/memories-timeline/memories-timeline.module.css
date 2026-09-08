@@ -1,5 +1,9 @@
+.feedback a,
 .feedback button {
+  display: inline-flex;
   min-height: 2.45rem;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #d8c4c2;
   border-radius: 0.65rem;
   background: #fff;
@@ -43,10 +47,23 @@
   color: #9b7779;
   stroke-width: 1.5;
 }
+.feedback a,
 .feedback button {
   padding: 0 1rem;
 }
 
+.feedback a {
+  border-color: #8a6467;
+  background: #8a6467;
+  color: #fffafd;
+  text-decoration: none;
+}
+
+.feedback a:hover {
+  background: #7d585d;
+}
+
+.feedback a:focus-visible,
 .feedback button:focus-visible {
   outline: 2px solid #b82b49;
   outline-offset: 2px;

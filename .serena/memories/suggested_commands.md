@@ -1,0 +1,1 @@
+Root: `pnpm dev|build|lint|format|test|typecheck`. Web app: `pnpm --filter web-app check|typecheck|test:run|build`; single test: `pnpm --filter web-app test:run -- <path>`.

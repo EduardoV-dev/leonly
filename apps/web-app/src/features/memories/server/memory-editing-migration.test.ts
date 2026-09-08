@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve(process.cwd(), "../../supabase/migrations/20260901130000_memory_editing.sql"),
   "utf8",
 );
+const coalesceFixMigration = readFileSync(
+  resolve(process.cwd(), "../../supabase/migrations/20260908120000_fix_memory_edit_coalesce.sql"),
+  "utf8",
+);
 
 describe("memory editing migration security contract", () => {
   it("keeps edit persistence private and every mutation RPC service-role only", () => {
@@ -42,6 +46,14 @@ describe("memory editing migration security contract", () => {
     expect(migration).toContain("attempt.status = 'failed'");
     expect(migration).toContain("list_stale_memory_edit_staging");
     expect(migration).toContain("list_memory_photo_cleanup");
+  });
+
+  it("uses COALESCE syntax when finalizing memory edits", () => {
+    expect(coalesceFixMigration).toContain(
+      "create or replace function public.finalize_memory_edit_attempt(",
+    );
+    expect(coalesceFixMigration).toContain("coalesce(pg_catalog.cardinality(p_retained_photo_ids), 0)");
+    expect(coalesceFixMigration).not.toContain("pg_catalog.coalesce");
   });
 
   it("gives only the inserted reservation ownership of a concurrent attempt", () => {

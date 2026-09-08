@@ -79,6 +79,7 @@ describe("GET /api/memories/timeline", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memories_timeline_failed",
       error: "We could not load your memories. Please try again.",
     });
   });

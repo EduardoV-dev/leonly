@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createEvent, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { CreateMemoryPage } from ".";
@@ -34,9 +34,14 @@ vi.mock("@/components/past-date-picker", () => ({
 describe("CreateMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("crypto", { randomUUID: () => "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0" });
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     Object.defineProperties(URL, {
       createObjectURL: {
         configurable: true,
@@ -117,6 +122,7 @@ describe("CreateMemoryPage", () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(
         JSON.stringify({
+          code: "validation_failed",
           error: "Please review the highlighted fields.",
           fields: { memoryDate: "Choose a valid date.", title: "Required." },
         }),
@@ -129,8 +135,7 @@ describe("CreateMemoryPage", () => {
     expect(preserveButton.closest("form")).toHaveAttribute("novalidate");
     fireEvent.click(preserveButton);
 
-    expect(await screen.findByText("Required.")).toBeInTheDocument();
-    expect(screen.getByText("Choose a valid date.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(3);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -142,6 +147,38 @@ describe("CreateMemoryPage", () => {
       "/timeline",
     );
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute("href", "/timeline");
+  });
+
+  it("restores written changes and identifies photos that must be added again", async () => {
+    const firstRender = renderCreateMemoryPage();
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2020-08-20" } });
+    fireEvent.change(screen.getByLabelText(/Drag and drop your photos/i), {
+      target: { files: [new File(["photo"], "picnic.png", { type: "image/png" })] },
+    });
+
+    firstRender.unmount();
+    renderCreateMemoryPage();
+
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveValue("Our picnic"));
+    expect(screen.getByLabelText("Date")).toHaveValue("2020-08-20");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Your written changes were restored. Add these photos again: picnic.png.",
+    );
+    expect(screen.getByText("0/10")).toBeInTheDocument();
+  });
+
+  it("keeps the user in the editor when they decline to discard a dirty draft", () => {
+    renderCreateMemoryPage();
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
+    const cancelLink = screen.getByRole("link", { name: "Cancel" });
+    const click = createEvent.click(cancelLink, { button: 0 });
+
+    fireEvent(cancelLink, click);
+
+    expect(confirm).toHaveBeenCalledWith("Leave this page and discard your saved draft?");
+    expect(click.defaultPrevented).toBe(true);
+    expect(screen.getByLabelText("Title")).toHaveValue("Our picnic");
   });
 
   it("renders translated creation controls in spanish", async () => {

@@ -117,6 +117,49 @@ describe("MemoryComments", () => {
     expect(screen.getByRole("heading", { name: "No comments yet" })).toBeInTheDocument();
   });
 
+  it("crops new and edited comments at the limit without rendering an over-limit error", async () => {
+    const authoredComment = { ...comment, isAuthor: true };
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+    );
+    renderComments();
+    await settle();
+
+    const overLimitDraft = "🌷".repeat(1001);
+    const croppedDraft = "🌷".repeat(1000);
+    const composer = screen.getByRole("textbox", { name: "Comment" });
+    fireEvent.change(composer, { target: { value: overLimitDraft } });
+
+    expect(composer).toHaveValue(croppedDraft);
+    expect(screen.getByText("1000 / 1000")).toBeInTheDocument();
+    expect(screen.queryByText(/Remove 1 character/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
+    fireEvent.change(editor, { target: { value: overLimitDraft } });
+
+    expect(editor).toHaveValue(croppedDraft);
+    expect(screen.getAllByText("1000 / 1000")).toHaveLength(2);
+    expect(screen.queryByText(/Remove 1 character/)).not.toBeInTheDocument();
+  });
+
+  it("renders localized relative time while preserving the exact timestamp", async () => {
+    const createdAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        comments: [{ ...comment, createdAt }],
+        cursorReset: false,
+        nextCursor: null,
+      }),
+    );
+    renderComments();
+    await settle();
+
+    const timestamp = screen.getByText(/about 2 hours ago/);
+    expect(timestamp).toHaveAttribute("datetime", createdAt);
+    expect(timestamp).toHaveAttribute("title");
+  });
+
   it("submits from the form, freezes pending state, then clears and announces the canonical note", async () => {
     let resolveCreate: (response: Response) => void = () => undefined;
     vi.mocked(fetch)

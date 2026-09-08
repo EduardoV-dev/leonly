@@ -71,6 +71,23 @@ describe("comment state hooks", () => {
     });
   });
 
+  it("crops composer drafts to the Unicode character limit", () => {
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useCommentComposer(MEMORY_ID), {
+      wrapper: wrapperFor(queryClient),
+    });
+
+    act(() => result.current.updateDraft("🌷".repeat(1001)));
+
+    expect(result.current.draft).toBe("🌷".repeat(1000));
+    expect(result.current.draftState).toMatchObject({
+      count: 1000,
+      error: null,
+      remaining: 0,
+      isValid: true,
+    });
+  });
+
   it("deduplicates flattened pages and replaces every page after a cursor reset", () => {
     const resetPage = { ...page([comment]), cursorReset: true };
     const data: MemoryCommentsData = {

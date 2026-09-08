@@ -38,7 +38,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!(await canMutateComment(memoryId, commentId))) return privateResourceNotFound();
     const payload = updateCommentRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
-      return NextResponse.json({ error: "Please review the highlighted fields." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Please review the highlighted fields." },
+        { status: 400 },
+      );
     }
 
     const comment = await updateComment(
@@ -58,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     if (error instanceof MemoryInputError) {
       return NextResponse.json(
-        { error: error.message, fields: error.fields },
+        { code: error.code, error: error.message, fields: error.fields },
         { status: error.status },
       );
     }
@@ -69,7 +72,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not update your comment. Please try again." },
+      {
+        code: "memory_comment_update_failed",
+        error: "We could not update your comment. Please try again.",
+      },
       { status: 500 },
     );
   }
@@ -92,7 +98,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     const payload = deleteCommentRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -109,7 +115,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
     if (error instanceof MemoryInputError) {
       return NextResponse.json(
-        { error: error.message, fields: error.fields },
+        { code: error.code, error: error.message, fields: error.fields },
         { status: error.status },
       );
     }
@@ -120,7 +126,10 @@ export async function DELETE(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not delete your comment. Please try again." },
+      {
+        code: "memory_comment_delete_failed",
+        error: "We could not delete your comment. Please try again.",
+      },
       { status: 500 },
     );
   }

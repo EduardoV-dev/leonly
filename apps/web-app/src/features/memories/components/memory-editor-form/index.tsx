@@ -36,6 +36,7 @@ const reducedMotionVariants: Variants = { hidden: { opacity: 1 }, visible: { opa
 export type MemoryEditorFormProps = {
   backHref: string;
   coverPhotoKey: string | null;
+  draftNotice?: string | null;
   isConflict?: boolean;
   fields: Record<string, string>;
   isSubmitting: boolean;
@@ -58,6 +59,7 @@ export type MemoryEditorFormProps = {
 export function MemoryEditorForm({
   backHref,
   coverPhotoKey,
+  draftNotice = null,
   fields,
   isConflict = false,
   isSubmitting,
@@ -275,6 +277,16 @@ export function MemoryEditorForm({
           </section>
         </motion.div>
 
+        {draftNotice ? (
+          <motion.p
+            aria-live="polite"
+            className={`${styles.draftNotice} ${wideStyles.feedback}`}
+            role="status"
+            variants={activeVariants}
+          >
+            {draftNotice}
+          </motion.p>
+        ) : null}
         {isConflict ? (
           <motion.section
             className={`${styles.conflict} ${wideStyles.feedback}`}

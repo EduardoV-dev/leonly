@@ -48,6 +48,7 @@ export function SignInPage() {
 
             <SignInCopy
               entranceVariants={entranceVariants}
+              loginError={loginWithGoogleMutation.isError ? t("loginError") : null}
               isLoginPending={loginWithGoogleMutation.isPending}
               onLogin={() => loginWithGoogleMutation.mutate()}
               shouldReduceMotion={shouldUseReducedMotion}

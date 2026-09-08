@@ -6,10 +6,15 @@ const createClientMock = vi.hoisted(() => vi.fn());
 const createMemoryPhotoVariantsMock = vi.hoisted(() =>
   vi.fn(async () => ({ cover: Buffer.from("cover"), detail: Buffer.from("detail") })),
 );
+const cleanupMemoryCreationAttemptMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("./create-memory-photo-variants", () => ({
   createMemoryPhotoVariants: createMemoryPhotoVariantsMock,
+}));
+vi.mock("./memory-photo-staging-cleanup", () => ({
+  cleanupMemoryCreationAttempt: cleanupMemoryCreationAttemptMock,
+  cleanupStaleMemoryPhotoStaging: vi.fn(),
 }));
 
 import { createMemory, validateCreateMemoryFormData } from "./create-memory";
@@ -60,6 +65,24 @@ describe("validateCreateMemoryFormData", () => {
       photos: [],
       title: "Our picnic",
       visibility: "timeline",
+    });
+  });
+
+  it("accepts a 2,000-character description after multipart line break normalization", async () => {
+    const formData = createFormData();
+    formData.set("description", `${"a".repeat(1998)}\r\nb`);
+
+    await expect(validateCreateMemoryFormData(formData)).resolves.toMatchObject({
+      description: `${"a".repeat(1998)}\nb`,
+    });
+  });
+
+  it("rejects a description longer than 2,000 characters after line break normalization", async () => {
+    const formData = createFormData();
+    formData.set("description", `${"a".repeat(1999)}\r\nb`);
+
+    await expect(validateCreateMemoryFormData(formData)).rejects.toMatchObject({
+      fields: { description: "Must be 2000 characters or fewer." },
     });
   });
 
@@ -168,6 +191,7 @@ describe("createMemory", () => {
       cover: Buffer.from("cover"),
       detail: Buffer.from("detail"),
     });
+    cleanupMemoryCreationAttemptMock.mockResolvedValue(undefined);
   });
 
   function requestClient(rpc: ReturnType<typeof vi.fn>) {
@@ -312,5 +336,35 @@ describe("createMemory", () => {
     expect(rpc).toHaveBeenCalledWith("mark_memory_photo_uploaded", {
       p_photo_id: expect.any(String),
     });
+  });
+
+  it("retains the operational failure as the cause when finalization fails", async () => {
+    const finalizeFailure = new Error("memory finalization failed");
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: [
+          {
+            attempt_id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+            is_new: true,
+            memory_id: null,
+            status: "processing",
+          },
+        ],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: null, error: finalizeFailure });
+    createClientMock.mockResolvedValue(requestClient(rpc));
+
+    await expect(
+      createMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0", createFormData()),
+    ).rejects.toMatchObject({
+      cause: expect.objectContaining({ cause: finalizeFailure }),
+      status: 500,
+    });
+
+    expect(cleanupMemoryCreationAttemptMock).toHaveBeenCalledWith(
+      "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+    );
   });
 });

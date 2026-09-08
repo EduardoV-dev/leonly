@@ -258,10 +258,14 @@ describe("PATCH /api/memories/[memoryId]/edit", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_edit_failed",
       error: "We could not update this memory. Please try again.",
     });
     expect(serializedLogArguments).not.toContain("private-space");
     expect(serializedLogArguments).not.toContain("memory_edit_attempts");
     expect(serializedLogArguments).toContain("Unexpected memory edit failure");
+    expect(loggedError.cause).toMatchObject({
+      message: "storage private-space/attempt/photo failed: relation memory_edit_attempts",
+    });
   });
 });

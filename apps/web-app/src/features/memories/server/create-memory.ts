@@ -15,9 +15,12 @@ export const CreateMemoryError = MemoryInputError;
 
 export async function createMemory(idempotencyKey: string, formData: FormData) {
   if (!uuidSchema.safeParse(idempotencyKey).success) {
-    throw new CreateMemoryError("Please try again with a new form.", {
-      form: "Invalid request key.",
-    });
+    throw new CreateMemoryError(
+      "Please try again with a new form.",
+      { form: "Invalid request key." },
+      400,
+      "invalid_request",
+    );
   }
 
   const input = await validateCreateMemoryFormData(formData);
@@ -31,7 +34,7 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
   );
 
   if (reservationError || !reservationData?.[0]) {
-    throw new CreateMemoryError("This memory is unavailable.", {}, 404);
+    throw new CreateMemoryError("This memory is unavailable.", {}, 404, "not_found");
   }
 
   const reservation = reservationData[0] as {
@@ -46,11 +49,21 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
   }
 
   if (reservation.status !== "processing") {
-    throw new CreateMemoryError("We could not save this memory. Please try again.", {}, 409);
+    throw new CreateMemoryError(
+      "We could not save this memory. Please try again.",
+      {},
+      409,
+      "conflict",
+    );
   }
 
   if (!reservation.is_new) {
-    throw new CreateMemoryError("This memory is still being saved. Please try again.", {}, 409);
+    throw new CreateMemoryError(
+      "This memory is still being saved. Please try again.",
+      {},
+      409,
+      "pending",
+    );
   }
 
   const photoIds = input.photos.map(() => randomUUID());
@@ -80,7 +93,7 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
         !staging.cover_object_path ||
         !staging.detail_object_path
       ) {
-        throw new Error("Unable to stage the memory photo.");
+        throw new Error("Unable to stage the memory photo.", { cause: stagingError });
       }
 
       const uploads = [
@@ -105,7 +118,7 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
             upsert: false,
           });
         if (uploadError) {
-          throw new Error("Unable to upload the memory photo.");
+          throw new Error("Unable to upload the memory photo.", { cause: uploadError });
         }
       }
 
@@ -113,7 +126,7 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
         p_photo_id: photoId,
       });
       if (uploadedError) {
-        throw new Error("Unable to finalize the memory photo.");
+        throw new Error("Unable to finalize the memory photo.", { cause: uploadedError });
       }
     }
 
@@ -131,12 +144,19 @@ export async function createMemory(idempotencyKey: string, formData: FormData) {
       },
     );
     if (finalizeError || typeof memoryId !== "string") {
-      throw new Error("Unable to save the memory.");
+      throw new Error("Unable to save the memory.", { cause: finalizeError });
     }
 
     return { id: memoryId, reused: false };
-  } catch {
-    await cleanupMemoryCreationAttempt(reservation.attempt_id);
-    throw new CreateMemoryError("We could not save this memory. Please try again.", {}, 500);
+  } catch (error) {
+    await cleanupMemoryCreationAttempt(reservation.attempt_id).catch(() => undefined);
+    const creationError = new CreateMemoryError(
+      "We could not save this memory. Please try again.",
+      {},
+      500,
+      "memory_create_failed",
+    );
+    creationError.cause = error;
+    throw creationError;
   }
 }

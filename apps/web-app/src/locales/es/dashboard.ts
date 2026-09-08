@@ -7,6 +7,7 @@ export const dashboardEs = {
     sharing: "Comparten {{name}} juntos.",
     waiting: "Esperando a tu persona",
     waitingDescription: "Comparte tu código de invitación cuando quieras que se una.",
+    waitingWelcomeDescription: "Invita a tu pareja para comenzar a conservar su historia juntos.",
     welcome: "Bienvenido de nuevo, {{names}}",
     welcomeDescription: "Aquí está tu universo compartido.",
   },

@@ -252,6 +252,7 @@ describe("DELETE /api/memories/[memoryId]/comments/[commentId]", () => {
     );
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_comment_delete_failed",
       error: "We could not delete your comment. Please try again.",
     });
   });

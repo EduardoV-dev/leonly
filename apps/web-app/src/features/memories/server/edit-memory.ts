@@ -45,8 +45,9 @@ export class EditMemoryError extends MemoryInputError {
     fields: Record<string, string>,
     status: number,
     readonly code: EditMemoryErrorCode,
+    options?: ErrorOptions,
   ) {
-    super(message, fields, status);
+    super(message, fields, status, undefined, options);
   }
 }
 
@@ -119,7 +120,7 @@ export async function editMemory(
   });
   const reservation = reservationResponse.data?.[0] as Reservation | undefined;
   if (reservationResponse.error || !reservation) {
-    throw new Error("Unable to reserve the memory edit.");
+    throw new Error("Unable to reserve the memory edit.", { cause: reservationResponse.error });
   }
   if (reservation.outcome === "completed") {
     const result = completedResult(reservation, true);
@@ -136,9 +137,11 @@ export async function editMemory(
   }
 
   const photoIds = input.photos.map(() => randomUUID());
+  let failedOperation = "finalization";
   try {
     for (const [position, photo] of input.photos.entries()) {
       const photoId = photoIds[position];
+      failedOperation = "photo staging";
       const stagedResponse = await supabase.rpc("stage_memory_edit_photo_variants", {
         p_attempt_id: reservation.attempt_id,
         p_photo_id: photoId,
@@ -153,7 +156,7 @@ export async function editMemory(
         !staged.cover_object_path ||
         !staged.detail_object_path
       ) {
-        throw new Error("Unable to stage a replacement photo.");
+        throw new Error("Unable to stage a replacement photo.", { cause: stagedResponse.error });
       }
 
       const uploads = [
@@ -166,6 +169,7 @@ export async function editMemory(
         },
       ] as const;
       for (const upload of uploads) {
+        failedOperation = "photo upload";
         const uploaded = await supabase.storage
           .from("memory-photos")
           .upload(upload.path, upload.bytes, {
@@ -173,21 +177,23 @@ export async function editMemory(
             upsert: false,
           });
         if (uploaded.error) {
-          throw new Error("Unable to upload a replacement photo.");
+          throw new Error("Unable to upload a replacement photo.", { cause: uploaded.error });
         }
       }
 
+      failedOperation = "photo upload marking";
       const marked = await supabase.rpc("mark_memory_edit_photo_uploaded", {
         p_attempt_id: reservation.attempt_id,
         p_photo_id: photoId,
       });
       if (marked.error) {
-        throw new Error("Unable to mark a replacement photo ready.");
+        throw new Error("Unable to mark a replacement photo ready.", { cause: marked.error });
       }
     }
 
     const selectedCoverId =
       input.coverNewPhotoIndex === null ? input.coverPhotoId : photoIds[input.coverNewPhotoIndex];
+    failedOperation = "finalization";
     const finalizedResponse = await supabase.rpc("finalize_memory_edit_attempt", {
       p_attempt_id: reservation.attempt_id,
       p_cover_photo_id: selectedCoverId,
@@ -201,7 +207,7 @@ export async function editMemory(
     });
     const finalized = finalizedResponse.data?.[0] as Finalization | undefined;
     if (finalizedResponse.error || !finalized) {
-      throw new Error("Unable to finalize the memory edit.");
+      throw new Error("Unable to finalize the memory edit.", { cause: finalizedResponse.error });
     }
     if (finalized.outcome !== "completed") {
       throwForOutcome(finalized.outcome);
@@ -222,6 +228,7 @@ export async function editMemory(
       {},
       500,
       "pending",
+      { cause: new Error(`Memory edit ${failedOperation} failed.`, { cause: error }) },
     );
   }
 }

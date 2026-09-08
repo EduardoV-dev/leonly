@@ -58,9 +58,14 @@ function renderEditor(editableMemory: MemoryEdit = memory) {
 describe("EditMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("crypto", { randomUUID: () => "a9c28177-afb7-456e-a83d-8ef74047226f" });
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     Object.defineProperties(URL, {
       createObjectURL: { configurable: true, value: vi.fn((file: File) => `blob:${file.name}`) },
       revokeObjectURL: { configurable: true, value: vi.fn() },
@@ -192,6 +197,19 @@ describe("EditMemoryPage", () => {
     expect(refreshMock).toHaveBeenCalledOnce();
   });
 
+  it("restores written changes and retained-photo choices after interruption", async () => {
+    const firstRender = renderEditor();
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Revised title" } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
+
+    firstRender.unmount();
+    renderEditor();
+
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveValue("Revised title"));
+    expect(screen.getByText("0/5")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Your saved draft was restored.");
+  });
+
   it("submits only once while a save is pending", () => {
     vi.mocked(fetch).mockReturnValue(new Promise<Response>(() => undefined));
     renderEditor();
@@ -211,6 +229,7 @@ describe("EditMemoryPage", () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(
         JSON.stringify({
+          code: "validation_failed",
           error: "Please review the highlighted fields.",
           fields: { location: "Location is too long.", title: "Title is required." },
         }),
@@ -220,12 +239,10 @@ describe("EditMemoryPage", () => {
     renderEditor();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    expect(await screen.findByText("Title is required.")).toBeInTheDocument();
-    expect(screen.getByText("Location is too long.")).toBeInTheDocument();
+    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(3);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Corrected" } });
 
-    expect(screen.queryByText("Title is required.")).not.toBeInTheDocument();
-    expect(screen.getByText("Location is too long.")).toBeInTheDocument();
+    expect(screen.getAllByText("Please review the highlighted fields.")).toHaveLength(1);
   });
 
   it("refreshes into the generic unavailable route state when the mutation loses access", async () => {

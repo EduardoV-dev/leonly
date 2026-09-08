@@ -1,0 +1,1 @@
+Read `CODE_STYLE.md` before edits. Biome: 2 spaces, double quotes, semicolons, 100 columns. Strict TS; avoid any; server-only boundaries explicit. Auth/security and generic client-safe errors required. Keep production code <=400 lines.

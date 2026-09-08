@@ -22,10 +22,16 @@ export async function GET(request: Request) {
       .safeParse(limitValue);
 
     if (limitValue !== null && !limitResult.success) {
-      return NextResponse.json({ error: "Choose a valid timeline limit." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Choose a valid timeline limit." },
+        { status: 400 },
+      );
     }
     if (searchParams.has("sort") && !sortResult.success) {
-      return NextResponse.json({ error: "Choose a valid memory sort." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Choose a valid memory sort." },
+        { status: 400 },
+      );
     }
 
     const sort = sortResult.success ? sortResult.data : DEFAULT_MEMORY_SORT;
@@ -41,7 +47,10 @@ export async function GET(request: Request) {
       createRequestLogger(request),
     );
     return NextResponse.json(
-      { error: "We could not load your memories. Please try again." },
+      {
+        code: "memories_timeline_failed",
+        error: "We could not load your memories. Please try again.",
+      },
       { status: 500 },
     );
   }

@@ -43,7 +43,10 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       createRequestLogger(request),
     );
     return NextResponse.json(
-      { error: "We could not check this memory. Please try again." },
+      {
+        code: "memory_availability_failed",
+        error: "We could not check this memory. Please try again.",
+      },
       { headers: DETAIL_READ_HEADERS, status: 500 },
     );
   }
@@ -103,7 +106,10 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
 
     const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
     if (contentType !== "application/json") {
-      return NextResponse.json({ error: "Use an application/json request body." }, { status: 415 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Use an application/json request body." },
+        { status: 415 },
+      );
     }
 
     let body: unknown;
@@ -112,7 +118,7 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
     } catch (error) {
       if (error instanceof DeletePayloadTooLargeError) throw error;
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -120,7 +126,7 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
     const payload = deletionRequestSchema.safeParse(body);
     if (!payload.success) {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -129,7 +135,10 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
     return new Response(null, { status: 204 });
   } catch (error) {
     if (error instanceof DeletePayloadTooLargeError) {
-      return NextResponse.json({ error: "The deletion request is too large." }, { status: 413 });
+      return NextResponse.json(
+        { code: "payload_too_large", error: "The deletion request is too large." },
+        { status: 413 },
+      );
     }
     if (error instanceof MemoryDeletionError) {
       if (error.code === "unavailable") return privateResourceNotFound();
@@ -140,7 +149,7 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
     }
     if (error instanceof MemoryDeletionInputError) {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -151,7 +160,7 @@ export async function DELETE(request: Request, context: RouteContext): Promise<R
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not delete this memory. Please try again." },
+      { code: "memory_delete_failed", error: "We could not delete this memory. Please try again." },
       { status: 500 },
     );
   }

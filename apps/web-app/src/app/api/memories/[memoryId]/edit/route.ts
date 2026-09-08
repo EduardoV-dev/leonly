@@ -87,7 +87,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch (error) {
     if (error instanceof EditPayloadTooLargeError) {
       return NextResponse.json(
-        { error: "The edit request is too large.", fields: { photos: "Choose smaller photos." } },
+        {
+          code: "payload_too_large",
+          error: "The edit request is too large.",
+          fields: { photos: "Choose smaller photos." },
+        },
         { status: 413 },
       );
     }
@@ -104,7 +108,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
       return NextResponse.json(
         {
-          code: error instanceof EditMemoryError ? error.code : undefined,
+          code: error.code,
           error: error.message,
           fields: error.fields,
         },
@@ -114,11 +118,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     logServerError(
       { event: "memory_edit_failed", operation: "edit_memory" },
-      new Error("Unexpected memory edit failure."),
+      new Error("Unexpected memory edit failure.", { cause: error }),
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not update this memory. Please try again." },
+      { code: "memory_edit_failed", error: "We could not update this memory. Please try again." },
       { status: 500 },
     );
   }

@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     const cursor =
       cursorValue && cursorValue.length > MAX_VAULT_CURSOR_LENGTH ? "invalid" : cursorValue;
     if (searchParams.has("sort") && !sortResult.success) {
-      return NextResponse.json({ error: "Choose a valid memory sort." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Choose a valid memory sort." },
+        { status: 400 },
+      );
     }
     const sort = sortResult.success ? sortResult.data : DEFAULT_MEMORY_SORT;
     const page = await getVaultPage(cursor, sort);
@@ -28,7 +31,10 @@ export async function GET(request: Request) {
       createRequestLogger(request),
     );
     return NextResponse.json(
-      { error: "We could not load the Private Vault. Please try again." },
+      {
+        code: "memories_vault_failed",
+        error: "We could not load the Private Vault. Please try again.",
+      },
       { status: 500 },
     );
   }

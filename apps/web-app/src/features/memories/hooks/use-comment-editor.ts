@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment } from "../types/comment";
-import { getCommentDraftState } from "./use-comment-composer";
+import { cropCommentDraft, getCommentDraftState } from "./use-comment-composer";
 import { type MemoryCommentsData, replaceCommentInData } from "./use-memory-comments";
 
 type CommentEditErrorCode = "conflict" | "failed" | "unavailable";
@@ -104,7 +104,7 @@ export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOpt
 
   const updateDraft = (value: string) => {
     if (mutation.isPending) return;
-    setDraft(value);
+    setDraft(cropCommentDraft(value));
     setIsConflict(false);
     setLastOutcome(null);
     setSubmitError(null);

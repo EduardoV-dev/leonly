@@ -67,4 +67,8 @@
     gap: 1.25rem;
     padding-bottom: 1.5rem;
   }
+
+  .root.withoutLeading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }

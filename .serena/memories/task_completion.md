@@ -1,0 +1,1 @@
+For substantial web app changes run: `pnpm --filter web-app check`, `pnpm --filter web-app typecheck`, `pnpm --filter web-app test:run`, `pnpm --filter web-app build`. Run targeted test at minimum for narrow changes.

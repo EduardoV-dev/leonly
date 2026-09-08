@@ -29,6 +29,7 @@ const memory = {
   },
   photos: [],
   title: "Among the hidden flowers",
+  updatedAt: "2026-08-24T14:30:00.000Z",
   version: "MjAyNi0wOC0yM1QxMDowMDowMC4wMDBa",
   visibility: "vault" as const,
 };
@@ -75,6 +76,8 @@ describe("VaultMemoryDetailPage", () => {
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
       "Preserved by Sarah",
     );
+    expect(screen.getByText("August 23, 2026")).toHaveAttribute("datetime", memory.createdAt);
+    expect(screen.getByText("August 24, 2026")).toHaveAttribute("datetime", memory.updatedAt);
     expect(screen.getByRole("link", { name: "Open Picnic by the river" })).toHaveAttribute(
       "href",
       "/vault/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",

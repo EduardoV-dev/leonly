@@ -95,7 +95,10 @@ describe("POST /api/memories/[memoryId]/reactions", () => {
 
     const unsupported = await POST(request({ reactionType: "thumbs-up" }), context());
     expect(unsupported.status).toBe(400);
-    await expect(unsupported.json()).resolves.toEqual({ error: "Please choose a valid reaction." });
+    await expect(unsupported.json()).resolves.toEqual({
+      code: "invalid_request",
+      error: "Please choose a valid reaction.",
+    });
     expect(toggleMemoryReactionMock).not.toHaveBeenCalled();
   });
 
@@ -153,6 +156,7 @@ describe("POST /api/memories/[memoryId]/reactions", () => {
     );
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_reaction_failed",
       error: "We could not update your reaction. Please try again.",
     });
   });

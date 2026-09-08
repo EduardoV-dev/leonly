@@ -4,6 +4,7 @@ export const authEs = {
   description:
     "Un espacio privado para nuestros recuerdos, nuestras bromas internas y todo lo que estamos construyendo juntos.",
   continueWithGoogle: "Continuar con Google",
+  loginError: "No pudimos iniciar sesión con Google. Revisa tu conexión e inténtalo de nuevo.",
   legal: "Al continuar, aceptas nuestros Términos de servicio y nuestra Política de privacidad.",
   loadingApplication: "Cargando la aplicación",
   language: {

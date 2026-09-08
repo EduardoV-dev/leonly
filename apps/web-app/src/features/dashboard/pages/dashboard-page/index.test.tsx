@@ -214,8 +214,13 @@ describe("DashboardPage", () => {
 
     await renderDashboardPage();
 
-    expect(screen.getByRole("heading", { name: "Waiting for your person" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Invite your partner to begin preserving your story together."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Waiting for your person" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "3 days together" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Partner invitation code")).toHaveValue("TWO-FW3K3");
     expect(screen.getByRole("button", { name: "Copy code" })).toBeEnabled();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);

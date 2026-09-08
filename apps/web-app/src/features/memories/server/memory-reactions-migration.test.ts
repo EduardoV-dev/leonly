@@ -10,6 +10,10 @@ const membersMigration = readFileSync(
   resolve(process.cwd(), "../../supabase/migrations/20260903095000_memory_reaction_members.sql"),
   "utf8",
 );
+const coalesceFixMigration = readFileSync(
+  resolve(process.cwd(), "../../supabase/migrations/20260908111500_fix_memory_reaction_summary_coalesce.sql"),
+  "utf8",
+);
 
 describe("memory reactions migration security contract", () => {
   it("stores one supported reaction for each membership and memory", () => {
@@ -57,5 +61,11 @@ describe("memory reactions migration security contract", () => {
       "jsonb_agg(member.display_name order by member.display_name)",
     );
     expect(membersMigration).toContain("inner join public.space_members as member");
+  });
+
+  it("uses COALESCE syntax when aggregating JSONB reaction members", () => {
+    expect(coalesceFixMigration).toContain("create or replace function public.get_memory_reaction_summary");
+    expect(coalesceFixMigration).toContain("'heart', coalesce(");
+    expect(coalesceFixMigration).not.toContain("pg_catalog.coalesce");
   });
 });

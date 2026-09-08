@@ -85,6 +85,7 @@ export async function getMemoryDetailForVisibility(
       photos,
       reaction,
       title: memory.title,
+      updatedAt: memory.updatedAt,
       version: encodeMemoryVersion(memory.updatedAt),
       visibility: memory.visibility,
     };

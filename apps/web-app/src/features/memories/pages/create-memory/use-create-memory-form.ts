@@ -11,9 +11,16 @@ import {
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../constants/create-memory";
 import { memoryQueryKeys } from "../../constants/query-keys";
+import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import {
+  CREATE_MEMORY_DRAFT_KEY,
+  clearMemoryDraft,
+  readMemoryDraft,
+  writeMemoryDraft,
+} from "../../utils/memory-draft-storage";
 
-type CreateMemoryResponse = { error?: string; fields?: Record<string, string>; id?: string };
+type CreateMemoryResponse = { code?: string; fields?: Record<string, string>; id?: string };
 
 const initialValues: MemoryEditorValues = {
   description: "",
@@ -66,12 +73,40 @@ export function useCreateMemoryForm() {
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
+  const [draftWasRestored, setDraftWasRestored] = useState(false);
   const [fields, setFields] = useState<Record<string, string>>({});
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photos, setPhotos] = useState<MemoryEditorPhoto[]>([]);
+  const [restoredPhotoNames, setRestoredPhotoNames] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [values, setValues] = useState<MemoryEditorValues>(initialValues);
 
+  useEffect(() => {
+    const draft = readMemoryDraft(CREATE_MEMORY_DRAFT_KEY);
+    if (draft) {
+      setValues(draft.values);
+      setRestoredPhotoNames(draft.newPhotoNames);
+      setDraftWasRestored(true);
+      setIsDirty(true);
+    }
+    setHasLoadedDraft(true);
+  }, []);
+  useEffect(() => {
+    if (!hasLoadedDraft || !isDirty) return;
+    writeMemoryDraft(CREATE_MEMORY_DRAFT_KEY, {
+      coverPhotoId: null,
+      newPhotoNames: [
+        ...new Set([
+          ...restoredPhotoNames,
+          ...photos.filter((photo) => photo.kind === "new").map((photo) => photo.name),
+        ]),
+      ],
+      retainedPhotoIds: [],
+      values,
+    });
+  }, [hasLoadedDraft, isDirty, photos, restoredPhotoNames, values]);
   useEffect(
     () => () => {
       previewUrls.current.forEach((url) => {
@@ -81,9 +116,20 @@ export function useCreateMemoryForm() {
     [],
   );
 
+  const discardDraft = () => {
+    clearMemoryDraft(CREATE_MEMORY_DRAFT_KEY);
+    setIsDirty(false);
+  };
+  useMemoryDraftProtection({
+    isDirty,
+    message: t("create.draft.exitWarning"),
+    onDiscard: discardDraft,
+  });
+
   const resetAttempt = () => {
     idempotencyKey.current = null;
     setSubmitError(null);
+    setIsDirty(true);
   };
   const clearFieldError = (field: string) =>
     setFields((current) => {
@@ -128,6 +174,8 @@ export function useCreateMemoryForm() {
       return { file, key: `new-${nextPhotoKey.current}`, kind: "new", name: file.name, previewUrl };
     });
     resetAttempt();
+    const selectedNames = new Set(files.map((file) => file.name));
+    setRestoredPhotoNames((current) => current.filter((name) => !selectedNames.has(name)));
     clearFieldError("photos");
     setPhotos((current) => [...current, ...additions]);
     setCoverPhotoKey((current) => current ?? additions[0]?.key ?? null);
@@ -164,10 +212,22 @@ export function useCreateMemoryForm() {
       });
       const payload = (await response.json()) as CreateMemoryResponse;
       if (!response.ok || !payload.id) {
-        setFields(payload.fields ?? {});
-        throw new Error(payload.error ?? t("create.validation.saveFailed"));
+        setFields(
+          Object.fromEntries(
+            Object.keys(payload.fields ?? {}).map((field) => [
+              field,
+              t("create.validation.serverInvalid"),
+            ]),
+          ),
+        );
+        throw new Error(
+          payload.code === "validation_failed"
+            ? t("create.validation.serverInvalid")
+            : t("create.validation.saveFailed"),
+        );
       }
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
+      discardDraft();
       router.push(
         values.visibility === "vault"
           ? APP_ROUTES.VAULT_MEMORY_DETAIL(payload.id)
@@ -183,6 +243,11 @@ export function useCreateMemoryForm() {
   return {
     coverPhotoKey,
     fields,
+    draftNotice: draftWasRestored
+      ? restoredPhotoNames.length > 0
+        ? t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") })
+        : t("create.draft.restored")
+      : null,
     isSubmitting,
     photos,
     submitError,

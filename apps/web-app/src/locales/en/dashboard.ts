@@ -7,6 +7,7 @@ export const dashboardEn = {
     sharing: "Sharing {{name}} together.",
     waiting: "Waiting for your person",
     waitingDescription: "Share your invite code when you are ready for them to join.",
+    waitingWelcomeDescription: "Invite your partner to begin preserving your story together.",
     welcome: "Welcome back, {{names}}",
     welcomeDescription: "Here is your shared universe.",
   },

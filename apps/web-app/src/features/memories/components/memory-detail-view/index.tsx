@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BookHeart, CalendarDays, LockKeyhole, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays, LockKeyhole, MapPin } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -104,6 +104,14 @@ export function MemoryDetailView({
     month: "long",
     year: "numeric",
   }).format(new Date(`${memory.memoryDate}T00:00:00`));
+  const timestampFormatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  });
+  const formattedCreatedAt = timestampFormatter.format(new Date(memory.createdAt));
+  const formattedUpdatedAt = timestampFormatter.format(new Date(memory.updatedAt));
+  const hasBeenUpdated =
+    new Date(memory.updatedAt).getTime() !== new Date(memory.createdAt).getTime();
   const isVaultMemory = memory.visibility === "vault";
   const activePageVariants = shouldReduceMotion ? reducedMotionVariants : pageVariants;
   const activeLayoutVariants = shouldReduceMotion ? reducedMotionVariants : layoutVariants;
@@ -154,7 +162,6 @@ export function MemoryDetailView({
                     ) : null}
                   </div>
                 }
-                leading={<BookHeart aria-hidden="true" />}
                 title={memory.title}
                 titleId="memory-detail-title"
                 trailing={
@@ -207,6 +214,18 @@ export function MemoryDetailView({
                   />
                 ) : null}
                 <p>{t("detail.creator", { name: memory.creatorDisplayName })}</p>
+              </div>
+              <div className={styles.auditDates}>
+                <p>
+                  {t("detail.created")}{" "}
+                  <time dateTime={memory.createdAt}>{formattedCreatedAt}</time>.
+                </p>
+                {hasBeenUpdated ? (
+                  <p>
+                    {t("detail.updated")}{" "}
+                    <time dateTime={memory.updatedAt}>{formattedUpdatedAt}</time>.
+                  </p>
+                ) : null}
               </div>
             </motion.footer>
           </motion.article>

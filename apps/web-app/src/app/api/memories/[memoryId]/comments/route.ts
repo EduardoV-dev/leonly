@@ -39,7 +39,7 @@ export async function GET(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not load comments. Please try again." },
+      { code: "memory_comments_failed", error: "We could not load comments. Please try again." },
       { status: 500 },
     );
   }
@@ -61,7 +61,10 @@ export async function POST(request: Request, context: RouteContext) {
     if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
     const payload = commentRequestSchema.safeParse(await request.json().catch(() => null));
     if (!payload.success) {
-      return NextResponse.json({ error: "Please review the highlighted fields." }, { status: 400 });
+      return NextResponse.json(
+        { code: "invalid_request", error: "Please review the highlighted fields." },
+        { status: 400 },
+      );
     }
 
     const comment = await createComment(
@@ -77,7 +80,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (error instanceof MemoryInputError) {
       return NextResponse.json(
         {
-          code: error instanceof CreateCommentError ? error.code : undefined,
+          code: error.code,
           error: error.message,
           fields: error.fields,
         },
@@ -91,7 +94,10 @@ export async function POST(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not add your comment. Please try again." },
+      {
+        code: "memory_comment_create_failed",
+        error: "We could not add your comment. Please try again.",
+      },
       { status: 500 },
     );
   }

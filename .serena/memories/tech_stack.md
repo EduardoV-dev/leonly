@@ -1,0 +1,1 @@
+Node 22+, pnpm 9.12.0 workspaces, Turborepo. `apps/web-app`: Next.js 16, React 19, TypeScript strict, Vitest, Biome. Supabase is backend boundary.

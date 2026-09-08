@@ -39,6 +39,7 @@ const memory = {
     },
   ],
   title: "Among the flowers",
+  updatedAt: "2026-08-24T14:30:00.000Z",
   version: "MjAyNi0wOC0yM1QxMDowMDowMC4wMDBa",
   visibility: "timeline" as const,
 };
@@ -61,6 +62,8 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByText("The botanical gardens")).toBeInTheDocument();
     expect(screen.getByText(memory.description)).toBeInTheDocument();
     expect(screen.getByText("Preserved by Sarah")).toBeInTheDocument();
+    expect(screen.getByText("August 23, 2026")).toHaveAttribute("datetime", memory.createdAt);
+    expect(screen.getByText("August 24, 2026")).toHaveAttribute("datetime", memory.updatedAt);
     expect(screen.getByRole("img", { name: "Sarah" })).toHaveAttribute(
       "src",
       "https://avatars.example/sarah.jpg",
@@ -138,6 +141,13 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByText("Comments")).toBeInTheDocument();
   });
 
+  it("omits the update sentence when the memory has not changed since creation", () => {
+    renderDetail(<MemoryDetailPage memory={{ ...memory, updatedAt: memory.createdAt }} />);
+
+    expect(screen.getByText("Memory created on", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText("Memory last updated on", { exact: false })).not.toBeInTheDocument();
+  });
+
   it("renders localized route states and retries recoverable errors", () => {
     const onRetry = vi.fn();
     const { rerender } = render(<MemoryDetailError onRetry={onRetry} />);
@@ -168,5 +178,9 @@ describe("MemoryDetailPage", () => {
     );
     expect(screen.getByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Quitar recuerdo" })).toBeInTheDocument();
+    expect(screen.getByText("Recuerdo creado el", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText("Última actualización del recuerdo el", { exact: false }),
+    ).toBeInTheDocument();
   });
 });

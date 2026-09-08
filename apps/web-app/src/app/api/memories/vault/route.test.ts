@@ -36,6 +36,7 @@ describe("GET /api/memories/vault", () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memories_vault_failed",
       error: "We could not load the Private Vault. Please try again.",
     });
   });

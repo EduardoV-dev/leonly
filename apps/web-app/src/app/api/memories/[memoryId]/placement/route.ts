@@ -46,14 +46,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       body = await request.json();
     } catch {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
     const payload = placementRequestSchema.safeParse(body);
     if (!payload.success) {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -74,7 +74,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
     if (error instanceof MemoryPlacementInputError) {
       return NextResponse.json(
-        { error: "Please reload this memory and try again." },
+        { code: "invalid_request", error: "Please reload this memory and try again." },
         { status: 400 },
       );
     }
@@ -85,7 +85,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not move this memory. Please try again." },
+      {
+        code: "memory_placement_failed",
+        error: "We could not move this memory. Please try again.",
+      },
       { status: 500 },
     );
   }

@@ -189,6 +189,7 @@ describe("memory comments route handlers", () => {
     );
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
+      code: "memory_comment_create_failed",
       error: "We could not add your comment. Please try again.",
     });
   });

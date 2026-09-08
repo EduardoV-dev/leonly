@@ -74,7 +74,7 @@ describe("MemorySummaryCard", () => {
     render(<MemorySummaryCard memory={memory} />);
 
     expect(screen.getByRole("link", { name: "Open Our picnic" })).toBeInTheDocument();
-    expect(screen.getByText("Aug 20")).toBeInTheDocument();
+    expect(screen.getByText("Aug 20, 2026")).toHaveAttribute("datetime", "2026-08-20");
     expect(screen.getByText("Our picnic")).toBeInTheDocument();
 
     await act(async () => {
@@ -85,7 +85,7 @@ describe("MemorySummaryCard", () => {
     expect(
       screen.getByRole("img", { name: "No hay foto de portada disponible" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("20 ago")).toBeInTheDocument();
+    expect(screen.getByText("20 ago 2026")).toHaveAttribute("datetime", "2026-08-20");
     expect(screen.getByText("Our picnic")).toBeInTheDocument();
   });
 });

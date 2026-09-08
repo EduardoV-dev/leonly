@@ -22,7 +22,7 @@
 .vault {
   display: flex;
   height: 100%;
-  min-height: 16rem;
+  min-height: 20rem;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #eee6e3;
@@ -42,6 +42,14 @@
 .vault .summaryLink {
   flex: 1;
   grid-template-rows: auto 1fr;
+}
+
+.recent .summary,
+.related .summary,
+.vault .summary {
+  display: flex;
+  min-height: 0;
+  flex: 1;
 }
 
 .summaryLink:focus-visible {
@@ -108,7 +116,7 @@
 }
 
 .timeline .cardBody {
-  min-height: 14rem;
+  min-height: 16rem;
   padding: 1.35rem;
   border: 1px solid #eee6e3;
   border-radius: 0.75rem;
@@ -117,8 +125,8 @@
 .recent .cardBody,
 .related .cardBody,
 .vault .cardBody {
-  min-height: 11rem;
-  padding: 1rem;
+  min-height: 13rem;
+  padding: 1.2rem;
 }
 
 .meta {
@@ -154,13 +162,18 @@
 .date {
   min-width: 0;
   margin: 0;
-  color: #9b7779;
-  font-size: 0.62rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #dfd4d2;
+  border-radius: 0.6rem;
+  background: #fff8f6;
+  color: #80575a;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   overflow-wrap: anywhere;
   text-align: right;
-  text-transform: uppercase;
 }
 
 .cardBody h3 {
@@ -198,10 +211,17 @@
   -webkit-line-clamp: 4;
 }
 
+.timeline .description {
+  -webkit-line-clamp: 6;
+}
+
 .recent .description,
-.related .description,
 .vault .description {
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
+}
+
+.related .description {
+  -webkit-line-clamp: 3;
 }
 
 .vault {
@@ -241,15 +261,6 @@
   flex: none;
   width: 0.85rem;
   height: 0.85rem;
-}
-
-.favorite {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: auto;
-  color: #c3a3a6;
-  fill: currentcolor;
-  stroke: none;
 }
 
 .footer {
@@ -293,8 +304,8 @@
 
 @mixin screen-md {
   .timeline .summaryLink {
-    grid-template-columns: minmax(0, 2fr) minmax(14rem, 0.9fr);
-    height: clamp(22rem, 32vw, 31rem);
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
+    height: clamp(25rem, 34vw, 33rem);
     align-items: stretch;
     gap: 1rem;
   }

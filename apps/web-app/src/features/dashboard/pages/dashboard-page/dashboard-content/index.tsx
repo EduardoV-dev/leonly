@@ -81,7 +81,11 @@ export function DashboardContent() {
     >
       <motion.div variants={activeRevealVariants}>
         <PageHeader
-          description={t("content.welcomeDescription")}
+          description={t(
+            isWaitingForPartner
+              ? "content.waitingWelcomeDescription"
+              : "content.welcomeDescription",
+          )}
           leading={<LayoutGrid aria-hidden="true" />}
           title={t("content.welcome", { names: memberNames })}
         />
@@ -97,35 +101,33 @@ export function DashboardContent() {
         </motion.div>
       ) : null}
 
-      <motion.div className={styles.heroGrid} variants={heroVariants}>
-        <motion.section
-          className={styles.milestoneCard}
-          aria-label={t("content.milestone")}
-          variants={activeKeepsakeVariants}
-        >
-          <span className={styles.eyebrow}>
-            <Heart aria-hidden="true" /> {t("content.milestoneReached")}
-          </span>
-          <RelationshipMilestone startDate={activeSpace.start_date} />
-        </motion.section>
-        <motion.section
-          className={styles.memberSummary}
-          aria-label={t("content.memberSummary")}
-          variants={activeCompanionVariants}
-        >
-          <div className={styles.avatars}>
-            {activeSpace.active_members.map((member) => (
-              <MemberAvatar key={member.display_name} member={member} size="medium" />
-            ))}
-          </div>
-          <h2>{isWaitingForPartner ? t("content.waiting") : memberNames}</h2>
-          <p>
-            {isWaitingForPartner
-              ? t("content.waitingDescription")
-              : t("content.sharing", { name: activeSpace.name })}
-          </p>
-        </motion.section>
-      </motion.div>
+      {isWaitingForPartner ? null : (
+        <motion.div className={styles.heroGrid} variants={heroVariants}>
+          <motion.section
+            className={styles.milestoneCard}
+            aria-label={t("content.milestone")}
+            variants={activeKeepsakeVariants}
+          >
+            <span className={styles.eyebrow}>
+              <Heart aria-hidden="true" /> {t("content.milestoneReached")}
+            </span>
+            <RelationshipMilestone startDate={activeSpace.start_date} />
+          </motion.section>
+          <motion.section
+            className={styles.memberSummary}
+            aria-label={t("content.memberSummary")}
+            variants={activeCompanionVariants}
+          >
+            <div className={styles.avatars}>
+              {activeSpace.active_members.map((member) => (
+                <MemberAvatar key={member.display_name} member={member} size="medium" />
+              ))}
+            </div>
+            <h2>{memberNames}</h2>
+            <p>{t("content.sharing", { name: activeSpace.name })}</p>
+          </motion.section>
+        </motion.div>
+      )}
 
       <motion.section
         className={styles.summarySection}

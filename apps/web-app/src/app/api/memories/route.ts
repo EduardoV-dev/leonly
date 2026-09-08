@@ -8,6 +8,8 @@ import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const requestLogger = createRequestLogger(request);
+
   try {
     const supabase = await createClient();
     const {
@@ -26,8 +28,15 @@ export async function POST(request: Request) {
     return NextResponse.json(memory, { status: memory.reused ? 200 : 201 });
   } catch (error) {
     if (error instanceof CreateMemoryError) {
+      if (error.status >= 500) {
+        logServerError(
+          { event: "memory_creation_failed", operation: "create_memory" },
+          error,
+          requestLogger,
+        );
+      }
       return NextResponse.json(
-        { error: error.message, fields: error.fields },
+        { code: error.code, error: error.message, fields: error.fields },
         { status: error.status },
       );
     }
@@ -35,10 +44,10 @@ export async function POST(request: Request) {
     logServerError(
       { event: "memory_creation_failed", operation: "create_memory" },
       error,
-      createRequestLogger(request),
+      requestLogger,
     );
     return NextResponse.json(
-      { error: "We could not save this memory. Please try again." },
+      { code: "memory_create_failed", error: "We could not save this memory. Please try again." },
       { status: 500 },
     );
   }
