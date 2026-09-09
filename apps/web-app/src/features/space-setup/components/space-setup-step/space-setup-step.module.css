@@ -120,16 +120,6 @@
   margin-top: 2rem;
 }
 
-.dateCard {
-  margin-top: 2rem;
-  padding: 1.35rem;
-  border: 1px solid rgb(125 88 93 / 0.08);
-  border-radius: 1rem;
-  background: rgb(255 255 255 / 0.66);
-  box-shadow: 0 24px 60px rgb(99 70 73 / 0.1);
-  text-align: center;
-}
-
 .note {
   margin: 1.25rem 0 0;
   color: var(--auth-legal);
@@ -242,8 +232,7 @@
     text-align: left;
   }
 
-  .formGroup,
-  .dateCard {
+  .formGroup {
     text-align: left;
   }
 

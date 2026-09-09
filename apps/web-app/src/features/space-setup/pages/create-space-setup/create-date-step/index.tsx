@@ -45,7 +45,7 @@ export function CreateDateStep({
       <h1 className={styles.heading}>{t("steps.date.heading")}</h1>
       <p className={styles.copy}>{t("steps.date.description")}</p>
 
-      <div className={styles.dateCard}>
+      <div className={styles.formGroup}>
         <FieldGroup>
           <Field className={styles.dateField}>
             <FieldLabel className={styles.label} htmlFor="first-day-trigger">
@@ -71,23 +71,23 @@ export function CreateDateStep({
             </FieldContent>
           </Field>
         </FieldGroup>
-
-        <LoadingButton
-          type="submit"
-          className={`${styles.linkButton} ${styles.primaryButton}`}
-          loading={isSubmitting}
-          aria-busy={isSubmitting}
-        >
-          {isSubmitting ? t("actions.creatingSpace") : t("actions.startStory")}
-          {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
-        </LoadingButton>
-        {submitError ? (
-          <p className={styles.fieldError} role="alert">
-            {submitError}
-          </p>
-        ) : null}
-        <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("name")} />
       </div>
+
+      <LoadingButton
+        type="submit"
+        className={`${styles.linkButton} ${styles.primaryButton}`}
+        loading={isSubmitting}
+        aria-busy={isSubmitting}
+      >
+        {isSubmitting ? t("actions.creatingSpace") : t("actions.startStory")}
+        {!isSubmitting ? <ArrowRight className="h-4 w-4" aria-hidden="true" /> : null}
+      </LoadingButton>
+      {submitError ? (
+        <p className={styles.fieldError} role="alert">
+          {submitError}
+        </p>
+      ) : null}
+      <BackLink href={APP_ROUTES.WELCOME_CREATE_STEP("name")} />
 
       <p className={styles.note}>"{t("steps.date.note")}"</p>
     </form>
