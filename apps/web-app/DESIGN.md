@@ -13,6 +13,10 @@ colors:
   body-ink: "#635b59"
   border-warm: "#dfd4d2"
   vault-lilac: "#eee4f0"
+  auth-canvas: "#151519"
+  auth-canvas-raised: "#1f2026"
+  action-border: "#7d585d"
+  action-text: "#fffdfd"
 typography:
   display:
     fontFamily: "Petrona, Georgia, Times New Roman, serif"
@@ -48,6 +52,12 @@ components:
     textColor: "{colors.canvas}"
     rounded: "{rounded.control}"
     padding: "0 1rem"
+    height: "2.75rem"
+  button-compact:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.heading-ink}"
+    rounded: "{rounded.control}"
+    padding: "0 0.75rem"
     height: "2.75rem"
   input:
     backgroundColor: "{colors.surface-muted}"
@@ -102,6 +112,8 @@ The palette combines warm paper neutrals, muted mauve controls, and rare rose em
 - **Near-Black Ink:** High-contrast display and control text.
 - **Warm Graphite:** Supporting copy.
 - **Pressed Border:** Fine separation between warm surfaces.
+- **Night Archive:** The near-black authentication surround and its subtly raised companion tone.
+- **Action Paper:** Near-white text reserved for controls on mauve or dark surfaces.
 
 ### Named Rules
 
@@ -161,6 +173,7 @@ create a keepsake-frame effect, but decorative rounding should not obscure layou
 - **Primary:** Muted mauve background with near-white text and a minimum 2.75rem touch height.
 - **Hover / Focus:** Slight upward translation on hover; a two-pixel rose outline with offset on focus.
 - **Secondary / Ghost:** Transparent or pale mauve surfaces with warm ink.
+- **Touch Target:** Interactive controls maintain a 2.75rem minimum target across pointer types.
 
 ### Chips
 - **Style:** Pill-shaped, lightly bordered paper surfaces with uppercase extra-bold labels.
@@ -181,6 +194,10 @@ create a keepsake-frame effect, but decorative rounding should not obscure layou
 ### Navigation
 - **Style:** Quiet vertical navigation on desktop and compact mobile navigation. Active destinations
   use a pale mauve surface, heavier text, and a narrow mauve marker; hover movement is subtle.
+
+### Disclosures
+- **Reaction Picker:** A labelled disclosure group with independently tabbable toggle buttons. It does
+  not claim application-menu semantics.
 
 ## Do's and Don'ts
 

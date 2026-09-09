@@ -43,7 +43,11 @@ export function DashboardSidebar({
           aria-label={collapseLabel}
           title={collapseLabel}
         >
-          {isCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+          {isCollapsed ? (
+            <PanelLeftOpen aria-hidden="true" />
+          ) : (
+            <PanelLeftClose aria-hidden="true" />
+          )}
         </button>
         <div className={styles.identity}>
           <div className={styles.avatars}>

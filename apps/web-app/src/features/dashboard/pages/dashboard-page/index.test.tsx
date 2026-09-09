@@ -141,6 +141,16 @@ describe("DashboardPage", () => {
     expect(screen.queryByRole("button", { name: "Places" })).not.toBeInTheDocument();
   });
 
+  it("leaves the main landmark to the active route", () => {
+    render(
+      <DashboardShell activeSpace={activeSpace} activeSection="timeline">
+        <main>Timeline route</main>
+      </DashboardShell>,
+    );
+
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+  });
+
   it("renders the refreshed canonical name in desktop and mobile navigation", () => {
     const { rerender } = render(
       <DashboardShell activeSpace={activeSpace} activeSection="dashboard">

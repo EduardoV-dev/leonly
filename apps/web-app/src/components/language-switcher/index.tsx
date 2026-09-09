@@ -60,7 +60,7 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
               key={option.code}
               type="button"
               onClick={() => setLanguage(option.code)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-colors sm:px-4 sm:text-sm ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition-colors sm:px-4 sm:text-sm ${
                 isActive
                   ? "bg-auth-button text-auth-button-text"
                   : "text-auth-brand hover:bg-auth-brand/10"

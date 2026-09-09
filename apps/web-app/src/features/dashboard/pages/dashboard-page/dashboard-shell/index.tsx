@@ -46,7 +46,7 @@ export function DashboardShell({
           : "timeline");
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <div className={`${styles.shell} ${isSidebarCollapsed ? styles.collapsed : ""}`}>
         <MobileHeader members={activeSpace.active_members} spaceName={activeSpace.name} />
         <DashboardSidebar
@@ -58,6 +58,6 @@ export function DashboardShell({
         <DashboardActiveSpaceContext value={activeSpace}>{children}</DashboardActiveSpaceContext>
         <MobileNavigation activeSection={currentSection} />
       </div>
-    </main>
+    </div>
   );
 }

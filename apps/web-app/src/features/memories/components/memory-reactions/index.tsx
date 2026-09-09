@@ -99,7 +99,6 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
     <div className={styles.control} ref={controlRef}>
       <button
         aria-expanded={isOpen}
-        aria-haspopup="menu"
         aria-label={
           totalReactionCount > 0
             ? `${t("detail.reactions.open")}. ${t("detail.reactions.count", {
@@ -136,13 +135,14 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
         </fieldset>
       ) : null}
       {isOpen ? (
-        <div className={styles.choices} role="menu" aria-label={t("detail.reactions.heading")}>
+        <fieldset className={styles.choices}>
+          <legend className={styles.memberNames}>{t("detail.reactions.heading")}</legend>
           {MEMORY_REACTION_TYPES.map((reactionType) => {
             const isSelected = summary.currentReaction === reactionType;
 
             return (
               <button
-                aria-checked={isSelected}
+                aria-pressed={isSelected}
                 aria-label={t("detail.reactions.select", {
                   reaction: t(`detail.reactions.types.${reactionType}`),
                 })}
@@ -151,14 +151,13 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
                 disabled={mutation.isPending}
                 key={reactionType}
                 onClick={() => selectReaction(reactionType)}
-                role="menuitemradio"
                 type="button"
               >
                 <span aria-hidden="true">{reactionIcons[reactionType]}</span>
               </button>
             );
           })}
-        </div>
+        </fieldset>
       ) : null}
       <p className={styles.status} aria-live="polite" role="status">
         {status}

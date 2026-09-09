@@ -21,5 +21,12 @@
 .progressValue {
   height: 100%;
   background: var(--auth-button-bg);
-  transition: width 280ms ease;
+  transform-origin: left;
+  transition: transform 280ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressValue {
+    transition: none;
+  }
 }

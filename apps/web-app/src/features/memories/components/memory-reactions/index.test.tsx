@@ -62,7 +62,7 @@ describe("MemoryReactions", () => {
     renderReactions();
 
     fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    const star = screen.getByRole("menuitemradio", { name: "React with Star" });
+    const star = screen.getByRole("button", { name: "React with Star" });
     fireEvent.click(star);
 
     await waitFor(() =>
@@ -87,7 +87,7 @@ describe("MemoryReactions", () => {
     renderReactions();
 
     fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    const laugh = screen.getByRole("menuitemradio", { name: "React with Laugh" });
+    const laugh = screen.getByRole("button", { name: "React with Laugh" });
     fireEvent.click(laugh);
 
     expect(laugh).toBeDisabled();
@@ -101,11 +101,11 @@ describe("MemoryReactions", () => {
       ),
     );
     await waitFor(() => {
-      expect(screen.getByRole("menuitemradio", { name: "React with Love" })).toHaveAttribute(
-        "aria-checked",
+      expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
+        "aria-pressed",
         "true",
       );
-      expect(laugh).toHaveAttribute("aria-checked", "false");
+      expect(laugh).toHaveAttribute("aria-pressed", "false");
     });
   });
 
@@ -118,7 +118,7 @@ describe("MemoryReactions", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "React to this memory" }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "React with Star" }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Star" }));
 
     const summary = screen.getByRole("group", { name: "1 reactions" });
     expect(summary).toHaveTextContent("1");
@@ -141,9 +141,11 @@ describe("MemoryReactions", () => {
     await waitFor(() => expect(commentQuery).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: "React with Star" }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Star" }));
 
-    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "React with Star" })).not.toBeInTheDocument(),
+    );
     expect(commentQuery).toHaveBeenCalledTimes(1);
   });
 });

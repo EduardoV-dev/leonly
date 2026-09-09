@@ -13,8 +13,15 @@ export function StepMarker({ step, total }: StepMarkerProps) {
   return (
     <div className={styles.stepMarker}>
       <span>{label}</span>
-      <div className={styles.progressTrack}>
-        <div className={styles.progressValue} style={{ width: `${(step / total) * 100}%` }} />
+      <div
+        className={styles.progressTrack}
+        role="progressbar"
+        aria-label={label}
+        aria-valuemax={total}
+        aria-valuemin={1}
+        aria-valuenow={step}
+      >
+        <div className={styles.progressValue} style={{ transform: `scaleX(${step / total})` }} />
       </div>
     </div>
   );

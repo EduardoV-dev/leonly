@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-08T00:00:00.000Z",
+  "generatedAt": "2026-09-09T00:00:00.000Z",
   "title": "Design System: Leonly",
   "extensions": {
     "colorMeta": {
@@ -8,25 +8,226 @@
         "role": "neutral",
         "displayName": "Private Canvas",
         "canonical": "#fffdfc",
-        "tonalRamp": ["#2b2322", "#4f4442", "#776a67", "#a19591", "#c6bcba", "#e3dcda", "#f4efed", "#fffdfc"]
+        "tonalRamp": [
+          "#2b2322",
+          "#4f4442",
+          "#776a67",
+          "#a19591",
+          "#c6bcba",
+          "#e3dcda",
+          "#f4efed",
+          "#fffdfc"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Clean Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#242020",
+          "#4d4645",
+          "#766e6c",
+          "#a09896",
+          "#c9c1bf",
+          "#e7e1df",
+          "#f6f2f1",
+          "#ffffff"
+        ]
+      },
+      "surface-warm": {
+        "role": "neutral",
+        "displayName": "Blushed Paper",
+        "canonical": "#fff4f3",
+        "tonalRamp": [
+          "#2d2020",
+          "#523b3a",
+          "#795958",
+          "#a17a78",
+          "#c6a09e",
+          "#e4c7c4",
+          "#f5e2e0",
+          "#fff4f3"
+        ]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "Soft Linen",
+        "canonical": "#f6f2ee",
+        "tonalRamp": [
+          "#292522",
+          "#4c4641",
+          "#706963",
+          "#97908a",
+          "#bbb4ae",
+          "#dcd6d0",
+          "#eee9e4",
+          "#f6f2ee"
+        ]
       },
       "brand-mauve": {
         "role": "primary",
         "displayName": "Archive Mauve",
         "canonical": "#7f5a5f",
-        "tonalRamp": ["#2a191c", "#482d32", "#654249", "#7f5a5f", "#9d777b", "#bd9a9d", "#dec3c4", "#f8eeee"]
+        "tonalRamp": [
+          "#2a191c",
+          "#482d32",
+          "#654249",
+          "#7f5a5f",
+          "#9d777b",
+          "#bd9a9d",
+          "#dec3c4",
+          "#f8eeee"
+        ]
+      },
+      "brand-action": {
+        "role": "primary",
+        "displayName": "Keepsake Mauve",
+        "canonical": "#8a6467",
+        "tonalRamp": [
+          "#2c1b1d",
+          "#4c3034",
+          "#6b474b",
+          "#8a6467",
+          "#a98486",
+          "#c8a7a8",
+          "#e5cbca",
+          "#faefef"
+        ]
       },
       "accent-rose": {
         "role": "primary",
         "displayName": "Pressed Rose",
         "canonical": "#b82b49",
-        "tonalRamp": ["#350811", "#5e101f", "#88192f", "#b82b49", "#d65770", "#ec8fa1", "#f8c5ce", "#fff0f3"]
+        "tonalRamp": [
+          "#350811",
+          "#5e101f",
+          "#88192f",
+          "#b82b49",
+          "#d65770",
+          "#ec8fa1",
+          "#f8c5ce",
+          "#fff0f3"
+        ]
       },
       "vault-lilac": {
         "role": "tertiary",
         "displayName": "Vault Lilac",
         "canonical": "#eee4f0",
-        "tonalRamp": ["#281f2a", "#493b4c", "#6b596f", "#8e7993", "#b19eb5", "#d1c2d4", "#eee4f0", "#fbf7fc"]
+        "tonalRamp": [
+          "#281f2a",
+          "#493b4c",
+          "#6b596f",
+          "#8e7993",
+          "#b19eb5",
+          "#d1c2d4",
+          "#eee4f0",
+          "#fbf7fc"
+        ]
+      },
+      "heading-ink": {
+        "role": "neutral",
+        "displayName": "Near-Black Ink",
+        "canonical": "#252323",
+        "tonalRamp": [
+          "#171515",
+          "#252323",
+          "#4a4645",
+          "#716b69",
+          "#999290",
+          "#c0b9b7",
+          "#e1dcda",
+          "#f7f4f3"
+        ]
+      },
+      "body-ink": {
+        "role": "neutral",
+        "displayName": "Warm Graphite",
+        "canonical": "#635b59",
+        "tonalRamp": [
+          "#211d1c",
+          "#3b3534",
+          "#504947",
+          "#635b59",
+          "#857c79",
+          "#aaa19e",
+          "#d0c9c6",
+          "#f1edeb"
+        ]
+      },
+      "border-warm": {
+        "role": "neutral",
+        "displayName": "Pressed Border",
+        "canonical": "#dfd4d2",
+        "tonalRamp": [
+          "#2a2221",
+          "#4b403e",
+          "#6d605e",
+          "#91827f",
+          "#b3a4a1",
+          "#d0c2c0",
+          "#dfd4d2",
+          "#f7f1f0"
+        ]
+      },
+      "auth-canvas": {
+        "role": "neutral",
+        "displayName": "Night Archive",
+        "canonical": "#151519",
+        "tonalRamp": [
+          "#151519",
+          "#27272e",
+          "#3c3c45",
+          "#565660",
+          "#777780",
+          "#a1a1a8",
+          "#ceced2",
+          "#f2f2f3"
+        ]
+      },
+      "auth-canvas-raised": {
+        "role": "neutral",
+        "displayName": "Raised Night Archive",
+        "canonical": "#1f2026",
+        "tonalRamp": [
+          "#141519",
+          "#1f2026",
+          "#383940",
+          "#54555d",
+          "#74757d",
+          "#9d9ea5",
+          "#cbccd0",
+          "#f1f1f2"
+        ]
+      },
+      "action-border": {
+        "role": "primary",
+        "displayName": "Mauve Edge",
+        "canonical": "#7d585d",
+        "tonalRamp": [
+          "#29191c",
+          "#472c30",
+          "#644147",
+          "#7d585d",
+          "#9d767a",
+          "#bd999c",
+          "#dec2c4",
+          "#f8eeee"
+        ]
+      },
+      "action-text": {
+        "role": "neutral",
+        "displayName": "Action Paper",
+        "canonical": "#fffdfd",
+        "tonalRamp": [
+          "#272121",
+          "#504746",
+          "#796e6d",
+          "#a39997",
+          "#cac2c0",
+          "#e8e2e0",
+          "#f7f3f2",
+          "#fffdfd"
+        ]
       }
     },
     "typographyMeta": {
@@ -84,6 +285,14 @@
       "css": ".ds-btn-primary { min-height: 44px; padding: 0 16px; border: 1px solid #7d585d; border-radius: 9.6px; background: var(--auth-button-bg, #8a6467); color: var(--auth-button-text, #fffdfd); font: 700 14px 'Nunito Sans', sans-serif; transition: background-color 160ms ease, transform 160ms ease; } .ds-btn-primary:hover { background: #765256; transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; }"
     },
     {
+      "name": "Compact Control",
+      "kind": "button",
+      "refersTo": "button-compact",
+      "description": "Secondary and icon controls with a full touch target.",
+      "html": "<button class=\"ds-btn-compact\">Sort memories</button>",
+      "css": ".ds-btn-compact { min-height: 44px; padding: 0 12px; border: 1px solid #dfd4d2; border-radius: 9.6px; background: #fff; color: #252323; font: 700 14px 'Nunito Sans', sans-serif; } .ds-btn-compact:focus-visible { outline: 2px solid #b82b49; outline-offset: 2px; }"
+    },
+    {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
@@ -119,14 +328,26 @@
     "overview": "Leonly feels like a carefully kept private archive rather than a social feed. Editorial display type gives memories emotional weight, while warm paper-like surfaces and restrained mauve accents keep the application calm, personal, and dependable. The component character is refined and tactile: fine warm borders define structure, soft ambient shadows lift only important keepsakes, and short movements acknowledge interaction without turning the shared history into spectacle.",
     "keyCharacteristics": [
       "Warm near-white canvases with dusty mauve and selective rose accents.",
-      "Fraunces for emotionally significant headings; Nunito Sans for all operational text.",
+      "Petrona for emotionally significant headings; Nunito Sans for all operational text.",
       "Rounded, bordered surfaces with quiet depth and generous breathing room.",
       "Mobile-first stacking that becomes editorially asymmetric on wider screens."
     ],
     "rules": [
-      { "name": "The Rare Rose Rule", "body": "Rose marks focus or emotional significance; it does not flood routine screens.", "section": "colors" },
-      { "name": "The Memory Has a Voice Rule", "body": "Fraunces names meaningful content; Nunito Sans operates the product.", "section": "typography" },
-      { "name": "The Border Before Shadow Rule", "body": "Use a warm border for ordinary structure; add shadow only when a surface needs narrative or modal prominence.", "section": "elevation" }
+      {
+        "name": "The Rare Rose Rule",
+        "body": "Rose marks focus or emotional significance; it does not flood routine screens.",
+        "section": "colors"
+      },
+      {
+        "name": "The Memory Has a Voice Rule",
+        "body": "Petrona names meaningful content; Nunito Sans operates the product.",
+        "section": "typography"
+      },
+      {
+        "name": "The Border Before Shadow Rule",
+        "body": "Use a warm border for ordinary structure; add shadow only when a surface needs narrative or modal prominence.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do keep memory content visually dominant over product chrome.",
@@ -135,7 +356,7 @@
     ],
     "donts": [
       "Don't turn the palette into bright red romance branding or generic social-media gradients.",
-      "Don't use Fraunces for dense controls, metadata, or long operational copy.",
+      "Don't use Petrona for dense controls, metadata, or long operational copy.",
       "Don't stack shadows on every card; depth is meaningful because most surfaces remain quiet."
     ]
   }

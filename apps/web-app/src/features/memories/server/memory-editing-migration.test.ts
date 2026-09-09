@@ -52,7 +52,9 @@ describe("memory editing migration security contract", () => {
     expect(coalesceFixMigration).toContain(
       "create or replace function public.finalize_memory_edit_attempt(",
     );
-    expect(coalesceFixMigration).toContain("coalesce(pg_catalog.cardinality(p_retained_photo_ids), 0)");
+    expect(coalesceFixMigration).toContain(
+      "coalesce(pg_catalog.cardinality(p_retained_photo_ids), 0)",
+    );
     expect(coalesceFixMigration).not.toContain("pg_catalog.coalesce");
   });
 

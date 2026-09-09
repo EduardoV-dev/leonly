@@ -11,7 +11,10 @@ const membersMigration = readFileSync(
   "utf8",
 );
 const coalesceFixMigration = readFileSync(
-  resolve(process.cwd(), "../../supabase/migrations/20260908111500_fix_memory_reaction_summary_coalesce.sql"),
+  resolve(
+    process.cwd(),
+    "../../supabase/migrations/20260908111500_fix_memory_reaction_summary_coalesce.sql",
+  ),
   "utf8",
 );
 
@@ -64,7 +67,9 @@ describe("memory reactions migration security contract", () => {
   });
 
   it("uses COALESCE syntax when aggregating JSONB reaction members", () => {
-    expect(coalesceFixMigration).toContain("create or replace function public.get_memory_reaction_summary");
+    expect(coalesceFixMigration).toContain(
+      "create or replace function public.get_memory_reaction_summary",
+    );
     expect(coalesceFixMigration).toContain("'heart', coalesce(");
     expect(coalesceFixMigration).not.toContain("pg_catalog.coalesce");
   });

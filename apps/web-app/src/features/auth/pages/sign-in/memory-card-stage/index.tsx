@@ -1,4 +1,5 @@
 import { motion, type Variants } from "motion/react";
+import Image from "next/image";
 import { cardEntryVariants, memoryCards, reducedMotionVariants, staggerDelays } from "../constants";
 import styles from "./memory-card-stage.module.css";
 
@@ -38,10 +39,12 @@ export function MemoryCardStage({ entranceVariants, shouldReduceMotion, t }: Mem
                 }
                 className={styles.card}
               >
-                <img
+                <Image
                   src={card.src}
                   alt={t(card.altKey)}
-                  loading="lazy"
+                  width={800}
+                  height={1000}
+                  sizes="(min-width: 1024px) 18rem, 14rem"
                   className={styles.cardImage}
                 />
               </motion.figure>

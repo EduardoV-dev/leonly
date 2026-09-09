@@ -1,4 +1,21 @@
 import "@testing-library/jest-dom";
+import type { ImageProps } from "next/image";
+import { createElement } from "react";
+import { vi } from "vitest";
+
+vi.mock("next/image", () => ({
+  default: ({
+    fill: _fill,
+    priority: _priority,
+    src,
+    unoptimized: _unoptimized,
+    ...props
+  }: ImageProps) =>
+    createElement("img", {
+      ...props,
+      src: typeof src === "string" ? src : "src" in src ? src.src : src.default.src,
+    }),
+}));
 
 class IntersectionObserverMock {
   disconnect() {}

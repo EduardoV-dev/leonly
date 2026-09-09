@@ -2,6 +2,7 @@
 
 import { ArrowRight, HeartCrack, Images } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -80,17 +81,24 @@ export default function NotFoundPage() {
           className="relative min-h-[18rem] overflow-hidden border-b border-auth-border bg-auth-surface sm:min-h-[22rem] lg:min-h-full lg:border-b-0 lg:border-r"
           aria-hidden="true"
         >
-          <motion.img
-            src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=82"
-            alt=""
+          <motion.div
             animate={shouldReduceMotion ? undefined : { scale: [1.02, 1.07, 1.02] }}
             transition={{
               duration: 13,
               repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
             }}
-            className="h-full min-h-[18rem] w-full object-cover saturate-[0.86] sm:min-h-[22rem] lg:min-h-full"
-          />
+            className="absolute inset-0"
+          >
+            <Image
+              src="https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1200&q=82"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1024px) 46vw, 100vw"
+              className="object-cover saturate-[0.86]"
+            />
+          </motion.div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(245_239_238_/_0.68)_0%,rgb(245_239_238_/_0.08)_38%,rgb(31_32_38_/_0.72)_100%)]" />
 
           <motion.div

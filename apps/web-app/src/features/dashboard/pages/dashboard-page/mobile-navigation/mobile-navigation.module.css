@@ -28,7 +28,7 @@
   border: 0;
   background: transparent;
   border-radius: 0.7rem;
-  color: #8f8280;
+  color: var(--auth-copy);
   font-size: 0.64rem;
   font-weight: 800;
   font-family: inherit;
