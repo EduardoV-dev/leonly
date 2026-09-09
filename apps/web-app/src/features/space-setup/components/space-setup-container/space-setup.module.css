@@ -5,6 +5,7 @@
   max-width: 78rem;
   margin: 0 auto;
   overflow: hidden;
+  border: 1px solid var(--auth-border);
   border-radius: 1.45rem;
   background: var(--auth-surface);
   box-shadow: 0 22px 54px rgb(17 15 15 / 0.25);
