@@ -45,46 +45,76 @@
 }
 
 .dialog {
-  border-color: #e1cfcd;
-  border-radius: 1.2rem;
-  background: #fffaf9;
-  box-shadow: 0 1.5rem 4rem rgb(70 39 43 / 0.2);
+  max-width: 28rem;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-color: #dfd2d0;
+  border-radius: 0.85rem;
+  background: #fffdfc;
+  box-shadow: 0 1.25rem 3.5rem rgb(51 35 38 / 0.18);
 }
 
-.eyebrow {
-  margin: 0;
+.dialogHeading {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.9rem;
+}
+
+.warningIcon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid hsl(var(--destructive) / 0.24);
+  border-radius: 0.55rem;
+  background: hsl(var(--destructive) / 0.07);
   color: #9f2536;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+}
+
+.warningIcon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.header {
+  gap: 0.5rem;
+  text-align: left;
 }
 
 .title {
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(1.65rem, 7vw, 2.15rem);
-  line-height: 1.05;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 .description {
+  max-width: 39ch;
   color: var(--auth-copy);
-  font-size: 0.95rem;
-  line-height: 1.65;
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .status {
-  min-height: 1.4rem;
   margin: 0;
+  padding-left: 3.5rem;
   color: #7d3f49;
   font-size: 0.82rem;
-  font-weight: 700;
+  line-height: 1.45;
+}
+
+.footer {
+  gap: 0.65rem;
+  padding-top: 0.25rem;
 }
 
 .cancel,
 .confirm {
   min-height: 2.75rem;
-  border-radius: 0.65rem;
+  border-radius: 0.6rem;
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
   font-weight: 800;
 }
@@ -95,9 +125,35 @@
   color: #633940;
 }
 
+.cancel:hover:not(:disabled) {
+  border-color: #bca6a4;
+  background: #f8f2f1;
+}
+
 .confirm {
-  background: hsl(var(--destructive));
-  color: hsl(var(--destructive-foreground));
+  border-color: #98263a;
+  background: #a72c41;
+  color: #fff;
+}
+
+.confirm:hover:not(:disabled) {
+  border-color: #852033;
+  background: #91243a;
+}
+
+@media (max-width: 39.99rem) {
+  .dialog {
+    padding: 1.25rem;
+  }
+
+  .cancel,
+  .confirm {
+    width: 100%;
+  }
+
+  .status {
+    padding-left: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

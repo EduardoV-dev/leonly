@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Page from "./page";
+import Page, { generateMetadata } from "./page";
 
 const { getRelatedVaultMemoriesMock, getVaultMemoryDetailMock, notFoundMock } = vi.hoisted(() => ({
   getRelatedVaultMemoriesMock: vi.fn(),
@@ -45,5 +45,26 @@ describe("Vault memory detail route", () => {
 
     await expect(Page({ params: Promise.resolve({ memoryId }) })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFoundMock).toHaveBeenCalledOnce();
+  });
+
+  it("derives document metadata from the authorized Vault memory", async () => {
+    getVaultMemoryDetailMock.mockResolvedValue({
+      description: "A private moment from our first year.",
+      title: "Among the hidden flowers",
+    });
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "A private moment from our first year.",
+      title: "Among the hidden flowers",
+    });
+  });
+
+  it("uses safe metadata when the Vault memory is unavailable", async () => {
+    getVaultMemoryDetailMock.mockResolvedValue(null);
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "This private memory is unavailable.",
+      title: "Memory unavailable",
+    });
   });
 });

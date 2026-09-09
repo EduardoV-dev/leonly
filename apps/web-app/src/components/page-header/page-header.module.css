@@ -19,7 +19,7 @@
 
 .content h1 {
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Petrona", Georgia, serif;
   font-size: clamp(2.35rem, 8vw, 3.25rem);
   font-weight: 600;
   letter-spacing: -0.04em;

@@ -2,7 +2,7 @@
   max-width: 26rem;
   margin: 0 auto;
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-family: "Petrona", Georgia, "Times New Roman", serif;
   font-size: clamp(2.35rem, 8vw, 3.25rem);
   font-weight: 700;
   line-height: 0.96;
@@ -159,7 +159,7 @@
   display: block;
   margin-top: 0.2rem;
   color: var(--auth-brand);
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-family: "Petrona", Georgia, "Times New Roman", serif;
   font-size: 1.35rem;
   letter-spacing: 0.12em;
 }

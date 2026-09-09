@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceCreateSetupPage } from "@/features/space-setup";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Set your date",
+  description: "Choose the date your shared story began.",
+};
 
 export default async function CreateDatePage() {
   const supabase = await createClient();

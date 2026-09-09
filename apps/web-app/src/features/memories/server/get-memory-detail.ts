@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { z } from "zod";
 import { logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +23,7 @@ const photoRowsSchema = z.array(
   }),
 );
 
-export async function getMemoryDetailForVisibility(
+export const getMemoryDetailForVisibility = cache(async function getMemoryDetailForVisibility(
   memoryId: string,
   expectedVisibility: MemoryVisibility,
 ): Promise<MemoryDetail | null> {
@@ -94,7 +95,7 @@ export async function getMemoryDetailForVisibility(
     logServerError({ event: "memory_detail_failed", operation: "get_memory_detail" }, error);
     throw new Error("Failed to load the memory detail.", { cause: error });
   }
-}
+});
 
 export function getMemoryDetail(memoryId: string): Promise<MemoryDetail | null> {
   return getMemoryDetailForVisibility(memoryId, "timeline");

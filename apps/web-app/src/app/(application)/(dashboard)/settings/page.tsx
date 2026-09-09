@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SettingsPage } from "@/features/settings/pages/settings-page";
 import { getSettingsForCurrentUser } from "@/features/settings/server/get-settings-for-current-user";
+
+export const metadata: Metadata = {
+  title: "Settings",
+  description: "Manage your shared space, members, and preferences.",
+};
 
 export default async function Page() {
   const result = await getSettingsForCurrentUser();

@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LeonlyLogo } from "@/components/leonly-logo";
 import { APP_ROUTES } from "@/constants/routes";
+
+export const metadata: Metadata = {
+  title: "Sign-in failed",
+  description: "Your sign-in could not be completed. Try again to access Leonly.",
+};
 
 export default function AuthCodeErrorPage() {
   return (

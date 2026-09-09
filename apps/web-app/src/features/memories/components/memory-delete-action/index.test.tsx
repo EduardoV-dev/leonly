@@ -65,6 +65,7 @@ describe("MemoryDeleteAction", () => {
     renderWithQueryClient(<MemoryDeleteAction {...memory} />);
 
     const trigger = openConfirmation();
+    expect(screen.getByRole("heading", { name: "Remove this memory?" })).toBeInTheDocument();
     expect(screen.getByRole("alertdialog")).toHaveTextContent(
       "no longer be part of your shared story",
     );

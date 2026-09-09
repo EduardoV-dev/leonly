@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ export function MemoryCommentDeleteDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
     dialog.showModal();
-    dialog.querySelector<HTMLButtonElement>("button")?.focus();
+    dialog.querySelector<HTMLButtonElement>("button:last-child")?.focus();
     return () => {
       if (dialog.open) dialog.close();
     };
@@ -50,15 +51,33 @@ export function MemoryCommentDeleteDialog({
       onClose={onCancel}
     >
       <div className={styles.content}>
-        <p className={styles.eyebrow}>{t("detail.comments.delete.eyebrow")}</p>
-        <h2 id="memory-comment-delete-heading">{t("detail.comments.delete.heading")}</h2>
-        <p id="memory-comment-delete-description">{t("detail.comments.delete.description")}</p>
+        <div className={styles.dialogHeading}>
+          <span className={styles.warningIcon} aria-hidden="true">
+            <Trash2 />
+          </span>
+          <div className={styles.header}>
+            <h2 className={styles.title} id="memory-comment-delete-heading">
+              {t("detail.comments.delete.heading")}
+            </h2>
+            <p className={styles.description} id="memory-comment-delete-description">
+              {t("detail.comments.delete.description")}
+            </p>
+          </div>
+        </div>
         {errorMessage ? (
           <p className={styles.error} role="alert">
             {errorMessage}
           </p>
         ) : null}
         <div className={styles.actions}>
+          <button
+            className={styles.cancel}
+            disabled={isDeleting}
+            onClick={() => dialogRef.current?.close()}
+            type="button"
+          >
+            {t("detail.comments.delete.cancel")}
+          </button>
           <Button
             className={styles.confirm}
             loading={isDeleting}
@@ -69,14 +88,6 @@ export function MemoryCommentDeleteDialog({
               ? t("detail.comments.delete.deleting")
               : t("detail.comments.delete.confirm")}
           </Button>
-          <button
-            className={styles.cancel}
-            disabled={isDeleting}
-            onClick={() => dialogRef.current?.close()}
-            type="button"
-          >
-            {t("detail.comments.delete.cancel")}
-          </button>
         </div>
       </div>
     </dialog>

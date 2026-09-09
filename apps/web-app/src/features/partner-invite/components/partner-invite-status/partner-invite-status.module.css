@@ -25,12 +25,13 @@
 .content {
   min-width: 0;
   flex: 1;
+  container-type: inline-size;
 }
 
 .content h2 {
   margin: 0;
   color: var(--auth-heading);
-  font-family: Fraunces, Georgia, serif;
+  font-family: Petrona, Georgia, serif;
   font-size: 1.15rem;
 }
 
@@ -74,6 +75,12 @@
 
 .codeControls > button {
   height: 3rem;
+}
+
+@container (max-width: 17.5rem) {
+  .codeControls {
+    grid-template-columns: 1fr;
+  }
 }
 
 .code:focus-visible,
@@ -120,9 +127,6 @@
     padding: 0.85rem;
   }
 
-  .codeControls {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

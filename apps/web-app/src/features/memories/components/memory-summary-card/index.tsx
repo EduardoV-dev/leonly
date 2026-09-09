@@ -1,6 +1,6 @@
 "use client";
 
-import { BookHeart, ImageIcon, LockKeyhole, MapPin, MessageCircle } from "lucide-react";
+import { ImageIcon, MapPin, MessageCircle } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -138,13 +138,6 @@ export function MemorySummaryCard({
           </motion.div>
           <motion.div className={styles.cardBody} variants={activeBodyVariants}>
             <motion.div className={styles.meta} variants={activeContentVariants}>
-              <span className={styles.iconBadge}>
-                {variant === "vault" ? (
-                  <LockKeyhole aria-hidden="true" />
-                ) : (
-                  <BookHeart aria-hidden="true" />
-                )}
-              </span>
               <time className={styles.date} dateTime={memory.memoryDate}>
                 {formatCompactDate(memory.memoryDate, i18n.resolvedLanguage ?? "en")}
               </time>

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Page from "./page";
+import Page, { generateMetadata } from "./page";
 
 const { getMemoryForEditingMock, notFoundMock } = vi.hoisted(() => ({
   getMemoryForEditingMock: vi.fn(),
@@ -39,5 +39,26 @@ describe("memory edit route", () => {
 
     await expect(Page({ params: Promise.resolve({ memoryId }) })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFoundMock).toHaveBeenCalledOnce();
+  });
+
+  it("derives editing metadata from the authorized memory", async () => {
+    getMemoryForEditingMock.mockResolvedValue({
+      description: "A spring walk we will always remember.",
+      title: "Among the flowers",
+    });
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "A spring walk we will always remember.",
+      title: "Edit Among the flowers",
+    });
+  });
+
+  it("uses safe metadata when the memory cannot be edited", async () => {
+    getMemoryForEditingMock.mockResolvedValue(null);
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "This memory is unavailable for editing.",
+      title: "Memory unavailable",
+    });
   });
 });

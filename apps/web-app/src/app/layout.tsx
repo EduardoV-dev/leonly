@@ -4,7 +4,10 @@ import "@/styles/globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Leonly",
+  title: {
+    default: "Leonly",
+    template: "%s | Leonly",
+  },
   description: "Private, elegant sanctuary for shared memories.",
 };
 

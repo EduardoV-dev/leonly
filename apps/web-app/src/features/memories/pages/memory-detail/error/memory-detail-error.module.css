@@ -44,7 +44,7 @@
 .panel h1 {
   margin: 0.7rem 0 0;
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Petrona", Georgia, serif;
   font-size: clamp(2rem, 8vw, 3rem);
   font-weight: 600;
   line-height: 1;

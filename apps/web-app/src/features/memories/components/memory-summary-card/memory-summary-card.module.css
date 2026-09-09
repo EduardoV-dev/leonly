@@ -134,7 +134,7 @@
   width: 100%;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 1.15rem;
 }
 
@@ -142,21 +142,6 @@
 .related .meta,
 .vault .meta {
   margin-bottom: 0.9rem;
-}
-
-.iconBadge {
-  display: grid;
-  width: 2.35rem;
-  height: 2.35rem;
-  place-items: center;
-  border-radius: 50%;
-  background: #f6f2ef;
-  color: var(--auth-brand);
-}
-
-.iconBadge svg {
-  width: 1.05rem;
-  height: 1.05rem;
 }
 
 .date {
@@ -179,7 +164,7 @@
 .cardBody h3 {
   margin: 0.2rem 0 0;
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-family: "Petrona", Georgia, "Times New Roman", serif;
   font-size: 1.45rem;
   font-weight: 600;
   line-height: 1.1;
@@ -233,11 +218,6 @@
 .vault .cover {
   background: #f5edf5;
   color: #866989;
-}
-
-.vault .iconBadge {
-  background: #eee4f0;
-  color: #755577;
 }
 
 .location {

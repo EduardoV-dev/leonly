@@ -90,6 +90,7 @@ export function DashboardSidebar({
           </Link>
           <Link
             href={APP_ROUTES.SETTINGS}
+            prefetch={true}
             aria-current={activeSection === "settings" ? "page" : undefined}
             title={isCollapsed ? t("navigation.settings") : undefined}
           >

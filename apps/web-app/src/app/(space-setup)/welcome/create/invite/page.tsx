@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { formatInviteCodeDisplay } from "@/features/space-setup/constants/validation";
 import { CreateSpaceInvitePage } from "@/features/space-setup/pages/create-space-invite";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Invite your partner",
+  description: "Invite your partner to begin preserving memories together.",
+};
 
 export default async function CreateInvitePage() {
   const supabase = await createClient();

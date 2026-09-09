@@ -1,11 +1,11 @@
 .dialog {
   width: min(100% - 2rem, 28rem);
   padding: 0;
-  color: #4f4544;
-  background: #fffafa;
-  border: 1px solid #d6abaa;
-  border-radius: 0.9rem;
-  box-shadow: 0 1.5rem 4rem rgb(79 41 45 / 28%);
+  color: var(--auth-heading);
+  border: 1px solid #dfd2d0;
+  border-radius: 0.85rem;
+  background: #fffdfc;
+  box-shadow: 0 1.25rem 3.5rem rgb(51 35 38 / 18%);
 }
 
 .dialog::backdrop {
@@ -16,63 +16,127 @@
   padding: 1.5rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.4rem;
-  color: #8d1f2d;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.dialogHeading {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.9rem;
 }
 
-.content h2 {
+.warningIcon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid hsl(var(--destructive) / 0.24);
+  border-radius: 0.55rem;
+  background: hsl(var(--destructive) / 0.07);
+  color: #9f2536;
+}
+
+.warningIcon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.header {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.title {
   margin: 0;
   color: var(--auth-heading);
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.65rem;
-  line-height: 1.1;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
-.content > p:not(.eyebrow, .error) {
-  margin: 0.7rem 0 0;
-  color: #715e5c;
+.description {
+  max-width: 39ch;
+  margin: 0;
+  color: var(--auth-copy);
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 
 .error {
-  margin: 0.85rem 0 0;
-  color: #8d1f2d;
-  font-size: 0.85rem;
-  font-weight: 700;
+  margin: 1.25rem 0 0;
+  padding-left: 3.5rem;
+  color: #7d3f49;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
 }
 
+.cancel,
 .confirm {
-  color: #fff;
-  background: #8d1f2d;
-  border-color: #8d1f2d;
+  min-height: 2.75rem;
+  border-radius: 0.6rem;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  font-weight: 800;
 }
 
 .cancel {
-  padding: 0;
-  color: #6d2934;
-  font: inherit;
-  font-weight: 800;
-  text-decoration: underline;
+  padding: 0 1rem;
+  border: 1px solid #d8c2c0;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #633940;
   cursor: pointer;
-  background: transparent;
-  border: 0;
+}
+
+.cancel:hover:not(:disabled) {
+  border-color: #bca6a4;
+  background: #f8f2f1;
+}
+
+.confirm {
+  border-color: #98263a;
+  background: #a72c41;
+  color: #fff;
+}
+
+.confirm:hover:not(:disabled) {
+  border-color: #852033;
+  background: #91243a;
 }
 
 .confirm:focus-visible,
 .cancel:focus-visible {
-  outline: 3px solid #6d2934;
-  outline-offset: 3px;
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+
+.cancel:disabled,
+.confirm:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 39.99rem) {
+  .content {
+    padding: 1.25rem;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel,
+  .confirm {
+    width: 100%;
+  }
+
+  .error {
+    padding-left: 0;
+  }
 }

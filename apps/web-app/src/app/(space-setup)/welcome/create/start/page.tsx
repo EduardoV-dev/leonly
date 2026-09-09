@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceCreateSetupPage } from "@/features/space-setup";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Create your space",
+  description: "Start creating a private place for your shared memories.",
+};
 
 export default async function CreateStartPage() {
   const supabase = await createClient();

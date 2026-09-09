@@ -292,6 +292,7 @@ describe("MemoryComments", () => {
       `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
       expect.objectContaining({ method: "PATCH" }),
     );
+    await waitFor(() => expect(screen.getByText("Edited")).toBeInTheDocument());
     expect(screen.getByText("Comment updated.")).toHaveAttribute("role", "status");
   });
 
@@ -309,7 +310,7 @@ describe("MemoryComments", () => {
     const deleteTrigger = screen.getByRole("button", { name: "Delete comment" });
     fireEvent.click(deleteTrigger);
     const dialog = screen.getByRole("dialog");
-    expect(screen.getByRole("heading", { name: "Delete this comment?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Remove this comment?" })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Delete comment" })).toHaveFocus();
     fireEvent(dialog, new Event("cancel", { cancelable: true }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

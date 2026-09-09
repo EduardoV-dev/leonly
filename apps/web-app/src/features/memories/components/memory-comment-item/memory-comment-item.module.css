@@ -54,6 +54,11 @@
   font-size: 0.7rem;
 }
 
+.edited {
+  color: #715e5c;
+  font-size: 0.7rem;
+}
+
 .body {
   max-width: 70ch;
   margin: 0.7rem 0 0;

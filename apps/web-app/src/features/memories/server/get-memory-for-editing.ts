@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryEdit, MemoryEditPhoto } from "../types/memory-edit";
@@ -14,7 +15,9 @@ const photoRowsSchema = z.array(
   }),
 );
 
-export async function getMemoryForEditing(memoryId: string): Promise<MemoryEdit | null> {
+export const getMemoryForEditing = cache(async function getMemoryForEditing(
+  memoryId: string,
+): Promise<MemoryEdit | null> {
   const memory = await getAvailableMemory(memoryId);
   if (!memory) {
     return null;
@@ -48,4 +51,4 @@ export async function getMemoryForEditing(memoryId: string): Promise<MemoryEdit 
     title: memory.title,
     version: encodeMemoryVersion(memory.updatedAt),
   };
-}
+});

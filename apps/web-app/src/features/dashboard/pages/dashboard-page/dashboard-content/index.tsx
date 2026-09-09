@@ -1,13 +1,14 @@
 "use client";
 
-import { Heart, LayoutGrid } from "lucide-react";
+import { Heart, ImagePlus, LayoutGrid } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
+import { APP_ROUTES } from "@/constants/routes";
 import { MemoriesTimeline } from "@/features/memories/components/memories-timeline";
 import { PartnerInviteStatus } from "@/features/partner-invite/components/partner-invite-status";
 import { useDashboardActiveSpace } from "../dashboard-shell";
-import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-content.module.css";
 import { RelationshipMilestone } from "./relationship-milestone";
 
@@ -65,7 +66,6 @@ export function DashboardContent() {
   const { t } = useTranslation("dashboard");
   const activeSpace = useDashboardActiveSpace();
   const shouldReduceMotion = Boolean(useReducedMotion());
-  const memberNames = activeSpace.active_members.map((member) => member.display_name).join(" & ");
   const isWaitingForPartner = activeSpace.active_members.length === 1;
   const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
   const activeKeepsakeVariants = shouldReduceMotion ? reducedMotionVariants : keepsakeVariants;
@@ -87,7 +87,7 @@ export function DashboardContent() {
               : "content.welcomeDescription",
           )}
           leading={<LayoutGrid aria-hidden="true" />}
-          title={t("content.welcome", { names: memberNames })}
+          title={t(isWaitingForPartner ? "content.waitingHeading" : "content.heading")}
         />
       </motion.div>
 
@@ -114,17 +114,16 @@ export function DashboardContent() {
             <RelationshipMilestone startDate={activeSpace.start_date} />
           </motion.section>
           <motion.section
-            className={styles.memberSummary}
-            aria-label={t("content.memberSummary")}
+            className={styles.storyPrompt}
+            aria-label={t("content.createMemory")}
             variants={activeCompanionVariants}
           >
-            <div className={styles.avatars}>
-              {activeSpace.active_members.map((member) => (
-                <MemberAvatar key={member.display_name} member={member} size="medium" />
-              ))}
-            </div>
-            <h2>{memberNames}</h2>
-            <p>{t("content.sharing", { name: activeSpace.name })}</p>
+            <h2>{t("content.storyPromptHeading")}</h2>
+            <p>{t("content.storyPromptDescription")}</p>
+            <Link href={APP_ROUTES.MEMORIES_NEW}>
+              <ImagePlus aria-hidden="true" />
+              {t("content.createMemory")}
+            </Link>
           </motion.section>
         </motion.div>
       )}

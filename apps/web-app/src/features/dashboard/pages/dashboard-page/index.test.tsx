@@ -98,10 +98,10 @@ describe("DashboardPage", () => {
 
     expect(screen.getByRole("heading", { name: "Forever Us" })).toBeInTheDocument();
     expect(screen.getByTitle("Forever Us")).toBeInTheDocument();
-    expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
+    expect(screen.getByText("Your story, together")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
-    expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
-    expect(screen.getAllByRole("img", { name: "Annie's avatar" })).not.toHaveLength(0);
+    expect(screen.getByRole("heading", { name: "Add to your story" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Create a memory" })).toHaveLength(3);
     expect(screen.getByText("Timeline memories")).toBeInTheDocument();
     expect(screen.getByTestId("timeline-memories")).toHaveAttribute("data-variant", "recent");
     expect(screen.queryByRole("link", { name: "Add a memory" })).not.toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("DashboardPage", () => {
     const queryClient = new QueryClient();
     render(<QueryClientProvider client={queryClient}>{page}</QueryClientProvider>);
 
-    expect(screen.getByText("Welcome back, Leo & Annie")).toBeInTheDocument();
+    expect(screen.getByText("Your story, together")).toBeInTheDocument();
     for (const dashboardLink of screen.getAllByRole("link", { name: "Dashboard" })) {
       expect(dashboardLink).toHaveAttribute("href", "/");
       expect(dashboardLink).toHaveAttribute("aria-current", "page");
@@ -141,7 +141,7 @@ describe("DashboardPage", () => {
     expect(screen.queryByRole("button", { name: "Places" })).not.toBeInTheDocument();
   });
 
-  it("renders the refreshed canonical name in dashboard, desktop navigation, and mobile navigation", () => {
+  it("renders the refreshed canonical name in desktop and mobile navigation", () => {
     const { rerender } = render(
       <DashboardShell activeSpace={activeSpace} activeSection="dashboard">
         <DashboardContent />
@@ -159,7 +159,7 @@ describe("DashboardPage", () => {
 
     expect(screen.getByRole("heading", { name: "Our archive" })).toBeInTheDocument();
     expect(screen.getByTitle("Our archive")).toBeInTheDocument();
-    expect(screen.getByText("Sharing Our archive together.")).toBeInTheDocument();
+    expect(screen.getByText("Your story, together")).toBeInTheDocument();
   });
 
   it("marks Vault as current in desktop and mobile navigation", async () => {
@@ -197,7 +197,7 @@ describe("DashboardPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Dashboard" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Create a memory" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Create a memory" })).toHaveLength(3);
 
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
@@ -217,6 +217,7 @@ describe("DashboardPage", () => {
     expect(
       screen.getByText("Invite your partner to begin preserving your story together."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Your shared story starts here")).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Waiting for your person" }),
     ).not.toBeInTheDocument();

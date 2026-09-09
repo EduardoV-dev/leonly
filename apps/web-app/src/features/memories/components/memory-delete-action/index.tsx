@@ -75,19 +75,25 @@ export function MemoryDeleteAction({
           </button>
         </AlertDialogTrigger>
         <AlertDialogContent className={styles.dialog}>
-          <AlertDialogHeader>
-            <p className={styles.eyebrow}>{t("detail.delete.eyebrow")}</p>
-            <AlertDialogTitle className={styles.title}>
-              {t("detail.delete.heading")}
-            </AlertDialogTitle>
-            <AlertDialogDescription className={styles.description}>
-              {t("detail.delete.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <p className={styles.status} aria-live="polite" role="status">
-            {statusMessage}
-          </p>
-          <AlertDialogFooter>
+          <div className={styles.dialogHeading}>
+            <span className={styles.warningIcon} aria-hidden="true">
+              <Trash2 />
+            </span>
+            <AlertDialogHeader className={styles.header}>
+              <AlertDialogTitle className={styles.title}>
+                {t("detail.delete.heading")}
+              </AlertDialogTitle>
+              <AlertDialogDescription className={styles.description}>
+                {t("detail.delete.description")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          </div>
+          {statusMessage ? (
+            <p className={styles.status} aria-live="polite" role="status">
+              {statusMessage}
+            </p>
+          ) : null}
+          <AlertDialogFooter className={styles.footer}>
             <AlertDialogCancel disabled={deletion.isPending} className={styles.cancel}>
               {t("detail.delete.cancel")}
             </AlertDialogCancel>

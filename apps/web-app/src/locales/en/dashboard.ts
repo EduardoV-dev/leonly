@@ -1,15 +1,17 @@
 export const dashboardEn = {
   content: {
-    memberSummary: "Space members",
+    createMemory: "Create a memory",
+    heading: "Your story, together",
     milestone: "Relationship milestone",
     milestoneReached: "Milestone reached",
     recentMemories: "Recent Memories",
-    sharing: "Sharing {{name}} together.",
+    storyPromptDescription: "Capture a moment while the details are still fresh.",
+    storyPromptHeading: "Add to your story",
     waiting: "Waiting for your person",
     waitingDescription: "Share your invite code when you are ready for them to join.",
+    waitingHeading: "Your shared story starts here",
     waitingWelcomeDescription: "Invite your partner to begin preserving your story together.",
-    welcome: "Welcome back, {{names}}",
-    welcomeDescription: "Here is your shared universe.",
+    welcomeDescription: "Revisit what you have shared or preserve a new moment.",
   },
   milestone: {
     days_one: "{{formattedCount}} day together",

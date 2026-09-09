@@ -34,6 +34,7 @@ export function MobileNavigation({ activeSection }: Readonly<MobileNavigationPro
       </Link>
       <Link
         href={APP_ROUTES.SETTINGS}
+        prefetch={true}
         aria-current={activeSection === "settings" ? "page" : undefined}
       >
         <Settings aria-hidden="true" />

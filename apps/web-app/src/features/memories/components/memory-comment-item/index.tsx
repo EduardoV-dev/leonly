@@ -78,6 +78,9 @@ export function MemoryCommentItem({
           <time dateTime={comment.createdAt} title={exactTimestamp}>
             {relativeTimestamp}
           </time>
+          {comment.updatedAt !== comment.createdAt ? (
+            <span className={styles.edited}>{t("detail.comments.edit.edited")}</span>
+          ) : null}
         </p>
         {comment.isAuthor && !editor.isEditing ? (
           <div className={styles.authorActions} ref={deleteTriggerRef}>

@@ -43,6 +43,7 @@
 .option:has(input:checked) {
   border-color: #89575c;
   background: #fff0ef;
+  animation: select-language 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .option input {
@@ -67,8 +68,18 @@
   min-height: 1.4em;
 }
 
+@keyframes select-language {
+  from {
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--auth-brand) 16%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .option {
     transition-duration: 100ms;
+  }
+
+  .option:has(input:checked) {
+    animation-duration: 100ms;
   }
 }

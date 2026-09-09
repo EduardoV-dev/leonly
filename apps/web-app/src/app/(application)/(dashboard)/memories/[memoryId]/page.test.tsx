@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Page from "./page";
+import Page, { generateMetadata } from "./page";
 
 const { getMemoryDetailMock, getRelatedMemoriesMock, notFoundMock } = vi.hoisted(() => ({
   getMemoryDetailMock: vi.fn(),
@@ -45,5 +45,26 @@ describe("memory detail route", () => {
 
     await expect(Page({ params: Promise.resolve({ memoryId }) })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFoundMock).toHaveBeenCalledOnce();
+  });
+
+  it("derives document metadata from the authorized memory", async () => {
+    getMemoryDetailMock.mockResolvedValue({
+      description: "A spring walk we will always remember.",
+      title: "Among the flowers",
+    });
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "A spring walk we will always remember.",
+      title: "Among the flowers",
+    });
+  });
+
+  it("uses safe metadata when the memory is unavailable", async () => {
+    getMemoryDetailMock.mockResolvedValue(null);
+
+    await expect(generateMetadata({ params: Promise.resolve({ memoryId }) })).resolves.toEqual({
+      description: "This shared memory is unavailable.",
+      title: "Memory unavailable",
+    });
   });
 });
