@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -12,4 +13,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  tunnelRoute: "/sentry-tunnel",
+});

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
 import { logServerError } from "@/lib/server-logger";
@@ -166,11 +167,10 @@ export async function getTimelinePage(
     return { ...firstPage, cursorReset: true };
   }
 
-  const page = await readTimelinePage(
-    cursor?.sort === sort ? cursor : null,
-    activeSpace.id,
-    pageSize,
-    sort,
+  const page = await Sentry.startSpan(
+    { name: "memory.timeline.read_page", op: "db.query" },
+    async () =>
+      readTimelinePage(cursor?.sort === sort ? cursor : null, activeSpace.id, pageSize, sort),
   );
   return shouldReset ? { ...page, cursorReset: true } : page;
 }

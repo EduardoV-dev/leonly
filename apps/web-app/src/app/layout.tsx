@@ -1,15 +1,23 @@
+import * as Sentry from "@sentry/nextjs";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: {
     default: "Leonly",
     template: "%s | Leonly",
   },
   description: "Private, elegant sanctuary for shared memories.",
 };
+
+export function generateMetadata(): Metadata {
+  return {
+    ...baseMetadata,
+    other: { ...Sentry.getTraceData() },
+  };
+}
 
 type RootLayoutProps = {
   children: ReactNode;

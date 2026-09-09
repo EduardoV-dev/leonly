@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import sharp from "sharp";
 
 const COVER_MAX_DIMENSION = 1024;
@@ -27,15 +28,20 @@ function resizeVariant(image: ReturnType<typeof sharp>, maxDimension: number): P
 
 export async function createMemoryPhotoVariants(input: ArrayBuffer): Promise<MemoryPhotoVariants> {
   // TODO: Move variant generation to a durable background job before increasing upload limits.
-  const image = sharp(Buffer.from(input), {
-    failOn: "warning",
-    limitInputPixels: MAX_INPUT_PIXELS,
-  }).autoOrient();
+  return Sentry.startSpan(
+    { name: "memory.photo.generate_variants", op: "image.process" },
+    async () => {
+      const image = sharp(Buffer.from(input), {
+        failOn: "warning",
+        limitInputPixels: MAX_INPUT_PIXELS,
+      }).autoOrient();
 
-  const [cover, detail] = await Promise.all([
-    resizeVariant(image, COVER_MAX_DIMENSION),
-    resizeVariant(image, DETAIL_MAX_DIMENSION),
-  ]);
+      const [cover, detail] = await Promise.all([
+        resizeVariant(image, COVER_MAX_DIMENSION),
+        resizeVariant(image, DETAIL_MAX_DIMENSION),
+      ]);
 
-  return { cover, detail };
+      return { cover, detail };
+    },
+  );
 }

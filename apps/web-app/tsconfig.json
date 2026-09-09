@@ -18,6 +18,9 @@
   "include": [
     "next-env.d.ts",
     "instrumentation.ts",
+    "instrumentation-client.ts",
+    "sentry.edge.config.ts",
+    "sentry.server.config.ts",
     "src",
     "vitest.config.ts",
     "vitest.setup.ts",
