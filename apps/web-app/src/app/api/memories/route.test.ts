@@ -91,7 +91,7 @@ describe("POST /api/memories", () => {
 
     const response = await POST(
       new Request("http://localhost/api/memories", {
-        body: new URLSearchParams(),
+        body: new URLSearchParams().toString(),
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         method: "POST",
       }),
