@@ -11,6 +11,7 @@ export type MemoryEditorValues = {
 export type MemoryEditorPhoto =
   | {
       file: File;
+      id: string;
       key: string;
       kind: "new";
       name: string;

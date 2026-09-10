@@ -21,6 +21,7 @@ import {
   readMemoryDraft,
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
+import { uploadStagedMemoryPhotos } from "../../utils/upload-staged-memory-photos";
 
 type EditResponse = {
   code?: "conflict" | "pending" | "unavailable" | "validation_failed";
@@ -63,10 +64,12 @@ function createEditFormData(
   const retained = photos.filter((photo) => photo.kind === "retained");
   for (const photo of retained) formData.append("retainedPhotoIds", photo.id);
   const newPhotos = photos.filter((photo) => photo.kind === "new");
-  for (const photo of newPhotos) formData.append("photos", photo.file);
+  for (const photo of newPhotos) {
+    formData.append("photoIds", photo.id);
+    formData.append("photoNames", photo.name);
+  }
   const cover = photos.find((photo) => photo.key === coverPhotoKey);
-  if (cover?.kind === "retained") formData.set("coverPhotoId", cover.id);
-  if (cover?.kind === "new") formData.set("coverPhotoIndex", String(newPhotos.indexOf(cover)));
+  if (cover) formData.set("coverPhotoId", cover.id);
   return formData;
 }
 
@@ -222,9 +225,11 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
+      const id = crypto.randomUUID();
       nextPhotoKey.current += 1;
       return {
         file,
+        id,
         key: `new-${nextPhotoKey.current}`,
         kind: "new",
         name: file.name,
@@ -264,10 +269,13 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setIsSubmitting(true);
     idempotencyKey.current ??= crypto.randomUUID();
     try {
-      const response = await fetch(`/api/memories/${memory.id}/edit`, {
-        body: createEditFormData(memory, values, photos, coverPhotoKey),
-        headers: { "Idempotency-Key": idempotencyKey.current },
-        method: "PATCH",
+      const response = await uploadStagedMemoryPhotos({
+        finalMethod: "PATCH",
+        finalUrl: `/api/memories/${memory.id}/edit`,
+        formData: createEditFormData(memory, values, photos, coverPhotoKey),
+        idempotencyKey: idempotencyKey.current,
+        photos,
+        prepareUrl: `/api/memories/${memory.id}/edit/uploads`,
       });
       const payload = (await response.json()) as EditResponse;
       if (payload.code === "unavailable") {

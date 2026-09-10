@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
+import { z } from "zod";
 import {
   ACCEPTED_MEMORY_PHOTO_EXTENSIONS,
   ACCEPTED_MEMORY_PHOTO_TYPES,
@@ -42,9 +43,14 @@ export type ValidatedMemoryPhoto = {
   variants: MemoryPhotoVariants;
 };
 
+export type ValidatedStagedMemoryPhoto = {
+  id: string;
+  name: string;
+};
+
 export type ValidatedCreateMemoryInput = ValidatedMemoryDetails & {
-  coverPhotoIndex: number | null;
-  photos: ValidatedMemoryPhoto[];
+  coverPhotoId: string | null;
+  photos: ValidatedStagedMemoryPhoto[];
   requestFingerprint: string;
 };
 
@@ -155,12 +161,15 @@ export function validateMemoryDetails(formData: FormData): ValidatedMemoryDetail
   };
 }
 
-export async function validateMemoryPhoto(file: File): Promise<ValidatedMemoryPhoto> {
-  if (file.size > MAX_MEMORY_PHOTO_SIZE_BYTES) {
+export async function validateMemoryPhotoBytes(
+  fileName: string,
+  bytes: ArrayBuffer,
+): Promise<ValidatedMemoryPhoto> {
+  if (bytes.byteLength > MAX_MEMORY_PHOTO_SIZE_BYTES) {
     invalidField("photos", "Each photo must be 5 MB or smaller.");
   }
 
-  const extension = getPhotoExtension(file.name);
+  const extension = getPhotoExtension(fileName);
   if (
     !extension ||
     !ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
@@ -170,7 +179,6 @@ export async function validateMemoryPhoto(file: File): Promise<ValidatedMemoryPh
     invalidField("photos", "Photos must use a JPG, JPEG, PNG, or WebP extension.");
   }
 
-  const bytes = await file.arrayBuffer();
   const detectedFileType = await fileTypeFromBuffer(new Uint8Array(bytes)).catch(() => undefined);
   if (!detectedFileType || !isAcceptedPhotoContentType(detectedFileType.mime)) {
     invalidField("photos", "Photos must be JPEG, PNG, or WebP images.");
@@ -192,35 +200,60 @@ export async function validateMemoryPhoto(file: File): Promise<ValidatedMemoryPh
   }
 }
 
-export async function validateMemoryPhotos(
+export async function validateMemoryPhoto(file: File): Promise<ValidatedMemoryPhoto> {
+  if (file.size > MAX_MEMORY_PHOTO_SIZE_BYTES) {
+    invalidField("photos", "Each photo must be 5 MB or smaller.");
+  }
+  return validateMemoryPhotoBytes(file.name, await file.arrayBuffer());
+}
+
+export function validateStagedMemoryPhotos(
   formData: FormData,
   maxCount: number,
-): Promise<ValidatedMemoryPhoto[]> {
-  const entries = formData.getAll("photos");
-  if (entries.some((entry) => !(entry instanceof File)) || entries.length > maxCount) {
+): ValidatedStagedMemoryPhoto[] {
+  if (formData.getAll("photos").length > 0) {
+    invalidField("photos", "Upload photos directly before saving the memory.");
+  }
+  const photoIds = formData.getAll("photoIds");
+  const photoNames = formData.getAll("photoNames");
+  if (
+    photoIds.length !== photoNames.length ||
+    photoIds.length > maxCount ||
+    photoIds.some((entry) => typeof entry !== "string" || !z.uuid().safeParse(entry).success) ||
+    photoNames.some((entry) => typeof entry !== "string")
+  ) {
     invalidField("photos", `Choose up to ${maxCount} photos.`);
   }
 
-  const photos: ValidatedMemoryPhoto[] = [];
-  for (const entry of entries) {
-    photos.push(await validateMemoryPhoto(entry as File));
+  const ids = photoIds as string[];
+  if (new Set(ids).size !== ids.length) {
+    invalidField("photos", "A photo was included more than once.");
   }
-  return photos;
+
+  return ids.map((id, index) => {
+    const name = photoNames[index] as string;
+    const extension = getPhotoExtension(name);
+    if (
+      !extension ||
+      !ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
+        extension as (typeof ACCEPTED_MEMORY_PHOTO_EXTENSIONS)[number],
+      )
+    ) {
+      invalidField("photos", "Photos must use a JPG, JPEG, PNG, or WebP extension.");
+    }
+    return { id, name };
+  });
 }
 
 export async function validateCreateMemoryFormData(
   formData: FormData,
 ): Promise<ValidatedCreateMemoryInput> {
   const details = validateMemoryDetails(formData);
-  const photos = await validateMemoryPhotos(formData, MAX_MEMORY_PHOTO_COUNT);
-  const coverValue = formData.get("coverPhotoIndex");
-  const coverPhotoIndex = photos.length === 0 ? null : Number(coverValue);
+  const photos = validateStagedMemoryPhotos(formData, MAX_MEMORY_PHOTO_COUNT);
+  const coverValue = formData.get("coverPhotoId");
+  const coverPhotoId = typeof coverValue === "string" ? coverValue : null;
   const hasInvalidCover =
-    photos.length > 0 &&
-    (coverPhotoIndex === null ||
-      !Number.isInteger(coverPhotoIndex) ||
-      coverPhotoIndex < 0 ||
-      coverPhotoIndex >= photos.length);
+    coverPhotoId !== null && !photos.some((photo) => photo.id === coverPhotoId);
 
   if (hasInvalidCover || (photos.length === 0 && coverValue !== null)) {
     invalidField("photos", "Choose one cover photo.");
@@ -230,11 +263,11 @@ export async function validateCreateMemoryFormData(
     .update(
       JSON.stringify({
         ...details,
-        coverPhotoIndex,
-        photos: photos.map((photo) => photo.digest),
+        coverPhotoId,
+        photos,
       }),
     )
     .digest("hex");
 
-  return { ...details, coverPhotoIndex, photos, requestFingerprint };
+  return { ...details, coverPhotoId, photos, requestFingerprint };
 }

@@ -19,6 +19,7 @@ import {
   readMemoryDraft,
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
+import { uploadStagedMemoryPhotos } from "../../utils/upload-staged-memory-photos";
 
 type CreateMemoryResponse = { code?: string; fields?: Record<string, string>; id?: string };
 
@@ -53,13 +54,12 @@ function createFormData(
   formData.set("memoryDate", values.memoryDate);
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
-  const coverPhotoIndex = photos.findIndex((photo) => photo.key === coverPhotoKey);
-  if (coverPhotoIndex >= 0) {
-    formData.set("coverPhotoIndex", String(coverPhotoIndex));
-  }
+  const coverPhoto = photos.find((photo) => photo.key === coverPhotoKey);
+  if (coverPhoto) formData.set("coverPhotoId", coverPhoto.id);
   for (const photo of photos) {
     if (photo.kind === "new") {
-      formData.append("photos", photo.file);
+      formData.append("photoIds", photo.id);
+      formData.append("photoNames", photo.name);
     }
   }
   return formData;
@@ -170,8 +170,16 @@ export function useCreateMemoryForm() {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
+      const id = crypto.randomUUID();
       nextPhotoKey.current += 1;
-      return { file, key: `new-${nextPhotoKey.current}`, kind: "new", name: file.name, previewUrl };
+      return {
+        file,
+        id,
+        key: `new-${nextPhotoKey.current}`,
+        kind: "new",
+        name: file.name,
+        previewUrl,
+      };
     });
     resetAttempt();
     const selectedNames = new Set(files.map((file) => file.name));
@@ -205,10 +213,13 @@ export function useCreateMemoryForm() {
     setIsSubmitting(true);
     idempotencyKey.current ??= crypto.randomUUID();
     try {
-      const response = await fetch("/api/memories", {
-        body: createFormData(values, photos, coverPhotoKey),
-        headers: { "Idempotency-Key": idempotencyKey.current },
-        method: "POST",
+      const response = await uploadStagedMemoryPhotos({
+        finalMethod: "POST",
+        finalUrl: "/api/memories",
+        formData: createFormData(values, photos, coverPhotoKey),
+        idempotencyKey: idempotencyKey.current,
+        photos,
+        prepareUrl: "/api/memories/uploads",
       });
       const payload = (await response.json()) as CreateMemoryResponse;
       if (!response.ok || !payload.id) {

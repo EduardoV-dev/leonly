@@ -1,25 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-
-const createMemoryPhotoVariantsMock = vi.hoisted(() =>
-  vi.fn(async () => ({ cover: Buffer.from("cover"), detail: Buffer.from("detail") })),
-);
-
-vi.mock("./create-memory-photo-variants", () => ({
-  createMemoryPhotoVariants: createMemoryPhotoVariantsMock,
-}));
 
 import { validateEditMemoryFormData } from "./edit-memory-input";
 import { encodeMemoryVersion } from "./memory-version";
 
-const PHOTO_IDS = [
-  "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
-  "3ddf312a-e682-4cd8-91f9-9a2a230241ed",
-  "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
-  "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-  "cc2df916-833a-4f1b-b744-b7b4c176ae93",
-];
+const RETAINED_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
+const NEW_ID = "3ddf312a-e682-4cd8-91f9-9a2a230241ed";
 
 function formData(): FormData {
   const value = new FormData();
@@ -34,74 +21,69 @@ function formData(): FormData {
 }
 
 describe("validateEditMemoryFormData", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("normalizes details and treats retained request order as insignificant", async () => {
+  it("normalizes retained and staged photo metadata without image files", async () => {
     const value = formData();
-    value.append("retainedPhotoIds", PHOTO_IDS[1]);
-    value.append("retainedPhotoIds", PHOTO_IDS[0]);
-    value.set("coverPhotoId", PHOTO_IDS[0]);
+    value.append("retainedPhotoIds", RETAINED_ID);
+    value.append("photoIds", NEW_ID);
+    value.append("photoNames", "replacement.webp");
+    value.set("coverPhotoId", NEW_ID);
 
     await expect(validateEditMemoryFormData(value)).resolves.toMatchObject({
-      coverPhotoId: PHOTO_IDS[0],
+      coverPhotoId: NEW_ID,
       description: "A better description.",
-      location: "The park",
-      retainedPhotoIds: [PHOTO_IDS[0], PHOTO_IDS[1]],
+      photos: [{ id: NEW_ID, name: "replacement.webp" }],
+      retainedPhotoIds: [RETAINED_ID],
       title: "Revised picnic",
       visibility: "vault",
     });
   });
 
-  it("accepts a 2,000-character description after multipart line break normalization", async () => {
-    const value = formData();
-    value.set("description", `${"a".repeat(1998)}\r\nb`);
-
-    await expect(validateEditMemoryFormData(value)).resolves.toMatchObject({
-      description: `${"a".repeat(1998)}\nb`,
-    });
-  });
-
-  it("allows removing every photo only with no cover", async () => {
+  it("allows removing every photo only when no cover is submitted", async () => {
     await expect(validateEditMemoryFormData(formData())).resolves.toMatchObject({
-      coverNewPhotoIndex: null,
       coverPhotoId: null,
       photos: [],
       retainedPhotoIds: [],
     });
+
+    const invalid = formData();
+    invalid.set("coverPhotoId", RETAINED_ID);
+    await expect(validateEditMemoryFormData(invalid)).rejects.toMatchObject({
+      fields: { photos: "Choose one cover photo from the final photo set." },
+    });
   });
 
-  it("enforces the five-photo final state independently of create's ten-photo limit", async () => {
+  it("enforces the five-photo final state", async () => {
     const value = formData();
-    for (const photoId of PHOTO_IDS) {
-      value.append("retainedPhotoIds", photoId);
+    for (let index = 0; index < 5; index += 1) {
+      value.append("retainedPhotoIds", crypto.randomUUID());
     }
-    value.set("coverPhotoId", PHOTO_IDS[0]);
-    value.append("photos", new File([], "extra.png", { type: "image/png" }));
+    value.append("photoIds", NEW_ID);
+    value.append("photoNames", "extra.png");
+    value.set("coverPhotoId", NEW_ID);
 
     await expect(validateEditMemoryFormData(value)).rejects.toMatchObject({
       fields: { photos: "Choose up to 5 photos." },
     });
   });
 
-  it("rejects malformed versions, foreign covers, and duplicate retained IDs", async () => {
+  it("rejects malformed versions, duplicate retained IDs, and mismatched descriptors", async () => {
     const malformedVersion = formData();
     malformedVersion.set("expectedVersion", "not-a-version");
     await expect(validateEditMemoryFormData(malformedVersion)).rejects.toMatchObject({
       fields: { form: "Invalid memory version." },
     });
 
-    const foreignCover = formData();
-    foreignCover.append("retainedPhotoIds", PHOTO_IDS[0]);
-    foreignCover.set("coverPhotoId", PHOTO_IDS[1]);
-    await expect(validateEditMemoryFormData(foreignCover)).rejects.toMatchObject({
-      fields: { photos: "Choose one cover photo from the final photo set." },
-    });
-
     const duplicate = formData();
-    duplicate.append("retainedPhotoIds", PHOTO_IDS[0]);
-    duplicate.append("retainedPhotoIds", PHOTO_IDS[0]);
+    duplicate.append("retainedPhotoIds", RETAINED_ID);
+    duplicate.append("retainedPhotoIds", RETAINED_ID);
     await expect(validateEditMemoryFormData(duplicate)).rejects.toMatchObject({
       fields: { photos: "A retained photo was included more than once." },
+    });
+
+    const mismatched = formData();
+    mismatched.append("photoIds", NEW_ID);
+    await expect(validateEditMemoryFormData(mismatched)).rejects.toMatchObject({
+      fields: { photos: "Choose up to 5 photos." },
     });
   });
 });

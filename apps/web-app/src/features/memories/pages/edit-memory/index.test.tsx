@@ -5,9 +5,10 @@ import { i18n } from "@/lib/i18n";
 import type { MemoryEdit } from "../../types/memory-edit";
 import { EditMemoryPage } from ".";
 
-const { pushMock, refreshMock, toastSuccessMock } = vi.hoisted(() => ({
+const { pushMock, refreshMock, storageUploadMock, toastSuccessMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   refreshMock: vi.fn(),
+  storageUploadMock: vi.fn(),
   toastSuccessMock: vi.fn(),
 }));
 
@@ -15,6 +16,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: refreshMock }),
 }));
 vi.mock("@/utils/toast", () => ({ toast: { success: toastSuccessMock } }));
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({ storage: { from: () => ({ upload: storageUploadMock }) } }),
+}));
 vi.mock("@/components/past-date-picker", () => ({
   PastDatePicker: ({
     label,
@@ -59,6 +63,7 @@ describe("EditMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
+    storageUploadMock.mockResolvedValue({ error: null });
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("crypto", { randomUUID: () => "a9c28177-afb7-456e-a83d-8ef74047226f" });
@@ -93,9 +98,21 @@ describe("EditMemoryPage", () => {
   });
 
   it("adds and removes draft photos, changes cover and placement, and submits the backend contract", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ id: memory.id, visibility: "vault" }), { status: 200 }),
-    );
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        Response.json({
+          result: null,
+          uploads: [
+            {
+              id: "a9c28177-afb7-456e-a83d-8ef74047226f",
+              path: "space/edit/photo/original",
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: memory.id, visibility: "vault" }), { status: 200 }),
+      );
     renderEditor();
     const replacement = new File(["photo"], "replacement.png", { type: "image/png" });
 
@@ -108,16 +125,23 @@ describe("EditMemoryPage", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Private vault/i }));
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
-    const [url, request] = vi.mocked(fetch).mock.calls[0];
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    const [url, request] = vi.mocked(fetch).mock.calls[1];
     const body = request?.body as FormData;
     expect(url).toBe(`/api/memories/${memory.id}/edit`);
     expect(request?.method).toBe("PATCH");
     expect(request?.headers).toEqual({ "Idempotency-Key": "a9c28177-afb7-456e-a83d-8ef74047226f" });
     expect(body.getAll("retainedPhotoIds")).toEqual([]);
-    expect(body.get("coverPhotoIndex")).toBe("0");
+    expect(body.get("coverPhotoId")).toBe("a9c28177-afb7-456e-a83d-8ef74047226f");
+    expect(body.getAll("photoIds")).toEqual(["a9c28177-afb7-456e-a83d-8ef74047226f"]);
+    expect(body.getAll("photoNames")).toEqual(["replacement.png"]);
+    expect(body.getAll("photos")).toEqual([]);
     expect(body.get("expectedVersion")).toBe("opaque-version");
     expect(body.get("visibility")).toBe("vault");
+    expect(storageUploadMock).toHaveBeenCalledWith("space/edit/photo/original", replacement, {
+      contentType: "image/png",
+      upsert: true,
+    });
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith(`/vault/${memory.id}`));
     expect(toastSuccessMock).toHaveBeenCalledWith("Memory updated.");
   });
