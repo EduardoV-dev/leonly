@@ -60,7 +60,10 @@ describe("memory editing migration security contract", () => {
 
   it("raises the final edit photo limit to 10", () => {
     const limitMigration = readFileSync(
-      resolve(process.cwd(), "../../supabase/migrations/20260910130000_memory_edit_photo_limit.sql"),
+      resolve(
+        process.cwd(),
+        "../../supabase/migrations/20260910130000_memory_edit_photo_limit.sql",
+      ),
       "utf8",
     );
 
