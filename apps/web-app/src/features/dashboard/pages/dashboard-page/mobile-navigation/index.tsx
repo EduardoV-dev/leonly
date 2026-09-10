@@ -19,18 +19,18 @@ export function MobileNavigation({ activeSection }: Readonly<MobileNavigationPro
         aria-current={activeSection === "dashboard" ? "page" : undefined}
       >
         <LayoutGrid aria-hidden="true" />
-        <span>{t("navigation.dashboard")}</span>
+        <span>{t("navigation.mobileDashboard")}</span>
       </Link>
       <Link
         href={APP_ROUTES.TIMELINE}
         aria-current={activeSection === "timeline" ? "page" : undefined}
       >
         <BookHeart aria-hidden="true" />
-        <span>{t("navigation.timeline")}</span>
+        <span>{t("navigation.mobileTimeline")}</span>
       </Link>
       <Link href={APP_ROUTES.VAULT} aria-current={activeSection === "vault" ? "page" : undefined}>
         <LockKeyhole aria-hidden="true" />
-        <span>{t("navigation.vault")}</span>
+        <span>{t("navigation.mobileVault")}</span>
       </Link>
       <Link
         href={APP_ROUTES.SETTINGS}
@@ -38,7 +38,7 @@ export function MobileNavigation({ activeSection }: Readonly<MobileNavigationPro
         aria-current={activeSection === "settings" ? "page" : undefined}
       >
         <Settings aria-hidden="true" />
-        <span>{t("navigation.settings")}</span>
+        <span>{t("navigation.mobileSettings")}</span>
       </Link>
     </nav>
   );

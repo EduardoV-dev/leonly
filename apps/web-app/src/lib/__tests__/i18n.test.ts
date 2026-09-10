@@ -152,3 +152,14 @@ describe("memories namespace", () => {
     expect(spanishT("edit.success")).toBe("Recuerdo actualizado.");
   });
 });
+
+describe("dashboard namespace", () => {
+  it("uses compact mobile navigation labels in english and spanish", () => {
+    const englishT = i18n.getFixedT("en", "dashboard");
+    const spanishT = i18n.getFixedT("es", "dashboard");
+
+    expect(englishT("navigation.mobileTimeline")).toBe("Timeline");
+    expect(spanishT("navigation.mobileTimeline")).toBe("Cronología");
+    expect(spanishT("navigation.timeline")).toBe("Línea de tiempo");
+  });
+});
