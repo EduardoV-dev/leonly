@@ -1,7 +1,7 @@
 "use client";
 
 import { MemoryEditorForm } from "../../components/memory-editor-form";
-import { MAX_EDIT_MEMORY_PHOTO_COUNT } from "../../constants/edit-memory";
+import { MAX_MEMORY_PHOTO_COUNT } from "../../constants/create-memory";
 import type { MemoryEdit } from "../../types/memory-edit";
 import { useEditMemoryForm } from "./use-edit-memory-form";
 
@@ -17,7 +17,7 @@ export function EditMemoryPage({ memory }: Readonly<EditMemoryPageProps>) {
     <MemoryEditorForm
       {...form}
       backHref={backHref}
-      maxPhotos={MAX_EDIT_MEMORY_PHOTO_COUNT}
+      maxPhotos={MAX_MEMORY_PHOTO_COUNT}
       mode="edit"
       onAddPhotos={form.addPhotos}
       onReload={form.reload}

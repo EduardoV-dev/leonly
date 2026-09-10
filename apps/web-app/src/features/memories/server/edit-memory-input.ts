@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { MAX_MEMORY_PHOTO_COUNT } from "../constants/create-memory";
 import {
   MemoryInputError,
   type ValidatedMemoryDetails,
@@ -11,7 +12,6 @@ import {
 } from "./memory-input-validation";
 import { decodeMemoryVersion } from "./memory-version";
 
-const MAX_EDIT_PHOTO_COUNT = 5;
 const uuidSchema = z.uuid();
 
 export type ValidatedEditMemoryInput = ValidatedMemoryDetails & {
@@ -53,10 +53,10 @@ export async function validateEditMemoryFormData(
   }
 
   const newPhotoCount = formData.getAll("photoIds").length;
-  if (retainedPhotoIds.length + newPhotoCount > MAX_EDIT_PHOTO_COUNT) {
-    invalidPhotos(`Choose up to ${MAX_EDIT_PHOTO_COUNT} photos.`);
+  if (retainedPhotoIds.length + newPhotoCount > MAX_MEMORY_PHOTO_COUNT) {
+    invalidPhotos(`Choose up to ${MAX_MEMORY_PHOTO_COUNT} photos.`);
   }
-  const photos = validateStagedMemoryPhotos(formData, MAX_EDIT_PHOTO_COUNT);
+  const photos = validateStagedMemoryPhotos(formData, MAX_MEMORY_PHOTO_COUNT);
 
   const coverPhotoIdValue = formData.get("coverPhotoId");
   const coverPhotoId = typeof coverPhotoIdValue === "string" ? coverPhotoIdValue : null;

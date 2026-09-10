@@ -128,7 +128,7 @@ placement.
 
 The system SHALL allow an edit to retain any current photos, remove any or all current photos, and add
 replacement JPEG, PNG, or WebP photos whose verified binary content is no larger than 5 MB each. At
-most five retained and replacement photos SHALL remain after the edit. Retained photos MUST preserve
+most 10 retained and replacement photos SHALL remain after the edit. Retained photos MUST preserve
 their current persisted relative order regardless of request order; accepted new photos SHALL follow
 them in file-selection order. US-007 MUST NOT provide manual photo reordering.
 
@@ -138,7 +138,7 @@ belong to the authorized memory.
 
 #### Scenario: Member retains and adds photos
 
-- **WHEN** a valid edit retains current photos and adds valid replacement photos within the five-photo
+- **WHEN** a valid edit retains current photos and adds valid replacement photos within the 10-photo
   boundary
 - **THEN** retained photos keep their relative order, new photos follow in selection order, and the
   selected retained or new photo becomes cover
@@ -150,7 +150,7 @@ belong to the authorized memory.
 
 #### Scenario: Photo edit is invalid
 
-- **WHEN** a request would leave more than five photos, includes an invalid file, references a foreign
+- **WHEN** a request would leave more than 10 photos, includes an invalid file, references a foreign
   or unavailable retained photo, or leaves an invalid cover
 - **THEN** the system rejects the photo input and leaves every existing photo and cover available
 

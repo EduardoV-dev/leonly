@@ -90,7 +90,7 @@ describe("EditMemoryPage", () => {
     expect(screen.getByRole("radio", { name: /Our timeline/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Cover/i })).toBeChecked();
     expect(screen.getByText("Saved photo")).toBeInTheDocument();
-    expect(screen.getByText("1/5")).toBeInTheDocument();
+    expect(screen.getByText("1/10")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute(
       "href",
       `/memories/${memory.id}`,
@@ -146,10 +146,10 @@ describe("EditMemoryPage", () => {
     expect(toastSuccessMock).toHaveBeenCalledWith("Memory updated.");
   });
 
-  it("enforces the five-photo final count without changing the creation limit", () => {
+  it("enforces the ten-photo final count", () => {
     renderEditor({
       ...memory,
-      photos: Array.from({ length: 5 }, (_, index) => ({
+      photos: Array.from({ length: 10 }, (_, index) => ({
         id: `00000000-0000-4000-8000-00000000000${index}`,
         previewUrl: `https://storage.example/${index}`,
       })),
@@ -159,8 +159,8 @@ describe("EditMemoryPage", () => {
       target: { files: [new File(["six"], "six.png", { type: "image/png" })] },
     });
 
-    expect(screen.getByText("Choose up to 5 photos in the final memory.")).toBeInTheDocument();
-    expect(screen.getByText("5/5")).toBeInTheDocument();
+    expect(screen.getByText("Choose up to 10 photos in the final memory.")).toBeInTheDocument();
+    expect(screen.getByText("10/10")).toBeInTheDocument();
   });
 
   it("allows removing every photo and submits no cover", async () => {
@@ -171,7 +171,7 @@ describe("EditMemoryPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
     expect(screen.getByText("This memory will use its no-photo presentation.")).toBeInTheDocument();
-    expect(screen.getByText("0/5")).toBeInTheDocument();
+    expect(screen.getByText("0/10")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
@@ -230,7 +230,7 @@ describe("EditMemoryPage", () => {
     renderEditor();
 
     await waitFor(() => expect(screen.getByLabelText("Title")).toHaveValue("Revised title"));
-    expect(screen.getByText("0/5")).toBeInTheDocument();
+    expect(screen.getByText("0/10")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Your saved draft was restored.");
   });
 

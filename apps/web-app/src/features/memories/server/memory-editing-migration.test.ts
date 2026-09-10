@@ -58,6 +58,17 @@ describe("memory editing migration security contract", () => {
     expect(coalesceFixMigration).not.toContain("pg_catalog.coalesce");
   });
 
+  it("raises the final edit photo limit to 10", () => {
+    const limitMigration = readFileSync(
+      resolve(process.cwd(), "../../supabase/migrations/20260910130000_memory_edit_photo_limit.sql"),
+      "utf8",
+    );
+
+    expect(limitMigration).toContain("v_retained_count + v_staged_count > 10");
+    expect(limitMigration).toContain("pg_catalog.pg_get_functiondef");
+    expect(limitMigration).toContain("pg_catalog.to_regprocedure");
+  });
+
   it("gives only the inserted reservation ownership of a concurrent attempt", () => {
     expect(migration).toContain("get diagnostics v_inserted_count = row_count");
     expect(migration).toContain(

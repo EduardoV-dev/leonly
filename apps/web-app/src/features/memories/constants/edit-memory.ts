@@ -1,1 +1,0 @@
-export const MAX_EDIT_MEMORY_PHOTO_COUNT = 5;

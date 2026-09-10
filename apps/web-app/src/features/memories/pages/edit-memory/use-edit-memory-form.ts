@@ -8,9 +8,9 @@ import { APP_ROUTES } from "@/constants/routes";
 import { toast } from "@/utils/toast";
 import {
   ACCEPTED_MEMORY_PHOTO_EXTENSIONS,
+  MAX_MEMORY_PHOTO_COUNT,
   MAX_MEMORY_PHOTO_SIZE_BYTES,
 } from "../../constants/create-memory";
-import { MAX_EDIT_MEMORY_PHOTO_COUNT } from "../../constants/edit-memory";
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEdit } from "../../types/memory-edit";
@@ -202,10 +202,10 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setValues((current) => ({ ...current, [key]: value }));
   };
   const addPhotos = (files: File[]) => {
-    if (photos.length + files.length > MAX_EDIT_MEMORY_PHOTO_COUNT) {
+    if (photos.length + files.length > MAX_MEMORY_PHOTO_COUNT) {
       setFields((current) => ({
         ...current,
-        photos: t("edit.validation.photoCount", { count: MAX_EDIT_MEMORY_PHOTO_COUNT }),
+        photos: t("edit.validation.photoCount", { count: MAX_MEMORY_PHOTO_COUNT }),
       }));
       return;
     }

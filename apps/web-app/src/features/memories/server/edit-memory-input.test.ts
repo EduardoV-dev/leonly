@@ -52,9 +52,21 @@ describe("validateEditMemoryFormData", () => {
     });
   });
 
-  it("enforces the five-photo final state", async () => {
+  it("accepts the ten-photo final state", async () => {
     const value = formData();
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < 10; index += 1) {
+      value.append("retainedPhotoIds", crypto.randomUUID());
+    }
+    value.set("coverPhotoId", value.get("retainedPhotoIds") as string);
+
+    await expect(validateEditMemoryFormData(value)).resolves.toMatchObject({
+      retainedPhotoIds: expect.arrayContaining([value.get("coverPhotoId")]),
+    });
+  });
+
+  it("rejects an edit with more than ten final photos", async () => {
+    const value = formData();
+    for (let index = 0; index < 10; index += 1) {
       value.append("retainedPhotoIds", crypto.randomUUID());
     }
     value.append("photoIds", NEW_ID);
@@ -62,7 +74,7 @@ describe("validateEditMemoryFormData", () => {
     value.set("coverPhotoId", NEW_ID);
 
     await expect(validateEditMemoryFormData(value)).rejects.toMatchObject({
-      fields: { photos: "Choose up to 5 photos." },
+      fields: { photos: "Choose up to 10 photos." },
     });
   });
 
@@ -83,7 +95,7 @@ describe("validateEditMemoryFormData", () => {
     const mismatched = formData();
     mismatched.append("photoIds", NEW_ID);
     await expect(validateEditMemoryFormData(mismatched)).rejects.toMatchObject({
-      fields: { photos: "Choose up to 5 photos." },
+      fields: { photos: "Choose up to 10 photos." },
     });
   });
 });
