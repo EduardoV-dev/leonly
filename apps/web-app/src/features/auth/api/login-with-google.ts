@@ -1,5 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
+import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
 import { createClient } from "@/lib/supabase/client";
+
+export function getGoogleAuthCallbackUrl(
+  siteUrl: string = ENVIRONMENT_VARIABLES.NEXT_PUBLIC_SITE_URL,
+): string {
+  const origin = siteUrl.replace(/\/+$/, "") || window.location.origin;
+
+  return `${origin}/auth/callback`;
+}
 
 const loginWithGoogle = async () => {
   const supabase = createClient();
@@ -7,7 +16,7 @@ const loginWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: getGoogleAuthCallbackUrl(),
       queryParams: {
         prompt: "consent",
         access_type: "offline",
