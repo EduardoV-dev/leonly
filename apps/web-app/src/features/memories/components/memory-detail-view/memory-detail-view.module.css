@@ -177,6 +177,15 @@
   object-fit: cover;
 }
 
+.avatarFallback {
+  display: grid;
+  place-items: center;
+  color: #635b59;
+  background: #fff4f3;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .creator p {
   margin: 0;
   color: #5a4b4a;

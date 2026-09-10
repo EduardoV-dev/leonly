@@ -85,8 +85,11 @@ describe("MemoryComments", () => {
     expect(screen.getByRole("list", { name: "Comments" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
     expect(screen.getAllByText("Sarah Green")).toHaveLength(2);
-    expect(screen.getByRole("img", { name: "Sarah Green" })).toHaveAttribute("src", AVATAR_URL);
-    expect(screen.queryByText("SG")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "Sarah Green" })[0]).toHaveAttribute(
+      "src",
+      AVATAR_URL,
+    );
+    expect(screen.getByText("SG")).toHaveAttribute("aria-label", "Sarah Green");
     expect(screen.getByText("A second note.")).toBeInTheDocument();
     expect(screen.getByText("The flowers were still warm from the sun.")).toBeInTheDocument();
 

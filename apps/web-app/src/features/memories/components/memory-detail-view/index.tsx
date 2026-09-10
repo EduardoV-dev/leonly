@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import type { MemoryDetail } from "../../types/memory-detail";
 import type { TimelineMemory } from "../../types/timeline";
 import { MemoryPhotoGallery } from "../memory-photo-gallery";
@@ -205,14 +206,15 @@ export function MemoryDetailView({
               variants={activeRevealVariants}
             >
               <div className={styles.creator}>
-                {memory.creatorAvatarUrl ? (
-                  // biome-ignore lint/performance/noImgElement: Creator avatar URLs are authorized runtime URLs.
-                  <img
-                    className={styles.avatar}
-                    src={memory.creatorAvatarUrl}
-                    alt={memory.creatorDisplayName}
-                  />
-                ) : null}
+                <ProfileAvatar
+                  avatarUrl={memory.creatorAvatarUrl}
+                  className={styles.avatar}
+                  displayName={memory.creatorDisplayName}
+                  fallbackClassName={styles.avatarFallback}
+                  height={41}
+                  label={memory.creatorDisplayName}
+                  width={41}
+                />
                 <p>{t("detail.creator", { name: memory.creatorDisplayName })}</p>
               </div>
               <div className={styles.auditDates}>

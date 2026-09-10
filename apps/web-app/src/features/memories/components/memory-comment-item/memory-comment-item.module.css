@@ -30,6 +30,15 @@
   object-fit: cover;
 }
 
+.avatarFallback {
+  display: grid;
+  place-items: center;
+  color: #635b59;
+  background: #fff4f3;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .metadata {
   display: flex;
   min-width: 0;

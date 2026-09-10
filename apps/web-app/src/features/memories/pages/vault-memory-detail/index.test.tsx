@@ -76,6 +76,7 @@ describe("VaultMemoryDetailPage", () => {
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
       "Preserved by Sarah",
     );
+    expect(screen.getByRole("img", { name: "Sarah" })).toHaveTextContent("S");
     expect(screen.getByText("August 23, 2026")).toHaveAttribute("datetime", memory.createdAt);
     expect(screen.getByText("August 24, 2026")).toHaveAttribute("datetime", memory.updatedAt);
     expect(screen.getByRole("link", { name: "Open Picnic by the river" })).toHaveAttribute(

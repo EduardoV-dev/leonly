@@ -4,6 +4,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { normalizeLanguage } from "@/lib/i18n";
 import { MAX_COMMENT_LENGTH } from "../../constants/comments";
@@ -63,16 +64,17 @@ export function MemoryCommentItem({
   };
 
   return (
-    <li className={styles.item} data-has-avatar={Boolean(comment.authorAvatarUrl)}>
+    <li className={styles.item} data-has-avatar="true">
       <div className={styles.header}>
-        {comment.authorAvatarUrl ? (
-          // biome-ignore lint/performance/noImgElement: Profile image URLs are authorized runtime URLs.
-          <img
-            className={styles.avatar}
-            src={comment.authorAvatarUrl}
-            alt={comment.authorDisplayName}
-          />
-        ) : null}
+        <ProfileAvatar
+          avatarUrl={comment.authorAvatarUrl}
+          className={styles.avatar}
+          displayName={comment.authorDisplayName}
+          fallbackClassName={styles.avatarFallback}
+          height={32}
+          label={comment.authorDisplayName}
+          width={32}
+        />
         <p className={styles.metadata}>
           <strong>{comment.authorDisplayName}</strong>
           <time dateTime={comment.createdAt} title={exactTimestamp}>
