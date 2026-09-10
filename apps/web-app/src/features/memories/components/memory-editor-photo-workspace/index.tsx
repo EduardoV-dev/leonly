@@ -111,11 +111,6 @@ export function MemoryEditorPhotoWorkspace({
                       <ImageOff aria-hidden="true" />
                     </span>
                   )}
-                  {mode === "edit" ? (
-                    <span className={styles.badge}>
-                      {t(photo.kind === "retained" ? "edit.photos.saved" : "edit.photos.new")}
-                    </span>
-                  ) : null}
                   <label className={styles.coverChoice}>
                     <input
                       checked={isCover}

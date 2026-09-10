@@ -90,9 +90,7 @@ export const memoriesEn = {
     loading: "Loading memory editor",
     photos: {
       empty: "This memory will use its no-photo presentation.",
-      new: "New photo",
       previewAlt: "Memory photo {{position}}",
-      saved: "Saved photo",
       unavailable: "Photo preview unavailable",
     },
     status: {

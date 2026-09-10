@@ -105,7 +105,7 @@
 }
 .card {
   position: relative;
-  min-height: 7.5rem;
+  display: grid;
   overflow: hidden;
   border: 2px solid transparent;
   border-radius: 0.65rem;
@@ -117,8 +117,8 @@
 .card img,
 .unavailable {
   width: 100%;
-  height: 100%;
-  min-height: 7.5rem;
+  min-height: 8.5rem;
+  aspect-ratio: 4 / 5;
 }
 .card img {
   display: block;
@@ -133,37 +133,29 @@
   width: 2rem;
   height: 2rem;
 }
-.badge {
-  position: absolute;
-  top: 0.45rem;
-  left: 0.45rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  background: rgb(255 253 252 / 0.94);
-  color: #5b3138;
-  font-size: 0.62rem;
-  font-weight: 800;
-}
 .coverChoice {
-  position: absolute;
-  right: 0.4rem;
-  bottom: 0.4rem;
-  left: 0.4rem;
+  display: flex;
+  min-width: 0;
   cursor: pointer;
 }
 .coverChoice span {
   display: inline-flex;
-  min-height: 2rem;
+  width: 100%;
+  min-height: 2.75rem;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
-  padding: 0 0.65rem;
-  border-radius: 999px;
-  background: rgb(255 253 252 / 0.94);
+  padding: 0 0.75rem;
+  border-top: 1px solid #dfcfcc;
+  background: #fffdfc;
   color: #5b3138;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  box-shadow: 0 0.25rem 0.8rem rgb(42 29 29 / 0.18);
-  transition: background-color 180ms ease;
+  line-height: 1.15;
+  text-align: center;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 .coverChoice:hover span,
 .remove:hover {
@@ -210,13 +202,11 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-@media (min-width: 1024px) {
-  .upload {
-    min-height: 19rem;
-  }
-}
 @media (min-width: 1600px) {
   .grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .upload {
+    min-height: 19rem;
   }
 }

@@ -89,7 +89,7 @@ describe("EditMemoryPage", () => {
     expect(screen.getByLabelText("The story")).toHaveValue("A quiet afternoon together.");
     expect(screen.getByRole("radio", { name: /Our timeline/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Cover/i })).toBeChecked();
-    expect(screen.getByText("Saved photo")).toBeInTheDocument();
+    expect(screen.queryByText("Saved photo")).not.toBeInTheDocument();
     expect(screen.getByText("1/10")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute(
       "href",
@@ -119,7 +119,7 @@ describe("EditMemoryPage", () => {
     fireEvent.change(screen.getByLabelText(/Drag and drop your photos/i), {
       target: { files: [replacement] },
     });
-    expect(screen.getByText("New photo")).toBeInTheDocument();
+    expect(screen.queryByText("New photo")).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("radio", { name: /cover/i })[1]);
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
     fireEvent.click(screen.getByRole("radio", { name: /Private vault/i }));
@@ -289,6 +289,6 @@ describe("EditMemoryPage", () => {
     fireEvent.error(screen.getByRole("img", { name: "Memory photo 1" }));
 
     expect(screen.getByRole("img", { name: "Photo preview unavailable" })).toBeInTheDocument();
-    expect(screen.getByText("Saved photo")).toBeInTheDocument();
+    expect(screen.queryByText("Saved photo")).not.toBeInTheDocument();
   });
 });

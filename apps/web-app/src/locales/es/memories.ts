@@ -91,9 +91,7 @@ export const memoriesEs = {
     loading: "Cargando el editor de recuerdos",
     photos: {
       empty: "Este recuerdo se mostrará sin fotos.",
-      new: "Foto nueva",
       previewAlt: "Foto {{position}} del recuerdo",
-      saved: "Foto guardada",
       unavailable: "Vista previa de la foto no disponible",
     },
     status: {

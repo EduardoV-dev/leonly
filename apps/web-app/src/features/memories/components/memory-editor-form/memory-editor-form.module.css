@@ -328,12 +328,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (min-width: 768px) {
-  .contentGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
-}
 @media (min-width: 1024px) {
   .page {
     padding: 3.25rem clamp(2rem, 4vw, 4.5rem) 5rem;
