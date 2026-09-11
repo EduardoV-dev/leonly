@@ -1,7 +1,7 @@
 import "server-only";
 
 import * as Sentry from "@sentry/nextjs";
-import sharp from "sharp";
+import type sharp from "sharp";
 
 const COVER_MAX_DIMENSION = 1024;
 const DETAIL_MAX_DIMENSION = 1600;
@@ -31,6 +31,7 @@ export async function createMemoryPhotoVariants(input: ArrayBuffer): Promise<Mem
   return Sentry.startSpan(
     { name: "memory.photo.generate_variants", op: "image.process" },
     async () => {
+      const { default: sharp } = await import("sharp");
       const image = sharp(Buffer.from(input), {
         failOn: "warning",
         limitInputPixels: MAX_INPUT_PIXELS,
