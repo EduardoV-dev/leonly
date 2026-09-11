@@ -4,10 +4,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
-    "/*": ["../../node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/**/*"],
+    "/*": [
+      "../../node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64.node",
+      "../../node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/@img/sharp-libvips-linux-x64/lib/libvips-cpp.so.*",
+    ],
   },
   outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
-  serverExternalPackages: ["sharp"],
   images: {
     remotePatterns: [
       {
