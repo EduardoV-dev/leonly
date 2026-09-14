@@ -6,19 +6,16 @@ implementation tasks; architecture documents record accepted system designs with
 implementation as runtime truth.
 
 - [MVP user stories](user-stories/mvp/README.md)
-- [Database schema design](architecture/database-schema.md)
-- [Frontend design guide](../DESIGN.md)
+- [Database schema design](architecture/database-schema/README.md)
 
 ## Sources of truth
 
 | Concern | Source of truth |
 | --- | --- |
 | Durable product intent | `docs/user-stories/` |
-| Accepted database design | `docs/architecture/database-schema.md` |
+| Accepted database design | `docs/architecture/database-schema/` |
 | Normative behavior and acceptance scenarios | `openspec/specs/` |
 | Proposed changes and implementation tasks | `openspec/changes/` |
-| Frontend visual and interaction rules | `DESIGN.md` |
-| Actual implementation | application code, migrations, policies, and tests |
 
 User stories are inputs to OpenSpec, not substitutes for it. OpenSpec specifications define normative
 behavior and acceptance scenarios, while OpenSpec changes define proposed work and implementation
