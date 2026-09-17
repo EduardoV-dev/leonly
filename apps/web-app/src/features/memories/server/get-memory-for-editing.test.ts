@@ -19,6 +19,7 @@ const memory = {
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   location: null,
   memoryDate: "2026-08-20",
+  spaceId: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
   title: "Among the flowers",
   updatedAt: "2026-08-23T10:00:00.000Z",
   visibility: "vault" as const,
@@ -51,22 +52,17 @@ describe("getMemoryForEditing", () => {
   );
 
   it("returns placement-neutral editable state with persisted order and opaque version", async () => {
-    createClientMock.mockResolvedValue(
-      client([
-        {
-          detail_object_path: "space/first/detail.webp",
-          id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-          object_path: "space/first/original",
-          position: 0,
-        },
-        {
-          detail_object_path: null,
-          id: memory.coverPhotoId,
-          object_path: "space/second/original",
-          position: 1,
-        },
-      ]),
-    );
+    const supabase = client([
+      {
+        id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
+        position: 0,
+      },
+      {
+        id: memory.coverPhotoId,
+        position: 1,
+      },
+    ]);
+    createClientMock.mockResolvedValue(supabase);
 
     const result = await getMemoryForEditing(memory.id);
 
@@ -88,5 +84,6 @@ describe("getMemoryForEditing", () => {
       },
     ]);
     expect(JSON.stringify(result?.photos)).not.toContain("space/");
+    expect(supabase.from).toHaveBeenCalledWith("memory_assets");
   });
 });

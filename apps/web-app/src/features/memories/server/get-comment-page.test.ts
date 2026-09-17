@@ -12,10 +12,15 @@ import { commentCursor, getCommentPage } from "./get-comment-page";
 const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const spaceId = "b6d3c1f9-84a5-4e22-bf3e-09b94c9a1e33";
 const authorId = "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e";
+const authSubject = "4f4099c9-d91d-4cc4-8a26-2b3ace73df42";
 const avatarUrl = "https://cdn.example.com/alex.jpg";
 
 function authorRow() {
-  return { display_name: "Alex", user_id: authorId, users: { avatar_url: avatarUrl } };
+  return {
+    display_name: "Alex",
+    user_id: authorId,
+    users: { auth_subject: authSubject, avatar_url: avatarUrl },
+  };
 }
 
 function createQuery(data: unknown[]) {
@@ -61,7 +66,7 @@ describe("getCommentPage", () => {
     const commentQuery = createQuery(comments);
     const authorQuery = createQuery([authorRow()]);
     createClientMock.mockResolvedValue({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
       from: vi
         .fn()
         .mockReturnValueOnce({ select: vi.fn().mockReturnValue(commentQuery) })
@@ -79,6 +84,9 @@ describe("getCommentPage", () => {
     expect(page.comments).toHaveLength(20);
     expect(page.comments[0]?.authorAvatarUrl).toBe(avatarUrl);
     expect(page.comments[0]?.authorDisplayName).toBe("Alex");
+    expect(page.comments[0]?.isAuthor).toBe(true);
+    expect(authorId).not.toBe(authSubject);
+    expect(authorQuery.in).toHaveBeenCalledWith("user_id", [authorId]);
     expect(commentCursor.decode(page.nextCursor ?? "")).toMatchObject({
       createdAt: comments[19]?.created_at,
       id: comments[19]?.id,
@@ -97,7 +105,7 @@ describe("getCommentPage", () => {
       const authorQuery = createQuery([structuredClone(membership)]);
 
       return {
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi
           .fn()
           .mockReturnValueOnce({ select: vi.fn().mockReturnValue(commentQuery) })
@@ -138,11 +146,11 @@ describe("getCommentPage", () => {
     const authorQuery = createQuery([]);
     createClientMock
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })),
       })
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi
           .fn()
           .mockReturnValueOnce({ select: vi.fn(() => pageQuery) })
@@ -179,11 +187,11 @@ describe("getCommentPage", () => {
     const authorQuery = createQuery([authorRow()]);
     createClientMock
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })),
       })
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi
           .fn()
           .mockReturnValueOnce({ select: vi.fn(() => pageQuery) })
@@ -205,7 +213,7 @@ describe("getCommentPage", () => {
     const query = createQuery([]);
     const authorQuery = createQuery([]);
     createClientMock.mockResolvedValue({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
       from: vi
         .fn()
         .mockReturnValueOnce({ select: vi.fn(() => query) })
@@ -234,7 +242,7 @@ describe("getCommentPage", () => {
     const crossQuery = createQuery([]);
     const crossAuthors = createQuery([]);
     createClientMock.mockResolvedValue({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
       from: vi
         .fn()
         .mockReturnValueOnce({ select: vi.fn(() => crossQuery) })
@@ -269,11 +277,11 @@ describe("getCommentPage", () => {
     const authorQuery = createQuery([authorRow()]);
     createClientMock
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi.fn(() => ({ select: vi.fn(() => anchorQuery) })),
       })
       .mockResolvedValueOnce({
-        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
         from: vi
           .fn()
           .mockReturnValueOnce({ select: vi.fn(() => firstPageQuery) })
@@ -293,7 +301,7 @@ describe("getCommentPage", () => {
     const commentQuery = createQuery([row(1), row(2)]);
     const authorQuery = createQuery([authorRow()]);
     createClientMock.mockResolvedValue({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authorId } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: authSubject } } }) },
       from: vi
         .fn()
         .mockReturnValueOnce({ select: vi.fn(() => commentQuery) })

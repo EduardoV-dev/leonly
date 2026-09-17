@@ -49,9 +49,10 @@ export const getMemoryDetailForVisibility = cache(async function getMemoryDetail
         .is("deleted_at", null)
         .maybeSingle(),
       supabase
-        .from("memory_photos")
+        .from("memory_assets")
         .select("id,position")
         .eq("memory_id", memory.id)
+        .eq("space_id", memory.spaceId)
         .order("position", { ascending: true }),
       getMemoryReactionSummary(memory.id),
     ]);

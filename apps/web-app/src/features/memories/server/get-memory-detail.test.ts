@@ -7,12 +7,14 @@ import { getVaultMemoryDetail } from "./get-vault-memory-detail";
 
 const {
   createClientMock,
+  fromMock,
   getAvailableMemoryMock,
   getMemoryReactionSummaryMock,
   creatorResult,
   photosResult,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
+  fromMock: vi.fn(),
   getAvailableMemoryMock: vi.fn(),
   getMemoryReactionSummaryMock: vi.fn(),
   creatorResult: { data: null as unknown, error: null as unknown },
@@ -67,13 +69,14 @@ describe("getMemoryDetail", () => {
       counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
       currentReaction: null,
     });
+    fromMock.mockImplementation((table: string) =>
+      table === "space_members" ? queryBuilder(creatorResult) : queryBuilder(photosResult),
+    );
     createClientMock.mockResolvedValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: memory.creatorUserId } } }),
       },
-      from: vi.fn((table: string) =>
-        table === "space_members" ? queryBuilder(creatorResult) : queryBuilder(photosResult),
-      ),
+      from: fromMock,
     });
   });
 
@@ -146,24 +149,15 @@ describe("getMemoryDetail", () => {
   it("promotes the cover and keeps the remaining persisted order", async () => {
     photosResult.data = [
       {
-        cover_object_path: "space/first-cover.webp",
-        detail_object_path: "space/first-detail.webp",
         id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-        object_path: "space/first.webp",
         position: 0,
       },
       {
-        cover_object_path: "space/second-cover.webp",
-        detail_object_path: "space/second-detail.webp",
         id: "cc2df916-833a-4f1b-b744-b7b4c176ae93",
-        object_path: "space/second.webp",
         position: 1,
       },
       {
-        cover_object_path: "space/cover-card.webp",
-        detail_object_path: "space/cover-detail.webp",
         id: memory.coverPhotoId,
-        object_path: "space/cover.webp",
         position: 2,
       },
     ];
@@ -175,22 +169,17 @@ describe("getMemoryDetail", () => {
       "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
       "cc2df916-833a-4f1b-b744-b7b4c176ae93",
     ]);
+    expect(fromMock).toHaveBeenCalledWith("memory_assets");
   });
 
   it("projects only opaque cover and detail route URLs", async () => {
     photosResult.data = [
       {
-        cover_object_path: "space/cover-card.webp",
-        detail_object_path: "space/cover-detail.webp",
         id: memory.coverPhotoId,
-        object_path: "space/cover.webp",
         position: 0,
       },
       {
-        cover_object_path: "space/failed-cover.webp",
-        detail_object_path: "space/failed-detail.webp",
         id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-        object_path: "space/failed.webp",
         position: 1,
       },
     ];
@@ -210,27 +199,6 @@ describe("getMemoryDetail", () => {
     ]);
     expect(JSON.stringify(detail?.photos)).not.toContain("space/");
     expect(JSON.stringify(detail?.photos)).not.toContain("storage");
-  });
-
-  it("does not expose legacy original object paths", async () => {
-    photosResult.data = [
-      {
-        cover_object_path: null,
-        detail_object_path: null,
-        id: memory.coverPhotoId,
-        object_path: "space/original.webp",
-        position: 0,
-      },
-    ];
-
-    await expect(getMemoryDetail(memory.id)).resolves.toMatchObject({
-      photos: [
-        {
-          coverUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/cover`,
-          detailUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/detail`,
-        },
-      ],
-    });
   });
 
   it("throws a recoverable read failure for dependent database errors", async () => {

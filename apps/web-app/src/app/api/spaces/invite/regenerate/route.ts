@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { SPACE_RPC_ERROR_CODES } from "@/features/space-setup/server/space-rpc-error-codes";
 import {
   AuthenticationRequiredError,
   syncCurrentUser,
@@ -12,14 +11,16 @@ export const INVITE_REGENERATION_RATE_LIMIT_MESSAGE =
   "Too many invite requests. Try again in 10 minutes.";
 
 const regenerationResultSchema = z.discriminatedUnion("status", [
-  z.object({
-    invite_code: z.string().min(1),
-    invite_code_expires_at: z.string().datetime({ offset: true }),
-    status: z.literal("regenerated"),
-  }),
-  z.object({ status: z.literal("joined") }),
-  z.object({ status: z.literal("unavailable") }),
-  z.object({ retry_after: z.number().int().positive(), status: z.literal("locked") }),
+  z
+    .object({
+      invite_code: z.string().min(1),
+      invite_code_expires_at: z.string().datetime({ offset: true }),
+      status: z.literal("regenerated"),
+    })
+    .strict(),
+  z.object({ status: z.literal("joined") }).strict(),
+  z.object({ status: z.literal("unavailable") }).strict(),
+  z.object({ retry_after: z.number().int().positive(), status: z.literal("locked") }).strict(),
 ]);
 
 export async function POST(request: Request) {
@@ -31,10 +32,6 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.rpc("regenerate_space_invite");
 
     if (error) {
-      if (error.code === SPACE_RPC_ERROR_CODES.AUTHENTICATION_REQUIRED) {
-        return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
-      }
-
       logServerError(
         { event: "supabase_operation_failed", operation: "regenerate_space_invite" },
         error,

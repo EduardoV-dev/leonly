@@ -17,7 +17,7 @@ describe("syncCurrentUser", () => {
   });
 
   it("persists the Google profile name", async () => {
-    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const rpc = vi.fn().mockResolvedValue({ error: null });
     const user = {
       email: "leo@example.com",
       id: "a8d7d357-9435-4dcc-8b53-3bae9b885a05",
@@ -26,17 +26,15 @@ describe("syncCurrentUser", () => {
 
     vi.mocked(createClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user } }) },
-      from: vi.fn().mockReturnValue({ upsert }),
+      rpc,
     } as never);
 
     await syncCurrentUser();
 
-    expect(upsert).toHaveBeenCalledWith({
-      avatar_url: null,
-      deleted_at: null,
-      email: user.email,
-      id: user.id,
-      name: "Google Name",
+    expect(rpc).toHaveBeenCalledWith("sync_current_user", {
+      p_avatar_url: null,
+      p_email: user.email,
+      p_name: "Google Name",
     });
   });
 
@@ -59,9 +57,7 @@ describe("syncCurrentUser", () => {
           },
         }),
       },
-      from: vi.fn().mockReturnValue({
-        upsert: vi.fn().mockResolvedValue({ error: databaseError }),
-      }),
+      rpc: vi.fn().mockResolvedValue({ error: databaseError }),
     } as never);
 
     await expect(syncCurrentUser()).rejects.toThrow("Failed to sync the current user.");

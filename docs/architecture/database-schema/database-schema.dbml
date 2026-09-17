@@ -1,7 +1,7 @@
 // Leonly database schema
-// Status: accepted design, not yet implemented.
-// Existing migrations remain the source of truth for current runtime behavior.
-// Once implemented, generate this physical DBML from the migrations.
+// Status: implemented baseline.
+// The baseline migration is the runtime source of truth.
+// Keep this DBML aligned with physical migration changes.
 
 Enum space_member_role {
   owner

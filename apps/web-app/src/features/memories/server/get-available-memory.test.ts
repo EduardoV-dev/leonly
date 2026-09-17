@@ -21,7 +21,7 @@ describe("getAvailableMemory", () => {
   it("allows an authorized Vault memory through the generic lookup", async () => {
     rpcMock.mockResolvedValue({
       data: {
-        cover_photo_id: null,
+        cover_asset_id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
         created_at: "2026-08-23T10:00:00.000Z",
         creator_user_id: "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e",
         description: null,
@@ -38,6 +38,7 @@ describe("getAvailableMemory", () => {
 
     await expect(getAvailableMemory("0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0")).resolves.toMatchObject(
       {
+        coverPhotoId: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
         title: "Private anniversary",
         visibility: "vault",
       },

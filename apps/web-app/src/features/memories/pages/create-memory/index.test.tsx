@@ -58,11 +58,14 @@ describe("CreateMemoryPage", () => {
 
   it("submits only once while the creation request is pending", async () => {
     let resolveRequest: (response: Response) => void = () => {};
-    vi.mocked(fetch).mockReturnValue(
-      new Promise<Response>((resolve) => {
-        resolveRequest = resolve;
-      }),
-    );
+    vi.mocked(fetch)
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveRequest = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
@@ -76,14 +79,19 @@ describe("CreateMemoryPage", () => {
     fireEvent.submit(form);
 
     expect(fetch).toHaveBeenCalledTimes(1);
-    resolveRequest(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
+    resolveRequest(
+      new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+    );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/timeline"));
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it("keeps valid input and navigates to the timeline after a success", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }),
-    );
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
@@ -100,9 +108,11 @@ describe("CreateMemoryPage", () => {
   });
 
   it("navigates to the new Vault detail after preserving a Vault memory", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }),
-    );
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our hidden picnic" } });

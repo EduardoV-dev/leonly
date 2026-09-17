@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import {
-  CreateMemoryError,
-  cleanupStaleMemoryPhotoStaging,
-  createMemory,
-} from "@/features/memories/server/create-memory";
+import { z } from "zod";
+import { CreateMemoryError, createMemory } from "@/features/memories/server/create-memory";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
+
+const finalizeRequestSchema = z.object({ attemptId: z.uuid() }).strict();
 
 export async function POST(request: Request) {
   const requestLogger = createRequestLogger(request);
@@ -20,12 +19,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This memory is unavailable." }, { status: 404 });
     }
 
-    void Promise.resolve()
-      .then(cleanupStaleMemoryPhotoStaging)
-      .catch(() => undefined);
-    const idempotencyKey = request.headers.get("Idempotency-Key") ?? "";
-    const memory = await createMemory(idempotencyKey, await request.formData());
-    return NextResponse.json(memory, { status: memory.reused ? 200 : 201 });
+    const payload = finalizeRequestSchema.safeParse(await request.json().catch(() => null));
+    if (!payload.success) {
+      return NextResponse.json(
+        { code: "invalid_request", error: "Please try again with a new form." },
+        { status: 400 },
+      );
+    }
+    const memory = await createMemory(payload.data.attemptId);
+    return NextResponse.json(memory, { status: 201 });
   } catch (error) {
     if (error instanceof CreateMemoryError) {
       if (error.status >= 500) {

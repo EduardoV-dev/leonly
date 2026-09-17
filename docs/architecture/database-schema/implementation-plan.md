@@ -383,19 +383,19 @@ policy errors. A passing Vitest suite alone does not prove that the baseline mig
 
 ## Completion Checklist
 
-- [ ] One fresh baseline migration replaces the existing migration chain.
-- [ ] The baseline creates every DBML table, enum, constraint, index, trigger, policy, and required RPC.
-- [ ] No SQL authority comparison assumes an internal user ID equals `auth.uid()`.
-- [ ] No create/edit idempotency field or application header remains.
-- [ ] Comment idempotency remains intact.
-- [ ] Memory writes use one unified attempt lifecycle.
-- [ ] Memory reads and downloads use assets and ready object variants.
-- [ ] Cleanup and rate limiting use their generic tables.
-- [ ] RLS and storage policies reject cross-space access.
-- [ ] Timeline and vault behavior remains unchanged.
-- [ ] Obsolete migration tests and persistence code are removed.
-- [ ] Database reset, check, typecheck, tests, and production build pass.
-- [ ] DBML, rendered diagram, and README match the implemented baseline.
+- [x] One fresh baseline migration replaces the existing migration chain.
+- [x] The baseline creates every DBML table, enum, constraint, index, trigger, policy, and required RPC.
+- [x] No SQL authority comparison assumes an internal user ID equals `auth.uid()`.
+- [x] No create/edit idempotency field or application header remains.
+- [x] Comment idempotency remains intact.
+- [x] Memory writes use one unified attempt lifecycle.
+- [x] Memory reads and downloads use assets and ready object variants.
+- [x] Cleanup and rate limiting use their generic tables.
+- [x] RLS and storage policies reject cross-space access.
+- [x] Timeline and vault behavior remains unchanged.
+- [x] Obsolete migration tests and persistence code are removed.
+- [x] Database reset, check, typecheck, tests, and production build pass.
+- [x] DBML, rendered diagram, and README match the implemented baseline.
 
 ## Rollback
 

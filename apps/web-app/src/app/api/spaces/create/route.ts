@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
-import { SPACE_RPC_ERROR_CODES } from "@/features/space-setup/server/space-rpc-error-codes";
 import {
   AuthenticationRequiredError,
   syncCurrentUser,
@@ -43,9 +42,12 @@ const createSpaceRequestSchema = z
     }
   });
 
-const createdSpaceSchema = z.object({
-  id: z.uuid(),
-});
+const createdSpaceSchema = z
+  .object({
+    id: z.uuid(),
+    invite_code: z.string().min(1),
+  })
+  .strict();
 
 export async function POST(request: Request) {
   const requestLogger = createRequestLogger(request);
@@ -71,17 +73,6 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      if (error.code === SPACE_RPC_ERROR_CODES.ACTIVE_MEMBERSHIP_EXISTS) {
-        return NextResponse.json(
-          { error: "You already belong to an active space." },
-          { status: 409 },
-        );
-      }
-
-      if (error.code === SPACE_RPC_ERROR_CODES.INVALID_INPUT) {
-        return NextResponse.json({ error: "The space details are invalid." }, { status: 400 });
-      }
-
       logServerError(
         { event: "supabase_operation_failed", operation: "create_space" },
         error,

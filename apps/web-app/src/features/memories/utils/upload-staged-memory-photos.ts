@@ -3,15 +3,18 @@ import type { MemoryEditorPhoto } from "../types/memory-editor";
 
 type UploadDescriptor = { id: string; path: string };
 type PreparationResponse = {
-  result: unknown | null;
+  attemptId: string;
   uploads: UploadDescriptor[];
 };
+
+export type MemoryUploadAttempt = PreparationResponse;
 
 type MemoryMutationOptions = {
   finalMethod: "PATCH" | "POST";
   finalUrl: string;
   formData: FormData;
-  idempotencyKey: string;
+  attempt: MemoryUploadAttempt | null;
+  onPrepared: (attempt: MemoryUploadAttempt) => void;
   photos: MemoryEditorPhoto[];
   prepareUrl: string;
 };
@@ -24,54 +27,54 @@ function getPhotoContentType(fileName: string): "image/jpeg" | "image/png" | "im
   return null;
 }
 
-function responseForCompletedPreparation(result: unknown): Response {
-  return new Response(JSON.stringify(result), {
-    headers: { "content-type": "application/json" },
-    status: 200,
-  });
-}
-
 export async function uploadStagedMemoryPhotos({
   finalMethod,
   finalUrl,
   formData,
-  idempotencyKey,
+  attempt,
+  onPrepared,
   photos,
   prepareUrl,
 }: MemoryMutationOptions): Promise<Response> {
-  const headers = { "Idempotency-Key": idempotencyKey };
   const newPhotos = photos.filter((photo) => photo.kind === "new");
-  if (newPhotos.length === 0) {
-    return fetch(finalUrl, { body: formData, headers, method: finalMethod });
+  let prepared = attempt;
+  if (!prepared) {
+    const preparation = await fetch(prepareUrl, { body: formData, method: "POST" });
+    if (!preparation.ok) return preparation;
+    prepared = (await preparation.json()) as PreparationResponse;
+    if (typeof prepared.attemptId !== "string" || !Array.isArray(prepared.uploads)) {
+      throw new Error("The photo upload service returned an invalid response.");
+    }
+    onPrepared(prepared);
   }
 
-  const preparation = await fetch(prepareUrl, { body: formData, headers, method: "POST" });
-  if (!preparation.ok) return preparation;
-
-  const payload = (await preparation.json()) as PreparationResponse;
-  if (payload.result) return responseForCompletedPreparation(payload.result);
-
-  if (!Array.isArray(payload.uploads) || payload.uploads.length !== newPhotos.length) {
+  if (prepared.uploads.length !== newPhotos.length) {
     throw new Error("The photo upload service returned an invalid response.");
   }
 
   const filesById = new Map(newPhotos.map((photo) => [photo.id, photo.file]));
-  const supabase = createClient();
-  await Promise.all(
-    payload.uploads.map(async (upload) => {
-      const file = filesById.get(upload.id);
-      if (!file || typeof upload.path !== "string" || upload.path.length === 0) {
-        throw new Error("The photo upload service returned an invalid response.");
-      }
-      const contentType = getPhotoContentType(file.name);
-      if (!contentType) throw new Error("A photo has an unsupported file type.");
-      const stored = await supabase.storage.from("memory-photos").upload(upload.path, file, {
-        contentType,
-        upsert: true,
-      });
-      if (stored.error) throw new Error("A photo could not be uploaded.");
-    }),
-  );
+  if (prepared.uploads.length > 0) {
+    const supabase = createClient();
+    await Promise.all(
+      prepared.uploads.map(async (upload) => {
+        const file = filesById.get(upload.id);
+        if (!file || typeof upload.path !== "string" || upload.path.length === 0) {
+          throw new Error("The photo upload service returned an invalid response.");
+        }
+        const contentType = getPhotoContentType(file.name);
+        if (!contentType) throw new Error("A photo has an unsupported file type.");
+        const stored = await supabase.storage.from("memory-photos").upload(upload.path, file, {
+          contentType,
+          upsert: true,
+        });
+        if (stored.error) throw new Error("A photo could not be uploaded.");
+      }),
+    );
+  }
 
-  return fetch(finalUrl, { body: formData, headers, method: finalMethod });
+  return fetch(finalUrl, {
+    body: JSON.stringify({ attemptId: prepared.attemptId }),
+    headers: { "content-type": "application/json" },
+    method: finalMethod,
+  });
 }

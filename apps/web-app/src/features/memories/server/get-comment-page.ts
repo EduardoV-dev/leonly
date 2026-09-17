@@ -35,7 +35,10 @@ const authorRowsSchema = z.array(
       display_name: z.string().min(1),
       user_id: z.uuid(),
       users: z
-        .object({ avatar_url: z.string().url().nullable().catch(null) })
+        .object({
+          auth_subject: z.string().min(1),
+          avatar_url: z.string().url().nullable().catch(null),
+        })
         .nullable()
         .catch(null),
     })
@@ -133,7 +136,7 @@ async function readCommentPage(
   const authorsResult = authorIds.length
     ? await supabase
         .from("space_members")
-        .select("user_id,display_name,users(avatar_url)")
+        .select("user_id,display_name,users(auth_subject,avatar_url)")
         .eq("space_id", spaceId)
         .in("user_id", authorIds)
         .is("deleted_at", null)
@@ -158,7 +161,7 @@ async function readCommentPage(
       body: row.body,
       createdAt: row.created_at,
       id: row.id,
-      isAuthor: row.author_user_id === user.id,
+      isAuthor: author.users?.auth_subject === user.id,
       memoryId: row.memory_id,
       updatedAt: row.updated_at,
       version: row.version,

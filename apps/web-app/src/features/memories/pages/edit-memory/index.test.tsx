@@ -101,7 +101,7 @@ describe("EditMemoryPage", () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         Response.json({
-          result: null,
+          attemptId: "a9c28177-afb7-456e-a83d-8ef74047226f",
           uploads: [
             {
               id: "a9c28177-afb7-456e-a83d-8ef74047226f",
@@ -127,17 +127,11 @@ describe("EditMemoryPage", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     const [url, request] = vi.mocked(fetch).mock.calls[1];
-    const body = request?.body as FormData;
+    const body = JSON.parse(request?.body as string) as { attemptId: string };
     expect(url).toBe(`/api/memories/${memory.id}/edit`);
     expect(request?.method).toBe("PATCH");
-    expect(request?.headers).toEqual({ "Idempotency-Key": "a9c28177-afb7-456e-a83d-8ef74047226f" });
-    expect(body.getAll("retainedPhotoIds")).toEqual([]);
-    expect(body.get("coverPhotoId")).toBe("a9c28177-afb7-456e-a83d-8ef74047226f");
-    expect(body.getAll("photoIds")).toEqual(["a9c28177-afb7-456e-a83d-8ef74047226f"]);
-    expect(body.getAll("photoNames")).toEqual(["replacement.png"]);
-    expect(body.getAll("photos")).toEqual([]);
-    expect(body.get("expectedVersion")).toBe("opaque-version");
-    expect(body.get("visibility")).toBe("vault");
+    expect(request?.headers).toEqual({ "content-type": "application/json" });
+    expect(body).toEqual({ attemptId: "a9c28177-afb7-456e-a83d-8ef74047226f" });
     expect(storageUploadMock).toHaveBeenCalledWith("space/edit/photo/original", replacement, {
       contentType: "image/png",
       upsert: true,

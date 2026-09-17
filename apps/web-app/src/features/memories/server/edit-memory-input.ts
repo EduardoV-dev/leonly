@@ -1,6 +1,5 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import { MAX_MEMORY_PHOTO_COUNT } from "../constants/create-memory";
 import {
@@ -15,10 +14,10 @@ import { decodeMemoryVersion } from "./memory-version";
 const uuidSchema = z.uuid();
 
 export type ValidatedEditMemoryInput = ValidatedMemoryDetails & {
+  assetIds: string[];
   coverPhotoId: string | null;
   expectedUpdatedAt: string;
   photos: ValidatedStagedMemoryPhoto[];
-  requestFingerprint: string;
   retainedPhotoIds: string[];
 };
 
@@ -47,7 +46,7 @@ export async function validateEditMemoryFormData(
   ) {
     invalidPhotos("One or more retained photos are unavailable.");
   }
-  const retainedPhotoIds = [...new Set(retainedEntries as string[])].sort();
+  const retainedPhotoIds = [...new Set(retainedEntries as string[])];
   if (retainedPhotoIds.length !== retainedEntries.length) {
     invalidPhotos("A retained photo was included more than once.");
   }
@@ -57,6 +56,19 @@ export async function validateEditMemoryFormData(
     invalidPhotos(`Choose up to ${MAX_MEMORY_PHOTO_COUNT} photos.`);
   }
   const photos = validateStagedMemoryPhotos(formData, MAX_MEMORY_PHOTO_COUNT);
+  const assetEntries = formData.getAll("selectedPhotoIds");
+  const expectedAssetIds = [...retainedPhotoIds, ...photos.map((photo) => photo.id)];
+  if (
+    assetEntries.some(
+      (entry) => typeof entry !== "string" || !uuidSchema.safeParse(entry).success,
+    ) ||
+    assetEntries.length !== expectedAssetIds.length ||
+    new Set(assetEntries).size !== assetEntries.length ||
+    assetEntries.some((entry) => !expectedAssetIds.includes(entry as string))
+  ) {
+    invalidPhotos("One or more selected photos are unavailable.");
+  }
+  const assetIds = assetEntries as string[];
 
   const coverPhotoIdValue = formData.get("coverPhotoId");
   const coverPhotoId = typeof coverPhotoIdValue === "string" ? coverPhotoIdValue : null;
@@ -72,24 +84,12 @@ export async function validateEditMemoryFormData(
     invalidPhotos("Choose one cover photo from the final photo set.");
   }
 
-  const requestFingerprint = createHash("sha256")
-    .update(
-      JSON.stringify({
-        ...details,
-        coverPhotoId,
-        expectedUpdatedAt,
-        photos,
-        retainedPhotoIds,
-      }),
-    )
-    .digest("hex");
-
   return {
     ...details,
+    assetIds,
     coverPhotoId,
     expectedUpdatedAt,
     photos,
-    requestFingerprint,
     retainedPhotoIds,
   };
 }

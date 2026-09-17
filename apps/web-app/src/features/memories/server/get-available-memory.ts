@@ -18,7 +18,7 @@ export type AvailableMemory = {
 };
 
 const availableMemorySchema = z.object({
-  cover_photo_id: z.uuid().nullable(),
+  cover_asset_id: z.uuid().nullable(),
   created_at: z.string(),
   creator_user_id: z.uuid(),
   description: z.string().nullable(),
@@ -49,7 +49,7 @@ export async function getAvailableMemory(memoryId: string): Promise<AvailableMem
 
   const memory = availableMemorySchema.parse(data);
   return {
-    coverPhotoId: memory.cover_photo_id,
+    coverPhotoId: memory.cover_asset_id,
     createdAt: memory.created_at,
     creatorUserId: memory.creator_user_id,
     description: memory.description,

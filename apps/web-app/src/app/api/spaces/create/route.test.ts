@@ -120,15 +120,17 @@ describe("POST /api/spaces/create", () => {
     expect(rpcMock).not.toHaveBeenCalled();
   });
 
-  it("maps active-membership conflicts by PostgreSQL code", async () => {
+  it("returns a safe error for database failures without parsing SQL messages", async () => {
     rpcMock.mockResolvedValue({
       data: null,
-      error: { code: "L1003", message: "wording can change" },
+      error: { code: "P0001", message: "sensitive database detail" },
     });
 
     const response = await POST(createRequest("2026-07-22"));
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({ error: "You already belong to an active space." });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error: "We could not create your space. Please try again.",
+    });
   });
 });

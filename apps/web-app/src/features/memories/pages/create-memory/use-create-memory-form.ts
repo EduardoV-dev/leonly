@@ -19,7 +19,10 @@ import {
   readMemoryDraft,
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
-import { uploadStagedMemoryPhotos } from "../../utils/upload-staged-memory-photos";
+import {
+  type MemoryUploadAttempt,
+  uploadStagedMemoryPhotos,
+} from "../../utils/upload-staged-memory-photos";
 
 type CreateMemoryResponse = { code?: string; fields?: Record<string, string>; id?: string };
 
@@ -69,7 +72,7 @@ export function useCreateMemoryForm() {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const idempotencyKey = useRef<string | null>(null);
+  const attempt = useRef<MemoryUploadAttempt | null>(null);
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function useCreateMemoryForm() {
   });
 
   const resetAttempt = () => {
-    idempotencyKey.current = null;
+    attempt.current = null;
     setSubmitError(null);
     setIsDirty(true);
   };
@@ -211,18 +214,21 @@ export function useCreateMemoryForm() {
     setFields({});
     setSubmitError(null);
     setIsSubmitting(true);
-    idempotencyKey.current ??= crypto.randomUUID();
     try {
       const response = await uploadStagedMemoryPhotos({
+        attempt: attempt.current,
         finalMethod: "POST",
         finalUrl: "/api/memories",
         formData: createFormData(values, photos, coverPhotoKey),
-        idempotencyKey: idempotencyKey.current,
+        onPrepared: (prepared) => {
+          attempt.current = prepared;
+        },
         photos,
         prepareUrl: "/api/memories/uploads",
       });
       const payload = (await response.json()) as CreateMemoryResponse;
       if (!response.ok || !payload.id) {
+        if (response.status < 500) attempt.current = null;
         setFields(
           Object.fromEntries(
             Object.keys(payload.fields ?? {}).map((field) => [
@@ -238,6 +244,7 @@ export function useCreateMemoryForm() {
         );
       }
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
+      attempt.current = null;
       discardDraft();
       router.push(
         values.visibility === "vault"

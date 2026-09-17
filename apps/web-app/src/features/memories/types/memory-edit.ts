@@ -17,7 +17,6 @@ export type MemoryEdit = {
 
 export type MemoryEditResult = {
   id: string;
-  reused: boolean;
   version: string;
   visibility: "timeline" | "vault";
 };
