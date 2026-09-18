@@ -196,7 +196,7 @@ describe("stateless memory creation", () => {
       visibility: "timeline",
     });
 
-    expect(verifyGrantMock).toHaveBeenCalledWith("signed-grant", ACTOR_ID);
+    expect(verifyGrantMock).toHaveBeenCalledWith("signed-grant", ACTOR_ID, "create");
     expect(download).toHaveBeenCalledOnce();
     expect(download).toHaveBeenCalledWith(payload.assets[0].temporaryPath);
     expect(upload).toHaveBeenCalledTimes(3);

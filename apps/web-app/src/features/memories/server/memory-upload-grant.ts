@@ -8,7 +8,7 @@ const GRANT_LIFETIME_SECONDS = 10 * 60;
 const GRANT_VERSION = "v1";
 const SIGNING_CONTEXT = "leonly:memory-upload-grant:v1";
 
-const assetSchema = z
+const createAssetSchema = z
   .object({
     coverPath: z.string().min(1),
     detailPath: z.string().min(1),
@@ -21,27 +21,103 @@ const assetSchema = z
   })
   .strict();
 
-const payloadSchema = z
-  .object({
+const detailsSchema = z.object({
+  description: z.string().nullable(),
+  location: z.string().nullable(),
+  memoryDate: z.iso.date(),
+  timezone: z.string().min(1),
+  title: z.string().min(1),
+  visibility: z.enum(["timeline", "vault"]),
+});
+
+const createPayloadSchema = detailsSchema
+  .extend({
     actorId: z.string().min(1),
-    assets: z.array(assetSchema).max(10),
-    description: z.string().nullable(),
+    assets: z.array(createAssetSchema).max(10),
     expiresAt: z.number().int().positive(),
     issuedAt: z.number().int().positive(),
-    location: z.string().nullable(),
-    memoryDate: z.iso.date(),
     memoryId: z.uuid(),
     mutationId: z.uuid(),
     operation: z.literal("create"),
     spaceId: z.uuid(),
-    timezone: z.string().min(1),
-    title: z.string().min(1),
-    visibility: z.enum(["timeline", "vault"]),
+  })
+  .strict()
+  .refine((payload) =>
+    payload.assets.every((asset, position) => {
+      const basePath = `${payload.spaceId}/memories/${payload.memoryId}/${asset.id}`;
+      return (
+        asset.position === position &&
+        asset.temporaryPath ===
+          `${payload.spaceId}/temporary/${payload.mutationId}/${asset.id}/original` &&
+        asset.originalPath === `${basePath}/original` &&
+        asset.coverPath === `${basePath}/cover.webp` &&
+        asset.detailPath === `${basePath}/detail.webp`
+      );
+    }),
+  );
+
+const editAssetSchema = z
+  .object({
+    coverPath: z.string().min(1),
+    detailPath: z.string().min(1),
+    id: z.uuid(),
+    name: z.string().min(1),
+    originalPath: z.string().min(1),
+    temporaryPath: z.string().min(1),
   })
   .strict();
 
+const editPayloadSchema = detailsSchema
+  .extend({
+    actorId: z.string().min(1),
+    coverAssetId: z.uuid().nullable(),
+    expiresAt: z.number().int().positive(),
+    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+    finalAssetIds: z.array(z.uuid()).max(10),
+    issuedAt: z.number().int().positive(),
+    memoryId: z.uuid(),
+    mutationId: z.uuid(),
+    newAssets: z.array(editAssetSchema).max(10),
+    operation: z.literal("edit"),
+    retainedAssetIds: z.array(z.uuid()).max(10),
+    spaceId: z.uuid(),
+  })
+  .strict()
+  .refine((payload) => {
+    const finalIds = new Set(payload.finalAssetIds);
+    const retainedIds = new Set(payload.retainedAssetIds);
+    const newIds = new Set(payload.newAssets.map((asset) => asset.id));
+    return (
+      finalIds.size === payload.finalAssetIds.length &&
+      retainedIds.size === payload.retainedAssetIds.length &&
+      newIds.size === payload.newAssets.length &&
+      payload.finalAssetIds.length === retainedIds.size + newIds.size &&
+      payload.finalAssetIds.every((id) => retainedIds.has(id) || newIds.has(id)) &&
+      payload.retainedAssetIds.every((id) => !newIds.has(id)) &&
+      (payload.finalAssetIds.length === 0
+        ? payload.coverAssetId === null
+        : payload.coverAssetId !== null && finalIds.has(payload.coverAssetId)) &&
+      payload.newAssets.every((asset) => {
+        const basePath = `${payload.spaceId}/memories/${payload.memoryId}/${asset.id}`;
+        return (
+          asset.temporaryPath ===
+            `${payload.spaceId}/temporary/${payload.mutationId}/${asset.id}/original` &&
+          asset.originalPath === `${basePath}/original` &&
+          asset.coverPath === `${basePath}/cover.webp` &&
+          asset.detailPath === `${basePath}/detail.webp`
+        );
+      })
+    );
+  });
+
+const payloadSchema = z.discriminatedUnion("operation", [createPayloadSchema, editPayloadSchema]);
+
 export type MemoryUploadGrantPayload = z.infer<typeof payloadSchema>;
-export type MemoryUploadGrantAsset = z.infer<typeof assetSchema>;
+export type CreateMemoryUploadGrantPayload = z.infer<typeof createPayloadSchema>;
+export type EditMemoryUploadGrantPayload = z.infer<typeof editPayloadSchema>;
+export type MemoryUploadGrantAsset = z.infer<typeof createAssetSchema>;
+export type EditMemoryUploadGrantAsset = z.infer<typeof editAssetSchema>;
+type UnsignedPayload<T> = T extends unknown ? Omit<T, "expiresAt" | "issuedAt"> : never;
 
 export class MemoryUploadGrantError extends Error {}
 
@@ -56,7 +132,7 @@ function signature(payload: string): Buffer {
 }
 
 export function createMemoryUploadGrant(
-  payload: Omit<MemoryUploadGrantPayload, "expiresAt" | "issuedAt" | "operation">,
+  payload: UnsignedPayload<MemoryUploadGrantPayload>,
   now = Date.now(),
 ): string {
   const issuedAt = Math.floor(now / 1000);
@@ -64,7 +140,6 @@ export function createMemoryUploadGrant(
     ...payload,
     expiresAt: issuedAt + GRANT_LIFETIME_SECONDS,
     issuedAt,
-    operation: "create",
   });
   const encodedPayload = Buffer.from(JSON.stringify(validated)).toString("base64url");
   return `${GRANT_VERSION}.${encodedPayload}.${signature(encodedPayload).toString("base64url")}`;
@@ -73,6 +148,7 @@ export function createMemoryUploadGrant(
 export function verifyMemoryUploadGrant(
   grant: string,
   actorId: string,
+  operation: MemoryUploadGrantPayload["operation"],
   now = Date.now(),
 ): MemoryUploadGrantPayload {
   const [version, encodedPayload, encodedSignature, extra] = grant.split(".");
@@ -93,7 +169,7 @@ export function verifyMemoryUploadGrant(
     throw new MemoryUploadGrantError("The memory upload grant is invalid.");
   }
   const parsed = payloadSchema.safeParse(decoded);
-  if (!parsed.success || parsed.data.actorId !== actorId) {
+  if (!parsed.success || parsed.data.actorId !== actorId || parsed.data.operation !== operation) {
     throw new MemoryUploadGrantError("The memory upload grant is invalid.");
   }
   if (parsed.data.expiresAt <= Math.floor(now / 1000)) {

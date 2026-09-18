@@ -30,6 +30,7 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
 - Uploaded bytes remain untrusted until server-side validation succeeds.
 - Database finalization must remain atomic and edit conflicts must remain explicit.
 - No new runtime dependency unless the platform or existing dependencies cannot provide the capability.
+- Do not create or modify tests that inspect migration scripts; validate SQL transactionally instead.
 - Keep implementation and technical artifacts in English.
 
 ## Authorized scope

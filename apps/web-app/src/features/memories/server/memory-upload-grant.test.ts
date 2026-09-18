@@ -36,6 +36,7 @@ function grant(): string {
       memoryDate: "2026-09-16",
       memoryId: MEMORY_ID,
       mutationId: MUTATION_ID,
+      operation: "create",
       spaceId: SPACE_ID,
       timezone: "UTC",
       title: "Our picnic",
@@ -49,7 +50,7 @@ describe("memory upload grants", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("round-trips a signed create payload", () => {
-    expect(verifyMemoryUploadGrant(grant(), ACTOR_ID, NOW)).toMatchObject({
+    expect(verifyMemoryUploadGrant(grant(), ACTOR_ID, "create", NOW)).toMatchObject({
       actorId: ACTOR_ID,
       memoryId: MEMORY_ID,
       mutationId: MUTATION_ID,
@@ -61,16 +62,79 @@ describe("memory upload grants", () => {
   it("rejects tampering", () => {
     const value = grant();
     const tampered = `${value.slice(0, -1)}${value.endsWith("a") ? "b" : "a"}`;
-    expect(() => verifyMemoryUploadGrant(tampered, ACTOR_ID, NOW)).toThrow("invalid");
+    expect(() => verifyMemoryUploadGrant(tampered, ACTOR_ID, "create", NOW)).toThrow("invalid");
   });
 
   it("rejects an expired grant", () => {
-    expect(() => verifyMemoryUploadGrant(grant(), ACTOR_ID, NOW + 11 * 60 * 1000)).toThrow(
-      "expired",
-    );
+    expect(() =>
+      verifyMemoryUploadGrant(grant(), ACTOR_ID, "create", NOW + 11 * 60 * 1000),
+    ).toThrow("expired");
   });
 
   it("rejects a different authenticated actor", () => {
-    expect(() => verifyMemoryUploadGrant(grant(), "other-user", NOW)).toThrow("invalid");
+    expect(() => verifyMemoryUploadGrant(grant(), "other-user", "create", NOW)).toThrow("invalid");
+  });
+
+  it("round-trips an edit payload and rejects an operation mismatch", () => {
+    const basePath = `${SPACE_ID}/memories/${MEMORY_ID}/${ASSET_ID}`;
+    const editGrant = createMemoryUploadGrant(
+      {
+        actorId: ACTOR_ID,
+        coverAssetId: ASSET_ID,
+        description: "Updated",
+        expectedUpdatedAt: "2026-09-17T11:00:00.000Z",
+        finalAssetIds: [ASSET_ID],
+        location: null,
+        memoryDate: "2026-09-16",
+        memoryId: MEMORY_ID,
+        mutationId: MUTATION_ID,
+        newAssets: [
+          {
+            coverPath: `${basePath}/cover.webp`,
+            detailPath: `${basePath}/detail.webp`,
+            id: ASSET_ID,
+            name: "replacement.png",
+            originalPath: `${basePath}/original`,
+            temporaryPath: `${SPACE_ID}/temporary/${MUTATION_ID}/${ASSET_ID}/original`,
+          },
+        ],
+        operation: "edit",
+        retainedAssetIds: [],
+        spaceId: SPACE_ID,
+        timezone: "UTC",
+        title: "Updated picnic",
+        visibility: "vault",
+      },
+      NOW,
+    );
+
+    expect(verifyMemoryUploadGrant(editGrant, ACTOR_ID, "edit", NOW)).toMatchObject({
+      finalAssetIds: [ASSET_ID],
+      operation: "edit",
+    });
+    expect(() => verifyMemoryUploadGrant(editGrant, ACTOR_ID, "create", NOW)).toThrow("invalid");
+  });
+
+  it("rejects malformed edit paths and selections before signing", () => {
+    expect(() =>
+      createMemoryUploadGrant({
+        actorId: ACTOR_ID,
+        coverAssetId: ASSET_ID,
+        description: null,
+        expectedUpdatedAt: "2026-09-17T11:00:00.000Z",
+        finalAssetIds: [ASSET_ID],
+        location: null,
+        memoryDate: "2026-09-16",
+        memoryId: MEMORY_ID,
+        mutationId: MUTATION_ID,
+        newAssets: [],
+        operation: "edit",
+        retainedAssetIds: [],
+        spaceId: SPACE_ID,
+        timezone: "UTC",
+        title: "Updated picnic",
+        visibility: "vault",
+      }),
+    ).toThrow();
   });
 });

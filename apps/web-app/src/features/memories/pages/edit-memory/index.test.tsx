@@ -5,10 +5,10 @@ import { i18n } from "@/lib/i18n";
 import type { MemoryEdit } from "../../types/memory-edit";
 import { EditMemoryPage } from ".";
 
-const { pushMock, refreshMock, storageUploadMock, toastSuccessMock } = vi.hoisted(() => ({
+const { pushMock, refreshMock, signedUploadMock, toastSuccessMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   refreshMock: vi.fn(),
-  storageUploadMock: vi.fn(),
+  signedUploadMock: vi.fn(),
   toastSuccessMock: vi.fn(),
 }));
 
@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/utils/toast", () => ({ toast: { success: toastSuccessMock } }));
 vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ storage: { from: () => ({ upload: storageUploadMock }) } }),
+  createClient: () => ({ storage: { from: () => ({ uploadToSignedUrl: signedUploadMock }) } }),
 }));
 vi.mock("@/components/past-date-picker", () => ({
   PastDatePicker: ({
@@ -63,7 +63,7 @@ describe("EditMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
-    storageUploadMock.mockResolvedValue({ error: null });
+    signedUploadMock.mockResolvedValue({ error: null });
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("crypto", { randomUUID: () => "a9c28177-afb7-456e-a83d-8ef74047226f" });
@@ -101,11 +101,12 @@ describe("EditMemoryPage", () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
         Response.json({
-          attemptId: "a9c28177-afb7-456e-a83d-8ef74047226f",
+          grant: "signed-edit-grant",
           uploads: [
             {
               id: "a9c28177-afb7-456e-a83d-8ef74047226f",
-              path: "space/edit/photo/original",
+              path: "space/temporary/mutation/photo/original",
+              token: "upload-token",
             },
           ],
         }),
@@ -127,15 +128,17 @@ describe("EditMemoryPage", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     const [url, request] = vi.mocked(fetch).mock.calls[1];
-    const body = JSON.parse(request?.body as string) as { attemptId: string };
+    const body = JSON.parse(request?.body as string) as { grant: string };
     expect(url).toBe(`/api/memories/${memory.id}/edit`);
     expect(request?.method).toBe("PATCH");
     expect(request?.headers).toEqual({ "content-type": "application/json" });
-    expect(body).toEqual({ attemptId: "a9c28177-afb7-456e-a83d-8ef74047226f" });
-    expect(storageUploadMock).toHaveBeenCalledWith("space/edit/photo/original", replacement, {
-      contentType: "image/png",
-      upsert: true,
-    });
+    expect(body).toEqual({ grant: "signed-edit-grant" });
+    expect(signedUploadMock).toHaveBeenCalledWith(
+      "space/temporary/mutation/photo/original",
+      "upload-token",
+      replacement,
+      { contentType: "image/png" },
+    );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith(`/vault/${memory.id}`));
     expect(toastSuccessMock).toHaveBeenCalledWith("Memory updated.");
   });
@@ -158,9 +161,11 @@ describe("EditMemoryPage", () => {
   });
 
   it("allows removing every photo and submits no cover", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ id: memory.id, visibility: "timeline" }), { status: 200 }),
-    );
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(Response.json({ grant: "metadata-edit-grant", uploads: [] }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: memory.id, visibility: "timeline" }), { status: 200 }),
+      );
     renderEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
@@ -168,7 +173,7 @@ describe("EditMemoryPage", () => {
     expect(screen.getByText("0/10")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     const body = vi.mocked(fetch).mock.calls[0][1]?.body as FormData;
     expect(body.getAll("retainedPhotoIds")).toEqual([]);
     expect(body.has("coverPhotoId")).toBe(false);
@@ -177,6 +182,7 @@ describe("EditMemoryPage", () => {
 
   it("preserves the draft and idempotency key for a recoverable retry", async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce(Response.json({ grant: "retry-edit-grant", uploads: [] }))
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: "Please try again." }), { status: 500 }),
       )
@@ -191,9 +197,9 @@ describe("EditMemoryPage", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Revised title");
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toEqual(
-      vi.mocked(fetch).mock.calls[1][1]?.headers,
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    expect(vi.mocked(fetch).mock.calls[1][1]?.body).toEqual(
+      vi.mocked(fetch).mock.calls[2][1]?.body,
     );
   });
 

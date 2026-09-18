@@ -22,7 +22,7 @@ import {
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
 import {
-  type MemoryUploadAttempt,
+  type PreparedMemoryUpload,
   uploadStagedMemoryPhotos,
 } from "../../utils/upload-staged-memory-photos";
 
@@ -55,6 +55,7 @@ function createEditFormData(
   values: MemoryEditorValues,
   photos: MemoryEditorPhoto[],
   coverPhotoKey: string | null,
+  mutationId: string,
 ): FormData {
   const formData = new FormData();
   formData.set("title", values.title);
@@ -64,6 +65,7 @@ function createEditFormData(
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
   formData.set("expectedVersion", memory.version);
+  formData.set("mutationId", mutationId);
   const retained = photos.filter((photo) => photo.kind === "retained");
   for (const photo of retained) formData.append("retainedPhotoIds", photo.id);
   const newPhotos = photos.filter((photo) => photo.kind === "new");
@@ -102,7 +104,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const attempt = useRef<MemoryUploadAttempt | null>(null);
+  const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
+  const mutationId = useRef(crypto.randomUUID());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const storageKey = getEditMemoryDraftKey(memory.id, memory.version);
@@ -147,7 +150,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setIsConflict(false);
     setIsDirty(Boolean(storedDraft));
     setSubmitError(null);
-    attempt.current = null;
+    preparedUpload.current = null;
+    mutationId.current = crypto.randomUUID();
   }, [memory, storageKey]);
   useEffect(() => {
     if (!hasLoadedDraft || !isDirty) return;
@@ -193,7 +197,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
       return next;
     });
   const changeDraft = (field: string) => {
-    attempt.current = null;
+    preparedUpload.current = null;
+    mutationId.current = crypto.randomUUID();
     clearFieldError(field);
     setIsDirty(true);
     setSubmitError(null);
@@ -202,6 +207,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     key: TKey,
     value: MemoryEditorValues[TKey],
   ) => {
+    if (values[key] === value) return;
     changeDraft(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
@@ -259,6 +265,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
   const selectCoverPhoto = (key: string) => {
+    if (coverPhotoKey === key) return;
     changeDraft("photos");
     setCoverPhotoKey(key);
   };
@@ -273,30 +280,30 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setIsSubmitting(true);
     try {
       const response = await uploadStagedMemoryPhotos({
-        attempt: attempt.current,
+        preparedUpload: preparedUpload.current,
         finalMethod: "PATCH",
         finalUrl: `/api/memories/${memory.id}/edit`,
-        formData: createEditFormData(memory, values, photos, coverPhotoKey),
+        formData: createEditFormData(memory, values, photos, coverPhotoKey, mutationId.current),
         onPrepared: (prepared) => {
-          attempt.current = prepared;
+          preparedUpload.current = prepared;
         },
         photos,
         prepareUrl: `/api/memories/${memory.id}/edit/uploads`,
       });
       const payload = (await response.json()) as EditResponse;
       if (payload.code === "unavailable") {
-        attempt.current = null;
+        preparedUpload.current = null;
         discardDraft();
         router.refresh();
         return;
       }
       if (payload.code === "conflict") {
-        attempt.current = null;
+        preparedUpload.current = null;
         setIsConflict(true);
         return;
       }
       if (!response.ok) {
-        if (response.status < 500) attempt.current = null;
+        if (response.status < 500) preparedUpload.current = null;
         setFields(
           Object.fromEntries(
             Object.keys(payload.fields ?? {}).map((field) => [
@@ -313,7 +320,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
       }
       const finalVisibility = payload.visibility ?? values.visibility;
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
-      attempt.current = null;
+      preparedUpload.current = null;
       discardDraft();
       toast.success(t("edit.success"));
       router.push(detailRoute(memory.id, finalVisibility));

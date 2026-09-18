@@ -1,6 +1,5 @@
 import "server-only";
 
-import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -10,13 +9,14 @@ import {
   validateMemoryPhotoBytes,
 } from "./memory-input-validation";
 import {
+  type CreateMemoryUploadGrantPayload,
   createMemoryUploadGrant,
   deriveMemoryId,
   type MemoryUploadGrantAsset,
   MemoryUploadGrantError,
-  type MemoryUploadGrantPayload,
   verifyMemoryUploadGrant,
 } from "./memory-upload-grant";
+import { uploadMemoryObjectIfAbsentOrIdentical } from "./memory-upload-storage";
 
 export { validateCreateMemoryFormData } from "./memory-input-validation";
 export { cleanupResources } from "./resource-cleanup";
@@ -105,6 +105,7 @@ export async function prepareMemoryCreation(
     memoryDate: input.memoryDate,
     memoryId,
     mutationId: mutationId.data,
+    operation: "create",
     spaceId: parsedSpace.data.id,
     timezone: input.timezone,
     title: input.title,
@@ -145,39 +146,7 @@ async function enqueueCreationCleanup(
   });
 }
 
-function toBuffer(bytes: ArrayBuffer | Buffer): Buffer {
-  return Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-}
-
-function digest(bytes: ArrayBuffer | Buffer): Buffer {
-  return createHash("sha256").update(toBuffer(bytes)).digest();
-}
-
-async function storeImmutableObject(
-  admin: ReturnType<typeof createAdminClient>,
-  path: string,
-  bytes: ArrayBuffer | Buffer,
-  contentType: string,
-): Promise<void> {
-  const bucket = admin.storage.from("memory-photos");
-  const stored = await bucket.upload(path, toBuffer(bytes), { contentType, upsert: false });
-  if (!stored.error) return;
-
-  const existing = await bucket.download(path);
-  if (existing.error || !existing.data) {
-    throw new Error("Unable to store an immutable memory asset.", { cause: stored.error });
-  }
-  const existingDigest = digest(await existing.data.arrayBuffer());
-  const intendedDigest = digest(bytes);
-  if (
-    existingDigest.length !== intendedDigest.length ||
-    !timingSafeEqual(existingDigest, intendedDigest)
-  ) {
-    throw new Error("An immutable memory asset already contains different bytes.");
-  }
-}
-
-function creationPreflight(payload: MemoryUploadGrantPayload) {
+function creationPreflight(payload: CreateMemoryUploadGrantPayload) {
   return {
     p_actor_subject: payload.actorId,
     p_assets: payload.assets.map((asset) => ({
@@ -200,9 +169,9 @@ function creationPreflight(payload: MemoryUploadGrantPayload) {
 }
 
 export async function createMemory(grant: string, actorId: string) {
-  let payload: MemoryUploadGrantPayload;
+  let payload: CreateMemoryUploadGrantPayload;
   try {
-    payload = verifyMemoryUploadGrant(grant, actorId);
+    payload = verifyMemoryUploadGrant(grant, actorId, "create") as CreateMemoryUploadGrantPayload;
   } catch (error) {
     if (error instanceof MemoryUploadGrantError) invalidGrant(error);
     throw error;
@@ -263,7 +232,7 @@ export async function createMemory(grant: string, actorId: string) {
           [asset.coverPath, photo.variants.cover, "image/webp"],
           [asset.detailPath, photo.variants.detail, "image/webp"],
         ] as const) {
-          await storeImmutableObject(admin, path, content, contentType);
+          await uploadMemoryObjectIfAbsentOrIdentical(admin, path, content, contentType);
         }
         return {
           asset_id: asset.id,

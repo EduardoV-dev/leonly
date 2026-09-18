@@ -6,7 +6,6 @@ vi.mock("@/lib/supabase/client", () => ({ createClient: createClientMock }));
 import type { MemoryEditorPhoto } from "../types/memory-editor";
 import { uploadStagedMemoryPhotos } from "./upload-staged-memory-photos";
 
-const ATTEMPT_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const PHOTO_ID = "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452";
 
 function newPhoto(): Extract<MemoryEditorPhoto, { kind: "new" }> {
@@ -46,7 +45,7 @@ describe("uploadStagedMemoryPhotos", () => {
 
     await expect(
       uploadStagedMemoryPhotos({
-        attempt: null,
+        preparedUpload: null,
         finalMethod: "POST",
         finalUrl: "/api/memories",
         formData,
@@ -73,17 +72,17 @@ describe("uploadStagedMemoryPhotos", () => {
     });
   });
 
-  it("prepares metadata-only mutations without initializing storage", async () => {
+  it("prepares metadata-only edits with a grant without initializing storage", async () => {
     const finalResponse = Response.json({ id: "memory-id" });
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(Response.json({ attemptId: ATTEMPT_ID, uploads: [] }))
+      .mockResolvedValueOnce(Response.json({ grant: "edit-grant", uploads: [] }))
       .mockResolvedValueOnce(finalResponse);
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
       uploadStagedMemoryPhotos({
-        attempt: null,
+        preparedUpload: null,
         finalMethod: "PATCH",
         finalUrl: "/api/memories/memory-id/edit",
         formData: new FormData(),
@@ -97,20 +96,22 @@ describe("uploadStagedMemoryPhotos", () => {
     expect(createClientMock).not.toHaveBeenCalled();
   });
 
-  it("reuses the prepared attempt and upload descriptors after a recoverable failure", async () => {
+  it("reuses a prepared signed upload after a recoverable failure", async () => {
     const photo = newPhoto();
-    const attempt = {
-      attemptId: ATTEMPT_ID,
-      uploads: [{ id: PHOTO_ID, path: "space/attempt/photo/original" }],
+    const preparedUpload = {
+      grant: "signed-grant",
+      uploads: [{ id: PHOTO_ID, path: "space/temporary/mutation/photo/original", token: "token" }],
     };
     const finalResponse = Response.json({ id: "memory-id" });
     const fetchMock = vi.fn().mockResolvedValue(finalResponse);
     vi.stubGlobal("fetch", fetchMock);
-    const upload = vi.fn().mockResolvedValue({ error: null });
-    createClientMock.mockReturnValue({ storage: { from: vi.fn(() => ({ upload })) } });
+    const uploadToSignedUrl = vi.fn().mockResolvedValue({ error: null });
+    createClientMock.mockReturnValue({
+      storage: { from: vi.fn(() => ({ uploadToSignedUrl })) },
+    });
 
     await uploadStagedMemoryPhotos({
-      attempt,
+      preparedUpload,
       finalMethod: "POST",
       finalUrl: "/api/memories",
       formData: new FormData(),
@@ -120,7 +121,7 @@ describe("uploadStagedMemoryPhotos", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(upload).toHaveBeenCalledOnce();
+    expect(uploadToSignedUrl).toHaveBeenCalledOnce();
   });
 
   it("retains a signed grant before a partial failure and reattempts temporary uploads", async () => {
@@ -151,7 +152,7 @@ describe("uploadStagedMemoryPhotos", () => {
     const onPrepared = vi.fn();
 
     const options = {
-      attempt: null,
+      preparedUpload: null,
       finalMethod: "POST" as const,
       finalUrl: "/api/memories",
       formData: new FormData(),
@@ -168,7 +169,7 @@ describe("uploadStagedMemoryPhotos", () => {
     await expect(
       uploadStagedMemoryPhotos({
         ...options,
-        attempt: prepared,
+        preparedUpload: prepared,
       }),
     ).resolves.toBe(finalResponse);
 

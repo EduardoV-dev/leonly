@@ -70,7 +70,7 @@ export async function POST(request: Request, context: RouteContext) {
     void Promise.resolve()
       .then(cleanupResources)
       .catch(() => undefined);
-    const result = await prepareMemoryEdit(memoryId, await readBoundedFormData(request));
+    const result = await prepareMemoryEdit(memoryId, await readBoundedFormData(request), user.id);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof EditPayloadTooLargeError) {
