@@ -52,7 +52,7 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
 
 ## Tasks
 
-- [ ] **SMU-1 — Move memory creation to stateless signed uploads**
+- [x] **SMU-1 — Move memory creation to stateless signed uploads**
   - Replace create-attempt preparation with authenticated, short-lived signed upload authorization.
   - Bind operation, actor, space, target memory/version, asset IDs, object paths, and expiry.
   - Finalize creation from the verified grant without writing attempt rows.
@@ -75,7 +75,7 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
 
 ## Progress
 
-- Current task: SMU-1 (validated; awaiting work-unit commit)
+- Current task: SMU-2
 - Verification evidence:
   - Focused Vitest: 6 files and 26 tests passed.
   - Typecheck passed.
@@ -83,9 +83,11 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
   - Baseline migration applied successfully inside a disposable local PostgreSQL transaction and
     was rolled back.
   - Independent verification returned clean.
-- Work-unit commits: none
-- Running authored changed lines: size exception accepted for the cohesive SMU-1 contract.
+- Work-unit commits:
+  - `9d54b22` — stateless signed memory creation uploads.
+- Running authored changed lines: 1,481 for SMU-1; size exception accepted for the cohesive
+  API, Storage, and SQL contract.
 
 ## Next step
 
-Commit the validated SMU-1 work unit, record its identity, then begin SMU-2.
+Move memory editing to the stateless grant flow and remove the remaining attempt infrastructure.
