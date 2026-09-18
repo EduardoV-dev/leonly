@@ -98,6 +98,7 @@ create index rate_limits_expires_at on public.rate_limits (expires_at);
 
 create table public.memories (
   id uuid primary key default gen_random_uuid(),
+  creation_mutation_id uuid,
   space_id uuid not null references public.spaces(id) on delete restrict,
   creator_membership_id uuid not null,
   creator_user_id uuid not null,
@@ -123,6 +124,9 @@ create table public.memories (
 
 create index memories_creator_membership_id on public.memories (creator_membership_id);
 create index memories_creator_user_id on public.memories (creator_user_id);
+create unique index memories_creator_mutation_unique
+on public.memories (creator_user_id, creation_mutation_id)
+where creation_mutation_id is not null;
 create index memories_timeline_page
 on public.memories (space_id, memory_date desc, created_at desc, id desc)
 where visibility = 'timeline' and deleted_at is null;
@@ -403,6 +407,19 @@ returns public.space_members language sql stable security definer set search_pat
   from public.space_members as member
   inner join public.spaces as space on space.id = member.space_id
   where member.user_id = private.current_user_id()
+    and member.deleted_at is null
+    and space.deleted_at is null
+  limit 1;
+$$;
+
+create function private.active_membership_for_actor(p_actor_subject text)
+returns public.space_members language sql stable security definer set search_path = '' as $$
+  select member
+  from public.users as profile
+  inner join public.space_members as member on member.user_id = profile.id
+  inner join public.spaces as space on space.id = member.space_id
+  where profile.auth_subject = p_actor_subject
+    and profile.deleted_at is null
     and member.deleted_at is null
     and space.deleted_at is null
   limit 1;
@@ -1061,6 +1078,221 @@ begin
 end;
 $$;
 
+create function public.get_memory_creation_result(
+  p_actor_subject text,
+  p_mutation_id uuid,
+  p_memory_id uuid,
+  p_space_id uuid,
+  p_title text,
+  p_description text,
+  p_location text,
+  p_memory_date date,
+  p_visibility public.memory_visibility,
+  p_assets jsonb default '[]'::jsonb
+)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  membership public.space_members := private.active_membership_for_actor(p_actor_subject);
+  memory public.memories;
+begin
+  if membership.id is null or membership.space_id <> p_space_id then
+    return jsonb_build_object('status', 'unavailable', 'memory_id', null, 'visibility', null);
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_actor_subject || ':' || p_mutation_id::text, 0)
+  );
+  select * into memory from public.memories
+  where creator_user_id = membership.user_id and creation_mutation_id = p_mutation_id;
+  if found then
+    if memory.id <> p_memory_id or memory.space_id <> p_space_id
+      or memory.title <> btrim(p_title)
+      or memory.description is distinct from nullif(btrim(p_description), '')
+      or memory.location is distinct from nullif(btrim(p_location), '')
+      or memory.memory_date <> p_memory_date or memory.visibility <> p_visibility
+      or jsonb_typeof(p_assets) <> 'array'
+      or (select count(*) from public.memory_assets where memory_id = memory.id)
+        <> jsonb_array_length(p_assets)
+      or exists (
+        select 1 from jsonb_array_elements(p_assets) as entry
+        where not exists (
+          select 1 from public.memory_assets as stored_asset
+          where stored_asset.memory_id = memory.id
+            and stored_asset.id = (entry->>'asset_id')::uuid
+            and stored_asset.position = (entry->>'position')::smallint
+            and ((entry->>'is_cover')::boolean = (memory.cover_asset_id = stored_asset.id))
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'original'
+                and object.object_path = entry->>'original_path')
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'cover'
+                and object.object_path = entry->>'cover_path')
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'detail'
+                and object.object_path = entry->>'detail_path')
+        )
+      ) then
+      return jsonb_build_object('status', 'mismatch', 'memory_id', null, 'visibility', null);
+    end if;
+    return jsonb_build_object('status', 'completed', 'memory_id', memory.id,
+      'visibility', memory.visibility);
+  end if;
+  if exists (select 1 from public.resource_cleanup
+    where resource_kind = 'storage_object'
+      and (resource_locator like membership.space_id::text || '/temporary/' || p_mutation_id::text || '/%'
+        or resource_locator like membership.space_id::text || '/memories/' || p_memory_id::text || '/%')) then
+    return jsonb_build_object('status', 'cleanup_pending', 'memory_id', null, 'visibility', null);
+  end if;
+  return jsonb_build_object('status', 'pending', 'memory_id', null, 'visibility', null);
+exception when check_violation or invalid_text_representation then
+  return jsonb_build_object('status', 'invalid', 'memory_id', null, 'visibility', null);
+end;
+$$;
+
+create function public.finalize_memory_creation(
+  p_actor_subject text,
+  p_mutation_id uuid,
+  p_memory_id uuid,
+  p_space_id uuid,
+  p_title text,
+  p_description text,
+  p_location text,
+  p_memory_date date,
+  p_visibility public.memory_visibility,
+  p_assets jsonb default '[]'::jsonb
+)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  membership public.space_members := private.active_membership_for_actor(p_actor_subject);
+  memory public.memories;
+  asset jsonb;
+  asset_id uuid;
+  cover_id uuid;
+  base_path text;
+begin
+  if membership.id is null or membership.space_id <> p_space_id then
+    return jsonb_build_object('status', 'unavailable', 'memory_id', null, 'visibility', null);
+  end if;
+  if p_mutation_id is null or p_memory_id is null
+    or char_length(btrim(p_title)) not between 1 and 120
+    or char_length(btrim(coalesce(p_description, ''))) > 2000
+    or char_length(btrim(coalesce(p_location, ''))) > 150
+    or p_memory_date is null or p_visibility is null
+    or jsonb_typeof(p_assets) <> 'array' or jsonb_array_length(p_assets) > 10 then
+    return jsonb_build_object('status', 'invalid', 'memory_id', null, 'visibility', null);
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_actor_subject || ':' || p_mutation_id::text, 0)
+  );
+  select * into memory from public.memories
+  where creator_user_id = membership.user_id and creation_mutation_id = p_mutation_id;
+  if found then
+    if memory.id <> p_memory_id or memory.space_id <> p_space_id
+      or memory.title <> btrim(p_title)
+      or memory.description is distinct from nullif(btrim(p_description), '')
+      or memory.location is distinct from nullif(btrim(p_location), '')
+      or memory.memory_date <> p_memory_date or memory.visibility <> p_visibility
+      or (select count(*) from public.memory_assets where memory_id = memory.id)
+        <> jsonb_array_length(p_assets)
+      or exists (
+        select 1 from jsonb_array_elements(p_assets) as entry
+        where not exists (
+          select 1 from public.memory_assets as stored_asset
+          where stored_asset.memory_id = memory.id
+            and stored_asset.id = (entry->>'asset_id')::uuid
+            and stored_asset.position = (entry->>'position')::smallint
+            and ((entry->>'is_cover')::boolean = (memory.cover_asset_id = stored_asset.id))
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'original'
+                and object.object_path = entry->>'original_path')
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'cover'
+                and object.object_path = entry->>'cover_path')
+            and exists (select 1 from public.memory_asset_objects as object
+              where object.asset_id = stored_asset.id and object.variant_type = 'detail'
+                and object.object_path = entry->>'detail_path')
+        )
+      ) then
+      return jsonb_build_object('status', 'mismatch', 'memory_id', null, 'visibility', null);
+    end if;
+    return jsonb_build_object('status', 'completed', 'memory_id', memory.id,
+      'visibility', memory.visibility);
+  end if;
+  if exists (select 1 from public.resource_cleanup
+    where resource_kind = 'storage_object'
+      and (resource_locator like membership.space_id::text || '/temporary/' || p_mutation_id::text || '/%'
+        or resource_locator like membership.space_id::text || '/memories/' || p_memory_id::text || '/%')) then
+    return jsonb_build_object('status', 'cleanup_pending', 'memory_id', null, 'visibility', null);
+  end if;
+
+  insert into public.memories (
+    id, creation_mutation_id, space_id, creator_membership_id, creator_user_id,
+    title, description, location, memory_date, visibility
+  ) values (
+    p_memory_id, p_mutation_id, membership.space_id, membership.id, membership.user_id,
+    btrim(p_title), nullif(btrim(p_description), ''), nullif(btrim(p_location), ''),
+    p_memory_date, p_visibility
+  ) returning * into memory;
+
+  for asset in select value from jsonb_array_elements(p_assets) loop
+    asset_id := (asset->>'asset_id')::uuid;
+    base_path := membership.space_id::text || '/memories/' || p_memory_id::text || '/' || asset_id::text;
+    if (asset->>'original_path') <> base_path || '/original'
+      or (asset->>'cover_path') <> base_path || '/cover.webp'
+      or (asset->>'detail_path') <> base_path || '/detail.webp' then
+      raise exception using errcode = '23514', message = 'invalid memory asset path';
+    end if;
+    insert into public.memory_assets (id, space_id, memory_id, position)
+    values (asset_id, membership.space_id, memory.id, (asset->>'position')::smallint);
+    insert into public.memory_asset_objects (
+      asset_id, variant_type, object_path, status, content_type, byte_size, ready_at
+    ) values
+      (asset_id, 'original', asset->>'original_path', 'ready',
+        asset->>'original_content_type', (asset->>'original_byte_size')::bigint,
+        pg_catalog.clock_timestamp()),
+      (asset_id, 'cover', asset->>'cover_path', 'ready', 'image/webp',
+        (asset->>'cover_byte_size')::bigint, pg_catalog.clock_timestamp()),
+      (asset_id, 'detail', asset->>'detail_path', 'ready', 'image/webp',
+        (asset->>'detail_byte_size')::bigint, pg_catalog.clock_timestamp());
+    if (asset->>'is_cover')::boolean then cover_id := asset_id; end if;
+  end loop;
+  update public.memories set cover_asset_id = cover_id where id = memory.id returning * into memory;
+  return jsonb_build_object('status', 'completed', 'memory_id', memory.id,
+    'visibility', memory.visibility);
+exception when unique_violation or check_violation or foreign_key_violation or invalid_text_representation then
+  return jsonb_build_object('status', 'invalid', 'memory_id', null, 'visibility', null);
+end;
+$$;
+
+create function public.enqueue_memory_creation_cleanup(
+  p_actor_subject text,
+  p_memory_id uuid,
+  p_mutation_id uuid,
+  p_paths text[]
+)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  membership public.space_members := private.active_membership_for_actor(p_actor_subject);
+  is_finalized boolean;
+begin
+  if membership.id is null or p_memory_id is null or p_mutation_id is null
+    or cardinality(p_paths) > 40 then return;
+  end if;
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_actor_subject || ':' || p_mutation_id::text, 0)
+  );
+  select exists (select 1 from public.memories where creator_user_id = membership.user_id
+    and creation_mutation_id = p_mutation_id) into is_finalized;
+  insert into public.resource_cleanup (resource_kind, resource_locator, cleanup_after)
+  select 'storage_object', path, pg_catalog.clock_timestamp() + interval '15 minutes'
+  from unnest(p_paths) as path
+  where path like membership.space_id::text || '/temporary/' || p_mutation_id::text || '/%'
+    or (not is_finalized
+      and path like membership.space_id::text || '/memories/' || p_memory_id::text || '/%')
+  on conflict (resource_kind, resource_locator) do nothing;
+end;
+$$;
+
 create function public.get_available_memory(p_memory_id uuid)
 returns public.memories language sql stable security invoker set search_path = '' as $$
   select memory from public.memories as memory where memory.id = p_memory_id;
@@ -1312,6 +1544,11 @@ begin
   with claims as (
     select cleanup.id from public.resource_cleanup as cleanup
     where cleanup.cleaned_at is null
+      and not exists (
+        select 1 from public.memory_asset_objects as object
+        inner join public.memory_assets as asset on asset.id = object.asset_id
+        where object.object_path = cleanup.resource_locator and asset.memory_id is not null
+      )
       and cleanup.cleanup_after <= pg_catalog.clock_timestamp()
       and coalesce(cleanup.retry_after, '-infinity'::timestamptz) <= pg_catalog.clock_timestamp()
       and coalesce(cleanup.locked_until, '-infinity'::timestamptz) <= pg_catalog.clock_timestamp()
@@ -1440,5 +1677,10 @@ grant execute on function public.sync_current_user(text, text, text),
 to authenticated;
 
 grant execute on function public.claim_resource_cleanup(integer),
-  public.complete_resource_cleanup(bigint[]), public.fail_resource_cleanup(bigint[], text)
+  public.complete_resource_cleanup(bigint[]), public.fail_resource_cleanup(bigint[], text),
+  public.get_memory_creation_result(text, uuid, uuid, uuid, text, text, text, date,
+    public.memory_visibility, jsonb),
+  public.finalize_memory_creation(text, uuid, uuid, uuid, text, text, text, date,
+    public.memory_visibility, jsonb),
+  public.enqueue_memory_creation_cleanup(text, uuid, uuid, text[])
 to service_role;

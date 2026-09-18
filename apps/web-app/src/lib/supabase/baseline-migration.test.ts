@@ -111,6 +111,9 @@ describe("Supabase baseline migration", () => {
     );
     expect(migration).toContain("create function public.prepare_memory_attempt(");
     expect(migration).toContain("create function public.finalize_memory_attempt(");
+    expect(migration).toContain("create function public.finalize_memory_creation(");
+    expect(migration).toContain("creation_mutation_id uuid");
+    expect(migration).toContain("create unique index memories_creator_mutation_unique");
 
     const attemptsTable = migration.slice(
       migration.indexOf("create table public.memory_attempts"),
@@ -120,5 +123,73 @@ describe("Supabase baseline migration", () => {
     expect(attemptsTable).not.toContain("request_fingerprint");
     expect(migration).toContain("memory_comments_author_key_unique");
     expect(migration).toContain("request_fingerprint text not null");
+  });
+
+  it("keeps stateless creation RPCs service-only and serializes cleanup with finalization", () => {
+    const authenticatedGrants = migration.slice(
+      migration.indexOf("grant execute on function public.sync_current_user"),
+      migration.indexOf(
+        "to authenticated;",
+        migration.indexOf("grant execute on function public.sync_current_user"),
+      ),
+    );
+    expect(authenticatedGrants).not.toContain("finalize_memory_creation");
+    expect(authenticatedGrants).not.toContain("get_memory_creation_result");
+    expect(authenticatedGrants).not.toContain("enqueue_memory_creation_cleanup");
+    expect(migration).toMatch(
+      /grant execute on function public\.claim_resource_cleanup[\s\S]*public\.get_memory_creation_result[\s\S]*public\.finalize_memory_creation[\s\S]*public\.enqueue_memory_creation_cleanup[\s\S]*to service_role;/,
+    );
+
+    const preflight = migration.slice(
+      migration.indexOf("create function public.get_memory_creation_result("),
+      migration.indexOf("create function public.finalize_memory_creation("),
+    );
+    const finalization = migration.slice(
+      migration.indexOf("create function public.finalize_memory_creation("),
+      migration.indexOf("create function public.enqueue_memory_creation_cleanup("),
+    );
+    const cleanup = migration.slice(
+      migration.indexOf("create function public.enqueue_memory_creation_cleanup("),
+      migration.indexOf("create function public.get_available_memory("),
+    );
+    const sharedLock =
+      "pg_catalog.hashtextextended(p_actor_subject || ':' || p_mutation_id::text, 0)";
+    expect(preflight).toContain("private.active_membership_for_actor(p_actor_subject)");
+    expect(preflight).toContain(sharedLock);
+    expect(preflight).toContain("object.object_path = entry->>'original_path'");
+    expect(preflight).toContain("return jsonb_build_object('status', 'cleanup_pending'");
+    expect(finalization).toContain("private.active_membership_for_actor(p_actor_subject)");
+    expect(finalization).toContain(sharedLock);
+    expect(finalization).toContain("return jsonb_build_object('status', 'cleanup_pending'");
+    expect(finalization).toContain(
+      "base_path := membership.space_id::text || '/memories/' || p_memory_id::text",
+    );
+    const assetPersistenceStart = finalization.indexOf(
+      "for asset in select value from jsonb_array_elements(p_assets) loop",
+    );
+    const assetPersistence = finalization.slice(
+      assetPersistenceStart,
+      finalization.indexOf(
+        "return jsonb_build_object('status', 'completed'",
+        assetPersistenceStart,
+      ),
+    );
+    expect(assetPersistence).toContain("asset->>'original_path'");
+    expect(assetPersistence).not.toContain("/temporary/");
+    expect(finalization).not.toContain("delete from public.resource_cleanup");
+    expect(cleanup).toContain("private.active_membership_for_actor(p_actor_subject)");
+    expect(cleanup).toContain(sharedLock);
+    expect(cleanup).toContain("creation_mutation_id = p_mutation_id");
+    expect(cleanup).toContain("'/temporary/' || p_mutation_id::text");
+    expect(cleanup).toContain("not is_finalized");
+    expect(cleanup.match(/^\s*if\b/gm)).toHaveLength(1);
+    expect(cleanup.match(/^\s*end if;/gm)).toHaveLength(1);
+
+    const claims = migration.slice(
+      migration.indexOf("create function public.claim_resource_cleanup("),
+      migration.indexOf("create function public.complete_resource_cleanup("),
+    );
+    expect(claims).toContain("object.object_path = cleanup.resource_locator");
+    expect(claims).toContain("asset.memory_id is not null");
   });
 });

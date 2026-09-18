@@ -49,6 +49,7 @@ function createFormData(
   values: MemoryEditorValues,
   photos: MemoryEditorPhoto[],
   coverPhotoKey: string | null,
+  mutationId: string,
 ): FormData {
   const formData = new FormData();
   formData.set("title", values.title);
@@ -57,6 +58,7 @@ function createFormData(
   formData.set("memoryDate", values.memoryDate);
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
+  formData.set("mutationId", mutationId);
   const coverPhoto = photos.find((photo) => photo.key === coverPhotoKey);
   if (coverPhoto) formData.set("coverPhotoId", coverPhoto.id);
   for (const photo of photos) {
@@ -73,6 +75,7 @@ export function useCreateMemoryForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const attempt = useRef<MemoryUploadAttempt | null>(null);
+  const mutationId = useRef(crypto.randomUUID());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
@@ -131,6 +134,7 @@ export function useCreateMemoryForm() {
 
   const resetAttempt = () => {
     attempt.current = null;
+    mutationId.current = crypto.randomUUID();
     setSubmitError(null);
     setIsDirty(true);
   };
@@ -219,7 +223,7 @@ export function useCreateMemoryForm() {
         attempt: attempt.current,
         finalMethod: "POST",
         finalUrl: "/api/memories",
-        formData: createFormData(values, photos, coverPhotoKey),
+        formData: createFormData(values, photos, coverPhotoKey, mutationId.current),
         onPrepared: (prepared) => {
           attempt.current = prepared;
         },

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     void Promise.resolve()
       .then(cleanupResources)
       .catch(() => undefined);
-    const result = await prepareMemoryCreation(await request.formData());
+    const result = await prepareMemoryCreation(await request.formData(), user.id);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof CreateMemoryError) {
