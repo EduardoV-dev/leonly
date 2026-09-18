@@ -61,14 +61,14 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
     tampered or expired grants fail.
   - Checks: focused grant, create-route, browser-upload, and creation tests; typecheck.
 
-- [ ] **SMU-2 — Move memory editing and schema off attempt rows**
+- [x] **SMU-2 — Move memory editing and schema off attempt rows**
   - Apply the stateless grant flow to edits and atomically persist retained/new asset selection.
   - Preserve deterministic retries, edit conflicts, photo ordering, and cover selection.
   - Remove attempt TypeScript orchestration, database objects, policies, and grants.
   - Acceptance: create/edit behavior and retry semantics pass with no attempt tables.
   - Checks: focused server/API tests, baseline migration tests, typecheck.
 
-- [ ] **SMU-3 — Reconcile cleanup and documentation**
+- [x] **SMU-3 — Reconcile cleanup and documentation**
   - Queue known obsolete objects and sweep expired temporary uploads without attempt records.
   - Update schema documentation and architecture assertions.
   - Acceptance: successful, failed, and abandoned flows have a bounded cleanup path.
@@ -76,7 +76,7 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
 
 ## Progress
 
-- Current task: SMU-2
+- Current task: final verification and delivery
 - Verification evidence:
   - Focused Vitest: 6 files and 26 tests passed.
   - Typecheck passed.
@@ -86,9 +86,10 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
   - Independent verification returned clean.
 - Work-unit commits:
   - `9d54b22` — stateless signed memory creation uploads.
+  - `b15d8f9` — stateless signed memory editing and attempt removal.
 - Running authored changed lines: 1,481 for SMU-1; size exception accepted for the cohesive
   API, Storage, and SQL contract.
 
 ## Next step
 
-Move memory editing to the stateless grant flow and remove the remaining attempt infrastructure.
+Run final verification, record the SMU-3 commit, and prepare delivery.

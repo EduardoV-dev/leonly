@@ -5,10 +5,32 @@ vi.mock("server-only", () => ({}));
 const createAdminClientMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: createAdminClientMock }));
 
-import { cleanupResources } from "./resource-cleanup";
+import { cleanupResources, reapExpiredTemporaryMemoryObjects } from "./resource-cleanup";
 
 describe("cleanupResources", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("asks the service role to enqueue a bounded batch of expired temporary objects", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    createAdminClientMock.mockReturnValue({ rpc });
+
+    await reapExpiredTemporaryMemoryObjects();
+
+    expect(rpc).toHaveBeenCalledWith("enqueue_expired_temporary_memory_objects", {
+      p_batch_size: 100,
+    });
+  });
+
+  it("surfaces a reaper RPC failure to the scheduled route", async () => {
+    const error = new Error("database unavailable");
+    createAdminClientMock.mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error }),
+    });
+
+    await expect(reapExpiredTemporaryMemoryObjects()).rejects.toThrow(
+      "Failed to enqueue expired temporary memory objects.",
+    );
+  });
 
   it("claims a bounded batch, removes storage objects, and completes their cleanup", async () => {
     const resources = [
@@ -30,6 +52,15 @@ describe("cleanupResources", () => {
     expect(rpc).toHaveBeenNthCalledWith(1, "claim_resource_cleanup", { p_batch_size: 100 });
     expect(remove).toHaveBeenCalledWith(["private/original", "private/cover.webp"]);
     expect(rpc).toHaveBeenLastCalledWith("complete_resource_cleanup", { p_ids: [1, 2] });
+  });
+
+  it("surfaces a claim RPC failure to the scheduled route", async () => {
+    const error = new Error("database unavailable");
+    createAdminClientMock.mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({ data: null, error }),
+    });
+
+    await expect(cleanupResources()).rejects.toThrow("Failed to claim resources for cleanup.");
   });
 
   it("records a retry when storage deletion fails", async () => {

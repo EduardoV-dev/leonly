@@ -1491,6 +1491,30 @@ begin
 end;
 $$;
 
+create function public.enqueue_expired_temporary_memory_objects(p_batch_size integer default 100)
+returns void language sql security definer set search_path = '' as $$
+  with candidates as (
+    select object.name
+    from storage.objects as object
+    where object.bucket_id = 'memory-photos'
+      and object.created_at <= pg_catalog.clock_timestamp() - interval '15 minutes'
+      and object.name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/temporary/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/original$'
+    order by object.created_at, object.id
+    for update skip locked
+    limit least(greatest(p_batch_size, 1), 500)
+  )
+  insert into public.resource_cleanup (resource_kind, resource_locator)
+  select 'storage_object', candidate.name
+  from candidates as candidate
+  where not exists (
+    select 1 from public.memory_asset_objects as asset_object
+    inner join public.memory_assets as asset on asset.id = asset_object.asset_id
+    inner join public.memories as memory on memory.id = asset.memory_id
+    where asset_object.object_path = candidate.name and memory.deleted_at is null
+  )
+  on conflict (resource_kind, resource_locator) do nothing;
+$$;
+
 create function public.complete_resource_cleanup(p_ids bigint[])
 returns void language sql security definer set search_path = '' as $$
   update public.resource_cleanup set cleaned_at = pg_catalog.clock_timestamp(), locked_until = null,
@@ -1577,6 +1601,7 @@ grant execute on function public.sync_current_user(text, text, text),
 to authenticated;
 
 grant execute on function public.claim_resource_cleanup(integer),
+  public.enqueue_expired_temporary_memory_objects(integer),
   public.complete_resource_cleanup(bigint[]), public.fail_resource_cleanup(bigint[], text),
   public.get_memory_creation_result(text, uuid, uuid, uuid, text, text, text, date,
     public.memory_visibility, jsonb),

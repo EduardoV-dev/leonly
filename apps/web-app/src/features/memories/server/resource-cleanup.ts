@@ -4,6 +4,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const CLEANUP_BATCH_SIZE = 100;
 
+export async function reapExpiredTemporaryMemoryObjects(): Promise<void> {
+  const admin = createAdminClient();
+  const reaped = await admin.rpc("enqueue_expired_temporary_memory_objects", {
+    p_batch_size: CLEANUP_BATCH_SIZE,
+  });
+  if (reaped.error) {
+    throw new Error("Failed to enqueue expired temporary memory objects.", { cause: reaped.error });
+  }
+}
+
 type CleanupResource = {
   id: number;
   resource_kind: string;
@@ -15,7 +25,10 @@ export async function cleanupResources(): Promise<void> {
   const claimed = await admin.rpc("claim_resource_cleanup", {
     p_batch_size: CLEANUP_BATCH_SIZE,
   });
-  if (claimed.error || !claimed.data) return;
+  if (claimed.error) {
+    throw new Error("Failed to claim resources for cleanup.", { cause: claimed.error });
+  }
+  if (!claimed.data) return;
 
   const resources = claimed.data as CleanupResource[];
   const supported = resources.filter((resource) => resource.resource_kind === "storage_object");

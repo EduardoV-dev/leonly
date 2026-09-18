@@ -1,7 +1,7 @@
 # Database Schema Diagram
 
-This directory contains the implemented database schema, its editable DBML source, and its rendered
-preview.
+This directory documents the implemented stateless memory-upload schema, its editable DBML source,
+and its rendered preview.
 
 | File | Purpose |
 | --- | --- |
@@ -15,3 +15,8 @@ when its physical schema changes.
 
 Some documented rules are retained as DBML notes because DBML cannot faithfully model partial unique
 indexes, check constraints, XOR ownership, or active-state cardinality bounds.
+
+Memory create/edit grants are short-lived server-signed capabilities. They authorize temporary
+original uploads, while finalized `memory_assets` and `memory_asset_objects` reference permanent
+memory paths only. `resource_cleanup` is the generic deletion outbox: a daily service-role cron
+queues expired temporary originals before processing leased cleanup work.
