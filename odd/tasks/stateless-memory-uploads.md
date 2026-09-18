@@ -78,18 +78,18 @@ Finalization can validate uploaded bytes, process variants, and atomically creat
 
 - Current task: final verification and delivery
 - Verification evidence:
-  - Focused Vitest: 6 files and 26 tests passed.
-  - Typecheck passed.
-  - Biome check passed for 442 files.
-  - Baseline migration applied successfully inside a disposable local PostgreSQL transaction and
-    was rolled back.
-  - Independent verification returned clean.
+  - Full Vitest: 96 files and 588 tests passed.
+  - Typecheck, Biome check, and production build passed.
+  - `git diff --check` passed.
+  - SQL validation remains environment-blocked: no disposable local database was available without
+    disrupting active PostgreSQL connections.
 - Work-unit commits:
   - `9d54b22` — stateless signed memory creation uploads.
   - `b15d8f9` — stateless signed memory editing and attempt removal.
+  - `eaf0dcb` — scheduled cleanup, temporary-object reaper, and schema documentation.
 - Running authored changed lines: 1,481 for SMU-1; size exception accepted for the cohesive
   API, Storage, and SQL contract.
 
 ## Next step
 
-Run final verification, record the SMU-3 commit, and prepare delivery.
+Set `CRON_SECRET` in Vercel, then deploy the baseline through the normal Supabase reset workflow.
