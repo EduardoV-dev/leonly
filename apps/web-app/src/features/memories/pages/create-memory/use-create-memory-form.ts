@@ -13,6 +13,7 @@ import {
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import { createUuidV7 } from "../../utils/create-uuid-v7";
 import {
   CREATE_MEMORY_DRAFT_KEY,
   clearMemoryDraft,
@@ -75,7 +76,7 @@ export function useCreateMemoryForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
-  const mutationId = useRef(crypto.randomUUID());
+  const mutationId = useRef(createUuidV7());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
@@ -134,7 +135,7 @@ export function useCreateMemoryForm() {
 
   const resetPreparedUpload = () => {
     preparedUpload.current = null;
-    mutationId.current = crypto.randomUUID();
+    mutationId.current = createUuidV7();
     setSubmitError(null);
     setIsDirty(true);
   };
@@ -177,7 +178,7 @@ export function useCreateMemoryForm() {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
-      const id = crypto.randomUUID();
+      const id = createUuidV7();
       nextPhotoKey.current += 1;
       return {
         file,
@@ -241,11 +242,8 @@ export function useCreateMemoryForm() {
             ]),
           ),
         );
-        throw new Error(
-          payload.code === "validation_failed"
-            ? t("create.validation.serverInvalid")
-            : t("create.validation.saveFailed"),
-        );
+        if (payload.code === "validation_failed") return;
+        throw new Error(t("create.validation.saveFailed"));
       }
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
       preparedUpload.current = null;

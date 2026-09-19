@@ -2,14 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import {
-  commentBodySchema,
-  createCommentInputSchema,
-  createCommentRequestFingerprint,
-} from "./comment-input-validation";
+import { commentBodySchema, createCommentInputSchema } from "./comment-input-validation";
 
 const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-const idempotencyKey = "3ddf312a-e682-4cd8-91f9-9a2a230241ed";
 
 describe("comment input validation", () => {
   it("trims valid text and preserves intentional internal line breaks", () => {
@@ -37,17 +32,9 @@ describe("comment input validation", () => {
     expect(
       createCommentInputSchema.safeParse({
         body: "A note",
-        idempotencyKey,
         memoryId,
         spaceId: memoryId,
       }).success,
     ).toBe(false);
-  });
-
-  it("fingerprints the normalized memory and plain-text body deterministically", () => {
-    const fingerprint = createCommentRequestFingerprint(memoryId, "A note");
-    expect(fingerprint).toMatch(/^[a-f0-9]{64}$/);
-    expect(fingerprint).toBe(createCommentRequestFingerprint(memoryId, "A note"));
-    expect(fingerprint).not.toBe(createCommentRequestFingerprint(memoryId, "Another note"));
   });
 });

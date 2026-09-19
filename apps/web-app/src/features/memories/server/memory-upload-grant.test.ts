@@ -5,7 +5,11 @@ vi.mock("@/constants/environment-variables", () => ({
   ENVIRONMENT_VARIABLES: { SUPABASE_SERVICE_ROLE_KEY: "test-service-role-secret" },
 }));
 
-import { createMemoryUploadGrant, verifyMemoryUploadGrant } from "./memory-upload-grant";
+import {
+  createMemoryUploadGrant,
+  deriveMemoryId,
+  verifyMemoryUploadGrant,
+} from "./memory-upload-grant";
 
 const ACTOR_ID = "auth-user-id";
 const ASSET_ID = "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452";
@@ -13,6 +17,7 @@ const MEMORY_ID = "64d44f34-c5fe-482a-b65b-f91d0173b7fe";
 const MUTATION_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const SPACE_ID = "561ecf16-cc9f-489c-ac1d-38fbfc35d97c";
 const NOW = Date.UTC(2026, 8, 17, 12);
+const UUID_V7_MUTATION_ID = "019534fd-83f7-78b5-ac0b-5c64e28078d1";
 
 function grant(): string {
   const basePath = `${SPACE_ID}/memories/${MEMORY_ID}/${ASSET_ID}`;
@@ -48,6 +53,16 @@ function grant(): string {
 
 describe("memory upload grants", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("derives a stable UUIDv7 memory ID with the mutation timestamp", () => {
+    const memoryId = deriveMemoryId(ACTOR_ID, SPACE_ID, UUID_V7_MUTATION_ID);
+
+    expect(memoryId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(memoryId.slice(0, 13)).toBe(UUID_V7_MUTATION_ID.slice(0, 13));
+    expect(deriveMemoryId(ACTOR_ID, SPACE_ID, UUID_V7_MUTATION_ID)).toBe(memoryId);
+  });
 
   it("round-trips a signed create payload", () => {
     expect(verifyMemoryUploadGrant(grant(), ACTOR_ID, "create", NOW)).toMatchObject({

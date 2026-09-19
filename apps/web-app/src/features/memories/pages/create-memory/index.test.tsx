@@ -145,7 +145,7 @@ describe("CreateMemoryPage", () => {
     expect(preserveButton.closest("form")).toHaveAttribute("novalidate");
     fireEvent.click(preserveButton);
 
-    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(3);
+    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(2);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 

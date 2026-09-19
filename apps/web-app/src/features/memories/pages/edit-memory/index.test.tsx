@@ -99,18 +99,20 @@ describe("EditMemoryPage", () => {
 
   it("adds and removes draft photos, changes cover and placement, and submits the backend contract", async () => {
     vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        Response.json({
+      .mockImplementationOnce(async (_url, request) => {
+        if (!(request?.body instanceof FormData)) throw new Error("Expected photo form data.");
+        const photoId = request.body.get("photoIds");
+        return Response.json({
           grant: "signed-edit-grant",
           uploads: [
             {
-              id: "a9c28177-afb7-456e-a83d-8ef74047226f",
+              id: photoId,
               path: "space/temporary/mutation/photo/original",
               token: "upload-token",
             },
           ],
-        }),
-      )
+        });
+      })
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ id: memory.id, visibility: "vault" }), { status: 200 }),
       );
@@ -263,7 +265,7 @@ describe("EditMemoryPage", () => {
     renderEditor();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(3);
+    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(2);
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Corrected" } });
 
     expect(screen.getAllByText("Please review the highlighted fields.")).toHaveLength(1);

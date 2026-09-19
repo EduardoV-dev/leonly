@@ -144,6 +144,14 @@ async function enqueueEditCleanup(
 function handleOutcome(status: string): never {
   if (status === "unavailable") unavailable();
   if (status === "conflict") conflict();
+  if (status === "cleanup_pending") {
+    throw new EditMemoryError(
+      "We are finishing a previous photo update. Please try again.",
+      {},
+      503,
+      "pending",
+    );
+  }
   invalidGrant();
 }
 

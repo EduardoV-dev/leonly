@@ -45,7 +45,7 @@ export const getMemoryDetailForVisibility = cache(async function getMemoryDetail
         .from("space_members")
         .select("display_name,users(avatar_url)")
         .eq("space_id", memory.spaceId)
-        .eq("user_id", memory.creatorUserId)
+        .eq("id", memory.creatorMembershipId)
         .is("deleted_at", null)
         .maybeSingle(),
       supabase

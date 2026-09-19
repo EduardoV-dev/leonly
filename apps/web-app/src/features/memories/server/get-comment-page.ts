@@ -18,7 +18,7 @@ const commentCursorSchema = z
 const commentRowsSchema = z.array(
   z
     .object({
-      author_user_id: z.uuid(),
+      author_membership_id: z.uuid(),
       body: z.string(),
       created_at: z.string().datetime({ offset: true }),
       id: z.uuid(),
@@ -32,6 +32,7 @@ const commentRowsSchema = z.array(
 const authorRowsSchema = z.array(
   z
     .object({
+      id: z.uuid(),
       display_name: z.string().min(1),
       user_id: z.uuid(),
       users: z
@@ -109,7 +110,7 @@ async function readCommentPage(
   const supabase = await createClient();
   let query = supabase
     .from("memory_comments")
-    .select("id,memory_id,author_user_id,body,created_at,updated_at,version")
+    .select("id,memory_id,author_membership_id,body,created_at,updated_at,version")
     .eq("memory_id", memoryId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -132,15 +133,15 @@ async function readCommentPage(
     throw new GetCommentPageError("This memory is unavailable.", 404, "unavailable");
   }
   const pageRows = rows.slice(0, COMMENT_PAGE_SIZE);
-  const authorIds = [...new Set(pageRows.map((row) => row.author_user_id))];
-  const authorsResult = authorIds.length
+  const authorMembershipIds = [...new Set(pageRows.map((row) => row.author_membership_id))];
+  const authorsResult = authorMembershipIds.length
     ? await supabase
         .from("space_members")
-        .select("user_id,display_name,users(auth_subject,avatar_url)")
+        .select("id,user_id,display_name,users(auth_subject,avatar_url)")
         .eq("space_id", spaceId)
-        .in("user_id", authorIds)
+        .in("id", authorMembershipIds)
         .is("deleted_at", null)
-        .limit(authorIds.length)
+        .limit(authorMembershipIds.length)
     : { data: [], error: null };
 
   if (authorsResult.error) {
@@ -148,9 +149,9 @@ async function readCommentPage(
   }
 
   const authors = authorRowsSchema.parse(authorsResult.data ?? []);
-  const authorsById = new Map(authors.map((author) => [author.user_id, author]));
+  const authorsById = new Map(authors.map((author) => [author.id, author]));
   const comments = pageRows.map((row) => {
-    const author = authorsById.get(row.author_user_id);
+    const author = authorsById.get(row.author_membership_id);
     if (!author) {
       throw new GetCommentPageError("Failed to load comments.", 500, "failed");
     }

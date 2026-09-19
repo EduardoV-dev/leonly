@@ -99,7 +99,7 @@ function grantPayload() {
   };
 }
 
-function result(status: "completed" | "conflict" | "pending" | "unavailable") {
+function result(status: "cleanup_pending" | "completed" | "conflict" | "pending" | "unavailable") {
   return {
     memory_id: status === "completed" ? MEMORY_ID : null,
     status,
@@ -188,6 +188,21 @@ describe("stateless memory editing", () => {
       expect(storageFrom).not.toHaveBeenCalled();
     },
   );
+
+  it("reports pending cleanup as retryable instead of invalid photo selection", async () => {
+    verifyGrantMock.mockReturnValue(grantPayload());
+    const storageFrom = vi.fn();
+    createAdminClientMock.mockReturnValue({
+      rpc: vi.fn().mockResolvedValue({ data: result("cleanup_pending"), error: null }),
+      storage: { from: storageFrom },
+    });
+
+    await expect(editMemory(MEMORY_ID, "edit-grant", ACTOR_ID)).rejects.toMatchObject({
+      code: "pending",
+      status: 503,
+    });
+    expect(storageFrom).not.toHaveBeenCalled();
+  });
 
   it("validates new bytes and finalizes retained, reordered, new, and cover assets", async () => {
     const payload = grantPayload();

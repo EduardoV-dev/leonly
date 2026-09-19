@@ -964,7 +964,7 @@ begin
     ) or (select count(distinct value->>'asset_id') from jsonb_array_elements(p_assets))
       <> jsonb_array_length(p_assets)
       or (select count(*) from jsonb_array_elements(p_assets)
-        where (value->>'is_cover')::boolean) <> case when jsonb_array_length(p_assets) = 0 then 0 else 1 end
+        where (value->>'is_cover')::boolean) <> least(jsonb_array_length(p_assets), 1)
     then return false; end if;
   exception when others then return false;
   end;

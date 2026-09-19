@@ -11,6 +11,7 @@ import { commentCursor, getCommentPage } from "./get-comment-page";
 
 const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 const spaceId = "b6d3c1f9-84a5-4e22-bf3e-09b94c9a1e33";
+const authorMembershipId = "6ced6e4d-3ac3-4d61-b8c9-d6299194b3b0";
 const authorId = "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e";
 const authSubject = "4f4099c9-d91d-4cc4-8a26-2b3ace73df42";
 const avatarUrl = "https://cdn.example.com/alex.jpg";
@@ -18,6 +19,7 @@ const avatarUrl = "https://cdn.example.com/alex.jpg";
 function authorRow() {
   return {
     display_name: "Alex",
+    id: authorMembershipId,
     user_id: authorId,
     users: { auth_subject: authSubject, avatar_url: avatarUrl },
   };
@@ -45,7 +47,7 @@ function createQuery(data: unknown[]) {
 
 function row(index: number, second = 0) {
   return {
-    author_user_id: authorId,
+    author_membership_id: authorMembershipId,
     body: `Comment ${index}`,
     created_at: `2026-09-02T10:00:${String(30 - second).padStart(2, "0")}.000Z`,
     id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
@@ -86,7 +88,7 @@ describe("getCommentPage", () => {
     expect(page.comments[0]?.authorDisplayName).toBe("Alex");
     expect(page.comments[0]?.isAuthor).toBe(true);
     expect(authorId).not.toBe(authSubject);
-    expect(authorQuery.in).toHaveBeenCalledWith("user_id", [authorId]);
+    expect(authorQuery.in).toHaveBeenCalledWith("id", [authorMembershipId]);
     expect(commentCursor.decode(page.nextCursor ?? "")).toMatchObject({
       createdAt: comments[19]?.created_at,
       id: comments[19]?.id,

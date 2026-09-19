@@ -15,6 +15,7 @@ import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEdit } from "../../types/memory-edit";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import { createUuidV7 } from "../../utils/create-uuid-v7";
 import {
   clearMemoryDraft,
   getEditMemoryDraftKey,
@@ -105,7 +106,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
-  const mutationId = useRef(crypto.randomUUID());
+  const mutationId = useRef(createUuidV7());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const storageKey = getEditMemoryDraftKey(memory.id, memory.version);
@@ -151,7 +152,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setIsDirty(Boolean(storedDraft));
     setSubmitError(null);
     preparedUpload.current = null;
-    mutationId.current = crypto.randomUUID();
+    mutationId.current = createUuidV7();
   }, [memory, storageKey]);
   useEffect(() => {
     if (!hasLoadedDraft || !isDirty) return;
@@ -198,7 +199,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     });
   const changeDraft = (field: string) => {
     preparedUpload.current = null;
-    mutationId.current = crypto.randomUUID();
+    mutationId.current = createUuidV7();
     clearFieldError(field);
     setIsDirty(true);
     setSubmitError(null);
@@ -235,7 +236,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
-      const id = crypto.randomUUID();
+      const id = createUuidV7();
       nextPhotoKey.current += 1;
       return {
         file,
@@ -312,11 +313,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
             ]),
           ),
         );
-        throw new Error(
-          payload.code === "validation_failed"
-            ? t("edit.validation.serverInvalid")
-            : t("edit.validation.saveFailed"),
-        );
+        if (payload.code === "validation_failed") return;
+        throw new Error(t("edit.validation.saveFailed"));
       }
       const finalVisibility = payload.visibility ?? values.visibility;
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
