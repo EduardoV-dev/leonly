@@ -8,7 +8,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@/lib/server-logger", () => ({ logServerError: vi.fn() }));
 
 const CURRENT_MEMBERSHIP_ID = "7d8e8d54-e7a7-490c-805f-a342d407523f";
-const CURRENT_USER_ID = "9e12d25f-5f14-492e-8844-36dab92e740d";
+const AUTH_SUBJECT = "9e12d25f-5f14-492e-8844-36dab92e740d";
 const PARTNER_MEMBERSHIP_ID = "4f62149f-680c-43af-aef1-23f89972b771";
 const SPACE_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
 
@@ -48,7 +48,7 @@ function mockSupabase({
   user = {
     app_metadata: { provider: "google" },
     email: "leo@example.com",
-    id: CURRENT_USER_ID,
+    id: AUTH_SUBJECT,
   },
 }: {
   authError?: unknown;
@@ -98,7 +98,7 @@ describe("getSettingsForCurrentUser", () => {
     });
     expect(rpc).toHaveBeenCalledWith("get_active_space_settings");
     expect(rpc.mock.calls[0]).toHaveLength(1);
-    expect(JSON.stringify(await getSettingsForCurrentUser())).not.toContain(CURRENT_USER_ID);
+    expect(JSON.stringify(await getSettingsForCurrentUser())).not.toContain(AUTH_SUBJECT);
   });
 
   it("returns two members and no actionable invite", async () => {
@@ -136,7 +136,7 @@ describe("getSettingsForCurrentUser", () => {
     mockSupabase({
       rpcData: {
         ...rpcSettings,
-        active_members: [{ ...currentMember, user_id: CURRENT_USER_ID }],
+        active_members: [{ ...currentMember, user_id: AUTH_SUBJECT }],
       },
     });
 
@@ -167,7 +167,7 @@ describe("getSettingsForCurrentUser", () => {
         invite_code_expires_at: null,
         invite_code_is_available: false,
       },
-      user: { app_metadata: { provider: "unsupported-provider" }, id: CURRENT_USER_ID },
+      user: { app_metadata: { provider: "unsupported-provider" }, id: AUTH_SUBJECT },
     });
 
     const result = await getSettingsForCurrentUser();

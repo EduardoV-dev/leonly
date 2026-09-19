@@ -191,12 +191,7 @@ describe("comment state hooks", () => {
     );
   });
 
-  it("keeps the failed draft and key for retry, then creates a new key after editing", async () => {
-    const randomUUIDMock = vi
-      .fn()
-      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
-      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222");
-    vi.stubGlobal("crypto", { randomUUID: randomUUIDMock });
+  it("keeps the failed draft for retry, then submits the edited draft", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse({ code: "failed" }, 500))
       .mockResolvedValueOnce(jsonResponse({ comment }))
@@ -212,14 +207,11 @@ describe("comment state hooks", () => {
     });
     expect(result.current.draft).toBe("Try again");
     expect(result.current.submitError).toBeTruthy();
-    const firstOptions = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
-    const firstKey = (firstOptions.headers as Record<string, string>)["Idempotency-Key"];
-
     await act(async () => {
       await result.current.submit();
     });
     expect(vi.mocked(fetch).mock.calls[1]?.[1]).toMatchObject({
-      headers: expect.objectContaining({ "Idempotency-Key": firstKey }),
+      body: JSON.stringify({ body: "Try again" }),
     });
 
     act(() => result.current.updateDraft("A new logical note"));
@@ -227,9 +219,7 @@ describe("comment state hooks", () => {
       await result.current.submit();
     });
     expect(vi.mocked(fetch).mock.calls[2]?.[1]).toMatchObject({
-      headers: expect.objectContaining({
-        "Idempotency-Key": "22222222-2222-4222-8222-222222222222",
-      }),
+      body: JSON.stringify({ body: "A new logical note" }),
     });
   });
 

@@ -26,12 +26,15 @@ describe("validateEditMemoryFormData", () => {
     value.append("retainedPhotoIds", RETAINED_ID);
     value.append("photoIds", NEW_ID);
     value.append("photoNames", "replacement.webp");
+    value.append("selectedPhotoIds", RETAINED_ID);
+    value.append("selectedPhotoIds", NEW_ID);
     value.set("coverPhotoId", NEW_ID);
 
     await expect(validateEditMemoryFormData(value)).resolves.toMatchObject({
       coverPhotoId: NEW_ID,
       description: "A better description.",
       photos: [{ id: NEW_ID, name: "replacement.webp" }],
+      assetIds: [RETAINED_ID, NEW_ID],
       retainedPhotoIds: [RETAINED_ID],
       title: "Revised picnic",
       visibility: "vault",
@@ -55,7 +58,9 @@ describe("validateEditMemoryFormData", () => {
   it("accepts the ten-photo final state", async () => {
     const value = formData();
     for (let index = 0; index < 10; index += 1) {
-      value.append("retainedPhotoIds", crypto.randomUUID());
+      const id = crypto.randomUUID();
+      value.append("retainedPhotoIds", id);
+      value.append("selectedPhotoIds", id);
     }
     value.set("coverPhotoId", value.get("retainedPhotoIds") as string);
 
@@ -67,10 +72,13 @@ describe("validateEditMemoryFormData", () => {
   it("rejects an edit with more than ten final photos", async () => {
     const value = formData();
     for (let index = 0; index < 10; index += 1) {
-      value.append("retainedPhotoIds", crypto.randomUUID());
+      const id = crypto.randomUUID();
+      value.append("retainedPhotoIds", id);
+      value.append("selectedPhotoIds", id);
     }
     value.append("photoIds", NEW_ID);
     value.append("photoNames", "extra.png");
+    value.append("selectedPhotoIds", NEW_ID);
     value.set("coverPhotoId", NEW_ID);
 
     await expect(validateEditMemoryFormData(value)).rejects.toMatchObject({

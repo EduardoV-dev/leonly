@@ -51,12 +51,10 @@ export async function syncCurrentUser() {
     throw new AuthenticationRequiredError();
   }
 
-  const { error } = await supabase.from("users").upsert({
-    avatar_url: user.user_metadata?.avatar_url ?? null,
-    deleted_at: null,
-    email: user.email,
-    id: user.id,
-    name: getDisplayName(user),
+  const { error } = await supabase.rpc("sync_current_user", {
+    p_avatar_url: user.user_metadata?.avatar_url ?? null,
+    p_email: user.email ?? "",
+    p_name: getDisplayName(user),
   });
 
   if (error) {

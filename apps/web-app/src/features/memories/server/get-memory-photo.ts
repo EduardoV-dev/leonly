@@ -7,9 +7,7 @@ import { getAvailableMemory } from "./get-available-memory";
 export const memoryPhotoVariantSchema = z.enum(["cover", "detail"]);
 
 const memoryPhotoIdSchema = z.uuid();
-const photoMetadataSchema = z.object({
-  cover_object_path: z.string().min(1).nullable(),
-  detail_object_path: z.string().min(1).nullable(),
+const assetObjectSchema = z.object({
   object_path: z.string().min(1),
 });
 
@@ -41,24 +39,23 @@ export async function getMemoryPhoto(
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("memory_photos")
-    .select("object_path,cover_object_path,detail_object_path")
-    .eq("id", photoId)
-    .eq("memory_id", memory.id)
+    .from("memory_asset_objects")
+    .select("object_path,memory_assets!inner(memory_id,space_id)")
+    .eq("asset_id", photoId)
+    .eq("variant_type", variant)
+    .eq("status", "ready")
+    .eq("memory_assets.memory_id", memory.id)
+    .eq("memory_assets.space_id", memory.spaceId)
     .maybeSingle();
 
   if (error || !data) return null;
 
-  const photo = photoMetadataSchema.safeParse(data);
-  if (!photo.success) return null;
+  const objectMetadata = assetObjectSchema.safeParse(data);
+  if (!objectMetadata.success) return null;
 
-  const objectPath =
-    variant === "cover"
-      ? (photo.data.cover_object_path ?? photo.data.object_path)
-      : (photo.data.detail_object_path ?? photo.data.object_path);
   const { data: object, error: downloadError } = await supabase.storage
     .from("memory-photos")
-    .download(objectPath);
+    .download(objectMetadata.data.object_path);
 
   if (downloadError || !object) return null;
   return object.arrayBuffer();

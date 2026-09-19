@@ -25,9 +25,10 @@ export const getMemoryForEditing = cache(async function getMemoryForEditing(
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("memory_photos")
+    .from("memory_assets")
     .select("id,position")
     .eq("memory_id", memory.id)
+    .eq("space_id", memory.spaceId)
     .order("position", { ascending: true });
 
   if (error) {

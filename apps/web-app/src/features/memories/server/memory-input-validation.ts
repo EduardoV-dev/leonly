@@ -51,7 +51,6 @@ export type ValidatedStagedMemoryPhoto = {
 export type ValidatedCreateMemoryInput = ValidatedMemoryDetails & {
   coverPhotoId: string | null;
   photos: ValidatedStagedMemoryPhoto[];
-  requestFingerprint: string;
 };
 
 export class MemoryInputError extends Error {
@@ -162,29 +161,29 @@ export function validateMemoryDetails(formData: FormData): ValidatedMemoryDetail
 }
 
 export async function validateMemoryPhotoBytes(
-  fileName: string,
+  fileName: string | null,
   bytes: ArrayBuffer,
 ): Promise<ValidatedMemoryPhoto> {
   if (bytes.byteLength > MAX_MEMORY_PHOTO_SIZE_BYTES) {
     invalidField("photos", "Each photo must be 5 MB or smaller.");
   }
 
-  const extension = getPhotoExtension(fileName);
+  const extension = fileName ? getPhotoExtension(fileName) : null;
   if (
-    !extension ||
-    !ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
-      extension as (typeof ACCEPTED_MEMORY_PHOTO_EXTENSIONS)[number],
-    )
-  ) {
+    fileName &&
+    (!extension ||
+      !ACCEPTED_MEMORY_PHOTO_EXTENSIONS.includes(
+        extension as (typeof ACCEPTED_MEMORY_PHOTO_EXTENSIONS)[number],
+      ))
+  )
     invalidField("photos", "Photos must use a JPG, JPEG, PNG, or WebP extension.");
-  }
 
   const detectedFileType = await fileTypeFromBuffer(new Uint8Array(bytes)).catch(() => undefined);
   if (!detectedFileType || !isAcceptedPhotoContentType(detectedFileType.mime)) {
     invalidField("photos", "Photos must be JPEG, PNG, or WebP images.");
   }
   const contentType = detectedFileType.mime;
-  if (!EXTENSIONS_BY_CONTENT_TYPE[contentType].includes(extension)) {
+  if (extension && !EXTENSIONS_BY_CONTENT_TYPE[contentType].includes(extension)) {
     invalidField("photos", "Photo file extensions must match their image type.");
   }
 
@@ -259,15 +258,5 @@ export async function validateCreateMemoryFormData(
     invalidField("photos", "Choose one cover photo.");
   }
 
-  const requestFingerprint = createHash("sha256")
-    .update(
-      JSON.stringify({
-        ...details,
-        coverPhotoId,
-        photos,
-      }),
-    )
-    .digest("hex");
-
-  return { ...details, coverPhotoId, photos, requestFingerprint };
+  return { ...details, coverPhotoId, photos };
 }

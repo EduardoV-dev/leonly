@@ -70,4 +70,30 @@ describe("getActiveSpaceForCurrentUser", () => {
       rpcError,
     );
   });
+
+  it("rejects RPC results outside the baseline contract", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        active_members: [{ avatar_url: null, display_name: "Leo" }],
+        id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+        invite_code: null,
+        invite_code_expires_at: null,
+        member_names: ["Leo"],
+        name: "Our Space",
+        onboarding_completed_at: null,
+        start_date: "2025-04-27",
+        user_id: "auth-subject",
+      },
+      error: null,
+    });
+    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
+
+    await expect(getActiveSpaceForCurrentUser()).rejects.toThrow(
+      "Failed to load the active space.",
+    );
+    expect(logServerError).toHaveBeenCalledWith(
+      { event: "supabase_operation_failed", operation: "parse_active_space" },
+      expect.anything(),
+    );
+  });
 });

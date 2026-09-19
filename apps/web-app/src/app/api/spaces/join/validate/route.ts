@@ -5,7 +5,6 @@ import {
   INVITE_UNAVAILABLE_MESSAGE,
   parseSpaceInviteResult,
 } from "@/features/space-setup/server/space-invite-result";
-import { SPACE_RPC_ERROR_CODES } from "@/features/space-setup/server/space-rpc-error-codes";
 import {
   AuthenticationRequiredError,
   syncCurrentUser,
@@ -33,10 +32,6 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      if (error.code === SPACE_RPC_ERROR_CODES.AUTHENTICATION_REQUIRED) {
-        return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
-      }
-
       logServerError(
         { event: "supabase_operation_failed", operation: "validate_space_invite" },
         error,

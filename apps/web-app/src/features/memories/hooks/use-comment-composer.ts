@@ -6,7 +6,7 @@ import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment } from "../types/comment";
 import { type MemoryCommentsData, prependCommentToData } from "./use-memory-comments";
 
-type CommentMutationErrorCode = "failed" | "mismatch" | "unavailable";
+type CommentMutationErrorCode = "failed" | "unavailable";
 
 class CommentMutationError extends Error {
   constructor(
@@ -48,17 +48,13 @@ export function getCommentDraftState(draft: string): CommentDraftState {
 
 type CreateCommentPayload = {
   body: string;
-  idempotencyKey: string;
   memoryId: string;
 };
 
 async function submitComment(payload: CreateCommentPayload): Promise<MemoryComment> {
   const response = await fetch(`/api/memories/${payload.memoryId}/comments`, {
     body: JSON.stringify({ body: payload.body }),
-    headers: {
-      "content-type": "application/json",
-      "Idempotency-Key": payload.idempotencyKey,
-    },
+    headers: { "content-type": "application/json" },
     method: "POST",
   });
   const responsePayload = (await response.json().catch(() => null)) as {
@@ -77,7 +73,6 @@ async function submitComment(payload: CreateCommentPayload): Promise<MemoryComme
 export function useCommentComposer(memoryId: string, onUnavailable?: () => void) {
   const { t } = useTranslation("memories");
   const queryClient = useQueryClient();
-  const idempotencyKeyRef = useRef<string | null>(null);
   const submittedBodyRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
   const [draft, setDraft] = useState("");
@@ -113,7 +108,6 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       setHasBlurred(false);
       setHasAttemptedSubmit(false);
       setSubmitError(null);
-      idempotencyKeyRef.current = null;
       submittedBodyRef.current = null;
       setLastOutcome("success");
     },
@@ -122,7 +116,6 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
   const updateDraft = useCallback(
     (value: string) => {
       if (mutation.isPending) return;
-      idempotencyKeyRef.current = null;
       submittedBodyRef.current = null;
       setHasInteracted(true);
       setDraft(cropCommentDraft(value));
@@ -145,15 +138,13 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       return "invalid" as const;
     }
 
-    const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
-    idempotencyKeyRef.current = idempotencyKey;
     submittedBodyRef.current ??= draft;
     setSubmitError(null);
     setLastOutcome(null);
     submittingRef.current = true;
 
     try {
-      await mutation.mutateAsync({ body: submittedBodyRef.current, idempotencyKey, memoryId });
+      await mutation.mutateAsync({ body: submittedBodyRef.current, memoryId });
       return "submitted" as const;
     } catch {
       return "submitted" as const;

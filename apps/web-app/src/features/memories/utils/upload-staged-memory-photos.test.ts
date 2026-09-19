@@ -8,76 +8,176 @@ import { uploadStagedMemoryPhotos } from "./upload-staged-memory-photos";
 
 const PHOTO_ID = "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452";
 
+function newPhoto(): Extract<MemoryEditorPhoto, { kind: "new" }> {
+  const file = new File(["image"], "memory.png", { type: "image/png" });
+  return {
+    file,
+    id: PHOTO_ID,
+    key: `new-${PHOTO_ID}`,
+    kind: "new",
+    name: file.name,
+    previewUrl: "blob:preview",
+  };
+}
+
 describe("uploadStagedMemoryPhotos", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("uploads files directly to Supabase before sending metadata-only finalization", async () => {
-    const file = new File(["image"], "memory.png", { type: "image/png" });
-    const photo: MemoryEditorPhoto = {
-      file,
-      id: PHOTO_ID,
-      key: `new-${PHOTO_ID}`,
-      kind: "new",
-      name: file.name,
-      previewUrl: "blob:preview",
-    };
+  it("uses a signed URL for create originals and finalizes with the grant", async () => {
+    const photo = newPhoto();
     const formData = new FormData();
-    formData.append("photoIds", PHOTO_ID);
-    formData.append("photoNames", file.name);
     const finalResponse = Response.json({ id: "memory-id" });
+    const prepared = {
+      grant: "signed-grant",
+      uploads: [{ id: PHOTO_ID, path: "space/temporary/photo/original", token: "upload-token" }],
+    };
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        Response.json({
-          result: null,
-          uploads: [{ id: PHOTO_ID, path: "space/attempt/photo/original" }],
-        }),
-      )
+      .mockResolvedValueOnce(Response.json(prepared))
       .mockResolvedValueOnce(finalResponse);
     vi.stubGlobal("fetch", fetchMock);
-    const upload = vi.fn().mockResolvedValue({ error: null });
-    createClientMock.mockReturnValue({ storage: { from: vi.fn(() => ({ upload })) } });
+    const upload = vi.fn();
+    const uploadToSignedUrl = vi.fn().mockResolvedValue({ error: null });
+    createClientMock.mockReturnValue({
+      storage: { from: vi.fn(() => ({ upload, uploadToSignedUrl })) },
+    });
+    const onPrepared = vi.fn();
 
     await expect(
       uploadStagedMemoryPhotos({
+        preparedUpload: null,
         finalMethod: "POST",
         finalUrl: "/api/memories",
         formData,
-        idempotencyKey: "request-id",
+        onPrepared,
         photos: [photo],
         prepareUrl: "/api/memories/uploads",
       }),
     ).resolves.toBe(finalResponse);
 
-    expect(upload).toHaveBeenCalledWith("space/attempt/photo/original", file, {
-      contentType: "image/png",
-      upsert: true,
-    });
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "/api/memories",
-      expect.objectContaining({ body: formData, method: "POST" }),
+    expect(onPrepared).toHaveBeenCalledWith(prepared);
+    expect(uploadToSignedUrl).toHaveBeenCalledWith(
+      "space/temporary/photo/original",
+      "upload-token",
+      photo.file,
+      {
+        contentType: "image/png",
+      },
     );
-    expect(formData.getAll("photos")).toEqual([]);
+    expect(upload).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/memories", {
+      body: JSON.stringify({ grant: "signed-grant" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    });
   });
 
-  it("skips preparation and storage for metadata-only mutations", async () => {
+  it("prepares metadata-only edits with a grant without initializing storage", async () => {
     const finalResponse = Response.json({ id: "memory-id" });
-    const fetchMock = vi.fn().mockResolvedValue(finalResponse);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ grant: "edit-grant", uploads: [] }))
+      .mockResolvedValueOnce(finalResponse);
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
       uploadStagedMemoryPhotos({
+        preparedUpload: null,
         finalMethod: "PATCH",
         finalUrl: "/api/memories/memory-id/edit",
         formData: new FormData(),
-        idempotencyKey: "request-id",
+        onPrepared: vi.fn(),
         photos: [],
         prepareUrl: "/api/memories/memory-id/edit/uploads",
       }),
     ).resolves.toBe(finalResponse);
 
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it("reuses a prepared signed upload after a recoverable failure", async () => {
+    const photo = newPhoto();
+    const preparedUpload = {
+      grant: "signed-grant",
+      uploads: [{ id: PHOTO_ID, path: "space/temporary/mutation/photo/original", token: "token" }],
+    };
+    const finalResponse = Response.json({ id: "memory-id" });
+    const fetchMock = vi.fn().mockResolvedValue(finalResponse);
+    vi.stubGlobal("fetch", fetchMock);
+    const uploadToSignedUrl = vi.fn().mockResolvedValue({ error: null });
+    createClientMock.mockReturnValue({
+      storage: { from: vi.fn(() => ({ uploadToSignedUrl })) },
+    });
+
+    await uploadStagedMemoryPhotos({
+      preparedUpload,
+      finalMethod: "POST",
+      finalUrl: "/api/memories",
+      formData: new FormData(),
+      onPrepared: vi.fn(),
+      photos: [photo],
+      prepareUrl: "/api/memories/uploads",
+    });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(uploadToSignedUrl).toHaveBeenCalledOnce();
+  });
+
+  it("retains a signed grant before a partial failure and reattempts temporary uploads", async () => {
+    const photo = newPhoto();
+    const prepared = {
+      grant: "signed-grant",
+      uploads: [
+        {
+          id: PHOTO_ID,
+          path: "space/temporary/mutation/photo/original",
+          token: "upload-token",
+        },
+      ],
+    };
+    const finalResponse = Response.json({ id: "memory-id" });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(prepared))
+      .mockResolvedValue(finalResponse);
+    vi.stubGlobal("fetch", fetchMock);
+    const uploadToSignedUrl = vi
+      .fn()
+      .mockResolvedValueOnce({ error: new Error("interrupted") })
+      .mockResolvedValue({ error: null });
+    createClientMock.mockReturnValue({
+      storage: { from: vi.fn(() => ({ uploadToSignedUrl })) },
+    });
+    const onPrepared = vi.fn();
+
+    const options = {
+      preparedUpload: null,
+      finalMethod: "POST" as const,
+      finalUrl: "/api/memories",
+      formData: new FormData(),
+      onPrepared,
+      photos: [photo],
+      prepareUrl: "/api/memories/uploads",
+    };
+    await expect(uploadStagedMemoryPhotos(options)).rejects.toThrow("could not be uploaded");
+
+    expect(onPrepared).toHaveBeenCalledWith(prepared);
+    expect(onPrepared.mock.invocationCallOrder[0]).toBeLessThan(
+      uploadToSignedUrl.mock.invocationCallOrder[0],
+    );
+    await expect(
+      uploadStagedMemoryPhotos({
+        ...options,
+        preparedUpload: prepared,
+      }),
+    ).resolves.toBe(finalResponse);
+
+    expect(uploadToSignedUrl).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/memories", {
+      body: JSON.stringify({ grant: "signed-grant" }),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    });
   });
 });

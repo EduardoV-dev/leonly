@@ -15,13 +15,17 @@ import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEdit } from "../../types/memory-edit";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import { createUuidV7 } from "../../utils/create-uuid-v7";
 import {
   clearMemoryDraft,
   getEditMemoryDraftKey,
   readMemoryDraft,
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
-import { uploadStagedMemoryPhotos } from "../../utils/upload-staged-memory-photos";
+import {
+  type PreparedMemoryUpload,
+  uploadStagedMemoryPhotos,
+} from "../../utils/upload-staged-memory-photos";
 
 type EditResponse = {
   code?: "conflict" | "pending" | "unavailable" | "validation_failed";
@@ -52,6 +56,7 @@ function createEditFormData(
   values: MemoryEditorValues,
   photos: MemoryEditorPhoto[],
   coverPhotoKey: string | null,
+  mutationId: string,
 ): FormData {
   const formData = new FormData();
   formData.set("title", values.title);
@@ -61,6 +66,7 @@ function createEditFormData(
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
   formData.set("expectedVersion", memory.version);
+  formData.set("mutationId", mutationId);
   const retained = photos.filter((photo) => photo.kind === "retained");
   for (const photo of retained) formData.append("retainedPhotoIds", photo.id);
   const newPhotos = photos.filter((photo) => photo.kind === "new");
@@ -68,6 +74,7 @@ function createEditFormData(
     formData.append("photoIds", photo.id);
     formData.append("photoNames", photo.name);
   }
+  for (const photo of photos) formData.append("selectedPhotoIds", photo.id);
   const cover = photos.find((photo) => photo.key === coverPhotoKey);
   if (cover) formData.set("coverPhotoId", cover.id);
   return formData;
@@ -98,7 +105,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const idempotencyKey = useRef<string | null>(null);
+  const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
+  const mutationId = useRef(createUuidV7());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const storageKey = getEditMemoryDraftKey(memory.id, memory.version);
@@ -143,7 +151,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setIsConflict(false);
     setIsDirty(Boolean(storedDraft));
     setSubmitError(null);
-    idempotencyKey.current = null;
+    preparedUpload.current = null;
+    mutationId.current = createUuidV7();
   }, [memory, storageKey]);
   useEffect(() => {
     if (!hasLoadedDraft || !isDirty) return;
@@ -189,7 +198,8 @@ export function useEditMemoryForm(memory: MemoryEdit) {
       return next;
     });
   const changeDraft = (field: string) => {
-    idempotencyKey.current = null;
+    preparedUpload.current = null;
+    mutationId.current = createUuidV7();
     clearFieldError(field);
     setIsDirty(true);
     setSubmitError(null);
@@ -198,6 +208,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     key: TKey,
     value: MemoryEditorValues[TKey],
   ) => {
+    if (values[key] === value) return;
     changeDraft(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
@@ -225,7 +236,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
-      const id = crypto.randomUUID();
+      const id = createUuidV7();
       nextPhotoKey.current += 1;
       return {
         file,
@@ -255,6 +266,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
   const selectCoverPhoto = (key: string) => {
+    if (coverPhotoKey === key) return;
     changeDraft("photos");
     setCoverPhotoKey(key);
   };
@@ -267,27 +279,32 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setFields({});
     setSubmitError(null);
     setIsSubmitting(true);
-    idempotencyKey.current ??= crypto.randomUUID();
     try {
       const response = await uploadStagedMemoryPhotos({
+        preparedUpload: preparedUpload.current,
         finalMethod: "PATCH",
         finalUrl: `/api/memories/${memory.id}/edit`,
-        formData: createEditFormData(memory, values, photos, coverPhotoKey),
-        idempotencyKey: idempotencyKey.current,
+        formData: createEditFormData(memory, values, photos, coverPhotoKey, mutationId.current),
+        onPrepared: (prepared) => {
+          preparedUpload.current = prepared;
+        },
         photos,
         prepareUrl: `/api/memories/${memory.id}/edit/uploads`,
       });
       const payload = (await response.json()) as EditResponse;
       if (payload.code === "unavailable") {
+        preparedUpload.current = null;
         discardDraft();
         router.refresh();
         return;
       }
       if (payload.code === "conflict") {
+        preparedUpload.current = null;
         setIsConflict(true);
         return;
       }
       if (!response.ok) {
+        if (response.status < 500) preparedUpload.current = null;
         setFields(
           Object.fromEntries(
             Object.keys(payload.fields ?? {}).map((field) => [
@@ -296,14 +313,12 @@ export function useEditMemoryForm(memory: MemoryEdit) {
             ]),
           ),
         );
-        throw new Error(
-          payload.code === "validation_failed"
-            ? t("edit.validation.serverInvalid")
-            : t("edit.validation.saveFailed"),
-        );
+        if (payload.code === "validation_failed") return;
+        throw new Error(t("edit.validation.saveFailed"));
       }
       const finalVisibility = payload.visibility ?? values.visibility;
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
+      preparedUpload.current = null;
       discardDraft();
       toast.success(t("edit.success"));
       router.push(detailRoute(memory.id, finalVisibility));

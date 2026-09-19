@@ -5,41 +5,55 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryEditResult } from "../types/memory-edit";
 import { validateEditMemoryFormData } from "./edit-memory-input";
-import { cleanupMemoryEditAttempt } from "./memory-edit-cleanup";
-import { MemoryInputError } from "./memory-input-validation";
-import { encodeMemoryVersion } from "./memory-version";
+import { getAvailableMemory } from "./get-available-memory";
+import { MemoryInputError, validateMemoryPhotoBytes } from "./memory-input-validation";
 import {
-  isStagedMemoryPhotoReady,
-  processStagedMemoryPhoto,
-  type StagedMemoryPhotoUpload,
-} from "./process-staged-memory-photo";
+  createMemoryUploadGrant,
+  type EditMemoryUploadGrantAsset,
+  type EditMemoryUploadGrantPayload,
+  MemoryUploadGrantError,
+  verifyMemoryUploadGrant,
+} from "./memory-upload-grant";
+import { uploadMemoryObjectIfAbsentOrIdentical } from "./memory-upload-storage";
+import { encodeMemoryVersion } from "./memory-version";
 
 const uuidSchema = z.uuid();
+const activeSpaceSchema = z.object({ id: z.uuid() });
+const editResultSchema = z
+  .object({
+    memory_id: z.uuid().nullable(),
+    status: z.enum([
+      "cleanup_pending",
+      "completed",
+      "conflict",
+      "invalid",
+      "mismatch",
+      "pending",
+      "unavailable",
+    ]),
+    updated_at: z.string().nullable(),
+    visibility: z.enum(["timeline", "vault"]).nullable(),
+  })
+  .strict();
 
-type EditOutcome =
-  | "completed"
-  | "conflict"
-  | "failed"
-  | "invalid"
-  | "mismatch"
-  | "pending"
-  | "processing"
-  | "unavailable";
-
-type Reservation = {
-  attempt_id: string | null;
-  is_new: boolean;
-  memory_id: string | null;
-  outcome: EditOutcome;
-  result_updated_at: string | null;
-  result_visibility: "timeline" | "vault" | null;
+type PreparedMemoryEdit = {
+  grant: string;
+  uploads: Array<{ id: string; path: string; token: string }>;
 };
 
-type Finalization = {
-  memory_id: string | null;
-  outcome: "completed" | "conflict" | "invalid" | "unavailable";
-  result_updated_at: string | null;
-  result_visibility: "timeline" | "vault" | null;
+type FinalizedNewAsset = {
+  asset_id: string;
+  cover_byte_size: number;
+  cover_path: string;
+  detail_byte_size: number;
+  detail_path: string;
+  is_cover: boolean;
+  is_new: true;
+  original_byte_size: number;
+  original_content_type: string;
+  original_path: string;
+  position: number;
+  temporary_path: string;
 };
 
 export type EditMemoryErrorCode = "conflict" | "pending" | "unavailable";
@@ -56,167 +70,267 @@ export class EditMemoryError extends MemoryInputError {
   }
 }
 
-function throwForOutcome(outcome: EditOutcome): never {
-  if (outcome === "unavailable") {
-    throw new EditMemoryError("This memory is unavailable.", {}, 404, "unavailable");
-  }
-  if (outcome === "conflict") {
-    throw new EditMemoryError(
-      "This memory changed. Reload the current version before saving.",
-      {},
-      409,
-      "conflict",
-    );
-  }
-  if (outcome === "mismatch") {
-    throw new MemoryInputError("Please try again with a new edit request.", {
-      form: "The request key was already used for different changes.",
-    });
-  }
-  if (outcome === "invalid") {
-    throw new MemoryInputError("Please review the highlighted fields.", {
-      photos: "One or more retained photos are unavailable.",
-    });
-  }
+function unavailable(): never {
+  throw new EditMemoryError("This memory is unavailable.", {}, 404, "unavailable");
+}
+
+function conflict(): never {
   throw new EditMemoryError(
-    "This edit is still being saved. Please try again.",
+    "This memory changed. Reload the current version before saving.",
     {},
     409,
-    "pending",
+    "conflict",
   );
 }
 
-function completedResult(
-  row: Pick<Reservation, "memory_id" | "result_updated_at" | "result_visibility">,
-  reused: boolean,
-): MemoryEditResult | null {
-  if (!row.memory_id || !row.result_updated_at || !row.result_visibility) return null;
+function invalidGrant(error?: unknown): never {
+  throw new MemoryInputError(
+    "Please review the highlighted fields.",
+    { photos: "One or more selected photos are unavailable." },
+    400,
+    "validation_failed",
+    { cause: error },
+  );
+}
+
+function selection(payload: EditMemoryUploadGrantPayload) {
+  const newAssets = new Map(payload.newAssets.map((asset) => [asset.id, asset]));
+  return payload.finalAssetIds.map((id, position) => {
+    const asset = newAssets.get(id);
+    return {
+      asset_id: id,
+      cover_path: asset?.coverPath ?? null,
+      detail_path: asset?.detailPath ?? null,
+      is_cover: id === payload.coverAssetId,
+      is_new: Boolean(asset),
+      original_path: asset?.originalPath ?? null,
+      position,
+      temporary_path: asset?.temporaryPath ?? null,
+    };
+  });
+}
+
+function editParameters(payload: EditMemoryUploadGrantPayload) {
   return {
-    id: row.memory_id,
-    reused,
-    version: encodeMemoryVersion(row.result_updated_at),
-    visibility: row.result_visibility,
+    p_actor_subject: payload.actorId,
+    p_assets: selection(payload),
+    p_description: payload.description,
+    p_expected_updated_at: payload.expectedUpdatedAt,
+    p_location: payload.location,
+    p_memory_date: payload.memoryDate,
+    p_memory_id: payload.memoryId,
+    p_mutation_id: payload.mutationId,
+    p_space_id: payload.spaceId,
+    p_title: payload.title,
+    p_visibility: payload.visibility,
   };
 }
 
-function validateRequest(memoryId: string, idempotencyKey: string): void {
-  if (!uuidSchema.safeParse(memoryId).success) {
-    throw new EditMemoryError("This memory is unavailable.", {}, 404, "unavailable");
-  }
-  if (!uuidSchema.safeParse(idempotencyKey).success) {
-    throw new MemoryInputError("Please try again with a new edit request.", {
-      form: "Invalid request key.",
-    });
-  }
-}
-
-async function reserveEdit(
-  memoryId: string,
-  idempotencyKey: string,
-  input: Awaited<ReturnType<typeof validateEditMemoryFormData>>,
-) {
-  const supabase = await createClient();
-  const response = await supabase.rpc("reserve_memory_edit_attempt", {
-    p_expected_updated_at: input.expectedUpdatedAt,
-    p_idempotency_key: idempotencyKey,
-    p_memory_id: memoryId,
-    p_request_fingerprint: input.requestFingerprint,
+async function enqueueEditCleanup(
+  payload: EditMemoryUploadGrantPayload,
+  includePermanentPaths: boolean,
+): Promise<void> {
+  await createAdminClient().rpc("enqueue_memory_edit_cleanup", {
+    p_actor_subject: payload.actorId,
+    p_memory_id: payload.memoryId,
+    p_mutation_id: payload.mutationId,
+    p_paths: payload.newAssets.flatMap((asset) => [
+      asset.temporaryPath,
+      ...(includePermanentPaths ? [asset.originalPath, asset.coverPath, asset.detailPath] : []),
+    ]),
   });
-  const reservation = response.data?.[0] as Reservation | undefined;
-  if (response.error || !reservation) {
-    throw new Error("Unable to reserve the memory edit.", { cause: response.error });
-  }
-  if (reservation.outcome !== "processing" && reservation.outcome !== "completed") {
-    throwForOutcome(reservation.outcome);
-  }
-  return { reservation, supabase };
 }
 
-async function stageEditPhotos(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  attemptId: string,
-  photos: Awaited<ReturnType<typeof validateEditMemoryFormData>>["photos"],
-): Promise<StagedMemoryPhotoUpload[]> {
-  if (photos.length === 0) return [];
-
-  const admin = createAdminClient();
-  const existingResponse = await admin
-    .from("memory_edit_photo_staging")
-    .select("id,object_path,cover_object_path,detail_object_path,position")
-    .eq("attempt_id", attemptId)
-    .order("position", { ascending: true });
-  if (existingResponse.error) {
-    throw new Error("Unable to inspect staged replacement photos.", {
-      cause: existingResponse.error,
-    });
+function handleOutcome(status: string): never {
+  if (status === "unavailable") unavailable();
+  if (status === "conflict") conflict();
+  if (status === "cleanup_pending") {
+    throw new EditMemoryError(
+      "We are finishing a previous photo update. Please try again.",
+      {},
+      503,
+      "pending",
+    );
   }
-  const existingById = new Map((existingResponse.data ?? []).map((row) => [row.id, row]));
-  const uploads: StagedMemoryPhotoUpload[] = [];
-  for (const [position, photo] of photos.entries()) {
-    const existing = existingById.get(photo.id);
-    if (existing) {
-      if (existing.position !== position) {
-        throw new Error("A staged replacement photo has an invalid position.");
-      }
-      uploads.push({
-        ...photo,
-        coverPath: existing.cover_object_path,
-        detailPath: existing.detail_object_path,
-        originalPath: existing.object_path,
-      });
-      continue;
-    }
-    const response = await supabase.rpc("stage_memory_edit_photo_variants", {
-      p_attempt_id: attemptId,
-      p_photo_id: photo.id,
-      p_position: position,
-    });
-    const staged = response.data?.[0] as
-      | { cover_object_path?: string; detail_object_path?: string; object_path?: string }
-      | undefined;
-    if (
-      response.error ||
-      !staged?.object_path ||
-      !staged.cover_object_path ||
-      !staged.detail_object_path
-    ) {
-      throw new Error("Unable to stage a replacement photo.", { cause: response.error });
-    }
-    uploads.push({
-      ...photo,
-      coverPath: staged.cover_object_path,
-      detailPath: staged.detail_object_path,
-      originalPath: staged.object_path,
-    });
-  }
-  return uploads;
+  invalidGrant();
 }
 
 export async function prepareMemoryEdit(
   memoryId: string,
-  idempotencyKey: string,
   formData: FormData,
-) {
-  validateRequest(memoryId, idempotencyKey);
+  actorId: string,
+): Promise<PreparedMemoryEdit> {
+  if (!uuidSchema.safeParse(memoryId).success) unavailable();
   const input = await validateEditMemoryFormData(formData);
-  const { reservation, supabase } = await reserveEdit(memoryId, idempotencyKey, input);
-  if (reservation.outcome === "completed") {
-    const result = completedResult(reservation, true);
-    if (!result) throw new Error("The completed edit outcome is invalid.");
-    return { result, uploads: [] };
+  const mutationId = uuidSchema.safeParse(formData.get("mutationId"));
+  if (!mutationId.success) invalidGrant();
+
+  const memory = await getAvailableMemory(memoryId);
+  if (!memory) unavailable();
+  if (memory.updatedAt !== input.expectedUpdatedAt) conflict();
+
+  const supabase = await createClient();
+  const activeSpace = await supabase.rpc("get_active_space");
+  const parsedSpace = activeSpaceSchema.safeParse(activeSpace.data);
+  if (activeSpace.error) {
+    throw new Error("Unable to resolve the active space.", { cause: activeSpace.error });
   }
-  if (!reservation.attempt_id) throwForOutcome("pending");
+  if (!parsedSpace.success || parsedSpace.data.id !== memory.spaceId) unavailable();
+
+  const newAssets: EditMemoryUploadGrantAsset[] = input.photos.map((photo) => {
+    const basePath = `${memory.spaceId}/memories/${memoryId}/${photo.id}`;
+    return {
+      coverPath: `${basePath}/cover.webp`,
+      detailPath: `${basePath}/detail.webp`,
+      id: photo.id,
+      name: photo.name,
+      originalPath: `${basePath}/original`,
+      temporaryPath: `${memory.spaceId}/temporary/${mutationId.data}/${photo.id}/original`,
+    };
+  });
+  const grant = createMemoryUploadGrant({
+    actorId,
+    coverAssetId: input.coverPhotoId,
+    description: input.description,
+    expectedUpdatedAt: input.expectedUpdatedAt,
+    finalAssetIds: input.assetIds,
+    location: input.location,
+    memoryDate: input.memoryDate,
+    memoryId,
+    mutationId: mutationId.data,
+    newAssets,
+    operation: "edit",
+    retainedAssetIds: input.retainedPhotoIds,
+    spaceId: memory.spaceId,
+    timezone: input.timezone,
+    title: input.title,
+    visibility: input.visibility,
+  });
+
+  const admin = createAdminClient();
+  const uploads = await Promise.all(
+    newAssets.map(async (asset) => {
+      const signed = await admin.storage
+        .from("memory-photos")
+        .createSignedUploadUrl(asset.temporaryPath, { upsert: true });
+      if (signed.error || !signed.data?.token) {
+        throw new Error("Unable to create a signed memory upload.", { cause: signed.error });
+      }
+      return { id: asset.id, path: asset.temporaryPath, token: signed.data.token };
+    }),
+  );
+  return { grant, uploads };
+}
+
+export async function editMemory(
+  memoryId: string,
+  grant: string,
+  actorId: string,
+): Promise<MemoryEditResult> {
+  let payload: EditMemoryUploadGrantPayload;
+  try {
+    const verified = verifyMemoryUploadGrant(grant, actorId, "edit");
+    if (verified.operation !== "edit" || verified.memoryId !== memoryId) invalidGrant();
+    payload = verified;
+  } catch (error) {
+    if (error instanceof MemoryUploadGrantError) invalidGrant(error);
+    throw error;
+  }
 
   try {
-    const uploads = await stageEditPhotos(supabase, reservation.attempt_id, input.photos);
+    const admin = createAdminClient();
+    const preflight = await admin.rpc("get_memory_edit_result", editParameters(payload));
+    const parsedPreflight = editResultSchema.safeParse(preflight.data);
+    if (preflight.error || !parsedPreflight.success) {
+      await enqueueEditCleanup(payload, true).catch(() => undefined);
+      throw new Error("Unable to check memory edit status.", { cause: preflight.error });
+    }
+    if (
+      parsedPreflight.data.status === "completed" &&
+      parsedPreflight.data.memory_id &&
+      parsedPreflight.data.updated_at &&
+      parsedPreflight.data.visibility
+    ) {
+      await enqueueEditCleanup(payload, false).catch(() => undefined);
+      return {
+        id: parsedPreflight.data.memory_id,
+        version: encodeMemoryVersion(parsedPreflight.data.updated_at),
+        visibility: parsedPreflight.data.visibility,
+      };
+    }
+    if (parsedPreflight.data.status !== "pending") {
+      await enqueueEditCleanup(payload, true).catch(() => undefined);
+      handleOutcome(parsedPreflight.data.status);
+    }
+
+    const finalizedNewAssets = await Promise.all(
+      payload.newAssets.map(async (asset): Promise<FinalizedNewAsset> => {
+        const downloaded = await admin.storage.from("memory-photos").download(asset.temporaryPath);
+        if (downloaded.error || !downloaded.data) {
+          throw new Error("Unable to download a memory original.", { cause: downloaded.error });
+        }
+        const bytes = await downloaded.data.arrayBuffer();
+        const photo = await validateMemoryPhotoBytes(asset.name, bytes);
+        for (const [path, content, contentType] of [
+          [asset.originalPath, bytes, photo.contentType],
+          [asset.coverPath, photo.variants.cover, "image/webp"],
+          [asset.detailPath, photo.variants.detail, "image/webp"],
+        ] as const) {
+          await uploadMemoryObjectIfAbsentOrIdentical(admin, path, content, contentType);
+        }
+        return {
+          asset_id: asset.id,
+          cover_byte_size: photo.variants.cover.byteLength,
+          cover_path: asset.coverPath,
+          detail_byte_size: photo.variants.detail.byteLength,
+          detail_path: asset.detailPath,
+          is_cover: asset.id === payload.coverAssetId,
+          is_new: true,
+          original_byte_size: bytes.byteLength,
+          original_content_type: photo.contentType,
+          original_path: asset.originalPath,
+          position: payload.finalAssetIds.indexOf(asset.id),
+          temporary_path: asset.temporaryPath,
+        };
+      }),
+    );
+    const newAssets = new Map(finalizedNewAssets.map((asset) => [asset.asset_id, asset]));
+    const response = await admin.rpc("finalize_memory_edit", {
+      ...editParameters(payload),
+      p_assets: payload.finalAssetIds.map(
+        (id, position) =>
+          newAssets.get(id) ?? {
+            asset_id: id,
+            is_cover: id === payload.coverAssetId,
+            is_new: false,
+            position,
+          },
+      ),
+    });
+    const result = editResultSchema.safeParse(response.data);
+    if (response.error || !result.success) {
+      await enqueueEditCleanup(payload, true).catch(() => undefined);
+      throw new Error("Unable to finalize the memory edit.", { cause: response.error });
+    }
+    if (
+      result.data.status !== "completed" ||
+      !result.data.memory_id ||
+      !result.data.updated_at ||
+      !result.data.visibility
+    ) {
+      await enqueueEditCleanup(payload, true).catch(() => undefined);
+      handleOutcome(result.data.status);
+    }
+    await enqueueEditCleanup(payload, false).catch(() => undefined);
     return {
-      result: null,
-      uploads: uploads.map(({ id, originalPath }) => ({ id, path: originalPath })),
+      id: result.data.memory_id,
+      version: encodeMemoryVersion(result.data.updated_at),
+      visibility: result.data.visibility,
     };
   } catch (error) {
-    await cleanupMemoryEditAttempt(reservation.attempt_id);
+    if (error instanceof MemoryInputError) throw error;
     throw new EditMemoryError(
-      "We could not prepare these photos. Please try again.",
+      "We could not update this memory. Please try again.",
       {},
       500,
       "pending",
@@ -225,74 +339,5 @@ export async function prepareMemoryEdit(
   }
 }
 
-export async function editMemory(
-  memoryId: string,
-  idempotencyKey: string,
-  formData: FormData,
-): Promise<MemoryEditResult> {
-  validateRequest(memoryId, idempotencyKey);
-  const input = await validateEditMemoryFormData(formData);
-  const { reservation, supabase } = await reserveEdit(memoryId, idempotencyKey, input);
-  if (reservation.outcome === "completed") {
-    const result = completedResult(reservation, true);
-    if (result) return result;
-    throw new Error("The completed edit outcome is invalid.");
-  }
-  if (!reservation.attempt_id) throwForOutcome("pending");
-  const attemptId = reservation.attempt_id;
-
-  let failedOperation = "finalization";
-  try {
-    const uploads = await stageEditPhotos(supabase, attemptId, input.photos);
-    for (const upload of uploads) {
-      failedOperation = "photo processing";
-      await processStagedMemoryPhoto(upload, async () => {
-        if (await isStagedMemoryPhotoReady("memory_edit_photo_staging", attemptId, upload.id)) {
-          return;
-        }
-        const marked = await supabase.rpc("mark_memory_edit_photo_uploaded", {
-          p_attempt_id: attemptId,
-          p_photo_id: upload.id,
-        });
-        if (marked.error) {
-          throw new Error("Unable to mark a replacement photo ready.", { cause: marked.error });
-        }
-      });
-    }
-
-    failedOperation = "finalization";
-    const response = await supabase.rpc("finalize_memory_edit_attempt", {
-      p_attempt_id: attemptId,
-      p_cover_photo_id: input.coverPhotoId,
-      p_description: input.description,
-      p_location: input.location,
-      p_memory_date: input.memoryDate,
-      p_retained_photo_ids: input.retainedPhotoIds,
-      p_timezone: input.timezone,
-      p_title: input.title,
-      p_visibility: input.visibility,
-    });
-    const finalized = response.data?.[0] as Finalization | undefined;
-    if (response.error || !finalized) {
-      throw new Error("Unable to finalize the memory edit.", { cause: response.error });
-    }
-    if (finalized.outcome !== "completed") throwForOutcome(finalized.outcome);
-
-    const result = completedResult(finalized, false);
-    if (!result) throw new Error("The memory edit outcome is invalid.");
-    return result;
-  } catch (error) {
-    await cleanupMemoryEditAttempt(attemptId);
-    if (error instanceof MemoryInputError) throw error;
-    throw new EditMemoryError(
-      "We could not update this memory. Please try again.",
-      {},
-      500,
-      "pending",
-      { cause: new Error(`Memory edit ${failedOperation} failed.`, { cause: error }) },
-    );
-  }
-}
-
-export { cleanupStaleMemoryEdits } from "./memory-edit-cleanup";
 export { MemoryInputError } from "./memory-input-validation";
+export { cleanupResources } from "./resource-cleanup";

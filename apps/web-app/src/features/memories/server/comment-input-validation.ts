@@ -1,6 +1,5 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import { MAX_COMMENT_LENGTH } from "../constants/comments";
 
@@ -23,7 +22,6 @@ export const commentBodySchema = z.string().transform((value, context) => {
 export const createCommentInputSchema = z
   .object({
     body: commentBodySchema,
-    idempotencyKey: z.uuid(),
     memoryId: z.uuid(),
   })
   .strict();
@@ -50,7 +48,3 @@ export const deleteCommentInputSchema = z
   .strict();
 
 export type ValidatedDeleteCommentInput = z.infer<typeof deleteCommentInputSchema>;
-
-export function createCommentRequestFingerprint(memoryId: string, body: string): string {
-  return createHash("sha256").update(`${memoryId}:${body}`).digest("hex");
-}

@@ -30,10 +30,12 @@ import { PATCH } from "./route";
 const EXPECTED_UPDATED_AT = "2026-09-05T16:00:00.000Z";
 const UPDATED_AT = "2026-09-05T16:01:00.000Z";
 
-function authenticatedClient(userId: string | null = "member-id") {
+function authenticatedClient(authSubject: string | null = "auth-subject") {
   return {
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: userId ? { id: userId } : null } }),
+      getUser: vi
+        .fn()
+        .mockResolvedValue({ data: { user: authSubject ? { id: authSubject } : null } }),
     },
   };
 }

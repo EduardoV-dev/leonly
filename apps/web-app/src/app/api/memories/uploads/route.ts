@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   CreateMemoryError,
-  cleanupStaleMemoryPhotoStaging,
+  cleanupResources,
   prepareMemoryCreation,
 } from "@/features/memories/server/create-memory";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
@@ -19,12 +19,9 @@ export async function POST(request: Request) {
     }
 
     void Promise.resolve()
-      .then(cleanupStaleMemoryPhotoStaging)
+      .then(cleanupResources)
       .catch(() => undefined);
-    const result = await prepareMemoryCreation(
-      request.headers.get("Idempotency-Key") ?? "",
-      await request.formData(),
-    );
+    const result = await prepareMemoryCreation(await request.formData(), user.id);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof CreateMemoryError) {

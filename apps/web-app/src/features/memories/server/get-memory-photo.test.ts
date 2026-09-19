@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { createClientMock, downloadMock, getAvailableMemoryMock } = vi.hoisted(() => ({
+const { createClientMock, downloadMock, fromMock, getAvailableMemoryMock } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   downloadMock: vi.fn(),
+  fromMock: vi.fn(),
   getAvailableMemoryMock: vi.fn(),
 }));
 
@@ -29,14 +30,16 @@ function createPhotoQuery(photo: unknown) {
 describe("getMemoryPhoto", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAvailableMemoryMock.mockResolvedValue({ id: memoryId });
-    const query = createPhotoQuery({
-      cover_object_path: "private/cover.webp",
-      detail_object_path: "private/detail.webp",
-      object_path: "private/original.jpg",
+    getAvailableMemoryMock.mockResolvedValue({
+      id: memoryId,
+      spaceId: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
     });
+    const query = createPhotoQuery({
+      object_path: "private/derived.webp",
+    });
+    fromMock.mockReturnValue({ select: vi.fn(() => query) });
     createClientMock.mockResolvedValue({
-      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+      from: fromMock,
       storage: { from: vi.fn(() => ({ download: downloadMock })) },
     });
     downloadMock.mockResolvedValue({
@@ -45,17 +48,15 @@ describe("getMemoryPhoto", () => {
     });
   });
 
-  it.each([
-    ["cover", "private/cover.webp"],
-    ["detail", "private/detail.webp"],
-  ] as const)("downloads the server-owned %s variant", async (variant, objectPath) => {
+  it.each(["cover", "detail"] as const)("downloads the ready %s variant", async (variant) => {
     await expect(getMemoryPhoto(memoryId, photoId, variant)).resolves.toEqual(bytes);
 
     expect(getAvailableMemoryMock).toHaveBeenCalledWith(memoryId);
-    expect(downloadMock).toHaveBeenCalledWith(objectPath);
+    expect(fromMock).toHaveBeenCalledWith("memory_asset_objects");
+    expect(downloadMock).toHaveBeenCalledWith("private/derived.webp");
   });
 
-  it("matches the photo to its authorized parent before downloading", async () => {
+  it("matches the asset to its authorized memory and space before downloading", async () => {
     const query = createPhotoQuery(null);
     createClientMock.mockResolvedValue({
       from: vi.fn(() => ({ select: vi.fn(() => query) })),
@@ -63,8 +64,25 @@ describe("getMemoryPhoto", () => {
     });
 
     await expect(getMemoryPhoto(memoryId, photoId, "cover")).resolves.toBeNull();
-    expect(query.eq).toHaveBeenCalledWith("id", photoId);
-    expect(query.eq).toHaveBeenCalledWith("memory_id", memoryId);
+    expect(query.eq).toHaveBeenCalledWith("asset_id", photoId);
+    expect(query.eq).toHaveBeenCalledWith("memory_assets.memory_id", memoryId);
+    expect(query.eq).toHaveBeenCalledWith(
+      "memory_assets.space_id",
+      "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
+    );
+    expect(downloadMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects objects that are not the requested ready derived variant", async () => {
+    const query = createPhotoQuery(null);
+    createClientMock.mockResolvedValue({
+      from: vi.fn(() => ({ select: vi.fn(() => query) })),
+      storage: { from: vi.fn(() => ({ download: downloadMock })) },
+    });
+
+    await expect(getMemoryPhoto(memoryId, photoId, "detail")).resolves.toBeNull();
+    expect(query.eq).toHaveBeenCalledWith("variant_type", "detail");
+    expect(query.eq).toHaveBeenCalledWith("status", "ready");
     expect(downloadMock).not.toHaveBeenCalled();
   });
 

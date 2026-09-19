@@ -35,7 +35,7 @@ describe("PATCH /api/spaces/start-date", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createClientMock.mockResolvedValue({
-      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "member" } } }) },
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "auth-subject" } } }) },
     });
     mutationMock.mockResolvedValue({
       startDate: "2025-04-27",

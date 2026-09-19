@@ -1,0 +1,277 @@
+// Leonly database schema
+// Status: implemented baseline.
+// The baseline migration is the runtime source of truth.
+// Keep this DBML aligned with physical migration changes.
+
+Enum space_member_role {
+  owner
+  partner
+}
+
+Enum memory_visibility {
+  timeline
+  vault
+}
+
+Enum memory_asset_type {
+  image
+}
+
+Enum memory_asset_variant_type {
+  original
+  cover
+  detail
+}
+
+Enum memory_asset_object_status {
+  pending
+  uploaded
+  processing
+  ready
+  failed
+}
+
+Table users {
+  id uuid [pk]
+  auth_subject text [not null, unique]
+  name text [not null, note: 'Trimmed length: 1..100 characters']
+  email text [not null, unique, note: 'Unique after case-insensitive normalization']
+  avatar_url text
+  deleted_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Note: 'Rows with deleted_at set do not have active application access.'
+}
+
+Table spaces {
+  id uuid [pk]
+  name text [not null, note: 'Trimmed length: 2..100 characters']
+  start_date date [not null]
+  invite_code text [note: 'Partial unique while the space is active and invite_code is not null']
+  invite_code_expires_at timestamp
+  created_by_user_id uuid [not null]
+  updated_by_user_id uuid [not null]
+  deleted_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  Note: 'invite_code_expires_at must be null when invite_code is null. A user creates and last-updates at most one active space in each role.'
+}
+
+Table space_members {
+  id uuid [pk]
+  space_id uuid [not null]
+  user_id uuid [not null]
+  display_name text [not null, note: 'Trimmed length: 2..100 characters']
+  role space_member_role [not null]
+  onboarding_completed_at timestamp
+  deleted_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (id, user_id, space_id) [unique]
+    (id, space_id) [unique]
+  }
+
+  Note: 'Partial unique constraints while active: user_id; (space_id, user_id); and (space_id, role). A user has 0..1 active memberships. A space has 1..2 active memberships.'
+}
+
+Table rate_limits {
+  scope text [not null, note: 'Must contain non-blank text']
+  subject_key text [not null, note: 'Opaque identity; sensitive subjects are stored as hashes']
+  attempts timestamp[] [not null, note: 'Rolling-window timestamps with a defensive global size bound']
+  blocked_until timestamp
+  expires_at timestamp [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (scope, subject_key) [pk]
+    expires_at
+  }
+
+  Note: 'Independent table with no foreign keys. Limit size and window duration remain application policy.'
+}
+
+Table memories {
+  id uuid [pk]
+  space_id uuid [not null]
+  creator_membership_id uuid [not null]
+  creator_user_id uuid [not null]
+  creation_mutation_id uuid
+  last_edit_mutation_id uuid
+  last_edit_actor_user_id uuid
+  last_edit_expected_updated_at timestamp
+  cover_asset_id uuid
+  title text [not null, note: 'Trimmed length: 1..120 characters']
+  description text [note: 'Maximum 2000 trimmed characters']
+  location text [note: 'Maximum 150 trimmed characters']
+  memory_date date [not null]
+  visibility memory_visibility [not null]
+  deleted_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null, note: 'Optimistic concurrency version']
+
+  indexes {
+    (id, space_id) [unique]
+    (creator_user_id, creation_mutation_id) [unique]
+    memory_date
+    visibility
+    deleted_at
+  }
+
+  Note: 'The creator membership, creator user, and space identify the same membership. Mutation fields provide deterministic create/edit retries without attempt rows. cover_asset_id must select an asset owned by this memory.'
+}
+
+Table memory_assets {
+  id uuid [pk]
+  space_id uuid [not null]
+  memory_id uuid [not null]
+  asset_type memory_asset_type [not null]
+  position smallint [note: 'Required and nonnegative when published; null while staged']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (memory_id, position) [unique]
+    (id, memory_id) [unique]
+    (id, space_id) [unique]
+  }
+
+  Note: 'Permanent published asset. Readiness is derived from required memory_asset_objects; temporary upload objects are not represented in this table.'
+}
+
+Table memory_asset_objects {
+  id uuid [pk]
+  asset_id uuid [not null]
+  variant_type memory_asset_variant_type [not null]
+  object_path text [not null, unique, note: 'Provider-neutral opaque storage locator']
+  status memory_asset_object_status [not null]
+  content_type text
+  byte_size bigint [note: 'Must be nonnegative when present']
+  failure_code text
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  ready_at timestamp
+
+  indexes {
+    (asset_id, variant_type) [unique]
+    status
+  }
+
+  Note: 'ready_at is required exactly when status is ready. Space ownership is derived through the required asset.'
+}
+
+Table resource_cleanup {
+  id bigint [pk, increment]
+  resource_kind text [not null, note: 'Must contain non-blank text']
+  resource_locator text [not null, note: 'Provider-neutral opaque resource identifier']
+  cleanup_after timestamp [not null]
+  retry_after timestamp
+  locked_until timestamp
+  attempt_count integer [not null, note: 'Must be nonnegative']
+  last_attempted_at timestamp
+  last_failure_code text
+  cleaned_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (resource_kind, resource_locator) [unique]
+  }
+
+  Note: 'Independent deletion outbox. Pending scans use cleanup_after, retry_after, locked_until, and cleaned_at. A service-role reaper queues only expired temporary originals; a missing external resource counts as successful cleanup.'
+}
+
+Table memory_comments {
+  id uuid [pk]
+  memory_id uuid [not null]
+  space_id uuid [not null]
+  author_membership_id uuid [not null]
+  author_user_id uuid [not null]
+  body text [not null, note: 'Trimmed length: 1..1000 characters']
+  version integer [not null, note: 'Positive and incremented on every edit']
+  idempotency_key uuid [not null]
+  request_fingerprint text [not null]
+  deleted_at timestamp
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (author_user_id, idempotency_key) [unique]
+    deleted_at
+    created_at
+  }
+
+  Note: 'The memory, author membership, author user, and space must describe one ownership chain. Comment creation retains its existing idempotency behavior.'
+}
+
+Table memory_reactions {
+  id uuid [pk]
+  membership_id uuid [not null]
+  space_id uuid [not null]
+  memory_id uuid [not null]
+  reaction_type text [not null, note: 'Allowed values: heart, laugh, cry, star']
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    (membership_id, memory_id) [unique]
+  }
+
+  Note: 'One current reaction per membership and memory. Composite foreign keys guarantee that membership and memory share space_id.'
+}
+
+// Users and spaces
+Ref: spaces.created_by_user_id > users.id
+Ref: spaces.updated_by_user_id > users.id
+Ref: space_members.user_id > users.id
+Ref: space_members.space_id > spaces.id
+
+// Published memory ownership and attribution
+Ref: memories.space_id > spaces.id
+Ref: memories.(creator_membership_id, creator_user_id, space_id) > space_members.(id, user_id, space_id)
+Ref: memories.last_edit_actor_user_id >? users.id
+Ref: memories.(cover_asset_id, id) >? memory_assets.(id, memory_id)
+
+// Asset ownership
+Ref: memory_assets.space_id > spaces.id
+Ref: memory_assets.(memory_id, space_id) > memories.(id, space_id)
+Ref: memory_asset_objects.asset_id > memory_assets.id
+
+// Comments
+Ref: memory_comments.space_id > spaces.id
+Ref: memory_comments.(memory_id, space_id) > memories.(id, space_id)
+Ref: memory_comments.(author_membership_id, author_user_id, space_id) > space_members.(id, user_id, space_id)
+
+// Reactions
+Ref: memory_reactions.space_id > spaces.id
+Ref: memory_reactions.(memory_id, space_id) > memories.(id, space_id)
+Ref: memory_reactions.(membership_id, space_id) > space_members.(id, space_id)
+
+TableGroup identity {
+  users
+}
+
+TableGroup shared_spaces {
+  spaces
+  space_members
+}
+
+TableGroup application_safeguards {
+  rate_limits
+}
+
+TableGroup memories_domain {
+  memories
+  memory_assets
+  memory_asset_objects
+  resource_cleanup
+}
+
+TableGroup engagement {
+  memory_comments
+  memory_reactions
+}
