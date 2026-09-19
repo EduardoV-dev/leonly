@@ -80,7 +80,7 @@ describe("CreateMemoryPage", () => {
 
     expect(fetch).toHaveBeenCalledTimes(1);
     resolveRequest(
-      new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+      new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
     );
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/timeline"));
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -89,7 +89,7 @@ describe("CreateMemoryPage", () => {
   it("keeps valid input and navigates to the timeline after a success", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+        new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
       )
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
     renderCreateMemoryPage();
@@ -110,7 +110,7 @@ describe("CreateMemoryPage", () => {
   it("navigates to the new Vault detail after preserving a Vault memory", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ attemptId: "attempt-id", uploads: [] }), { status: 200 }),
+        new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
       )
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
     renderCreateMemoryPage();
@@ -145,7 +145,7 @@ describe("CreateMemoryPage", () => {
     expect(preserveButton.closest("form")).toHaveAttribute("novalidate");
     fireEvent.click(preserveButton);
 
-    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(3);
+    expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(2);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 

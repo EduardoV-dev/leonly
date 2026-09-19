@@ -67,11 +67,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const comment = await createComment(
-      memoryId,
-      request.headers.get("Idempotency-Key") ?? "",
-      payload.data.body,
-    );
+    const comment = await createComment(memoryId, payload.data.body);
     return NextResponse.json({ comment });
   } catch (error) {
     if (error instanceof CreateCommentError && error.code === "unavailable") {

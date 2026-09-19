@@ -9,7 +9,6 @@ import { createComment } from "./create-comment";
 
 const userId = "e951cd4b-7567-4b1e-a5d3-18aa810cbd8e";
 const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-const idempotencyKey = "3ddf312a-e682-4cd8-91f9-9a2a230241ed";
 const avatarUrl = "https://cdn.example.com/alex.jpg";
 
 function adminClient(rpc: ReturnType<typeof vi.fn>, profileData = { avatar_url: avatarUrl }) {
@@ -35,12 +34,12 @@ function completedRow(body = "A note") {
 describe("createComment", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("validates, trims, fingerprints, and returns the canonical server comment", async () => {
+  it("validates, trims, and returns the canonical server comment", async () => {
     const rpc = vi.fn().mockResolvedValue({ data: [completedRow("A note")], error: null });
     const admin = adminClient(rpc);
     createClientMock.mockResolvedValue(admin);
 
-    await expect(createComment(memoryId, idempotencyKey, "  A note  ")).resolves.toEqual({
+    await expect(createComment(memoryId, "  A note  ")).resolves.toEqual({
       authorAvatarUrl: avatarUrl,
       authorDisplayName: "Alex",
       body: "A note",
@@ -54,9 +53,7 @@ describe("createComment", () => {
 
     expect(rpc).toHaveBeenCalledWith("create_memory_comment", {
       p_body: "A note",
-      p_idempotency_key: idempotencyKey,
       p_memory_id: memoryId,
-      p_request_fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
     expect(admin.from).toHaveBeenCalledWith("users");
   });
@@ -65,7 +62,7 @@ describe("createComment", () => {
     const rpc = vi.fn().mockResolvedValue({ data: [completedRow()], error: null });
     createClientMock.mockResolvedValue(adminClient(rpc, { avatar_url: "not-a-url" }));
 
-    await expect(createComment(memoryId, idempotencyKey, "A note")).resolves.toMatchObject({
+    await expect(createComment(memoryId, "A note")).resolves.toMatchObject({
       authorAvatarUrl: null,
     });
   });
@@ -88,7 +85,7 @@ describe("createComment", () => {
     });
     createClientMock.mockResolvedValue({ rpc });
 
-    await expect(createComment(memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
+    await expect(createComment(memoryId, "A note")).rejects.toMatchObject({
       code: "unavailable",
       message: "This memory is unavailable.",
       status: 404,
@@ -96,35 +93,10 @@ describe("createComment", () => {
   });
 
   it("preserves validation failures before opening the admin boundary", async () => {
-    await expect(createComment(memoryId, idempotencyKey, " \n ")).rejects.toMatchObject({
+    await expect(createComment(memoryId, " \n ")).rejects.toMatchObject({
       fields: { body: "Enter a comment." },
     });
     expect(createClientMock).not.toHaveBeenCalled();
-  });
-
-  it("maps key reuse conflicts without exposing database details", async () => {
-    const rpc = vi.fn().mockResolvedValue({
-      data: [
-        {
-          author_display_name: null,
-          author_user_id: null,
-          body: null,
-          comment_id: null,
-          created_at: null,
-          memory_id: null,
-          outcome: "mismatch",
-          space_id: null,
-        },
-      ],
-      error: null,
-    });
-    createClientMock.mockResolvedValue({ rpc });
-
-    await expect(createComment(memoryId, idempotencyKey, "A different note")).rejects.toMatchObject(
-      {
-        fields: { form: "The request key was already used for different content." },
-      },
-    );
   });
 
   it("preserves transport failures as the operational error cause", async () => {
@@ -133,7 +105,7 @@ describe("createComment", () => {
       rpc: vi.fn().mockResolvedValue({ data: null, error: rpcError }),
     });
 
-    await expect(createComment(memoryId, idempotencyKey, "A note")).rejects.toMatchObject({
+    await expect(createComment(memoryId, "A note")).rejects.toMatchObject({
       cause: rpcError,
       message: "Unable to create the comment.",
     });

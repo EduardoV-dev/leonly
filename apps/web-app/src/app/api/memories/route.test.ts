@@ -16,7 +16,7 @@ vi.mock("@/lib/server-logger", () => ({
 
 import { POST } from "./route";
 
-const ATTEMPT_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
+const GRANT = "signed-memory-upload-grant";
 
 function client(userId: string | null) {
   return {
@@ -33,16 +33,16 @@ describe("POST /api/memories", () => {
     createMemoryMock.mockResolvedValue({ id: "memory-id", visibility: "timeline" });
   });
 
-  it("finalizes an authenticated creation by attempt ID only", async () => {
+  it("finalizes an authenticated creation from its signed grant", async () => {
     const response = await POST(
       new Request("http://localhost/api/memories", {
-        body: JSON.stringify({ attemptId: ATTEMPT_ID }),
+        body: JSON.stringify({ grant: GRANT }),
         headers: { "content-type": "application/json" },
         method: "POST",
       }),
     );
 
-    expect(createMemoryMock).toHaveBeenCalledWith(ATTEMPT_ID);
+    expect(createMemoryMock).toHaveBeenCalledWith(GRANT, "member-id");
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toEqual({ id: "memory-id", visibility: "timeline" });
   });
@@ -50,7 +50,7 @@ describe("POST /api/memories", () => {
   it("rejects invalid finalization payloads", async () => {
     const response = await POST(
       new Request("http://localhost/api/memories", {
-        body: JSON.stringify({ attemptId: "invalid" }),
+        body: JSON.stringify({ grant: "" }),
         method: "POST",
       }),
     );

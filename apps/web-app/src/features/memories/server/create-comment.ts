@@ -3,10 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { MemoryComment } from "../types/comment";
-import {
-  createCommentInputSchema,
-  createCommentRequestFingerprint,
-} from "./comment-input-validation";
+import { createCommentInputSchema } from "./comment-input-validation";
 import { MemoryInputError } from "./memory-input-validation";
 
 const commentRpcRowSchema = z
@@ -17,7 +14,7 @@ const commentRpcRowSchema = z
     comment_id: z.uuid().nullable(),
     created_at: z.string().datetime({ offset: true }).nullable(),
     memory_id: z.uuid().nullable(),
-    outcome: z.enum(["completed", "invalid", "mismatch", "unavailable"]),
+    outcome: z.enum(["completed", "invalid", "unavailable"]),
     space_id: z.uuid().nullable(),
   })
   .strict();
@@ -25,7 +22,7 @@ const authorProfileSchema = z.object({
   avatar_url: z.string().url().nullable().catch(null),
 });
 
-export type CreateCommentErrorCode = "failed" | "mismatch" | "unavailable";
+export type CreateCommentErrorCode = "failed" | "unavailable";
 
 export class CreateCommentError extends MemoryInputError {
   constructor(
@@ -70,25 +67,12 @@ function toMemoryComment(
   };
 }
 
-export async function createComment(
-  memoryId: string,
-  idempotencyKey: string,
-  body: string,
-): Promise<MemoryComment> {
-  const parsed = createCommentInputSchema.safeParse({ body, idempotencyKey, memoryId });
+export async function createComment(memoryId: string, body: string): Promise<MemoryComment> {
+  const parsed = createCommentInputSchema.safeParse({ body, memoryId });
   if (!parsed.success) {
     const invalidMemoryId = parsed.error.issues.some((issue) => issue.path[0] === "memoryId");
     if (invalidMemoryId) {
       throw unavailableError();
-    }
-
-    const invalidRequestKey = parsed.error.issues.some(
-      (issue) => issue.path[0] === "idempotencyKey",
-    );
-    if (invalidRequestKey) {
-      throw new MemoryInputError("Please try again with a new comment request.", {
-        form: "Invalid request key.",
-      });
     }
 
     throw new MemoryInputError("Please review the highlighted fields.", {
@@ -100,9 +84,7 @@ export async function createComment(
   const supabase = await createClient();
   const response = await supabase.rpc("create_memory_comment", {
     p_body: input.body,
-    p_idempotency_key: input.idempotencyKey,
     p_memory_id: input.memoryId,
-    p_request_fingerprint: createCommentRequestFingerprint(input.memoryId, input.body),
   });
 
   if (response.error) {
@@ -116,11 +98,6 @@ export async function createComment(
 
   if (parsedRow.data.outcome === "unavailable") {
     throw unavailableError();
-  }
-  if (parsedRow.data.outcome === "mismatch") {
-    throw new MemoryInputError("Please try again with a new comment request.", {
-      form: "The request key was already used for different content.",
-    });
   }
   if (parsedRow.data.outcome === "invalid") {
     throw new MemoryInputError("Please review the highlighted fields.", {

@@ -117,17 +117,10 @@ describe("memory comments route handlers", () => {
     });
   });
 
-  it("authenticates before creating with the idempotency header", async () => {
-    const response = await POST(
-      request({ body: " A note " }, { "Idempotency-Key": "11111111-1111-4111-8111-111111111111" }),
-      context(),
-    );
+  it("authenticates before creating", async () => {
+    const response = await POST(request({ body: " A note " }), context());
 
-    expect(createCommentMock).toHaveBeenCalledWith(
-      MEMORY_ID,
-      "11111111-1111-4111-8111-111111111111",
-      " A note ",
-    );
+    expect(createCommentMock).toHaveBeenCalledWith(MEMORY_ID, " A note ");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ comment: COMMENT });
   });

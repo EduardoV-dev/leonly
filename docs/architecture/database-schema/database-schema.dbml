@@ -13,20 +13,6 @@ Enum memory_visibility {
   vault
 }
 
-Enum memory_attempt_type {
-  create
-  edit
-}
-
-Enum memory_attempt_status {
-  preparing
-  processing
-  completed
-  failed
-  conflict
-  expired
-}
-
 Enum memory_asset_type {
   image
 }
@@ -114,6 +100,10 @@ Table memories {
   space_id uuid [not null]
   creator_membership_id uuid [not null]
   creator_user_id uuid [not null]
+  creation_mutation_id uuid
+  last_edit_mutation_id uuid
+  last_edit_actor_user_id uuid
+  last_edit_expected_updated_at timestamp
   cover_asset_id uuid
   title text [not null, note: 'Trimmed length: 1..120 characters']
   description text [note: 'Maximum 2000 trimmed characters']
@@ -126,48 +116,19 @@ Table memories {
 
   indexes {
     (id, space_id) [unique]
+    (creator_user_id, creation_mutation_id) [unique]
     memory_date
     visibility
     deleted_at
   }
 
-  Note: 'The creator membership, creator user, and space identify the same membership. cover_asset_id must select an asset owned by this memory.'
-}
-
-Table memory_attempts {
-  id uuid [pk]
-  attempt_type memory_attempt_type [not null]
-  status memory_attempt_status [not null]
-  actor_membership_id uuid [not null]
-  actor_user_id uuid [not null]
-  space_id uuid [not null]
-  memory_id uuid
-  expected_updated_at timestamp
-  title text [not null, note: 'Trimmed length: 1..120 characters']
-  description text [note: 'Maximum 2000 trimmed characters']
-  location text [note: 'Maximum 150 trimmed characters']
-  memory_date date [not null]
-  visibility memory_visibility [not null]
-  failure_code text
-  expires_at timestamp [not null]
-  completed_at timestamp
-  created_at timestamp [not null]
-  updated_at timestamp [not null]
-
-  indexes {
-    (id, space_id) [unique]
-    status
-    expires_at
-  }
-
-  Note: 'Create attempts have no expected_updated_at. Edit attempts require memory_id and expected_updated_at. Completed attempts require memory_id and completed_at. Request idempotency fields deliberately do not exist.'
+  Note: 'The creator membership, creator user, and space identify the same membership. Mutation fields provide deterministic create/edit retries without attempt rows. cover_asset_id must select an asset owned by this memory.'
 }
 
 Table memory_assets {
   id uuid [pk]
   space_id uuid [not null]
-  memory_id uuid [note: 'Present only when the asset is published']
-  staging_attempt_id uuid [note: 'Present only while the asset is staged']
+  memory_id uuid [not null]
   asset_type memory_asset_type [not null]
   position smallint [note: 'Required and nonnegative when published; null while staged']
   created_at timestamp [not null]
@@ -179,7 +140,7 @@ Table memory_assets {
     (id, space_id) [unique]
   }
 
-  Note: 'XOR: exactly one of memory_id and staging_attempt_id must be present. There is deliberately no status column; readiness is derived from required memory_asset_objects.'
+  Note: 'Permanent published asset. Readiness is derived from required memory_asset_objects; temporary upload objects are not represented in this table.'
 }
 
 Table memory_asset_objects {
@@ -203,22 +164,6 @@ Table memory_asset_objects {
   Note: 'ready_at is required exactly when status is ready. Space ownership is derived through the required asset.'
 }
 
-Table memory_attempt_assets {
-  attempt_id uuid [not null]
-  asset_id uuid [not null]
-  space_id uuid [not null]
-  position smallint [not null, note: 'Must be nonnegative']
-  is_cover boolean [not null]
-  created_at timestamp [not null]
-
-  indexes {
-    (attempt_id, asset_id) [pk]
-    (attempt_id, position) [unique]
-  }
-
-  Note: 'Partial unique constraint on attempt_id where is_cover is true. Contains both retained and newly staged assets selected by an attempt.'
-}
-
 Table resource_cleanup {
   id bigint [pk, increment]
   resource_kind text [not null, note: 'Must contain non-blank text']
@@ -237,7 +182,7 @@ Table resource_cleanup {
     (resource_kind, resource_locator) [unique]
   }
 
-  Note: 'Independent table with no foreign keys. Pending scans use cleanup_after, retry_after, locked_until, and cleaned_at. A missing external resource counts as successful cleanup.'
+  Note: 'Independent deletion outbox. Pending scans use cleanup_after, retry_after, locked_until, and cleaned_at. A service-role reaper queues only expired temporary originals; a missing external resource counts as successful cleanup.'
 }
 
 Table memory_comments {
@@ -288,23 +233,13 @@ Ref: space_members.space_id > spaces.id
 // Published memory ownership and attribution
 Ref: memories.space_id > spaces.id
 Ref: memories.(creator_membership_id, creator_user_id, space_id) > space_members.(id, user_id, space_id)
+Ref: memories.last_edit_actor_user_id >? users.id
 Ref: memories.(cover_asset_id, id) >? memory_assets.(id, memory_id)
-
-// Attempt ownership, attribution, and optional target
-Ref: memory_attempts.space_id > spaces.id
-Ref: memory_attempts.(actor_membership_id, actor_user_id, space_id) > space_members.(id, user_id, space_id)
-Ref: memory_attempts.(memory_id, space_id) >? memories.(id, space_id)
 
 // Asset ownership
 Ref: memory_assets.space_id > spaces.id
-Ref: memory_assets.(memory_id, space_id) >? memories.(id, space_id)
-Ref: memory_assets.(staging_attempt_id, space_id) >? memory_attempts.(id, space_id)
+Ref: memory_assets.(memory_id, space_id) > memories.(id, space_id)
 Ref: memory_asset_objects.asset_id > memory_assets.id
-
-// Attempt asset selection
-Ref: memory_attempt_assets.space_id > spaces.id
-Ref: memory_attempt_assets.(attempt_id, space_id) > memory_attempts.(id, space_id)
-Ref: memory_attempt_assets.(asset_id, space_id) > memory_assets.(id, space_id)
 
 // Comments
 Ref: memory_comments.space_id > spaces.id
@@ -331,10 +266,8 @@ TableGroup application_safeguards {
 
 TableGroup memories_domain {
   memories
-  memory_attempts
   memory_assets
   memory_asset_objects
-  memory_attempt_assets
   resource_cleanup
 }
 

@@ -13,6 +13,7 @@ import {
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
+import { createUuidV7 } from "../../utils/create-uuid-v7";
 import {
   CREATE_MEMORY_DRAFT_KEY,
   clearMemoryDraft,
@@ -20,7 +21,7 @@ import {
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
 import {
-  type MemoryUploadAttempt,
+  type PreparedMemoryUpload,
   uploadStagedMemoryPhotos,
 } from "../../utils/upload-staged-memory-photos";
 
@@ -49,6 +50,7 @@ function createFormData(
   values: MemoryEditorValues,
   photos: MemoryEditorPhoto[],
   coverPhotoKey: string | null,
+  mutationId: string,
 ): FormData {
   const formData = new FormData();
   formData.set("title", values.title);
@@ -57,6 +59,7 @@ function createFormData(
   formData.set("memoryDate", values.memoryDate);
   formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
   formData.set("visibility", values.visibility);
+  formData.set("mutationId", mutationId);
   const coverPhoto = photos.find((photo) => photo.key === coverPhotoKey);
   if (coverPhoto) formData.set("coverPhotoId", coverPhoto.id);
   for (const photo of photos) {
@@ -72,7 +75,8 @@ export function useCreateMemoryForm() {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const attempt = useRef<MemoryUploadAttempt | null>(null);
+  const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
+  const mutationId = useRef(createUuidV7());
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
@@ -129,8 +133,9 @@ export function useCreateMemoryForm() {
     onDiscard: discardDraft,
   });
 
-  const resetAttempt = () => {
-    attempt.current = null;
+  const resetPreparedUpload = () => {
+    preparedUpload.current = null;
+    mutationId.current = createUuidV7();
     setSubmitError(null);
     setIsDirty(true);
   };
@@ -145,7 +150,7 @@ export function useCreateMemoryForm() {
     key: TKey,
     value: MemoryEditorValues[TKey],
   ) => {
-    resetAttempt();
+    resetPreparedUpload();
     clearFieldError(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
@@ -173,7 +178,7 @@ export function useCreateMemoryForm() {
     const additions = files.map((file): MemoryEditorPhoto => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
-      const id = crypto.randomUUID();
+      const id = createUuidV7();
       nextPhotoKey.current += 1;
       return {
         file,
@@ -184,7 +189,7 @@ export function useCreateMemoryForm() {
         previewUrl,
       };
     });
-    resetAttempt();
+    resetPreparedUpload();
     const selectedNames = new Set(files.map((file) => file.name));
     setRestoredPhotoNames((current) => current.filter((name) => !selectedNames.has(name)));
     clearFieldError("photos");
@@ -199,13 +204,13 @@ export function useCreateMemoryForm() {
       previewUrls.current.delete(removed.previewUrl);
     }
     const remaining = photos.filter((photo) => photo.key !== key);
-    resetAttempt();
+    resetPreparedUpload();
     clearFieldError("photos");
     setPhotos(remaining);
     setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
   const selectCoverPhoto = (key: string) => {
-    resetAttempt();
+    resetPreparedUpload();
     clearFieldError("photos");
     setCoverPhotoKey(key);
   };
@@ -216,19 +221,19 @@ export function useCreateMemoryForm() {
     setIsSubmitting(true);
     try {
       const response = await uploadStagedMemoryPhotos({
-        attempt: attempt.current,
+        preparedUpload: preparedUpload.current,
         finalMethod: "POST",
         finalUrl: "/api/memories",
-        formData: createFormData(values, photos, coverPhotoKey),
+        formData: createFormData(values, photos, coverPhotoKey, mutationId.current),
         onPrepared: (prepared) => {
-          attempt.current = prepared;
+          preparedUpload.current = prepared;
         },
         photos,
         prepareUrl: "/api/memories/uploads",
       });
       const payload = (await response.json()) as CreateMemoryResponse;
       if (!response.ok || !payload.id) {
-        if (response.status < 500) attempt.current = null;
+        if (response.status < 500) preparedUpload.current = null;
         setFields(
           Object.fromEntries(
             Object.keys(payload.fields ?? {}).map((field) => [
@@ -237,14 +242,11 @@ export function useCreateMemoryForm() {
             ]),
           ),
         );
-        throw new Error(
-          payload.code === "validation_failed"
-            ? t("create.validation.serverInvalid")
-            : t("create.validation.saveFailed"),
-        );
+        if (payload.code === "validation_failed") return;
+        throw new Error(t("create.validation.saveFailed"));
       }
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
-      attempt.current = null;
+      preparedUpload.current = null;
       discardDraft();
       router.push(
         values.visibility === "vault"

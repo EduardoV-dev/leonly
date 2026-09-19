@@ -23,7 +23,7 @@ vi.mock("@/features/memories/server/get-available-memory", () => ({
 import { PATCH } from "./route";
 
 const MEMORY_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-const ATTEMPT_ID = "64d44f34-c5fe-482a-b65b-f91d0173b7fe";
+const GRANT = "signed-edit-grant";
 
 function client(userId: string | null) {
   return {
@@ -33,9 +33,9 @@ function client(userId: string | null) {
   };
 }
 
-function request(attemptId = ATTEMPT_ID): Request {
+function request(grant = GRANT): Request {
   return new Request(`http://localhost/api/memories/${MEMORY_ID}/edit`, {
-    body: JSON.stringify({ attemptId }),
+    body: JSON.stringify({ grant }),
     headers: { "content-type": "application/json" },
     method: "PATCH",
   });
@@ -55,16 +55,16 @@ describe("PATCH /api/memories/[memoryId]/edit", () => {
     });
   });
 
-  it("finalizes an available memory by attempt ID only", async () => {
+  it("finalizes an available memory from its signed grant", async () => {
     const response = await PATCH(request(), context);
 
-    expect(editMemoryMock).toHaveBeenCalledWith(ATTEMPT_ID);
+    expect(editMemoryMock).toHaveBeenCalledWith(MEMORY_ID, GRANT, "member-id");
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ id: MEMORY_ID, visibility: "vault" });
   });
 
-  it("rejects malformed attempt IDs without finalizing", async () => {
-    const response = await PATCH(request("bad-token"), context);
+  it("rejects malformed grants without finalizing", async () => {
+    const response = await PATCH(request(""), context);
 
     expect(response.status).toBe(400);
     expect(editMemoryMock).not.toHaveBeenCalled();

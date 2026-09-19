@@ -10,7 +10,7 @@ import { privateResourceNotFound } from "@/lib/private-resource-response";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
-const finalizeRequestSchema = z.object({ attemptId: z.uuid() }).strict();
+const finalizeRequestSchema = z.object({ grant: z.string().min(1) }).strict();
 
 type RouteContext = {
   params: Promise<{ memoryId: string }>;
@@ -35,7 +35,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    return NextResponse.json(await editMemory(payload.data.attemptId));
+    return NextResponse.json(await editMemory(memoryId, payload.data.grant, user.id));
   } catch (error) {
     if (error instanceof MemoryInputError) {
       if (error instanceof EditMemoryError && error.code === "unavailable") {

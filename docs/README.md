@@ -7,6 +7,8 @@ implementation as runtime truth.
 
 - [MVP user stories](user-stories/mvp/README.md)
 - [Database schema design](architecture/database-schema/README.md)
+- [Target platform architecture](architecture/platform-migration/README.md)
+- [Platform migration plan](architecture/platform-migration/migration-plan.md)
 
 ## Sources of truth
 
@@ -14,6 +16,7 @@ implementation as runtime truth.
 | --- | --- |
 | Durable product intent | `docs/user-stories/` |
 | Accepted database design | `docs/architecture/database-schema/` |
+| Target platform and migration sequence | `docs/architecture/platform-migration/` |
 | Normative behavior and acceptance scenarios | `openspec/specs/` |
 | Proposed changes and implementation tasks | `openspec/changes/` |
 

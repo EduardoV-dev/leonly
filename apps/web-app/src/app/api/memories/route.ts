@@ -4,7 +4,7 @@ import { CreateMemoryError, createMemory } from "@/features/memories/server/crea
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
-const finalizeRequestSchema = z.object({ attemptId: z.uuid() }).strict();
+const finalizeRequestSchema = z.object({ grant: z.string().min(1) }).strict();
 
 export async function POST(request: Request) {
   const requestLogger = createRequestLogger(request);
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const memory = await createMemory(payload.data.attemptId);
+    const memory = await createMemory(payload.data.grant, user.id);
     return NextResponse.json(memory, { status: 201 });
   } catch (error) {
     if (error instanceof CreateMemoryError) {

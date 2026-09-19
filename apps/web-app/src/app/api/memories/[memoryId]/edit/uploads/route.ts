@@ -67,10 +67,8 @@ export async function POST(request: Request, context: RouteContext) {
     const { memoryId } = await context.params;
     if (!(await getAvailableMemory(memoryId))) return privateResourceNotFound();
 
-    void Promise.resolve()
-      .then(cleanupResources)
-      .catch(() => undefined);
-    const result = await prepareMemoryEdit(memoryId, await readBoundedFormData(request));
+    await cleanupResources();
+    const result = await prepareMemoryEdit(memoryId, await readBoundedFormData(request), user.id);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof EditPayloadTooLargeError) {
