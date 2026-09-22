@@ -185,3 +185,12 @@ Searched for repository rule files:
 
 Status: none found in this repository.
 If added later, treat as highest-priority local instructions and update this file.
+
+<!-- antislop:start -->
+## antislop
+For UI, copy, people, mobile layout, or code comments work, load the antislop skill for the task:
+- Core filter, always on: `antislop`
+- Code comments: `antislop-code`
+- People: `antislop-human`
+Before starting, ask the user when antislop applies: during the work, or after it is done.
+<!-- antislop:end -->
