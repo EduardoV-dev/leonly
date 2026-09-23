@@ -1,1 +1,0 @@
-pnpm/Turborepo monorepo. Main product: Next web app at `apps/web-app`. Project rules: `AGENTS.md`; module constraints: `mem:web-app/core`.

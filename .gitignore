@@ -17,3 +17,11 @@ supabase/snippets/
 supabase/.branches/
 .atl/
 .codegraph/
+apps/api/data/
+.terraform/
+*.tfstate
+*.tfstate.*
+anti-slop/
+.serena/memories/
+.impeccable/critique/
+apps/web-app/.impeccable/critique/

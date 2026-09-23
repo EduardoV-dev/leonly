@@ -1,1 +1,0 @@
-Next application under `apps/web-app`. App Router API routes call feature server modules; tests are colocated Vitest files. Supabase server client carries authenticated cookies; admin client is service-role only.
