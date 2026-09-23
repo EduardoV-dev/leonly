@@ -25,10 +25,12 @@ pnpm exec husky install
 - `turbo.json`
 - `biome.json`
 - `tsconfig.base.json`
+- `apps/api/package.json`
 - `apps/web-app/package.json`
 - `apps/web-app/next.config.ts`
 - `apps/web-app/vitest.config.ts`
 - `apps/web-app/vitest.setup.ts`
+- `.github/workflows/api-verify.yml`
 - `.github/workflows/web-app-verify.yml`
 
 ## Build/Lint/Test/Typecheck Commands
@@ -80,11 +82,17 @@ pnpm --filter web-app test:run -- -t "renders starter heading"
 - Coverage output path: `apps/web-app/coverage`.
 
 ## CI + Hook Gates
-CI workflow (`.github/workflows/web-app-verify.yml`) requires:
+Web app CI (`.github/workflows/web-app-verify.yml`) requires:
 1. `pnpm --filter web-app check`
 2. `pnpm --filter web-app typecheck`
 3. `pnpm --filter web-app test:run`
 4. `pnpm --filter web-app build`
+
+API CI (`.github/workflows/api-verify.yml`) requires:
+1. `pnpm --filter api check`
+2. `pnpm --filter api typecheck`
+3. `pnpm --filter api test:run`
+4. `pnpm --filter api build`
 
 Local hooks:
 - Pre-commit (`.husky/pre-commit`)

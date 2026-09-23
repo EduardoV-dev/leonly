@@ -1,0 +1,37 @@
+{
+  "name": "api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:image": "docker buildx build --platform linux/amd64 --provenance=false --load -f Dockerfile -t leonly-api ../..",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "pnpm exec biome lint .",
+    "format": "pnpm exec biome format --write .",
+    "check": "pnpm exec biome check ."
+  },
+  "dependencies": {
+    "@codegenie/serverless-express": "^4.17.1",
+    "@nestjs/common": "^11.1.16",
+    "@nestjs/core": "^11.1.16",
+    "@nestjs/platform-express": "^11.1.16",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@types/aws-lambda": "^8.10.159",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.19.15",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^2.1.4",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

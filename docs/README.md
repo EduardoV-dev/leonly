@@ -7,6 +7,7 @@ implementation as runtime truth.
 
 - [MVP user stories](user-stories/mvp/README.md)
 - [Database schema design](architecture/database-schema/README.md)
+- [Terraform learning path for the API](architecture/terraform-learning-path.md)
 - [Target platform architecture](architecture/platform-migration/README.md)
 - [Platform migration plan](architecture/platform-migration/migration-plan.md)
 
@@ -16,6 +17,7 @@ implementation as runtime truth.
 | --- | --- |
 | Durable product intent | `docs/user-stories/` |
 | Accepted database design | `docs/architecture/database-schema/` |
+| API infrastructure learning plan | `docs/architecture/terraform-learning-path.md` |
 | Target platform and migration sequence | `docs/architecture/platform-migration/` |
 | Normative behavior and acceptance scenarios | `openspec/specs/` |
 | Proposed changes and implementation tasks | `openspec/changes/` |
