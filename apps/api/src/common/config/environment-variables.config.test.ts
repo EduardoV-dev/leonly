@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ENVIRONMENT_VARIABLE_NAMES = [
-  "BETTER_AUTH_BASE_URL",
+  "APP_BASE_URL",
   "BETTER_AUTH_SECRET",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "DATABASE_URL",
+  "WEB_APP_ORIGINS",
 ] as const;
 
 afterEach(() => {
@@ -22,12 +23,21 @@ describe("ENVIRONMENT_VARIABLES", () => {
     const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
 
     expect(ENVIRONMENT_VARIABLES).toEqual({
-      BETTER_AUTH_BASE_URL: "",
+      APP_BASE_URL: "",
       BETTER_AUTH_SECRET: "",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
       DATABASE_URL: "",
+      WEB_APP_ORIGINS: "",
     });
+  });
+
+  it("parses configured web app origins", async () => {
+    vi.stubEnv("WEB_APP_ORIGINS", " https://app.example.com, https://admin.example.com ");
+
+    const { getWebAppOrigins } = await import("./environment-variables.config");
+
+    expect(getWebAppOrigins()).toEqual(["https://app.example.com", "https://admin.example.com"]);
   });
 
   it("passes configured values through unchanged", async () => {

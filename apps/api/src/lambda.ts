@@ -1,3 +1,4 @@
+import "dotenv/config";
 import serverlessExpress from "@codegenie/serverless-express";
 import type { Handler } from "aws-lambda";
 import { createApp } from "./create-app";

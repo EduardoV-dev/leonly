@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
@@ -12,6 +13,21 @@ vi.mock("../../api/login-with-google", () => ({
   useLoginWithGoogle: () => ({ ...loginState, mutate: mutateMock }),
 }));
 
+function renderSignInPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { retry: false } },
+  });
+
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <SignInPage />
+      </QueryClientProvider>,
+    ),
+  };
+}
+
 describe("SignInPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -21,14 +37,18 @@ describe("SignInPage", () => {
   });
 
   it("shows an announced recovery message and keeps Google sign-in retryable", () => {
-    const { rerender } = render(<SignInPage />);
+    const { queryClient, rerender } = renderSignInPage();
     const loginButton = screen.getByRole("button", { name: "Continue with Google" });
 
     fireEvent.click(loginButton);
     expect(mutateMock).toHaveBeenCalledOnce();
 
     loginState.isError = true;
-    rerender(<SignInPage />);
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <SignInPage />
+      </QueryClientProvider>,
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Google sign-in could not start. Check your connection and try again.",

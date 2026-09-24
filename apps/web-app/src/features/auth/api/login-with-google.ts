@@ -1,27 +1,31 @@
 import { useMutation } from "@tanstack/react-query";
 import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
-import { createClient } from "@/lib/supabase/client";
+import { APP_ROUTES } from "@/constants/routes";
+import { authClient } from "./auth-client";
 
-export function getGoogleAuthCallbackUrl(
-  siteUrl: string = ENVIRONMENT_VARIABLES.NEXT_PUBLIC_SITE_URL,
-): string {
+function getAuthUrl(path: string, siteUrl: string): string {
   const origin = siteUrl.replace(/\/+$/, "") || window.location.origin;
 
-  return `${origin}/auth/callback`;
+  return `${origin}${path}`;
 }
 
-const loginWithGoogle = async () => {
-  const supabase = createClient();
+export function getGoogleAuthReturnUrl(
+  siteUrl: string = ENVIRONMENT_VARIABLES.NEXT_PUBLIC_SITE_URL,
+): string {
+  return getAuthUrl(APP_ROUTES.WELCOME_CREATE_STEP("start"), siteUrl);
+}
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
+function getGoogleAuthErrorUrl(
+  siteUrl: string = ENVIRONMENT_VARIABLES.NEXT_PUBLIC_SITE_URL,
+): string {
+  return getAuthUrl("/auth/auth-code-error", siteUrl);
+}
+
+export const loginWithGoogle = async () => {
+  const { data, error } = await authClient.signIn.social({
     provider: "google",
-    options: {
-      redirectTo: getGoogleAuthCallbackUrl(),
-      queryParams: {
-        prompt: "consent",
-        access_type: "offline",
-      },
-    },
+    callbackURL: getGoogleAuthReturnUrl(),
+    errorCallbackURL: getGoogleAuthErrorUrl(),
   });
 
   if (error) {

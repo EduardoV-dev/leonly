@@ -5,12 +5,14 @@ import { createApp } from "./create-app";
 
 vi.mock("./common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
-    BETTER_AUTH_BASE_URL: "http://localhost:3001",
+    APP_BASE_URL: "http://localhost:3000",
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
     DATABASE_URL: "postgresql://localhost/auth",
+    WEB_APP_ORIGINS: "http://localhost:3000",
   },
+  getWebAppOrigins: () => ["http://localhost:3000"],
 }));
 vi.mock("./common/prisma/prisma.service", () => ({
   PrismaService: class {
@@ -59,7 +61,7 @@ describe("Google authentication routes", () => {
         .expect(200);
       expect(googleSignIn.body.url).toContain("accounts.google.com");
       expect(new URL(googleSignIn.body.url).searchParams.get("redirect_uri")).toBe(
-        "http://localhost:3001/api/auth/callback/google",
+        "http://localhost:3000/api/auth/callback/google",
       );
       expect(googleSignIn.headers["set-cookie"]).toBeDefined();
       await request(server)

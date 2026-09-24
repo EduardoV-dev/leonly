@@ -8,11 +8,13 @@ vi.mock("better-auth", () => ({ betterAuth: vi.fn(() => ({ handler: "unmounted" 
 vi.mock("better-auth/adapters/prisma", () => ({ prismaAdapter: vi.fn(() => "database") }));
 vi.mock("../../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
-    BETTER_AUTH_BASE_URL: "http://localhost:3001",
+    APP_BASE_URL: "http://localhost:3000",
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
+    WEB_APP_ORIGINS: "http://localhost:3000",
   },
+  getWebAppOrigins: () => ["http://localhost:3000"],
 }));
 
 beforeEach(() => vi.clearAllMocks());
@@ -30,6 +32,7 @@ describe("createAuth", () => {
     createAuth({} as PrismaService);
     const options = vi.mocked(betterAuth).mock.calls[0]?.[0];
     expect(options?.database).toBe("database");
+    expect(options?.trustedOrigins).toEqual(["http://localhost:3000"]);
     expect(options?.emailAndPassword).toEqual({ enabled: false });
     expect(Object.keys(options?.socialProviders ?? {})).toEqual(["google"]);
   });
