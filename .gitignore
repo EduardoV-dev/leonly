@@ -18,6 +18,7 @@ supabase/.branches/
 .atl/
 .codegraph/
 apps/api/data/
+apps/api/generated/prisma/
 .terraform/
 *.tfstate
 *.tfstate.*

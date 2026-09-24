@@ -22,4 +22,4 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 
 COPY --from=build /out/ ./
 
-CMD ["dist/lambda.handler"]
+CMD ["dist/src/lambda.handler"]

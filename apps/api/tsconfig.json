@@ -5,12 +5,15 @@
     "moduleResolution": "Node",
     "target": "ES2022",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "noEmit": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
