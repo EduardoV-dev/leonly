@@ -3,9 +3,10 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
     "target": "ES2022",
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "noEmit": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

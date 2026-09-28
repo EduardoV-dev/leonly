@@ -63,7 +63,7 @@ const createState = (
   });
 
 type PendingResponse = {
-  json: () => Promise<Record<string, never>>;
+  json: () => Promise<unknown>;
   ok: boolean;
 };
 
@@ -142,7 +142,7 @@ describe("space setup submit feedback", () => {
     await waitFor(() => expectLoadingButton(button, "Creating your space..."));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
 
-    resolveCreate({ json: async () => ({}), ok: true });
+    resolveCreate({ json: async () => ({ ok: true, data: { space_id: "space-id" } }), ok: true });
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
     });

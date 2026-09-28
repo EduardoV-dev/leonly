@@ -1,0 +1,17 @@
+{
+  "name": "@leonly/utils",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test:run": "pnpm --filter api exec vitest run --root ../.. --config apps/api/vitest.config.ts packages/utils/src/index.test.ts"
+  },
+  "dependencies": {
+    "cockatiel": "^3.2.1"
+  }
+}

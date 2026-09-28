@@ -82,6 +82,7 @@ features/space-setup/
 ## Functions And Naming
 
 - Give each function one clear responsibility and prefer early returns over deep nesting.
+- Use a single options object for functions with more than two parameters.
 - Keep transformations pure where practical and make side effects explicit.
 - Use descriptive domain names for files, functions, classes, methods, variables, and types.
 - Prefix hooks with `use`; booleans with `is`, `has`, `can`, or `should`; callback props with `on`;

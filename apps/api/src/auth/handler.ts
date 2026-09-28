@@ -1,7 +1,6 @@
 import { toNodeHandler } from "better-auth/node";
-import type { PrismaService } from "../common/prisma/prisma.service";
-import { createAuth } from "./config/auth.config";
+import type { AuthService } from "./auth.service";
 
-export function createAuthHandler(prisma: PrismaService) {
-  return toNodeHandler(createAuth(prisma));
+export function createAuthHandler(authService: AuthService) {
+  return toNodeHandler(authService.auth);
 }

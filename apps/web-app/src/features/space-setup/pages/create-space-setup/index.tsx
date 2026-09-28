@@ -25,6 +25,10 @@ type SpaceCreateSetupPageProps = {
   screen: SpaceSetupCreateSteps;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
   const router = useRouter();
   const { t } = useTranslation("spaceSetup");
@@ -101,7 +105,7 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     const values = getValues();
 
     try {
-      const response = await fetch("/api/spaces/create", {
+      const response = await fetch("/api/spaces", {
         body: JSON.stringify({
           display_name: values.displayName,
           space_name: values.spaceName,
@@ -114,19 +118,37 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
         method: "POST",
       });
 
-      const payload = (await response.json()) as { error?: string; field?: string };
+      const payload: unknown = await response.json();
 
       if (!response.ok) {
-        const message = payload.error || t("errors.createSpace");
+        const errors = isRecord(payload) && Array.isArray(payload.error) ? payload.error : [];
+        const startDateError = errors.find(
+          (error: unknown) => isRecord(error) && error.field === "start_date",
+        );
+        const message =
+          isRecord(payload) && typeof payload.message === "string"
+            ? payload.message
+            : t("errors.createSpace");
 
-        if (payload.field === "start_date") {
-          setError("firstDay", { message });
+        if (isRecord(startDateError)) {
+          setError("firstDay", {
+            message: typeof startDateError.message === "string" ? startDateError.message : message,
+          });
           focusInvalidField("first-day-trigger");
           setIsSubmitting(false);
           return;
         }
 
         throw new Error(message);
+      }
+
+      const isCreatedSpace =
+        isRecord(payload) &&
+        payload.ok === true &&
+        isRecord(payload.data) &&
+        typeof payload.data.space_id === "string";
+      if (!isCreatedSpace) {
+        throw new Error(t("errors.createSpace"));
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t("errors.createSpace"));

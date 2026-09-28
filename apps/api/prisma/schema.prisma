@@ -1,6 +1,6 @@
 generator client {
   provider     = "prisma-client"
-  output       = "../generated/prisma"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -9,15 +9,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String        @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false) @map("email_verified")
+  email         String        @unique
+  emailVerified Boolean       @default(false) @map("email_verified")
   image         String?
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
   sessions      Session[]
   accounts      Account[]
+  createdSpaces Space[]       @relation("SpaceCreator")
+  updatedSpaces Space[]       @relation("SpaceUpdater")
+  spaceMembers  SpaceMember[]
 
   @@map("user")
 }
@@ -68,4 +71,50 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum SpaceMemberRole {
+  owner
+  partner
+
+  @@map("space_member_role")
+}
+
+model Space {
+  id                  String        @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  name                String
+  startDate           DateTime      @map("start_date") @db.Date
+  inviteCode          String?       @map("invite_code")
+  inviteCodeExpiresAt DateTime?     @map("invite_code_expires_at") @db.Timestamptz(6)
+  createdByUserId     String        @map("created_by_user_id")
+  createdByUser       User          @relation("SpaceCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedByUserId     String        @map("updated_by_user_id")
+  updatedByUser       User          @relation("SpaceUpdater", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+  deletedAt           DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  members             SpaceMember[]
+
+  @@index([createdByUserId], map: "spaces_created_by_user_id")
+  @@index([updatedByUserId], map: "spaces_updated_by_user_id")
+  @@map("spaces")
+}
+
+model SpaceMember {
+  id                    String          @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  spaceId               String          @map("space_id") @db.Uuid
+  space                 Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  userId                String          @map("user_id")
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName           String          @map("display_name")
+  role                  SpaceMemberRole
+  onboardingCompletedAt DateTime?       @map("onboarding_completed_at") @db.Timestamptz(6)
+  deletedAt             DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([id, userId, spaceId], map: "space_members_id_user_space_unique")
+  @@unique([id, spaceId], map: "space_members_id_space_unique")
+  @@index([spaceId], map: "space_members_space_id")
+  @@map("space_members")
 }

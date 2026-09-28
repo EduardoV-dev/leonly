@@ -8,7 +8,7 @@ const { connect, disconnect, clientConstructor } = vi.hoisted(() => ({
 }));
 
 vi.mock("@prisma/adapter-pg", () => ({ PrismaPg: vi.fn() }));
-vi.mock("../../../generated/prisma/client", () => ({
+vi.mock("../../generated/prisma/client", () => ({
   PrismaClient: class {
     constructor(options: unknown) {
       clientConstructor(options);

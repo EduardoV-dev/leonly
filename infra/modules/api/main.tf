@@ -72,7 +72,13 @@ resource "aws_apigatewayv2_integration" "api" {
 
 resource "aws_apigatewayv2_route" "api" {
   api_id    = aws_apigatewayv2_api.api.id
-  route_key = "$default"
+  route_key = "ANY /api/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_root" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "ANY /api"
   target    = "integrations/${aws_apigatewayv2_integration.api.id}"
 }
 
@@ -81,7 +87,7 @@ resource "aws_apigatewayv2_stage" "api" {
   name        = "$default"
   auto_deploy = true
 
-  depends_on = [aws_apigatewayv2_route.api]
+  depends_on = [aws_apigatewayv2_route.api, aws_apigatewayv2_route.api_root]
 }
 
 resource "aws_lambda_permission" "api_gateway" {

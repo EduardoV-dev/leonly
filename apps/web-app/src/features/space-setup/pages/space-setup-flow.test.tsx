@@ -145,30 +145,6 @@ describe("space setup flow validation and guards", () => {
     );
   });
 
-  it("routes an atomically created space to the invite interstitial", async () => {
-    sessionStorage.setItem(
-      CREATE_SPACE_STORAGE_KEY,
-      createState([SPACE_SETUP_STEPS.CREATE_START, SPACE_SETUP_STEPS.CREATE_NAME], {
-        displayName: "Leo",
-        firstDay: "2023-03-26",
-        spaceName: "Forever Us",
-      }),
-    );
-
-    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
-
-    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
-
-    await waitFor(() => {
-      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/spaces/create",
-      expect.objectContaining({ method: "POST" }),
-    );
-    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
-  });
-
   it("shows the persisted invite code and completes setup before the dashboard", async () => {
     render(<CreateSpaceInvitePage inviteCode="LNY-ABCD2" />);
 

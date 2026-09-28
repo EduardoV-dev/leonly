@@ -1,12 +1,12 @@
 import "dotenv/config";
 import serverlessExpress from "@codegenie/serverless-express";
 import type { Handler } from "aws-lambda";
-import { createApp } from "./create-app";
+import { createApiApp } from "./create-app";
 
 let serverPromise: Promise<Handler> | undefined;
 
 async function bootstrap(): Promise<Handler> {
-  const app = await createApp();
+  const app = await createApiApp();
   await app.init();
   return serverlessExpress({ app: app.getHttpAdapter().getInstance() });
 }
