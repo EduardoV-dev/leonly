@@ -6,20 +6,16 @@ import { StepMarker } from "../../../components/step-marker";
 
 type CreateInviteStepProps = {
   copied: boolean;
-  inviteCode: string;
-  isSubmitting: boolean;
+  inviteCode: string | null;
   onCopy: () => void;
   onContinue: () => void;
-  submitError: string | null;
 };
 
 export function CreateInviteStep({
   copied,
   inviteCode,
-  isSubmitting,
   onContinue,
   onCopy,
-  submitError,
 }: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
@@ -32,33 +28,32 @@ export function CreateInviteStep({
       <h1 className={styles.heading}>{t("steps.invite.heading")}</h1>
       <p className={styles.copy}>{t("steps.invite.description")}</p>
 
-      <div className={styles.inviteCodeBox}>
-        <div>
-          <p className={styles.label}>{t("steps.invite.codeLabel")}</p>
-          <strong>{inviteCode}</strong>
-        </div>
-        <button type="button" className={styles.copyButton} onClick={onCopy}>
-          {copied ? (
-            <Check className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <Copy className="h-4 w-4" aria-hidden="true" />
-          )}
-          {copied ? t("actions.copied") : t("actions.copyCode")}
-        </button>
-      </div>
+      {inviteCode ? (
+        <>
+          <div className={styles.inviteCodeBox}>
+            <div>
+              <p className={styles.label}>{t("steps.invite.codeLabel")}</p>
+              <strong>{inviteCode}</strong>
+            </div>
+            <button type="button" className={styles.copyButton} onClick={onCopy}>
+              {copied ? (
+                <Check className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Copy className="h-4 w-4" aria-hidden="true" />
+              )}
+              {copied ? t("actions.copied") : t("actions.copyCode")}
+            </button>
+          </div>
+          <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
+        </>
+      ) : (
+        <p className={styles.fieldError} role="status">
+          {t("errors.inviteUnavailable")}
+        </p>
+      )}
 
-      <p className={styles.expiryNote}>{t("steps.invite.expiryNote")}</p>
-
-      {submitError ? <p className={styles.fieldError}>{submitError}</p> : null}
-
-      <Button
-        type="button"
-        className={styles.linkButton}
-        loading={isSubmitting}
-        aria-busy={isSubmitting}
-        onClick={onContinue}
-      >
-        {isSubmitting ? t("actions.completingSetup") : t("actions.continueToDashboard")}
+      <Button type="button" className={styles.linkButton} onClick={onContinue}>
+        {t("actions.continueToDashboard")}
       </Button>
     </div>
   );

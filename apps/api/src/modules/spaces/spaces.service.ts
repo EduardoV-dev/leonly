@@ -22,15 +22,68 @@ type CreateParams = {
   details: { spaceName: string; displayName: string; startDate: Date };
 };
 
+type ActiveSpace = {
+  active_members: { avatar_url: string | null; display_name: string }[];
+  id: string;
+  invite_code: string | null;
+  invite_code_expires_at: string | null;
+  member_names: string[];
+  name: string;
+  onboarding_completed_at: string | null;
+  start_date: string;
+};
+
 @Injectable()
 export class SpacesService {
   constructor(private readonly prisma: PrismaService) { }
 
-  async create({
-    userId,
-    accountName,
-    details,
-  }: CreateParams): Promise<{ space_id: string }> {
+  async getActiveSpace(userId: string): Promise<ActiveSpace | null> {
+    const membership = await this.prisma.spaceMember.findFirst({
+      where: { userId, deletedAt: null, space: { deletedAt: null } },
+      select: {
+        onboardingCompletedAt: true,
+        space: {
+          select: {
+            id: true,
+            inviteCode: true,
+            inviteCodeExpiresAt: true,
+            members: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: "asc" },
+              take: 2,
+              select: {
+                displayName: true,
+                user: { select: { image: true } },
+              },
+            },
+            name: true,
+            startDate: true,
+          },
+        },
+      },
+    });
+
+    if (!membership) return null;
+
+    const { space } = membership;
+    const activeMembers = space.members.map(({ displayName, user }) => ({
+      avatar_url: user.image,
+      display_name: displayName,
+    }));
+
+    return {
+      active_members: activeMembers,
+      id: space.id,
+      invite_code: space.inviteCode,
+      invite_code_expires_at: space.inviteCodeExpiresAt?.toISOString() ?? null,
+      member_names: activeMembers.map(({ display_name }) => display_name),
+      name: space.name,
+      onboarding_completed_at: membership.onboardingCompletedAt?.toISOString() ?? null,
+      start_date: space.startDate.toISOString().slice(0, 10),
+    };
+  }
+
+  async create({ userId, accountName, details }: CreateParams): Promise<{ space_id: string }> {
     const member = await this.prisma.spaceMember.findFirst({
       where: { userId, deletedAt: null },
       select: { id: true },

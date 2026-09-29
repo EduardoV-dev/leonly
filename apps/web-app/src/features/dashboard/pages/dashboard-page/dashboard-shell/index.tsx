@@ -16,6 +16,13 @@ type DashboardShellProps = {
   children: ReactNode;
 };
 
+function getCurrentSection(pathname: string): DashboardSection {
+  if (pathname === APP_ROUTES.HOME) return "dashboard";
+  if (pathname.startsWith(APP_ROUTES.VAULT)) return "vault";
+  if (pathname.startsWith(APP_ROUTES.SETTINGS)) return "settings";
+  return "timeline";
+}
+
 const DashboardActiveSpaceContext = createContext<ActiveSpace | null>(null);
 
 export function useDashboardActiveSpace(): ActiveSpace {
@@ -35,15 +42,7 @@ export function DashboardShell({
 }: Readonly<DashboardShellProps>) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const pathname = usePathname();
-  const currentSection =
-    activeSection ??
-    (pathname === APP_ROUTES.HOME
-      ? "dashboard"
-      : pathname.startsWith(APP_ROUTES.VAULT)
-        ? "vault"
-        : pathname.startsWith(APP_ROUTES.SETTINGS)
-          ? "settings"
-          : "timeline");
+  const currentSection = activeSection ?? getCurrentSection(pathname);
 
   return (
     <div className={styles.page}>

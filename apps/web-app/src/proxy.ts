@@ -21,12 +21,7 @@ async function hasBetterAuthSession(request: NextRequest): Promise<boolean> {
         accept: "application/json",
         ...(cookie ? { cookie } : {}),
       },
-      validateStatus: () => true,
     });
-
-    if (response.status < 200 || response.status >= 300) {
-      return false;
-    }
 
     return hasSession(response.data);
   } catch {
@@ -61,9 +56,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (authRoute) {
-    return NextResponse.redirect(
-      new URL(APP_ROUTES.WELCOME_CREATE_STEP("start"), request.url),
-    );
+    return NextResponse.redirect(new URL(APP_ROUTES.WELCOME_CREATE_STEP("start"), request.url));
   }
 
   return NextResponse.next();

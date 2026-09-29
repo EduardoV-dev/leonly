@@ -66,7 +66,6 @@ export function DashboardContent() {
   const { t } = useTranslation("dashboard");
   const activeSpace = useDashboardActiveSpace();
   const shouldReduceMotion = Boolean(useReducedMotion());
-  const isWaitingForPartner = activeSpace.active_members.length === 1;
   const activeRevealVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
   const activeKeepsakeVariants = shouldReduceMotion ? reducedMotionVariants : keepsakeVariants;
   const activeCompanionVariants = shouldReduceMotion ? reducedMotionVariants : companionVariants;
@@ -81,17 +80,13 @@ export function DashboardContent() {
     >
       <motion.div variants={activeRevealVariants}>
         <PageHeader
-          description={t(
-            isWaitingForPartner
-              ? "content.waitingWelcomeDescription"
-              : "content.welcomeDescription",
-          )}
+          description={t("content.welcomeDescription")}
           leading={<LayoutGrid aria-hidden="true" />}
-          title={t(isWaitingForPartner ? "content.waitingHeading" : "content.heading")}
+          title={t("content.heading")}
         />
       </motion.div>
 
-      {isWaitingForPartner ? (
+      {activeSpace.active_members.length === 1 ? (
         <motion.div className={styles.inviteSection} variants={activeRevealVariants}>
           <PartnerInviteStatus
             code={activeSpace.invite_code}
@@ -101,32 +96,30 @@ export function DashboardContent() {
         </motion.div>
       ) : null}
 
-      {isWaitingForPartner ? null : (
-        <motion.div className={styles.heroGrid} variants={heroVariants}>
-          <motion.section
-            className={styles.milestoneCard}
-            aria-label={t("content.milestone")}
-            variants={activeKeepsakeVariants}
-          >
-            <span className={styles.eyebrow}>
-              <Heart aria-hidden="true" /> {t("content.milestoneReached")}
-            </span>
-            <RelationshipMilestone startDate={activeSpace.start_date} />
-          </motion.section>
-          <motion.section
-            className={styles.storyPrompt}
-            aria-label={t("content.createMemory")}
-            variants={activeCompanionVariants}
-          >
-            <h2>{t("content.storyPromptHeading")}</h2>
-            <p>{t("content.storyPromptDescription")}</p>
-            <Link href={APP_ROUTES.MEMORIES_NEW}>
-              <ImagePlus aria-hidden="true" />
-              {t("content.createMemory")}
-            </Link>
-          </motion.section>
-        </motion.div>
-      )}
+      <motion.div className={styles.heroGrid} variants={heroVariants}>
+        <motion.section
+          className={styles.milestoneCard}
+          aria-label={t("content.milestone")}
+          variants={activeKeepsakeVariants}
+        >
+          <span className={styles.eyebrow}>
+            <Heart aria-hidden="true" /> {t("content.milestoneReached")}
+          </span>
+          <RelationshipMilestone startDate={activeSpace.start_date} />
+        </motion.section>
+        <motion.section
+          className={styles.storyPrompt}
+          aria-label={t("content.createMemory")}
+          variants={activeCompanionVariants}
+        >
+          <h2>{t("content.storyPromptHeading")}</h2>
+          <p>{t("content.storyPromptDescription")}</p>
+          <Link href={APP_ROUTES.MEMORIES_NEW}>
+            <ImagePlus aria-hidden="true" />
+            {t("content.createMemory")}
+          </Link>
+        </motion.section>
+      </motion.div>
 
       <motion.section
         className={styles.summarySection}

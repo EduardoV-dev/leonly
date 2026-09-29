@@ -5,7 +5,6 @@ import { APP_ROUTES } from "@/constants/routes";
 import "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
-import { CreateSpaceInvitePage } from "./create-space-invite";
 import { SpaceCreateSetupPage } from "./create-space-setup";
 
 const navigationMock = vi.hoisted(() => ({
@@ -148,20 +147,15 @@ describe("space setup submit feedback", () => {
     });
   });
 
-  it("shows loading feedback while completing setup", async () => {
-    const resolveSetup = createPendingResponse();
-
-    render(<CreateSpaceInvitePage inviteCode="LNY-ABCD2" />);
+  it("continues to the dashboard without completing setup a second time", async () => {
+    render(
+      <SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode="LNY-ABCD2" />,
+    );
 
     const button = await screen.findByRole("button", { name: "Continue to dashboard" });
     fireEvent.click(button);
 
-    await waitFor(() => expectLoadingButton(button, "Completing setup..."));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-
-    resolveSetup({ json: async () => ({}), ok: true });
-    await waitFor(() => {
-      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
-    });
+    expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

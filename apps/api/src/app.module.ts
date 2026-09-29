@@ -8,9 +8,10 @@ import { apiValidationPipe } from "./common/http/api-validation.pipe";
 import { ApiLoggerModule } from "./common/logger/logger.module";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { SpacesModule } from "./modules/spaces/spaces.module";
+import { UsersModule } from "./modules/users/users.module";
 
 @Module({
-  imports: [ApiLoggerModule, PrismaModule, AuthModule, SpacesModule],
+  imports: [ApiLoggerModule, PrismaModule, AuthModule, SpacesModule, UsersModule],
   controllers: [AppController],
   providers: [
     { provide: APP_PIPE, useValue: apiValidationPipe },

@@ -36,6 +36,7 @@
         "noUnknownAtRules": "off"
       },
       "style": {
+        "noNestedTernary": "error",
         "noExcessiveLinesPerFile": {
           "level": "error",
           "options": {

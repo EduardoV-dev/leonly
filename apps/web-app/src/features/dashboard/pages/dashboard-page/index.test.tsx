@@ -8,8 +8,8 @@ import { DashboardError } from "./error";
 import { DashboardPage } from "./index";
 import { DashboardLoading } from "./loading";
 
+vi.mock("server-only", () => ({}));
 const getActiveSpaceForCurrentUserMock = vi.hoisted(() => vi.fn());
-const getUserMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
 const axiosPostMock = vi.hoisted(() => vi.fn());
 const axiosIsAxiosErrorMock = vi.hoisted(() => vi.fn());
@@ -22,16 +22,8 @@ vi.mock("axios", () => ({
   isAxiosError: axiosIsAxiosErrorMock,
 }));
 
-vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
-  getActiveSpaceForCurrentUser: getActiveSpaceForCurrentUserMock,
-}));
-
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: {
-      getUser: getUserMock,
-    },
-  }),
+vi.mock("@/features/space-setup/server/get-active-space-or-redirect", () => ({
+  getActiveSpaceOrRedirectToAuth: getActiveSpaceForCurrentUserMock,
 }));
 
 vi.mock("@/features/memories/components/memories-timeline", () => ({
@@ -75,7 +67,6 @@ describe("DashboardPage", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2023-03-28T12:00:00Z"));
     await act(() => i18n.changeLanguage("en"));
-    getUserMock.mockResolvedValue({ data: { user: {} } });
     getActiveSpaceForCurrentUserMock.mockResolvedValue(activeSpace);
     pathnameMock.mockReturnValue("/");
     axiosPostMock.mockResolvedValue({
@@ -213,7 +204,7 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
   });
 
-  it("renders an invitation state for a one-member space", async () => {
+  it("renders all dashboard content and navigation for a one-member space", async () => {
     getActiveSpaceForCurrentUserMock.mockResolvedValue({
       ...activeSpace,
       active_members: [{ avatar_url: null, display_name: "Leo" }],
@@ -224,20 +215,24 @@ describe("DashboardPage", () => {
 
     await renderDashboardPage();
 
-    expect(
-      screen.getByText("Invite your partner to begin preserving your story together."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Your shared story starts here")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your story, together" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Waiting for your person" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "3 days together" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "3 days together" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add to your story" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Recent Memories" })).toBeInTheDocument();
+    expect(screen.getByText("Timeline memories")).toBeInTheDocument();
     expect(screen.getByLabelText("Partner invitation code")).toHaveValue("TWO-FW3K3");
     expect(screen.getByRole("button", { name: "Copy code" })).toBeEnabled();
     expect(screen.getAllByRole("img", { name: "Leo's avatar" })).not.toHaveLength(0);
+    expect(screen.getAllByRole("link", { name: "Create a memory" })).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "Timeline" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Vault" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "Settings" })).toHaveLength(2);
   });
 
-  it("places an unavailable invitation before dashboard summaries without an automatic mutation", async () => {
+  it("keeps the invite action available alongside dashboard content", async () => {
     getActiveSpaceForCurrentUserMock.mockResolvedValue({
       ...activeSpace,
       active_members: [{ avatar_url: null, display_name: "Leo" }],
@@ -246,21 +241,18 @@ describe("DashboardPage", () => {
 
     await renderDashboardPage();
 
-    const invitation = screen.getByRole("heading", { name: "Invite your partner" });
-    const recentMemories = screen.getByRole("heading", { name: "Recent Memories" });
-
-    expect(invitation.compareDocumentPosition(recentMemories)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    expect(screen.getByRole("heading", { name: "Your story, together" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Recent Memories" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Timeline" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Create a new invitation" })).toBeEnabled();
     expect(axiosPostMock).not.toHaveBeenCalled();
   });
 
-  it("redirects an unauthenticated user before loading a space", async () => {
-    getUserMock.mockResolvedValue({ data: { user: null } });
+  it("propagates active-space service failures", async () => {
+    getActiveSpaceForCurrentUserMock.mockRejectedValue(new Error("query failed"));
 
-    await expect(DashboardPage()).rejects.toThrow("NEXT_REDIRECT:/auth");
-    expect(getActiveSpaceForCurrentUserMock).not.toHaveBeenCalled();
+    await expect(DashboardPage()).rejects.toThrow("query failed");
+    expect(getActiveSpaceForCurrentUserMock).toHaveBeenCalledOnce();
   });
 
   it("redirects a user without an active space to setup", async () => {

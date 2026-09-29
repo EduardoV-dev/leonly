@@ -1,99 +1,69 @@
-import { describe, expect, it, vi } from "vitest";
-import { logServerError } from "@/lib/server-logger";
-import { createClient } from "@/lib/supabase/server";
-import { getActiveSpaceForCurrentUser } from "./get-active-space-for-user";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/axios/api";
+import {
+  ActiveSpaceAuthenticationError,
+  getActiveSpaceForCurrentUser,
+} from "./get-active-space-for-user";
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(),
-}));
+const headersMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/server-logger", () => ({
-  logServerError: vi.fn(),
-}));
+vi.mock("next/headers", () => ({ headers: headersMock }));
+vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
+
+const space = {
+  active_members: [
+    { avatar_url: "https://example.com/leo.jpg", display_name: "Leo" },
+    { avatar_url: null, display_name: "Annie" },
+  ],
+  id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+  invite_code: "twofw3k3",
+  invite_code_expires_at: null,
+  member_names: ["Leo", "Annie"],
+  name: "Our Space",
+  onboarding_completed_at: "2025-04-27T00:00:00Z",
+  start_date: "2025-04-27",
+};
 
 describe("getActiveSpaceForCurrentUser", () => {
-  it("returns two ordered active members and their avatars", async () => {
-    const space = {
-      active_members: [
-        { avatar_url: "https://example.com/leo.jpg", display_name: "Leo" },
-        { avatar_url: null, display_name: "Annie" },
-      ],
-      id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
-      invite_code: "twofw3k3",
-      invite_code_expires_at: null,
-      member_names: ["Leo", "Annie"],
-      name: "Our Space",
-      onboarding_completed_at: "2025-04-27T00:00:00Z",
-      start_date: "2025-04-27",
-    };
-    const rpc = vi.fn().mockResolvedValue({ data: space, error: null });
+  beforeEach(() => {
+    vi.mocked(api.get).mockReset();
+    headersMock.mockResolvedValue(new Headers({ cookie: "better-auth.session_token=secret" }));
+  });
 
-    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
+  it("forwards the current session and validates the active-space response", async () => {
+    vi.mocked(api.get).mockResolvedValue({ status: 200, data: { ok: true, data: space } } as never);
 
     await expect(getActiveSpaceForCurrentUser()).resolves.toEqual(space);
-    expect(rpc).toHaveBeenCalledWith("get_active_space");
-  });
-
-  it("returns a single active member without an avatar", async () => {
-    const space = {
-      active_members: [{ avatar_url: null, display_name: "Leo" }],
-      id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
-      invite_code: "twofw3k3",
-      invite_code_expires_at: null,
-      member_names: ["Leo"],
-      name: "Our Space",
-      onboarding_completed_at: "2025-04-27T00:00:00Z",
-      start_date: "2025-04-27",
-    };
-    const rpc = vi.fn().mockResolvedValue({ data: space, error: null });
-
-    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
-
-    await expect(getActiveSpaceForCurrentUser()).resolves.toEqual(space);
-  });
-
-  it("logs the RPC failure while preserving the safe error", async () => {
-    const rpcError = {
-      code: "42501",
-      details: "permission denied for leo@example.com",
-      message: "permission denied",
-    };
-    const rpc = vi.fn().mockResolvedValue({ data: null, error: rpcError });
-
-    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
-
-    await expect(getActiveSpaceForCurrentUser()).rejects.toThrow(
-      "Failed to load the active space.",
-    );
-    expect(logServerError).toHaveBeenCalledWith(
-      { event: "supabase_operation_failed", operation: "get_active_space" },
-      rpcError,
-    );
-  });
-
-  it("rejects RPC results outside the baseline contract", async () => {
-    const rpc = vi.fn().mockResolvedValue({
-      data: {
-        active_members: [{ avatar_url: null, display_name: "Leo" }],
-        id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
-        invite_code: null,
-        invite_code_expires_at: null,
-        member_names: ["Leo"],
-        name: "Our Space",
-        onboarding_completed_at: null,
-        start_date: "2025-04-27",
-        user_id: "auth-subject",
-      },
-      error: null,
+    expect(api.get).toHaveBeenCalledWith("/api/users/me/space", {
+      headers: { cookie: "better-auth.session_token=secret" },
+      validateStatus: expect.any(Function),
     });
-    vi.mocked(createClient).mockResolvedValue({ rpc } as never);
+  });
 
+  it("returns null only for a successful absent-membership response", async () => {
+    vi.mocked(api.get).mockResolvedValue({ status: 200, data: { ok: true, data: null } } as never);
+    await expect(getActiveSpaceForCurrentUser()).resolves.toBeNull();
+  });
+
+  it("distinguishes unauthenticated callers from absent membership", async () => {
+    vi.mocked(api.get).mockResolvedValue({ status: 401, data: {} } as never);
+    await expect(getActiveSpaceForCurrentUser()).rejects.toBeInstanceOf(
+      ActiveSpaceAuthenticationError,
+    );
+  });
+
+  it("rejects unsuccessful responses", async () => {
+    const response = { status: 503, data: { ok: false, data: null } };
+    vi.mocked(api.get).mockResolvedValue(response as never);
     await expect(getActiveSpaceForCurrentUser()).rejects.toThrow(
       "Failed to load the active space.",
     );
-    expect(logServerError).toHaveBeenCalledWith(
-      { event: "supabase_operation_failed", operation: "parse_active_space" },
-      expect.anything(),
-    );
+  });
+
+  it("propagates transport failures", async () => {
+    const transportError = new Error("private backend detail");
+    vi.mocked(api.get).mockRejectedValue(transportError);
+
+    await expect(getActiveSpaceForCurrentUser()).rejects.toBe(transportError);
   });
 });

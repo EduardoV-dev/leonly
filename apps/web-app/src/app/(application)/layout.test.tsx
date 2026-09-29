@@ -2,20 +2,16 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ApplicationLayout from "./layout";
 
-const getUserMock = vi.hoisted(() => vi.fn());
-const hasActiveSpaceMock = vi.hoisted(() => vi.fn());
+vi.mock("server-only", () => ({}));
+const getActiveSpaceMock = vi.hoisted(() => vi.fn());
 const redirectMock = vi.hoisted(() => vi.fn());
+const activeSpaceAuthenticationError = vi.hoisted(
+  () => class ActiveSpaceAuthenticationError extends Error {},
+);
 
-vi.mock("@/features/space-setup/server/has-active-space-for-user", () => ({
-  hasActiveSpaceForCurrentUser: hasActiveSpaceMock,
-}));
-
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: {
-      getUser: getUserMock,
-    },
-  }),
+vi.mock("@/features/space-setup/server/get-active-space-for-user", () => ({
+  ActiveSpaceAuthenticationError: activeSpaceAuthenticationError,
+  getActiveSpaceForCurrentUser: getActiveSpaceMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -25,8 +21,7 @@ vi.mock("next/navigation", () => ({
 describe("ApplicationLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getUserMock.mockResolvedValue({ data: { user: {} } });
-    hasActiveSpaceMock.mockResolvedValue(true);
+    getActiveSpaceMock.mockResolvedValue({ id: "space-id" });
     redirectMock.mockImplementation((path: string) => {
       throw new Error(`NEXT_REDIRECT:${path}`);
     });
@@ -38,20 +33,30 @@ describe("ApplicationLayout", () => {
     expect(screen.getByText("Application content")).toBeInTheDocument();
   });
 
-  it("redirects unauthenticated users before checking for a space", async () => {
-    getUserMock.mockResolvedValue({ data: { user: null } });
+  it("redirects unauthenticated users to authentication", async () => {
+    const { ActiveSpaceAuthenticationError } = await import(
+      "@/features/space-setup/server/get-active-space-for-user"
+    );
+    getActiveSpaceMock.mockRejectedValue(new ActiveSpaceAuthenticationError());
 
     await expect(ApplicationLayout({ children: <p>Application content</p> })).rejects.toThrow(
       "NEXT_REDIRECT:/auth",
     );
-    expect(hasActiveSpaceMock).not.toHaveBeenCalled();
+    expect(getActiveSpaceMock).toHaveBeenCalledOnce();
   });
 
   it("redirects authenticated users without an active space to setup", async () => {
-    hasActiveSpaceMock.mockResolvedValue(false);
+    getActiveSpaceMock.mockResolvedValue(null);
 
     await expect(ApplicationLayout({ children: <p>Application content</p> })).rejects.toThrow(
       "NEXT_REDIRECT:/welcome/create/start",
+    );
+  });
+
+  it("lets backend failures reach the application error boundary", async () => {
+    getActiveSpaceMock.mockRejectedValue(new Error("Failed to load the active space."));
+    await expect(ApplicationLayout({ children: <p>Application content</p> })).rejects.toThrow(
+      "Failed to load the active space.",
     );
   });
 });

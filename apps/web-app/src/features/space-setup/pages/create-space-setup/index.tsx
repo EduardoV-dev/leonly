@@ -7,7 +7,7 @@ import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
-import { INVITE_CODE } from "../../components/space-setup-container/constants";
+import { normalizeInviteCode } from "../../constants/validation";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import {
   type CreateSpaceSetupFormValues,
@@ -21,15 +21,16 @@ import { CreateInviteStep } from "./create-invite-step";
 import { CreateNameStep } from "./create-name-step";
 import { CreateStartStep } from "./create-start-step";
 
-type SpaceCreateSetupPageProps = {
+type SpaceCreateSetupPageProps = Readonly<{
+  inviteCode?: string | null;
   screen: SpaceSetupCreateSteps;
-};
+}>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
+export function SpaceCreateSetupPage({ inviteCode = null, screen }: SpaceCreateSetupPageProps) {
   const router = useRouter();
   const { t } = useTranslation("spaceSetup");
   const {
@@ -39,14 +40,9 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     hasLoaded,
     isAllowed,
   } = useCreateSpaceSetupForm(screen);
-  const [copied, setCopied] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const copyInviteCode = async () => {
-    await navigator.clipboard.writeText(INVITE_CODE);
-    setCopied(true);
-  };
+  const [copied, setCopied] = useState(false);
 
   const continueToNameStep = async () => {
     if (isSubmitting) {
@@ -125,6 +121,9 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
         const startDateError = errors.find(
           (error: unknown) => isRecord(error) && error.field === "start_date",
         );
+        const validationError = errors.find(
+          (error: unknown) => isRecord(error) && typeof error.message === "string",
+        );
         const message =
           isRecord(payload) && typeof payload.message === "string"
             ? payload.message
@@ -139,7 +138,11 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
           return;
         }
 
-        throw new Error(message);
+        throw new Error(
+          response.status === 400 && isRecord(validationError)
+            ? String(validationError.message)
+            : message,
+        );
       }
 
       const isCreatedSpace =
@@ -160,9 +163,18 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     globalThis.location.assign(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
   };
 
+  const copyInviteCode = async () => {
+    if (!inviteCode) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(normalizeInviteCode(inviteCode));
+    setCopied(true);
+  };
+
   const startStory = () => {
     clearState();
-    router.push(APP_ROUTES.HOME);
+    globalThis.location.assign(APP_ROUTES.HOME);
   };
 
   const firstDayControl: Control<CreateSpaceSetupFormValues> = control;
@@ -193,11 +205,9 @@ export function SpaceCreateSetupPage({ screen }: SpaceCreateSetupPageProps) {
     [SPACE_SETUP_STEPS.CREATE_INVITE]: (
       <CreateInviteStep
         copied={copied}
-        inviteCode={INVITE_CODE}
-        isSubmitting={false}
+        inviteCode={inviteCode}
         onContinue={startStory}
         onCopy={copyInviteCode}
-        submitError={null}
       />
     ),
   };

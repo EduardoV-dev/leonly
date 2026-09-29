@@ -61,6 +61,12 @@ describe("create-space API response", () => {
       "/api/spaces",
       expect.objectContaining({ method: "POST" }),
     );
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      display_name: "Leo",
+      space_name: "Forever Us",
+      start_date: "2023-03-26",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
   });
 
@@ -78,6 +84,33 @@ describe("create-space API response", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
 
     expect(await screen.findByText("Invalid date.")).toBeInTheDocument();
+    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).not.toBeNull();
+    expect(locationMock.assign).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [401, "Authentication is required."],
+    [409, "You already have an active space."],
+  ])("preserves form values after a %i response", async (status, message) => {
+    fetchMock.mockResolvedValue({
+      json: async () => ({ ok: false, error: [], message }),
+      ok: false,
+      status,
+    });
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).not.toBeNull();
+    expect(locationMock.assign).not.toHaveBeenCalled();
+  });
+
+  it("preserves form values after a network failure", async () => {
+    fetchMock.mockRejectedValue(new Error("Network unavailable."));
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+
+    expect(await screen.findByText("Network unavailable.")).toBeInTheDocument();
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).not.toBeNull();
     expect(locationMock.assign).not.toHaveBeenCalled();
   });

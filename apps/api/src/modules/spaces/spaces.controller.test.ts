@@ -42,7 +42,7 @@ function collision(index: string | string[]): Prisma.PrismaClientKnownRequestErr
   });
 }
 
-describe("POST /api/spaces", () => {
+describe("spaces API", () => {
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -233,6 +233,15 @@ describe("POST /api/spaces", () => {
     expect(await post({ ...validBody, display_name: null })).toHaveProperty("status", 200);
     expect(create.mock.calls[1][0].data.members.create.displayName).toBe("Account Name");
   });
+
+  it.each(["", "A", "x".repeat(101)])(
+    "uses the fallback for invalid account names",
+    async (name) => {
+      session.mockResolvedValue({ user: { id: "better-auth-user", name } });
+      await post({ ...validBody, display_name: "" });
+      expect(create.mock.calls.at(-1)?.[0].data.members.create.displayName).toBe("Leonly User");
+    },
+  );
 
   it("maps a concurrent active membership conflict to 409", async () => {
     create.mockRejectedValue(collision(["user_id"]));

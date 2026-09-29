@@ -5,7 +5,6 @@ import { useController } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { SetupTabs } from "../../../components/setup-tabs";
-import { INVITE_CODE } from "../../../components/space-setup-container/constants";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { formatInviteCodeInput } from "../../../constants/validation";
 import type { JoinSpaceSetupFormValues } from "../../../hooks/use-join-space-setup-form";
@@ -48,7 +47,6 @@ export function JoinCodeStep({ control, isSubmitting, onContinue }: JoinCodeStep
         <input
           id="invite-code"
           type="text"
-          placeholder={INVITE_CODE}
           className={styles.input}
           aria-describedby={inviteCodeError ? inviteCodeErrorId : undefined}
           aria-invalid={Boolean(inviteCodeError)}

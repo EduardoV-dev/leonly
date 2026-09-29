@@ -5,7 +5,6 @@ import { APP_ROUTES } from "@/constants/routes";
 import { i18n } from "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
-import { CreateSpaceInvitePage } from "./create-space-invite";
 import { SpaceCreateSetupPage } from "./create-space-setup";
 import { SpaceJoinSetupPage } from "./join-space-setup";
 
@@ -145,20 +144,38 @@ describe("space setup flow validation and guards", () => {
     );
   });
 
-  it("shows the persisted invite code and completes setup before the dashboard", async () => {
-    render(<CreateSpaceInvitePage inviteCode="LNY-ABCD2" />);
+  it("shows the persisted invite and continues without another setup request", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    render(
+      <SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode="LNY-ABCD2" />,
+    );
 
     expect(
       await screen.findByRole("heading", { name: "Your space is ready." }),
     ).toBeInTheDocument();
     expect(screen.getByText("LNY-ABCD2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Copy Code" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("lnyabcd2"));
 
     fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/spaces/setup/complete", { method: "POST" });
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/spaces/setup/complete", expect.anything());
+  });
+
+  it("continues when the persisted invite is unavailable", async () => {
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode={null} />);
+
+    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
+    expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
   });
 
   it("validates join code on native form submission", async () => {

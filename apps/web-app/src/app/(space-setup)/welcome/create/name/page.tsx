@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceCreateSetupPage } from "@/features/space-setup";
-import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
-import { createClient } from "@/lib/supabase/server";
+import { getActiveSpaceOrRedirectToAuth } from "@/features/space-setup/server/get-active-space-or-redirect";
 
 export const metadata: Metadata = {
   title: "Name your space",
@@ -11,17 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CreateNamePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(APP_ROUTES.AUTH);
-  }
-
-  const activeSpace = await getActiveSpaceForCurrentUser();
-
+  const activeSpace = await getActiveSpaceOrRedirectToAuth();
   if (activeSpace) {
     redirect(APP_ROUTES.HOME);
   }
