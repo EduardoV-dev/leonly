@@ -1,4 +1,5 @@
 export const ENVIRONMENT_VARIABLES = Object.freeze({
+  NODE_ENV: process.env.NODE_ENV || "",
   APP_BASE_URL: process.env.APP_BASE_URL || "",
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || "",
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",

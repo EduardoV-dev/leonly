@@ -5,15 +5,15 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import type { ApiResponse } from "@/types/api-response";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import {
   type JoinSpaceSetupFormValues,
   useJoinSpaceSetupForm,
 } from "../../hooks/use-join-space-setup-form";
-import type { ActiveSpaceResponse } from "../../server/get-active-space-for-user";
+import type { ActiveSpace } from "../../types/active-space";
 import type { SpaceSetupJoinSteps } from "../../types/setup-types";
-import type { SpaceSetupApiResponse } from "../../types/space-setup-api-response";
 import { focusInvalidField } from "../../utils/focus-invalid-field";
 import { waitForNextPaint } from "../../utils/wait-for-next-paint";
 
@@ -40,7 +40,7 @@ async function redirectIfMembershipExists(failureMessage: string): Promise<boole
     throw new JoinSetupError(failureMessage);
   }
 
-  const payload: ActiveSpaceResponse = await response.json();
+  const payload: ApiResponse<ActiveSpace> = await response.json();
   if (!payload.ok) {
     throw new JoinSetupError(failureMessage);
   }
@@ -113,7 +113,7 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
         return;
       }
 
-      const payload: SpaceSetupApiResponse<{ valid: true }> = await response.json();
+      const payload: ApiResponse<{ valid: true }> = await response.json();
       const isInviteUnavailable = response.status === 404;
       const shouldRedirect = isInviteUnavailable
         ? await redirectIfMembershipExists(t("errors.validateInviteCode"))
@@ -176,7 +176,7 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
         return;
       }
 
-      const payload: SpaceSetupApiResponse<{ space_id: string }> = await response.json();
+      const payload: ApiResponse<{ space_id: string }> = await response.json();
       const isInviteUnavailable = response.status === 404;
       const shouldRedirect = isInviteUnavailable
         ? await redirectIfMembershipExists(t("errors.joinSpace"))

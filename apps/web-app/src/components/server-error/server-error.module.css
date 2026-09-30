@@ -1,0 +1,85 @@
+.page {
+  box-sizing: border-box;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 2rem 1.5rem;
+  background: #fffdfc;
+  color: #252323;
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  line-height: 1.55;
+}
+
+.content {
+  width: 100%;
+  max-width: 32rem;
+}
+
+.content h1 {
+  margin: 0 0 1rem;
+  font-family: "Petrona", Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.content p {
+  margin: 0;
+  color: #635b59;
+  font-size: 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.retry,
+.home {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7d585d;
+  border-radius: 0.6rem;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.retry {
+  background: #8a6467;
+  color: #fffdfc;
+}
+
+.home {
+  background: #fffdfc;
+  color: #252323;
+}
+
+.retry:hover {
+  background: #7f5a5f;
+}
+
+.home:hover {
+  background: #fff4f3;
+}
+
+.retry:focus-visible,
+.home:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 3px;
+}
+
+.page ::selection {
+  background: #7f5a5f;
+  color: #fffdfc;
+}

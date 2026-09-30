@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import type { ActiveSpace } from "@/features/space-setup/types/active-space";
 import type { DashboardSection } from "../dashboard-section";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./dashboard-sidebar.module.css";

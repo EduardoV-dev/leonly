@@ -1,24 +1,10 @@
 import { headers } from "next/headers";
 import { cache } from "react";
 import { api } from "@/lib/axios/api";
+import type { ApiResponse } from "@/types/api-response";
+import type { ActiveSpace } from "../types/active-space";
 
-export type ActiveSpace = {
-  active_members: { avatar_url: string | null; display_name: string }[];
-  id: string;
-  invite_code: string | null;
-  invite_code_expires_at: string | null;
-  member_names: string[];
-  name: string;
-  onboarding_completed_at: string | null;
-  start_date: string;
-};
-
-export type ActiveSpaceResponse = {
-  data: ActiveSpace | null;
-  error: [];
-  message: string;
-  ok: true;
-};
+export type { ActiveSpace } from "../types/active-space";
 
 export class ActiveSpaceAuthenticationError extends Error {
   constructor() {
@@ -29,7 +15,7 @@ export class ActiveSpaceAuthenticationError extends Error {
 
 export const getActiveSpaceForCurrentUser = cache(async (): Promise<ActiveSpace | null> => {
   const requestHeaders = await headers();
-  const response = await api.get<ActiveSpaceResponse>("/api/users/me/space", {
+  const response = await api.get<ApiResponse<ActiveSpace>>("/api/users/me/space", {
     headers: { cookie: requestHeaders.get("cookie") ?? "" },
     validateStatus: () => true,
   });

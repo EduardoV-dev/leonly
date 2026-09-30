@@ -38,6 +38,12 @@ describe("auth proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("redirects an unauthenticated null session response to auth", async () => {
+    apiGetMock.mockResolvedValue({ data: null, status: 200 });
+    const response = await proxy(new NextRequest("http://localhost:3000/timeline"));
+    expect(response.headers.get("location")).toBe("http://localhost:3000/auth");
+  });
+
   it("sends authenticated users through the dashboard membership guard", async () => {
     apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 200 });
 

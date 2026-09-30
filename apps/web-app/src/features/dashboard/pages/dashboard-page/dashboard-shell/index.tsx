@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { APP_ROUTES } from "@/constants/routes";
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import type { ActiveSpace } from "@/features/space-setup/types/active-space";
 import styles from "../dashboard-page.module.css";
 import type { DashboardSection } from "../dashboard-section";
 import { DashboardSidebar } from "../dashboard-sidebar";

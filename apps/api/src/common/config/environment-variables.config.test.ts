@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ENVIRONMENT_VARIABLE_NAMES = [
+  "NODE_ENV",
   "APP_BASE_URL",
   "BETTER_AUTH_SECRET",
   "GOOGLE_CLIENT_ID",
@@ -25,6 +26,7 @@ describe("ENVIRONMENT_VARIABLES", () => {
     const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
 
     expect(ENVIRONMENT_VARIABLES).toEqual({
+      NODE_ENV: "",
       APP_BASE_URL: "",
       BETTER_AUTH_SECRET: "",
       GOOGLE_CLIENT_ID: "",
@@ -34,6 +36,15 @@ describe("ENVIRONMENT_VARIABLES", () => {
       UPSTASH_REDIS_REST_TOKEN: "",
       WEB_APP_ORIGINS: "",
     });
+  });
+
+  it("captures the runtime environment at module initialization", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
+
+    expect(ENVIRONMENT_VARIABLES.NODE_ENV).toBe("production");
+    vi.stubEnv("NODE_ENV", "development");
+    expect(ENVIRONMENT_VARIABLES.NODE_ENV).toBe("production");
   });
 
   it("parses configured web app origins", async () => {

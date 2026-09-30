@@ -1,10 +1,10 @@
 ---
 name: code-style-review
-description: "Trigger: code review, review changes, CODE_STYLE.md compliance. Review code against bundled rules; default to the Git working tree."
+description: "Trigger: code review, review changes, code-style compliance. Apply portable bundled rules; default to the Git working tree."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Code Style Review
@@ -13,6 +13,7 @@ metadata:
 
 Use for code reviews and code-style compliance reviews. Apply the user's explicit scope; otherwise
 review staged changes, unstaged changes, and untracked non-ignored files in the Git working tree.
+The skill directory and its bundled references are self-contained and can be copied to another project.
 
 ## Hard Rules
 
@@ -24,6 +25,10 @@ review staged changes, unstaged changes, and untracked non-ignored files in the 
   do not turn contextual inspection into an unrelated repository-wide audit.
 - For diffs, report violations introduced or worsened by the change. For explicit whole-file or
   repository reviews, assess all authored code in that scope.
+- Apply technology-specific rules only when that technology is present. Discover source roots,
+  environment configuration, tooling, and verification commands from the target project.
+- Enforce the bundled environment-variable constants rule. In read-only reviews, report missing
+  constants and recommend their creation; create or update them only when fixes are requested.
 
 ## Decision Gates
 
@@ -44,12 +49,13 @@ review staged changes, unstaged changes, and untracked non-ignored files in the 
    - `git ls-files --others --exclude-standard -z`
    Read untracked files directly. Inspect both diff layers without duplicating findings; include
    deletions and renames. Treat filenames safely, including spaces and unusual characters.
-3. Read scoped code and relevant callers, contracts, tests, and configuration. Check each applicable
+3. Read the target project's agent guidance, package manifests, and tool configuration. Read scoped
+   code and relevant callers, contracts, tests, and configuration. Check each applicable
    section of the bundled rules, including physical line counts, ownership, and security boundaries.
 4. Verify each candidate against actual behavior and documented exceptions. Recommend the smallest
    concrete fix; do not demand speculative abstractions.
-5. Run relevant non-writing checks when available. Use the bundled completion commands for substantial
-   web-app changes when applicable; in other repositories use their documented equivalents. Record
+5. Run relevant non-writing checks from the target project's documented commands or configured scripts.
+   Use the bundled completion checklist to select applicable checks. Record
    failures, unavailable checks, and unverified behavior without claiming they passed.
 
 ## Output Contract
@@ -61,6 +67,5 @@ Finish with checks run and verification gaps. If no violations are found, say so
 
 ## References
 
-- [Code style rules](references/code-style.md): verbatim snapshot of `CODE_STYLE.md`, including all
-  rules, exceptions, examples, and completion commands. Keep this copy synchronized when updating
-  the skill's rules; the skill must remain usable without the original repository document.
+- [Code style rules](references/code-style.md): authoritative bundled rules, exceptions, examples,
+  and completion checklist. No external repository document is required.

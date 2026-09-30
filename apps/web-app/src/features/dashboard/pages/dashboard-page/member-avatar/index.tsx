@@ -1,5 +1,5 @@
 import { ProfileAvatar } from "@/components/profile-avatar";
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import type { ActiveSpace } from "@/features/space-setup/types/active-space";
 import styles from "./member-avatar.module.css";
 
 type MemberAvatarProps = {
@@ -10,7 +10,7 @@ type MemberAvatarProps = {
 export function MemberAvatar({ member, size = "small" }: MemberAvatarProps) {
   const className = `${styles.avatar} ${styles[size]}`;
   const label = `${member.display_name}'s avatar`;
-  const dimension = size === "small" ? 32 : size === "medium" ? 45 : 72;
+  const dimension = { small: 32, medium: 45, large: 72 }[size];
 
   return (
     <ProfileAvatar

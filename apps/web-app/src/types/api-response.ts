@@ -1,5 +1,9 @@
-type ApiError = { code: string; message: string; field?: string };
+export type ApiError = {
+  code: string;
+  message: string;
+  field?: string;
+};
 
-export type SpaceSetupApiResponse<T> =
+export type ApiResponse<T> =
   | { ok: true; data: T | null; error: []; message: string }
   | { ok: false; data: null; error: ApiError[]; message: string };

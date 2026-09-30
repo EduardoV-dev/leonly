@@ -1,29 +1,25 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { APP_ROUTES } from "@/constants/routes";
+import type { authClient } from "@/features/auth/api/auth-client";
 import { api } from "@/lib/axios/api";
 
-function hasSession(value: unknown): boolean {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const response = value as Record<string, unknown>;
-  return response.session !== null && response.session !== undefined;
-}
+type SessionResponse = {
+  session: Pick<typeof authClient.$Infer.Session.session, "id">;
+} | null;
 
 async function hasBetterAuthSession(request: NextRequest): Promise<boolean> {
   const cookie = request.headers.get("cookie");
 
   try {
-    const response = await api.get<unknown>("/api/auth/get-session", {
+    const response = await api.get<SessionResponse>("/api/auth/get-session", {
       headers: {
         accept: "application/json",
         ...(cookie ? { cookie } : {}),
       },
     });
 
-    return hasSession(response.data);
+    return Boolean(response.data?.session);
   } catch {
     return false;
   }

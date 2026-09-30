@@ -21,7 +21,7 @@ pnpm exec husky install
 
 ## Important Files
 - `package.json`
-- `CODE_STYLE.md`
+- `.agents/skills/code-style-review/references/code-style.md`
 - `turbo.json`
 - `biome.json`
 - `tsconfig.base.json`
@@ -109,8 +109,9 @@ pnpm exec biome check --write
 Targets: `*.{js,jsx,ts,tsx,cjs,mjs,json}`.
 
 ## Code Style Guidelines
-Read `CODE_STYLE.md` before writing or refactoring code. Its architecture, naming, file-size,
-component-structure, testability, and collocation rules are mandatory for every change.
+Read `.agents/skills/code-style-review/references/code-style.md` before writing or refactoring code.
+Its architecture, naming, file-size, component-structure, testability, and collocation rules are
+mandatory for every change.
 
 Follow existing patterns first. Keep edits minimal and local.
 

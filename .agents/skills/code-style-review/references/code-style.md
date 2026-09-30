@@ -2,6 +2,8 @@
 
 These rules apply to repository-authored code. Follow existing patterns unless they conflict with
 this document.
+Technology-specific rules apply only to projects using that technology. Resolve paths relative to
+the owning application or package in monorepos; examples illustrate ownership, not required features.
 
 ## Priorities
 
@@ -19,7 +21,7 @@ this document.
 - Split files by responsibility before they reach the limit; do not compress formatting or combine
   unrelated statements to evade it.
 - Generated files, dependency code, lockfiles, and build output are exempt.
-- Biome enforces the limit for supported source files under `apps/`. SQL file length is not checked.
+- Verify physical line counts even when the project's linter does not enforce the limit, including SQL.
 
 ## Collocation And Ownership
 
@@ -105,6 +107,34 @@ features/space-setup/
   code harder to understand.
 - Do not create constants that merely rename a literal without explaining its purpose.
 
+## Environment Variables
+
+- Consume environment variables through the project's existing environment-variable constants
+  module instead of reading `process.env` directly in application code. This is a shared
+  configuration boundary, regardless of how many consumers currently use a variable.
+- Reuse the existing module and its exports, even if it lives outside `src/constants`. Do not create
+  a competing source of truth or move an established module just to match the default path.
+- If no module exists, create `src/constants/environment-variables.ts` in the owning application or
+  package for TypeScript projects; use the language-appropriate extension otherwise. Export named
+  constants or an `ENVIRONMENT_VARIABLES` object, following project conventions.
+- If a variable is missing, add it to that module and import the constant at its consumers.
+- Keep direct `process.env` reads inside the environment configuration boundary. Apply the same
+  centralization to equivalent environment APIs in other runtimes.
+- Preserve existing validation, defaults, initialization order, and runtime versus build-time
+  evaluation. Load environment files before evaluating constants; do not freeze a value at import
+  time when the application requires a runtime lookup.
+- Keep private environment values in server-only modules. Separate public and private constants
+  when client code consumes environment configuration; never import secrets into client bundles.
+- Use statically analyzable accesses when a bundler requires them, such as literal
+  `process.env.NEXT_PUBLIC_SITE_URL` reads inside a Next.js public constants module.
+- Tool configuration or bootstrap files outside the application module graph may access the
+  environment directly when importing the application constants is unsupported. Tests may set,
+  delete, or stub environment variables to arrange behavior; verify initialization and reset cached
+  modules when testing import-time constants. These exceptions do not permit scattered application
+  reads.
+- In read-only reviews, report violations and recommend the appropriate constants change. Create
+  modules, add variables, or replace reads only when the user requests fixes.
+
 ## TypeScript And Contracts
 
 - Use strict TypeScript and explicit types at exported boundaries.
@@ -145,7 +175,7 @@ features/space-setup/
 
 ### SQL And Other Injection Prevention
 
-- Use the Supabase query builder, parameterized SQL, or typed RPC parameters. Never concatenate or
+- Use a database query builder, parameterized SQL, or typed RPC parameters. Never concatenate or
   interpolate untrusted values into SQL text.
 - Values cannot parameterize table names, column names, sort directions, or operators. Map dynamic
   identifiers to a fixed server-side allowlist.
@@ -163,12 +193,13 @@ features/space-setup/
   read and mutation. Hiding a UI control is not authorization.
 - Never trust client-provided user IDs, roles, ownership fields, prices, statuses, or permission
   flags. Derive identity from the verified session and sensitive values from server-owned data.
-- Enable Row Level Security on every exposed Supabase table and write policies for each permitted
-  operation. Test that users cannot read or change another account's rows.
-- Keep service-role credentials in server-only modules. Never expose them through `NEXT_PUBLIC_*`,
-  client bundles, logs, errors, or test fixtures.
-- Grant the least database and application privileges needed. Review every `security definer`
-  function, set a safe `search_path`, schema-qualify referenced objects, and restrict execution.
+- When using Supabase, enable Row Level Security on every exposed table and write policies for each
+  permitted operation. For any data store, test that users cannot read or change another account's rows.
+- Keep privileged credentials in server-only modules. Never expose them through public environment
+  variables (such as Next.js `NEXT_PUBLIC_*`), client bundles, logs, errors, or test fixtures.
+- Grant the least database and application privileges needed. In PostgreSQL, review every
+  `security definer` function, set a safe `search_path`, schema-qualify referenced objects, and
+  restrict execution.
 - Encrypt sensitive data in transit and at rest with platform-supported cryptography. Do not invent
   encryption, hashing, token, or random-number algorithms.
 - Collect and retain only the sensitive data the feature needs. Redact secrets, tokens, credentials,
@@ -215,18 +246,21 @@ Apply the current OWASP Top 10 controls to every feature. At minimum, follow the
 - Do not communicate state through color alone.
 - Measure before optimizing; avoid speculative memoization, caching, and virtualization.
 - Prevent obvious request waterfalls and unnecessary client components.
-- Prefer server components unless browser state or interaction requires a client boundary.
+- In frameworks supporting React Server Components, prefer server components unless browser state
+  or interaction requires a client boundary.
 
 ## Comments And Formatting
 
 - Comments should explain intent, constraints, invariants, or non-obvious trade-offs, not narrate
   readable code.
 - Remove stale comments when behavior changes.
-- Use Biome as the formatting and linting source of truth: two spaces, 100-character line width,
-  double quotes, semicolons, and trailing commas where valid.
+- Use the target project's configured formatter and linter as the source of truth. If no formatting
+  convention exists, use two spaces, 100-character line width, double quotes, semicolons, and trailing
+  commas where valid for the language.
 - Keep imports focused and remove unused symbols.
-- Biome enforces `noNestedTernary` and `noUselessElse`. Guard clauses, unnested conditionals,
-  named compound conditions, and assigned method results are also required in code review.
+- Avoid nested ternaries and useless `else` branches regardless of linter support. Guard clauses,
+  unnested conditionals, named compound conditions, and assigned method results are also required
+  in code review.
 
 ## Completion Checklist
 
@@ -234,12 +268,11 @@ Apply the current OWASP Top 10 controls to every feature. At minimum, follow the
 - New files live at the narrowest ownership level.
 - Production React files contain one component, except approved compound primitives.
 - Names are descriptive and behavioral values are explained.
+- Application environment reads use the owning project's constants boundary; missing variables are
+  added there, with public/private separation and evaluation timing preserved.
 - Relevant tests cover observable behavior.
-- For substantial web-app changes, run:
-
-```bash
-pnpm --filter web-app check
-pnpm --filter web-app typecheck
-pnpm --filter web-app test:run
-pnpm --filter web-app build
-```
+- For substantial changes, run the affected application's documented lint/format checks, typecheck,
+  non-watch tests, and build when available. Discover commands and the package manager from project
+  guidance, manifests, scripts, and CI configuration; do not assume an app name or toolchain.
+- Keep reviews read-only: use check modes rather than formatter write modes. Record unavailable
+  checks and verification gaps explicitly.

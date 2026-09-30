@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import type { ApiResponse } from "@/types/api-response";
 import { normalizeInviteCode } from "../../constants/validation";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import {
@@ -12,7 +13,6 @@ import {
   useCreateSpaceSetupForm,
 } from "../../hooks/use-create-space-setup-form";
 import type { SpaceSetupCreateSteps } from "../../types/setup-types";
-import type { SpaceSetupApiResponse } from "../../types/space-setup-api-response";
 import { focusInvalidField } from "../../utils/focus-invalid-field";
 import { waitForNextPaint } from "../../utils/wait-for-next-paint";
 
@@ -132,7 +132,7 @@ export function useCreateSpaceSetupPage({
         return;
       }
 
-      const payload: SpaceSetupApiResponse<{ space_id: string }> = await response.json();
+      const payload: ApiResponse<{ space_id: string }> = await response.json();
 
       if (!response.ok) {
         const startDateError = payload.error.find((error) => error.field === "start_date");

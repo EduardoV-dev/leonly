@@ -5,7 +5,7 @@ import Link from "next/link";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import type { ActiveSpace } from "@/features/space-setup/server/get-active-space-for-user";
+import type { ActiveSpace } from "@/features/space-setup/types/active-space";
 import { MemberAvatar } from "../member-avatar";
 import styles from "./mobile-header.module.css";
 
