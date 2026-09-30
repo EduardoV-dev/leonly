@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { APP_ROUTES } from "@/constants/routes";
 import { SPACE_SETUP_STEPS, SpaceJoinSetupPage } from "@/features/space-setup";
-import { getActiveSpaceForCurrentUser } from "@/features/space-setup/server/get-active-space-for-user";
-import { createClient } from "@/lib/supabase/server";
+import { getActiveSpaceOrRedirectToAuth } from "@/features/space-setup/server/get-active-space-or-redirect";
 
 export const metadata: Metadata = {
   title: "Join a space",
@@ -11,16 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default async function JoinCodePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(APP_ROUTES.AUTH);
-  }
-
-  if (await getActiveSpaceForCurrentUser()) {
+  const activeSpace = await getActiveSpaceOrRedirectToAuth();
+  if (activeSpace) {
     redirect(APP_ROUTES.HOME);
   }
 

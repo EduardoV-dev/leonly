@@ -4,14 +4,35 @@
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./invite-code": {
+      "types": "./dist/invite-code.d.ts",
+      "default": "./dist/invite-code.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "invite-code": [
+        "dist/invite-code.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test:run": "pnpm --filter api exec vitest run --root ../.. --config apps/api/vitest.config.ts packages/utils/src/index.test.ts"
+    "test:run": "vitest run"
   },
   "dependencies": {
     "cockatiel": "^3.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }

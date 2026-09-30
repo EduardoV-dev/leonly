@@ -51,6 +51,7 @@ export function JoinCodeStep({ control, isSubmitting, onContinue }: JoinCodeStep
           aria-describedby={inviteCodeError ? inviteCodeErrorId : undefined}
           aria-invalid={Boolean(inviteCodeError)}
           autoCapitalize="characters"
+          placeholder="LNY-9XDMS"
           {...field}
           onChange={handleInviteCodeChange}
           value={field.value ?? ""}

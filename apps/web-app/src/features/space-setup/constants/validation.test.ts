@@ -21,14 +21,19 @@ describe("invite code validation", () => {
     expect(formatInviteCodeDisplay("twofw3k3")).toBe("TWO-FW3K3");
   });
 
-  it.each(["two-fw3k", "two--fw3k3", "abc-fw3k3", "two-fi3k3", "twofw3k0"])(
-    "rejects malformed code %s",
-    (inviteCode) => {
-      const schema = createJoinSpaceSetupSchema(translation);
+  it.each([
+    "two-fw3k",
+    "two--fw3k3",
+    "abc-fw3k3",
+    "two-fi3k3",
+    "twofw3k0",
+    "twofw3k3x",
+    "TWO-FW3K3x",
+  ])("rejects malformed code %s", (inviteCode) => {
+    const schema = createJoinSpaceSetupSchema(translation);
 
-      expect(schema.safeParse({ displayName: "Leo", inviteCode }).success).toBe(false);
-    },
-  );
+    expect(schema.safeParse({ displayName: "Leo", inviteCode }).success).toBe(false);
+  });
 
   it("accepts formatted codes with surrounding ASCII whitespace", () => {
     const schema = createJoinSpaceSetupSchema(translation);

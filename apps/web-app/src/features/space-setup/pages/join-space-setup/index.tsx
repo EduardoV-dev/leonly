@@ -8,6 +8,7 @@ import { SPACE_SETUP_STEPS } from "../..";
 import { SpaceSetupContainer } from "../../components/space-setup-container";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { useJoinSpaceSetupForm } from "../../hooks/use-join-space-setup-form";
+import type { JoinApiResponse } from "../../types/join-api-response";
 import type { SpaceSetupJoinSteps } from "../../types/setup-types";
 import { focusInvalidField } from "../../utils/focus-invalid-field";
 import { waitForNextPaint } from "../../utils/wait-for-next-paint";
@@ -64,7 +65,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
 
     const values = getValues();
     try {
-      const response = await fetch("/api/spaces/join/validate", {
+      const response = await fetch("/api/spaces/invite-validations", {
         body: JSON.stringify({ invite_code: values.inviteCode }),
         headers: {
           "Content-Type": "application/json",
@@ -72,7 +73,9 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         method: "POST",
       });
 
-      if (!response.ok) {
+      const payload: JoinApiResponse<{ valid: true }> = await response.json();
+      const isInviteValid = response.ok && payload.ok && payload.data?.valid;
+      if (!isInviteValid) {
         throw new Error(t(getInviteCodeErrorMessage(response.status, "errors.validateInviteCode")));
       }
     } catch (error) {
@@ -106,7 +109,7 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
 
     const values = getValues();
     try {
-      const response = await fetch("/api/spaces/join", {
+      const response = await fetch("/api/spaces/memberships", {
         body: JSON.stringify({
           display_name: values.displayName,
           invite_code: values.inviteCode,
@@ -116,19 +119,18 @@ export function SpaceJoinSetupPage({ screen }: SpaceJoinSetupPageProps) {
         },
         method: "POST",
       });
-      const payload = (await response.json()) as { error?: string; field?: string };
-
-      if (!response.ok) {
-        const message = payload.error || t("errors.joinSpace");
-
-        if (payload.field === "display_name") {
-          setError("displayName", { message });
-          focusInvalidField("join-display-name");
-          setIsSubmittingJoin(false);
-          return;
-        }
-
-        throw new Error(message);
+      const payload: JoinApiResponse<{ space_id: string }> = await response.json();
+      const fieldError = payload.error[0];
+      const hasDisplayNameError = !response.ok && fieldError?.field === "display_name";
+      if (hasDisplayNameError) {
+        setError("displayName", { message: fieldError.message || t("errors.joinSpace") });
+        focusInvalidField("join-display-name");
+        setIsSubmittingJoin(false);
+        return;
+      }
+      const isJoinSuccessful = response.ok && payload.ok && Boolean(payload.data?.space_id);
+      if (!isJoinSuccessful) {
+        throw new Error(t(getInviteCodeErrorMessage(response.status, "errors.joinSpace")));
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : t("errors.joinSpace"));

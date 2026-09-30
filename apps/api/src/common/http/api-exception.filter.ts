@@ -30,13 +30,17 @@ function clientErrors(response: unknown, status: number): ApiError[] {
 
   const field =
     isRecord(response) && typeof response.field === "string" ? response.field : undefined;
-  const message =
-    isRecord(response) && typeof response.error === "string"
-      ? response.error
-      : typeof response === "string"
-        ? response
-        : "Request failed.";
+  const message = clientErrorMessage(response);
   return [{ code: `HTTP_${status}`, message, ...(field ? { field } : {}) }];
+}
+
+function clientErrorMessage(response: unknown): string {
+  if (typeof response === "string") return response;
+  if (!isRecord(response)) return "Request failed.";
+  const errorMessage = response.error;
+  const hasErrorMessage = typeof errorMessage === "string";
+  if (hasErrorMessage) return errorMessage;
+  return "Request failed.";
 }
 
 @Catch()
@@ -50,10 +54,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const isServerError = status >= 500;
-    if (isServerError) {
-      const errorType = exception instanceof Error ? exception.constructor.name : "UnknownError";
-      this.logger.error({ errorType }, "Unhandled API error");
-    }
+    if (isServerError) this.logger.error({ err: exception }, "Unhandled API error");
 
     const error =
       exception instanceof HttpException && !isServerError

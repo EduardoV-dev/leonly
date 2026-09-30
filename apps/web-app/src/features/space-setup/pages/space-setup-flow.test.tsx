@@ -78,7 +78,12 @@ describe("space setup flow validation and guards", () => {
     navigationMock.replace.mockReset();
     fetchMock.mockReset();
     fetchMock.mockResolvedValue({
-      json: async () => ({}),
+      json: async () => ({
+        ok: true,
+        data: { space_id: "space-id", valid: true },
+        error: [],
+        message: "Request completed successfully",
+      }),
       ok: true,
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -205,22 +210,6 @@ describe("space setup flow validation and guards", () => {
     expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
-  it("shows invalid join code format errors", async () => {
-    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
-
-    const inviteCodeInput = await screen.findByLabelText("Invite code");
-    fireEvent.change(inviteCodeInput, {
-      target: { value: "bad-code" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /join space/i }));
-
-    const error = await screen.findByText("The format of the code provided is invalid.");
-    expect(error).toBeInTheDocument();
-    expect(inviteCodeInput).toHaveAttribute("aria-invalid", "true");
-    expect(inviteCodeInput).toHaveAttribute("aria-describedby", error.id);
-    expect(navigationMock.push).not.toHaveBeenCalled();
-  });
-
   it("marks a valid join code complete and pushes the next route", async () => {
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
 
@@ -238,7 +227,7 @@ describe("space setup flow validation and guards", () => {
       expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name"));
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join/validate", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/invite-validations", {
       body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -249,7 +238,12 @@ describe("space setup flow validation and guards", () => {
   it("shows a lookup error instead of advancing for an unknown invite code", async () => {
     await i18n.changeLanguage("es");
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "This invite is invalid or unavailable." }),
+      json: async () => ({
+        ok: false,
+        data: null,
+        error: [{ code: "HTTP_404", message: "This invite is invalid or unavailable." }],
+        message: "This invite is invalid or unavailable.",
+      }),
       ok: false,
       status: 404,
     });
@@ -265,7 +259,12 @@ describe("space setup flow validation and guards", () => {
 
   it("shows rate-limit feedback instead of advancing", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "Too many join attempts. Try again in 10 minutes." }),
+      json: async () => ({
+        ok: false,
+        data: null,
+        error: [{ code: "HTTP_429", message: "Too many join attempts. Try again in 10 minutes." }],
+        message: "Too many join attempts. Try again in 10 minutes.",
+      }),
       ok: false,
       status: 429,
     });
@@ -277,17 +276,6 @@ describe("space setup flow validation and guards", () => {
       await screen.findByText("Too many join attempts. Try again in 10 minutes."),
     ).toBeInTheDocument();
     expect(navigationMock.push).not.toHaveBeenCalled();
-  });
-
-  it("masks join invite code input after the first three characters", async () => {
-    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
-
-    const inviteCodeInput = await screen.findByLabelText("Invite code");
-    fireEvent.change(inviteCodeInput, {
-      target: { value: "lny7kmp2" },
-    });
-
-    expect(inviteCodeInput).toHaveValue("LNY-7KMP2");
   });
 
   it("blocks direct join name access until code is complete", async () => {
@@ -316,7 +304,7 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/join", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships", {
       body: JSON.stringify({ display_name: "", invite_code: "LNY-7KMP2" }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -327,7 +315,7 @@ describe("space setup flow validation and guards", () => {
 
   it("disables the final join button while joining the space", async () => {
     let resolveJoin!: (response: {
-      json: () => Promise<Record<string, never>>;
+      json: () => Promise<Record<string, unknown>>;
       ok: boolean;
     }) => void;
     fetchMock.mockImplementationOnce(
@@ -348,7 +336,10 @@ describe("space setup flow validation and guards", () => {
     expect(button).toHaveTextContent("Joining space...");
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    resolveJoin({ json: async () => ({}), ok: true });
+    resolveJoin({
+      json: async () => ({ ok: true, data: { space_id: "space-id" }, error: [], message: "ok" }),
+      ok: true,
+    });
 
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
@@ -357,7 +348,12 @@ describe("space setup flow validation and guards", () => {
 
   it("keeps join state when joining the validated space fails", async () => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ error: "Invalid name.", field: "display_name" }),
+      json: async () => ({
+        ok: false,
+        data: null,
+        error: [{ code: "VALIDATION_ERROR", field: "display_name", message: "Invalid name." }],
+        message: "Invalid name.",
+      }),
       ok: false,
     });
     sessionStorage.setItem(JOIN_SPACE_STORAGE_KEY, joinState([SPACE_SETUP_STEPS.JOIN_CODE]));

@@ -1,3 +1,4 @@
+import { formatInviteCodeDisplay, isValidInviteCode } from "@leonly/utils/invite-code";
 import type { TFunction } from "i18next";
 import { z } from "zod";
 import { getInclusiveCalendarDayCount, parseCalendarDate } from "@/utils/calendar-date";
@@ -6,43 +7,15 @@ export const DISPLAY_NAME_MIN_LENGTH = 2;
 export const DISPLAY_NAME_MAX_LENGTH = 100;
 export const SPACE_NAME_MIN_LENGTH = 2;
 export const SPACE_NAME_MAX_LENGTH = 100;
-export const INVITE_CODE_PATTERN = /^(LEO|LOV|MEM|OUR|DUO|TWO|JOY|SUN|LNY)-?[A-HJKMNP-Z2-9]{5}$/;
-const NORMALIZED_INVITE_CODE_PATTERN =
-  /^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$/;
+
+export {
+  formatInviteCodeDisplay,
+  formatInviteCodeInput,
+  normalizeInviteCode,
+} from "@leonly/utils/invite-code";
 
 function getTrimmedLength(value: string) {
   return value.trim().length;
-}
-
-export function formatInviteCodeInput(value: string) {
-  const upperValue = value.toUpperCase();
-
-  if (/^[A-Z0-9]{4,8}$/.test(upperValue)) {
-    return `${upperValue.slice(0, 3)}-${upperValue.slice(3)}`;
-  }
-
-  return upperValue.slice(0, 9);
-}
-
-export function normalizeInviteCode(value: string) {
-  const trimmedValue = value.replace(/^[\t\n\r\f\v ]+|[\t\n\r\f\v ]+$/g, "").toLowerCase();
-
-  const normalizedValue =
-    /^(leo|lov|mem|our|duo|two|joy|sun|lny)-[abcdefghjkmnpqrstuvwxyz23456789]{5}$/.test(
-      trimmedValue,
-    )
-      ? trimmedValue.replace("-", "")
-      : trimmedValue;
-
-  return NORMALIZED_INVITE_CODE_PATTERN.test(normalizedValue) ? normalizedValue : trimmedValue;
-}
-
-function isValidInviteCode(value: string) {
-  return INVITE_CODE_PATTERN.test(value);
-}
-
-export function formatInviteCodeDisplay(value: string) {
-  return formatInviteCodeInput(value).toUpperCase();
 }
 
 function isFutureDateString(value: string) {
@@ -110,13 +83,13 @@ export function createJoinSpaceSetupSchema(t: SpaceSetupT) {
   return z.object({
     inviteCode: z
       .string()
-      .transform((value) => formatInviteCodeInput(normalizeInviteCode(value)))
-      .refine((value) => value.length > 0, {
+      .refine((value) => value.trim().length > 0, {
         message: t("validation.inviteCodeRequired"),
       })
       .refine(isValidInviteCode, {
         message: t("validation.inviteCodeInvalid"),
-      }),
+      })
+      .transform(formatInviteCodeDisplay),
     displayName: createOptionalDisplayNameSchema(t),
   });
 }

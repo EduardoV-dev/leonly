@@ -21,8 +21,8 @@
     "check": "pnpm exec biome check ."
   },
   "dependencies": {
-    "@leonly/utils": "workspace:*",
     "@codegenie/serverless-express": "^4.17.1",
+    "@leonly/utils": "workspace:*",
     "@nestjs/common": "^11.1.16",
     "@nestjs/core": "^11.1.16",
     "@nestjs/platform-express": "^11.1.16",
@@ -30,6 +30,8 @@
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@scalar/nestjs-api-reference": "^1.2.23",
+    "@upstash/ratelimit": "2.0.6",
+    "@upstash/redis": "^1.39.0",
     "better-auth": "1.6.23",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",

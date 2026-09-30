@@ -82,6 +82,12 @@ features/space-setup/
 ## Functions And Naming
 
 - Give each function one clear responsibility and prefer early returns over deep nesting.
+- Use guard clauses and early returns (or `continue` in loops) instead of nesting `if` statements.
+  Do not add an `else` after a branch that returns, throws, breaks, or continues.
+- Extract compound conditions into descriptive boolean constants. Name individual domain checks
+  when several conditions contribute to a decision, rather than placing a long expression in an `if`.
+- Assign function and method results to descriptive constants before using them in `if` conditions,
+  including asynchronous lookups. Keep the condition focused on the decision.
 - Use a single options object for functions with more than two parameters.
 - Keep transformations pure where practical and make side effects explicit.
 - Use descriptive domain names for files, functions, classes, methods, variables, and types.
@@ -102,6 +108,8 @@ features/space-setup/
 ## TypeScript And Contracts
 
 - Use strict TypeScript and explicit types at exported boundaries.
+- Consume first-party API responses using their documented response types. Avoid speculative
+  response-shape parsers for contracts owned by this repository; handle HTTP and domain errors.
 - Avoid `any`; use `unknown` and narrow it.
 - Validate untrusted input before treating it as a trusted type.
 - Avoid type assertions unless runtime validation or a documented invariant justifies them.
@@ -217,6 +225,8 @@ Apply the current OWASP Top 10 controls to every feature. At minimum, follow the
 - Use Biome as the formatting and linting source of truth: two spaces, 100-character line width,
   double quotes, semicolons, and trailing commas where valid.
 - Keep imports focused and remove unused symbols.
+- Biome enforces `noNestedTernary` and `noUselessElse`. Guard clauses, unnested conditionals,
+  named compound conditions, and assigned method results are also required in code review.
 
 ## Completion Checklist
 

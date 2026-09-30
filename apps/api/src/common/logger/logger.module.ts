@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Module } from "@nestjs/common";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
+import { serializeError } from "./serialize-error";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -42,7 +43,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
             path: request.url?.split("?")[0],
           }),
           res: (response) => ({ statusCode: response.statusCode }),
-          err: (error) => ({ type: error?.name ?? "UnknownError" }),
+          err: serializeError,
         },
         autoLogging: { ignore: (request) => request.url?.split("?")[0] === "/api/health" },
       },

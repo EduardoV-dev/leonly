@@ -17,5 +17,5 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Exercise a Better Auth user through create, reload invite, copy code, and continue to dashboard; verify the negative cases and record any remaining legacy-only controls exposed on this path.
+- [x] 4.1 Exercise a Better Auth user through create, reload invite, copy code, and continue to dashboard; verify the negative cases and record any remaining legacy-only controls exposed on this path.
 - [x] 4.2 Run `openspec validate migrate-space-creation-journey --strict`, focused API/web tests, and the required API and web-app check, typecheck, test, and build commands; fix any failures introduced by this change.

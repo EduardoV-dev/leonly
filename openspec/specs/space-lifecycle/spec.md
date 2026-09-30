@@ -14,8 +14,8 @@ MUST NOT grant authorization beyond active membership.
 
 Creation inputs MUST include a space name, start date, and IANA timezone. The creator display name is
 optional; when supplied, it MUST be trimmed and contain 2 to 100 characters. When omitted or blank,
-the system SHALL use the authenticated user's synchronized provider name, falling back to `Leonly
-User` when that name is unavailable or invalid. The space name MUST be trimmed and contain 2 to 100
+the system SHALL use the authenticated user's trimmed account name when it contains 2 to 100
+characters, falling back to `Leonly User` otherwise. The space name MUST be trimmed and contain 2 to 100
 characters. The start date MUST be a real `YYYY-MM-DD` date no later than the current date in the
 submitted valid timezone.
 
@@ -31,11 +31,16 @@ submitted valid timezone.
 
 #### Scenario: Creator omits a display name
 - **WHEN** an eligible user submits valid creation inputs without a display name
-- **THEN** the owner membership uses the user's synchronized provider name or the safe fallback
+- **THEN** the owner membership uses the authenticated user's valid trimmed account name or
+  `Leonly User` when that name is unavailable or invalid
 
 #### Scenario: Concurrent creation requests
 - **WHEN** the same eligible user submits concurrent valid creation requests
 - **THEN** exactly one active membership and its space are committed
+
+#### Scenario: Creation fails during setup
+- **WHEN** the create request fails validation, authentication, conflict, or due to a transient error
+- **THEN** the form stays recoverable without discarding entered values or opening the invite page
 
 ### Requirement: Active membership capacity
 The database SHALL enforce at most one active membership per user and at most two active members per
@@ -57,9 +62,17 @@ five-character random suffix MUST use the unambiguous lowercase alphabet
 `abcdefghjkmnpqrstuvwxyz23456789`. Code generation MUST use cryptographically secure randomness and
 an active-code uniqueness constraint.
 
-Invite input SHALL be case-insensitive, trim surrounding ASCII whitespace, and accept the hyphen only
-between the third and fourth characters. It MUST reject missing characters, ambiguous characters,
-non-ASCII characters, and punctuation in any other position.
+Frontend and backend SHALL use the shared invite-code contract in `@leonly/utils/invite-code`.
+Invite input SHALL trim surrounding whitespace with `String.prototype.trim`, normalize letter case,
+and accept an optional hyphen only between the third and fourth characters. The normalized input MUST
+match the prefix allowlist and suffix alphabet with exactly five suffix characters. Validation MUST
+reject malformed separators, incorrect lengths, and characters outside that normalized contract.
+Input formatting MUST trim before applying its display-length limit so pasted surrounding whitespace
+cannot remove valid code characters.
+
+#### Scenario: Padded code is pasted
+- **WHEN** a user pastes a current code with surrounding whitespace, including non-breaking spaces
+- **THEN** the input preserves all eight code characters and the frontend and backend accept the same normalized code
 
 #### Scenario: Displayed code is entered
 - **WHEN** a user enters a current code in either letter case with the optional expected hyphen
@@ -115,42 +128,50 @@ membership count, lifecycle state, or whether a code ever existed.
 - **THEN** the system returns a generic retryable server error and does not record a failed join attempt
 
 ### Requirement: Atomic join-attempt rate limiting
-The server SHALL atomically track failed invite validation and redemption attempts per authenticated
-user. The first five failures in a rolling 10-minute window SHALL receive their applicable safe
-error. A sixth request while those failures remain in the window MUST start a 10-minute lock and be
-rejected before code lookup or membership mutation with HTTP `429`, `Retry-After: 600`, and
-`Too many join attempts. Try again in 10 minutes.`
+The server SHALL track failed invite validation and redemption attempts per authenticated user in
+Redis using fixed 10-minute windows. Each user's allowance SHALL be five failures per window. The
+first five failures SHALL receive their applicable safe errors. Once the allowance is exhausted,
+subsequent validation and redemption requests in that window MUST be rejected before code lookup or
+membership mutation with HTTP `429` and `Too many join attempts. Try again in 10 minutes.`
 
-Requests during a lock MUST NOT extend it and SHALL return `Retry-After` as the positive whole number
-of seconds remaining, rounded up. A successful redemption or a 10-minute period without a failed
-attempt MUST clear the failure count. Successful validation alone MUST NOT clear failures, and
-transient server failures MUST NOT count.
+`Retry-After` SHALL be the positive whole number of seconds until the current fixed window resets,
+rounded up and clamped to at least one second. Rejected requests MUST NOT move that boundary or start
+a separate 10-minute lock. Failures SHALL expire at the fixed window boundary, even if the last
+failure was recent. A successful redemption SHALL clear the user's failure count after its database
+transaction commits. Successful validation alone MUST NOT clear failures, and transient server
+failures MUST NOT count. Validation and redemption MUST share the same attempt state and be serialized
+with a Redis per-user mutex, including requests from concurrent sessions of that user.
 
 #### Scenario: First five attempts fail
-- **WHEN** an authenticated user accumulates up to five failed invite attempts within 10 minutes
+- **WHEN** an authenticated user accumulates up to five failed invite attempts in the current fixed window
 - **THEN** each attempt receives its applicable safe error and is recorded atomically
 
-#### Scenario: Sixth request begins lock
-- **WHEN** the user makes another request while five failures remain in the rolling window
-- **THEN** the server starts the lock and returns the exact `429`, header, and message without code lookup
+#### Scenario: Allowance is exhausted
+- **WHEN** the user makes another request after five failures in the current fixed window
+- **THEN** the server returns `429`, the remaining fixed-window `Retry-After`, and the rate-limit message without code lookup
 
 #### Scenario: Concurrent attempts reach the limit
 - **WHEN** concurrent requests would cross the five-failure boundary
-- **THEN** serialized rate-limit state permits no request to bypass the lock threshold
+- **THEN** serialized rate-limit state permits no request to bypass the fixed-window failure allowance
 
-#### Scenario: Request arrives during lock
-- **WHEN** a request arrives before the user's lock expires
-- **THEN** the server returns `429` with the rounded-up remaining seconds and does not extend the lock
+#### Scenario: Request arrives before the window resets
+- **WHEN** a request arrives after the allowance is exhausted but before the window resets
+- **THEN** the server returns `429` with the rounded-up remaining seconds and does not extend the window
 
 #### Scenario: Failure state resets
-- **WHEN** redemption succeeds or no failed attempt remains within the last 10 minutes
-- **THEN** the next failed request is treated as the first failure in a new window
+- **WHEN** redemption succeeds or the fixed window resets
+- **THEN** the next failed request begins a fresh count for the current window
+
+#### Scenario: Failures occur near a window boundary
+- **WHEN** five failures exhaust the allowance shortly before the fixed window resets
+- **THEN** requests are blocked only until that boundary, not for 10 minutes after the fifth or sixth request
 
 ### Requirement: Join input and atomic redemption
 Redemption SHALL require an authenticated user, a valid invite input, and a joining display name
 trimmed to 2 through 100 characters. A successful redemption MUST atomically create the second active
-membership, complete that member's onboarding, consume the invite, clear their failed-attempt state,
-and return only the joined active-space identifier needed for routing.
+membership, complete that member's onboarding, and consume the invite in one database transaction.
+After that transaction commits, the server SHALL clear the user's Redis failed-attempt state and
+return only the joined active-space identifier needed for routing.
 
 #### Scenario: Eligible user redeems an invite
 - **WHEN** an authenticated user without an active membership submits a current invite and valid name
@@ -162,14 +183,32 @@ and return only the joined active-space identifier needed for routing.
 
 ### Requirement: Membership-aware product routing
 After authentication and after successful create or join mutations, the system SHALL resolve the
-user's active membership on the server. A user without one SHALL enter create/join setup. A creator
-SHALL see the invite interstitial before entering the existing dashboard shell; a user with an active
+user's active membership on the server using the identity that authorized the mutation. A user
+without one SHALL enter create/join setup. A creator SHALL see the invite interstitial with the
+current persisted invite before entering the existing dashboard shell; a user with an active
 membership after setup completion SHALL enter the dashboard shell with a one-member or two-member
-state derived from persisted active memberships.
+state derived from persisted active memberships. Creation already marks the owner's onboarding
+complete; moving from the creator invite interstitial to the dashboard MUST NOT require a second
+setup-completion mutation.
 
 #### Scenario: User has no active membership
 - **WHEN** post-login routing finds no active membership
 - **THEN** the user is routed to create/join setup
+
+#### Scenario: Creator refreshes the invite page
+- **WHEN** the creator opens or refreshes the invite interstitial after successful creation
+- **THEN** the code shown and copied comes from the current persisted active space, not a fixed
+  example or browser-only state
+
+#### Scenario: Invite is unavailable
+- **WHEN** the creator's persisted invite is absent or expired
+- **THEN** the interstitial does not present that code as usable and offers a route to continue
+  without submitting a new creation request
+
+#### Scenario: Creator continues to the dashboard
+- **WHEN** a creator with a completed owner membership continues from the invite interstitial
+- **THEN** the dashboard shows that space's one-member waiting state without requiring an additional
+  setup-completion request
 
 #### Scenario: Space has one active member
 - **WHEN** routing resolves an active space with one active member

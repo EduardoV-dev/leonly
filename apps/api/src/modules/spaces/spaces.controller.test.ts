@@ -1,3 +1,4 @@
+import { formatInviteCodeDisplay, isValidInviteCode } from "@leonly/utils/invite-code";
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { ExpressAdapter } from "@nestjs/platform-express";
@@ -70,6 +71,12 @@ describe("spaces API", () => {
       .set("Cookie", "better-auth.session_token=secret")
       .send(body);
 
+  const postJoin = (path: string, body: Record<string, unknown>, authenticated = true) => {
+    const call = request(app.getHttpServer()).post(path);
+    if (authenticated) call.set("Cookie", "better-auth.session_token=secret");
+    return call.send(body);
+  };
+
   it("denies missing sessions without touching space data", async () => {
     session.mockResolvedValue(null);
     const response = await post();
@@ -86,6 +93,28 @@ describe("spaces API", () => {
   it("denies sessions without a user ID", async () => {
     session.mockResolvedValue({ user: {} });
     expect((await post()).status).toBe(401);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it.each(["/api/spaces/memberships", "/api/spaces/invite-validations"])(
+    "requires Better Auth for %s",
+    async (path) => {
+      session.mockResolvedValue(null);
+      const response = await postJoin(
+        path,
+        { invite_code: "bad-code", user_id: "forged-user" },
+        false,
+      );
+      expect(response.status).toBe(401);
+      expect(response.body).toMatchObject({ ok: false, data: null });
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects non-string invite codes before service lookup", async () => {
+    const response = await postJoin("/api/spaces/invite-validations", { invite_code: 42 });
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ ok: false, data: null, error: expect.any(Array) });
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -215,6 +244,8 @@ describe("spaces API", () => {
     expect(data.inviteCode).toMatch(
       /^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$/,
     );
+    expect(isValidInviteCode(data.inviteCode)).toBe(true);
+    expect(isValidInviteCode(formatInviteCodeDisplay(data.inviteCode))).toBe(true);
     expect(data.inviteCodeExpiresAt.getTime() - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   });
 
