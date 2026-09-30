@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 
 WORKDIR /workspace
 
@@ -18,9 +18,11 @@ COPY packages/utils packages/utils
 RUN pnpm --filter api build
 RUN pnpm --filter api --prod deploy /out
 
-FROM public.ecr.aws/lambda/nodejs:22 AS runtime
+FROM public.ecr.aws/lambda/nodejs:24 AS runtime
 
 WORKDIR ${LAMBDA_TASK_ROOT}
+
+ENV NODE_OPTIONS="--experimental-require-module"
 
 COPY --from=build /out/ ./
 

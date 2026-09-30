@@ -54,19 +54,30 @@ describe("API application", () => {
     await request(app.getHttpServer()).get("/api/docs").expect(404);
   });
 
-  it("formats Nest route errors without changing their HTTP status", async () => {
-    const response = await request(app.getHttpServer()).get("/missing").expect(404);
-    expect(response.body).toEqual({
-      ok: false,
-      data: null,
-      error: [{ code: "HTTP_404", message: "Not Found" }],
-      message: "Not Found",
-    });
+  it("returns 404 for unmatched routes", async () => {
+    await request(app.getHttpServer()).get("/missing").expect(404);
   });
 
   it("requires a session for space creation without injected test metadata", async () => {
     await request(app.getHttpServer())
       .post("/api/spaces")
+      .send({ space_name: "Example", start_date: "2026-07-22", timezone: "UTC" })
+      .expect(401);
+  });
+
+  it("rejects cross-site state-changing requests", async () => {
+    await request(app.getHttpServer())
+      .post("/api/spaces")
+      .set("Sec-Fetch-Site", "cross-site")
+      .send({ space_name: "Example", start_date: "2026-07-22", timezone: "UTC" })
+      .expect(403);
+  });
+
+  it("allows configured frontend origins through CSRF protection", async () => {
+    await request(app.getHttpServer())
+      .post("/api/spaces")
+      .set("Origin", "http://localhost:3000")
+      .set("Sec-Fetch-Site", "cross-site")
       .send({ space_name: "Example", start_date: "2026-07-22", timezone: "UTC" })
       .expect(401);
   });

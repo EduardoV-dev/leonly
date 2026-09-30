@@ -7,7 +7,6 @@ const REQUEST_HEADERS_TO_STRIP = new Set([
   "connection",
   "content-length",
   "host",
-  "origin",
   "transfer-encoding",
 ]);
 const RESPONSE_HEADERS_TO_STRIP = new Set([

@@ -11,6 +11,7 @@ function createRequest(): Request {
     method: "POST",
     headers: {
       origin: "http://untrusted.example",
+      "sec-fetch-site": "cross-site",
       cookie: "better-auth.session_token=secret",
       "content-type": "application/json",
     },
@@ -21,7 +22,7 @@ function createRequest(): Request {
 describe("POST /api/spaces proxy", () => {
   beforeEach(() => requestMock.mockReset());
 
-  it("forwards the request to Nest without Origin and preserves its response", async () => {
+  it("forwards browser security headers to Nest and preserves its response", async () => {
     const payload = { ok: true, data: { space_id: "space-id" }, error: [], message: "OK" };
     requestMock.mockResolvedValue({
       status: 200,
@@ -43,6 +44,8 @@ describe("POST /api/spaces proxy", () => {
         headers: {
           "content-type": "application/json",
           cookie: "better-auth.session_token=secret",
+          origin: "http://untrusted.example",
+          "sec-fetch-site": "cross-site",
         },
       }),
     );
