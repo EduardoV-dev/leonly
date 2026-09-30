@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import { webAppApi } from "@/lib/axios/web-app-api";
 import type { ApiResponse } from "@/types/api-response";
 import { normalizeInviteCode } from "../../constants/validation";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -109,17 +110,11 @@ export function useCreateSpaceSetupPage({
     const values = getValues();
 
     try {
-      const response = await fetch("/api/spaces", {
-        body: JSON.stringify({
-          display_name: values.displayName,
-          space_name: values.spaceName,
-          start_date: values.firstDay,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
+      const response = await webAppApi.post<ApiResponse<{ space_id: string }>>("/spaces", {
+        display_name: values.displayName,
+        space_name: values.spaceName,
+        start_date: values.firstDay,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
       if (response.status === 401) {
@@ -132,9 +127,9 @@ export function useCreateSpaceSetupPage({
         return;
       }
 
-      const payload: ApiResponse<{ space_id: string }> = await response.json();
+      const payload = response.data;
 
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         const startDateError = payload.error.find((error) => error.field === "start_date");
         const validationError = payload.error[0];
         const message = payload.message || t("errors.createSpace");
@@ -182,12 +177,14 @@ export function useCreateSpaceSetupPage({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/spaces/memberships/onboarding", { method: "POST" });
+      const response = await webAppApi.post<ApiResponse<{ completed: true }>>(
+        "/spaces/memberships/onboarding",
+      );
       if (response.status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
         return;
       }
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(t("errors.completeSetup"));
       }
     } catch {

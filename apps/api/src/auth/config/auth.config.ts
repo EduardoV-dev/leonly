@@ -7,10 +7,14 @@ import {
 import type { PrismaService } from "../../common/prisma/prisma.service";
 
 export function createAuth(prisma: PrismaService) {
+  const trustedOrigins = getWebAppOrigins();
+  const baseURL = trustedOrigins[0];
+  if (!baseURL) throw new Error("WEB_APP_ORIGINS requires a canonical frontend origin.");
+
   return betterAuth({
-    baseURL: ENVIRONMENT_VARIABLES.APP_BASE_URL,
+    baseURL,
     secret: ENVIRONMENT_VARIABLES.BETTER_AUTH_SECRET,
-    trustedOrigins: getWebAppOrigins(),
+    trustedOrigins,
     database: prismaAdapter(prisma, { provider: "postgresql" }),
     emailAndPassword: { enabled: false },
     socialProviders: {

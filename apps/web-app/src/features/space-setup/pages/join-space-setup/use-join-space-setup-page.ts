@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
+import { webAppApi } from "@/lib/axios/web-app-api";
 import type { ApiResponse } from "@/types/api-response";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -31,16 +32,16 @@ type JoinSpaceSetupPageState = {
 class JoinSetupError extends Error {}
 
 async function redirectIfMembershipExists(failureMessage: string): Promise<boolean> {
-  const response = await fetch("/api/users/me/space");
+  const response = await webAppApi.get<ApiResponse<ActiveSpace>>("/users/me/space");
   if (response.status === 401) {
     globalThis.location.assign(APP_ROUTES.AUTH);
     return true;
   }
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     throw new JoinSetupError(failureMessage);
   }
 
-  const payload: ApiResponse<ActiveSpace> = await response.json();
+  const payload = response.data;
   if (!payload.ok) {
     throw new JoinSetupError(failureMessage);
   }
@@ -100,27 +101,24 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await fetch("/api/spaces/invite-validations", {
-        body: JSON.stringify({ invite_code: values.inviteCode }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-      });
+      const response = await webAppApi.post<ApiResponse<{ valid: true }>>(
+        "/spaces/invite-validations",
+        { invite_code: values.inviteCode },
+      );
 
       if (response.status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
         return;
       }
 
-      const payload: ApiResponse<{ valid: true }> = await response.json();
+      const payload = response.data;
       const isInviteUnavailable = response.status === 404;
       const shouldRedirect = isInviteUnavailable
         ? await redirectIfMembershipExists(t("errors.validateInviteCode"))
         : false;
       if (shouldRedirect) return;
 
-      const isInviteValid = response.ok && payload.ok && payload.data?.valid;
+      const isInviteValid = response.status === 200 && payload.ok && payload.data?.valid;
       if (!isInviteValid) {
         throw new JoinSetupError(
           t(getInviteCodeErrorMessage(response.status, "errors.validateInviteCode")),
@@ -161,22 +159,19 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await fetch("/api/spaces/memberships", {
-        body: JSON.stringify({
+      const response = await webAppApi.post<ApiResponse<{ space_id: string }>>(
+        "/spaces/memberships",
+        {
           display_name: values.displayName,
           invite_code: values.inviteCode,
-        }),
-        headers: {
-          "Content-Type": "application/json",
         },
-        method: "POST",
-      });
+      );
       if (response.status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
         return;
       }
 
-      const payload: ApiResponse<{ space_id: string }> = await response.json();
+      const payload = response.data;
       const isInviteUnavailable = response.status === 404;
       const shouldRedirect = isInviteUnavailable
         ? await redirectIfMembershipExists(t("errors.joinSpace"))
@@ -184,14 +179,15 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
       if (shouldRedirect) return;
 
       const fieldError = payload.error[0];
-      const hasDisplayNameError = !response.ok && fieldError?.field === "display_name";
+      const hasDisplayNameError = response.status !== 200 && fieldError?.field === "display_name";
       if (hasDisplayNameError) {
         setError("displayName", { message: fieldError.message || t("errors.joinSpace") });
         focusInvalidField("join-display-name");
         setIsSubmittingJoin(false);
         return;
       }
-      const isJoinSuccessful = response.ok && payload.ok && Boolean(payload.data?.space_id);
+      const isJoinSuccessful =
+        response.status === 200 && payload.ok && Boolean(payload.data?.space_id);
       if (!isJoinSuccessful) {
         throw new JoinSetupError(t(getInviteCodeErrorMessage(response.status, "errors.joinSpace")));
       }

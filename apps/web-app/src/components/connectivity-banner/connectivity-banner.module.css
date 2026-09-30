@@ -1,0 +1,38 @@
+.banner {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  padding: calc(0.75rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.75rem
+    max(1rem, env(safe-area-inset-left));
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  animation: appear 180ms ease-out;
+}
+
+.offline {
+  background: #991b1b;
+}
+
+.online {
+  background: #166534;
+}
+
+@keyframes appear {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+}

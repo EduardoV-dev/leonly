@@ -19,6 +19,10 @@ return 0
 export class RedisService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
+  async ping(): Promise<boolean> {
+    return (await this.redis.ping()) === "PONG";
+  }
+
   async withLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
     const lockToken = randomUUID();
     const deadline = Date.now() + LOCK_WAIT_MS;

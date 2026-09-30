@@ -1,12 +1,14 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { authEn } from "@/locales/en/auth";
+import { connectivityEn } from "@/locales/en/connectivity";
 import { dashboardEn } from "@/locales/en/dashboard";
 import { memoriesEn } from "@/locales/en/memories";
 import { notFoundEn } from "@/locales/en/not-found";
 import { settingsEn } from "@/locales/en/settings";
 import { spaceSetupEn } from "@/locales/en/space-setup";
 import { authEs } from "@/locales/es/auth";
+import { connectivityEs } from "@/locales/es/connectivity";
 import { dashboardEs } from "@/locales/es/dashboard";
 import { memoriesEs } from "@/locales/es/memories";
 import { notFoundEs } from "@/locales/es/not-found";
@@ -22,6 +24,7 @@ const LANGUAGES = {
 const resources = {
   [LANGUAGES.ENGLISH]: {
     auth: authEn,
+    connectivity: connectivityEn,
     dashboard: dashboardEn,
     memories: memoriesEn,
     notFound: notFoundEn,
@@ -30,6 +33,7 @@ const resources = {
   },
   [LANGUAGES.SPANISH]: {
     auth: authEs,
+    connectivity: connectivityEs,
     dashboard: dashboardEs,
     memories: memoriesEs,
     notFound: notFoundEs,

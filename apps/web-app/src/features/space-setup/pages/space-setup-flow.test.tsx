@@ -7,6 +7,7 @@ import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/l
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { SpaceCreateSetupPage } from "./create-space-setup";
 import { SpaceJoinSetupPage } from "./join-space-setup";
+import "./setup-web-app-api-tests";
 
 const navigationMock = vi.hoisted(() => ({
   push: vi.fn(),
@@ -172,18 +173,7 @@ describe("space setup flow validation and guards", () => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
-      method: "POST",
-    });
-  });
-
-  it("continues when the persisted invite is unavailable", async () => {
-    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode={null} />);
-
-    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
-    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+      headers: { accept: "application/json" },
       method: "POST",
     });
   });
@@ -234,7 +224,7 @@ describe("space setup flow validation and guards", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/invite-validations", {
       body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
-      headers: { "Content-Type": "application/json" },
+      headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     });
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toContain(SPACE_SETUP_STEPS.JOIN_CODE);
@@ -316,7 +306,7 @@ describe("space setup flow validation and guards", () => {
     });
     expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships", {
       body: JSON.stringify({ display_name: "", invite_code: "LNY-7KMP2" }),
-      headers: { "Content-Type": "application/json" },
+      headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",
     });
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toBeNull();

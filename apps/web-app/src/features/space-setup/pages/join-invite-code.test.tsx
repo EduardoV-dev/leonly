@@ -5,6 +5,7 @@ import { APP_ROUTES } from "@/constants/routes";
 import { i18n } from "@/lib/i18n";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { SpaceJoinSetupPage } from "./join-space-setup";
+import "./setup-web-app-api-tests";
 
 const { navigation, fetchMock, locationMock } = vi.hoisted(() => ({
   navigation: { push: vi.fn(), replace: vi.fn() },
@@ -53,7 +54,7 @@ describe("join invite code input", () => {
       });
       expect(fetchMock).toHaveBeenCalledWith("/api/spaces/invite-validations", {
         body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
-        headers: { "Content-Type": "application/json" },
+        headers: { accept: "application/json", "content-type": "application/json" },
         method: "POST",
       });
     },
@@ -90,6 +91,10 @@ describe("join invite code input", () => {
     await user.click(screen.getByRole("button", { name: /join space/i }));
 
     await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
-    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/users/me/space");
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/users/me/space",
+      expect.objectContaining({ method: "GET" }),
+    );
   });
 });

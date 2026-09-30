@@ -5,7 +5,6 @@ import { createApiApp } from "../create-app";
 
 vi.mock("../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
-    APP_BASE_URL: "http://localhost:3000",
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
@@ -16,6 +15,7 @@ vi.mock("../common/config/environment-variables.config", () => ({
 }));
 vi.mock("../common/prisma/prisma.service", () => ({
   PrismaService: class {
+    $queryRaw = vi.fn().mockResolvedValue([{ "?column?": 1 }]);
     verification = {
       create: vi.fn(({ data }) => data),
       findFirst: vi.fn(),
@@ -24,6 +24,12 @@ vi.mock("../common/prisma/prisma.service", () => ({
 
     async onModuleInit() {}
     async onModuleDestroy() {}
+  },
+}));
+
+vi.mock("../common/redis/redis.service", () => ({
+  RedisService: class {
+    ping = vi.fn().mockResolvedValue(true);
   },
 }));
 
@@ -37,15 +43,7 @@ describe("Google authentication routes", () => {
       await app.init();
       const server = app.getHttpServer();
 
-      await request(server)
-        .get("/api/health")
-        .expect(200)
-        .expect({
-          ok: true,
-          data: { status: "ok" },
-          error: [],
-          message: "Request completed successfully",
-        });
+      await request(server).get("/api/health").expect(200).expect({ database: true, redis: true });
       await request(server).get("/docs").expect(404);
       await request(server).get("/openapi.json").expect(404);
       const googleSignIn = await request(server)

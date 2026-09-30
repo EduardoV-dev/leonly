@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ENVIRONMENT_VARIABLE_NAMES = [
   "NODE_ENV",
-  "APP_BASE_URL",
   "BETTER_AUTH_SECRET",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
@@ -27,7 +26,6 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
     expect(ENVIRONMENT_VARIABLES).toEqual({
       NODE_ENV: "",
-      APP_BASE_URL: "",
       BETTER_AUTH_SECRET: "",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",

@@ -6,6 +6,7 @@ import { i18n } from "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import { SpaceCreateSetupPage } from ".";
+import "../setup-web-app-api-tests";
 
 const fetchMock = vi.hoisted(() => vi.fn());
 const locationMock = vi.hoisted(() => ({ assign: vi.fn() }));
@@ -112,5 +113,19 @@ describe("create-space API response", () => {
     expect(await screen.findByText("Network unavailable.")).toBeInTheDocument();
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).not.toBeNull();
     expect(locationMock.assign).not.toHaveBeenCalled();
+  });
+
+  it("continues when the persisted invite is unavailable", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode={null} />);
+
+    expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+      headers: { accept: "application/json" },
+      method: "POST",
+    });
   });
 });

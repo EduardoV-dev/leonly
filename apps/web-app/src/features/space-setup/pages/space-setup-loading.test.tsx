@@ -6,6 +6,7 @@ import "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY } from "../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { SpaceCreateSetupPage } from "./create-space-setup";
+import "./setup-web-app-api-tests";
 
 const navigationMock = vi.hoisted(() => ({
   push: vi.fn(),
@@ -159,6 +160,7 @@ describe("space setup submit feedback", () => {
     await waitFor(() => expectLoadingButton(button, "Completing setup..."));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+        headers: { accept: "application/json" },
         method: "POST",
       }),
     );

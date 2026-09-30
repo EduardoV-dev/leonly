@@ -7,7 +7,6 @@ import { createApiApp } from "./create-app";
 
 vi.mock("./common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
-    APP_BASE_URL: "http://localhost:3000",
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
