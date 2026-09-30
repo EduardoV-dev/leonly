@@ -7,15 +7,16 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { AppModule } from "../../app.module";
 import { Prisma } from "../../generated/prisma/client";
 
-const { session, findFirst, create } = vi.hoisted(() => ({
+const { session, findFirst, create, updateMany } = vi.hoisted(() => ({
   session: vi.fn(),
   findFirst: vi.fn(),
   create: vi.fn(),
+  updateMany: vi.fn(),
 }));
 
 vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
-    spaceMember = { findFirst };
+    spaceMember = { findFirst, updateMany };
     space = { create };
   },
 }));
@@ -61,6 +62,7 @@ describe("spaces API", () => {
     session.mockResolvedValue({ user: { id: "better-auth-user", name: "Account Name" } });
     findFirst.mockResolvedValue(null);
     create.mockResolvedValue({ id: "0199a9aa-1234-7000-8000-111111111111" });
+    updateMany.mockResolvedValue({ count: 1 });
   });
 
   afterEach(() => vi.useRealTimers());
@@ -75,6 +77,12 @@ describe("spaces API", () => {
     const call = request(app.getHttpServer()).post(path);
     if (authenticated) call.set("Cookie", "better-auth.session_token=secret");
     return call.send(body);
+  };
+
+  const postSetupCompletion = (authenticated = true) => {
+    const call = request(app.getHttpServer()).post("/api/spaces/memberships/onboarding");
+    if (authenticated) call.set("Cookie", "better-auth.session_token=secret");
+    return call;
   };
 
   it("denies missing sessions without touching space data", async () => {
@@ -120,6 +128,33 @@ describe("spaces API", () => {
 
   it("accepts requests without an Origin header", async () => {
     expect((await post()).status).toBe(200);
+  });
+
+  it("completes setup for the authenticated membership", async () => {
+    const response = await postSetupCompletion();
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ ok: true, data: { completed: true } });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { userId: "better-auth-user", deletedAt: null, space: { deletedAt: null } },
+      data: { onboardingCompletedAt: expect.any(Date) },
+    });
+  });
+
+  it("rejects setup completion without an active membership", async () => {
+    updateMany.mockResolvedValue({ count: 0 });
+
+    const response = await postSetupCompletion();
+
+    expect(response.status).toBe(409);
+    expect(updateMany).toHaveBeenCalledOnce();
+  });
+
+  it("requires Better Auth for setup completion", async () => {
+    session.mockResolvedValue(null);
+
+    expect((await postSetupCompletion(false)).status).toBe(401);
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -240,7 +275,7 @@ describe("spaces API", () => {
         create: { userId: "better-auth-user", displayName: "Account Name", role: "owner" },
       },
     });
-    expect(data.members.create.onboardingCompletedAt).toBeInstanceOf(Date);
+    expect(data.members.create.onboardingCompletedAt).toBeNull();
     expect(data.inviteCode).toMatch(
       /^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$/,
     );

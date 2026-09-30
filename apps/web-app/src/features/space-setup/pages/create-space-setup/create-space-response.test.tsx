@@ -89,20 +89,19 @@ describe("create-space API response", () => {
   });
 
   it.each([
-    [401, "Authentication is required."],
-    [409, "You already have an active space."],
-  ])("preserves form values after a %i response", async (status, message) => {
+    [401, APP_ROUTES.AUTH],
+    [409, APP_ROUTES.HOME],
+  ])("redirects after a %i response", async (status, route) => {
     fetchMock.mockResolvedValue({
-      json: async () => ({ ok: false, error: [], message }),
+      json: async () => ({ ok: false, error: [], message: "Request failed." }),
       ok: false,
       status,
     });
     render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
     fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
 
-    expect(await screen.findByText(message)).toBeInTheDocument();
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(route));
     expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).not.toBeNull();
-    expect(locationMock.assign).not.toHaveBeenCalled();
   });
 
   it("preserves form values after a network failure", async () => {

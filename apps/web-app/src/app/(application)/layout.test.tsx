@@ -21,7 +21,10 @@ vi.mock("next/navigation", () => ({
 describe("ApplicationLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getActiveSpaceMock.mockResolvedValue({ id: "space-id" });
+    getActiveSpaceMock.mockResolvedValue({
+      id: "space-id",
+      onboarding_completed_at: "2026-09-30T00:00:00.000Z",
+    });
     redirectMock.mockImplementation((path: string) => {
       throw new Error(`NEXT_REDIRECT:${path}`);
     });
@@ -50,6 +53,14 @@ describe("ApplicationLayout", () => {
 
     await expect(ApplicationLayout({ children: <p>Application content</p> })).rejects.toThrow(
       "NEXT_REDIRECT:/welcome/create/start",
+    );
+  });
+
+  it("routes members with incomplete setup to the invite step", async () => {
+    getActiveSpaceMock.mockResolvedValue({ id: "space-id", onboarding_completed_at: null });
+
+    await expect(ApplicationLayout({ children: <p>Application content</p> })).rejects.toThrow(
+      "NEXT_REDIRECT:/welcome/create/invite",
     );
   });
 

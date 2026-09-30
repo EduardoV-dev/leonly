@@ -147,7 +147,8 @@ describe("space setup submit feedback", () => {
     });
   });
 
-  it("continues to the dashboard without completing setup a second time", async () => {
+  it("shows completion loading feedback before continuing to the dashboard", async () => {
+    const resolveCompletion = createPendingResponse();
     render(
       <SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_INVITE} inviteCode="LNY-ABCD2" />,
     );
@@ -155,7 +156,28 @@ describe("space setup submit feedback", () => {
     const button = await screen.findByRole("button", { name: "Continue to dashboard" });
     fireEvent.click(button);
 
-    expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
-    expect(fetchMock).not.toHaveBeenCalled();
+    await waitFor(() => expectLoadingButton(button, "Completing setup..."));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+        method: "POST",
+      }),
+    );
+    resolveCompletion({ json: async () => ({ ok: true }), ok: true });
+
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
+  });
+
+  it("keeps the invite step available when setup completion fails", async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500 });
+    render(
+      <SpaceCreateSetupPage inviteCode="LNY-ABCD2" screen={SPACE_SETUP_STEPS.CREATE_INVITE} />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Continue to dashboard" }));
+
+    expect(
+      await screen.findByText("We could not complete setup. Please try again."),
+    ).toBeInTheDocument();
+    expect(locationMock.assign).not.toHaveBeenCalled();
   });
 });

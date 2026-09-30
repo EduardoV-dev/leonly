@@ -149,7 +149,7 @@ describe("space setup flow validation and guards", () => {
     );
   });
 
-  it("shows the persisted invite and continues without another setup request", async () => {
+  it("shows the persisted invite and completes setup before continuing", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -171,7 +171,9 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).not.toHaveBeenCalledWith("/api/spaces/setup/complete", expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+      method: "POST",
+    });
   });
 
   it("continues when the persisted invite is unavailable", async () => {
@@ -180,7 +182,10 @@ describe("space setup flow validation and guards", () => {
     expect(await screen.findByText("This invite is invalid or unavailable.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
-    expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
+    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
+      method: "POST",
+    });
   });
 
   it("validates join code on native form submission", async () => {
@@ -237,7 +242,7 @@ describe("space setup flow validation and guards", () => {
 
   it("shows a lookup error instead of advancing for an unknown invite code", async () => {
     await i18n.changeLanguage("es");
-    fetchMock.mockResolvedValue({
+    fetchMock.mockResolvedValueOnce({
       json: async () => ({
         ok: false,
         data: null,
@@ -246,6 +251,11 @@ describe("space setup flow validation and guards", () => {
       }),
       ok: false,
       status: 404,
+    });
+    fetchMock.mockResolvedValueOnce({
+      json: async () => ({ ok: true, data: null, error: [], message: "OK" }),
+      ok: true,
+      status: 200,
     });
     render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
     const inviteCodeInput = await screen.findByLabelText("Código de invitación");

@@ -38,13 +38,13 @@ describe("auth proxy", () => {
     expect(response.headers.get("location")).toBeNull();
   });
 
-  it("redirects authenticated users away from the auth page", async () => {
+  it("sends authenticated users through the dashboard membership guard", async () => {
     apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 200 });
 
     const response = await proxy(new NextRequest("http://localhost:3000/auth"));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe("http://localhost:3000/welcome/create/start");
+    expect(response.headers.get("location")).toBe("http://localhost:3000/");
   });
 
   it("redirects unauthenticated application requests to the auth page", async () => {

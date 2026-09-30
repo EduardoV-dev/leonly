@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (authRoute) {
-    return NextResponse.redirect(new URL(APP_ROUTES.WELCOME_CREATE_STEP("start"), request.url));
+    return NextResponse.redirect(new URL(APP_ROUTES.HOME, request.url));
   }
 
   return NextResponse.next();

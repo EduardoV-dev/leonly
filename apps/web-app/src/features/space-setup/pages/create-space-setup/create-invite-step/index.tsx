@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import styles from "../../../components/space-setup-step/space-setup-step.module.css";
 import { StepMarker } from "../../../components/step-marker";
 
-type CreateInviteStepProps = {
+type CreateInviteStepProps = Readonly<{
   copied: boolean;
+  isCompleting: boolean;
   inviteCode: string | null;
   onCopy: () => void;
   onContinue: () => void;
-};
+  submitError: string | null;
+}>;
 
 export function CreateInviteStep({
   copied,
+  isCompleting,
   inviteCode,
   onContinue,
   onCopy,
+  submitError,
 }: CreateInviteStepProps) {
   const { t } = useTranslation("spaceSetup");
 
@@ -52,8 +56,20 @@ export function CreateInviteStep({
         </p>
       )}
 
-      <Button type="button" className={styles.linkButton} onClick={onContinue}>
-        {t("actions.continueToDashboard")}
+      {submitError ? (
+        <p className={styles.fieldError} role="alert">
+          {submitError}
+        </p>
+      ) : null}
+
+      <Button
+        type="button"
+        className={styles.linkButton}
+        loading={isCompleting}
+        aria-busy={isCompleting}
+        onClick={onContinue}
+      >
+        {isCompleting ? t("actions.completingSetup") : t("actions.continueToDashboard")}
       </Button>
     </div>
   );

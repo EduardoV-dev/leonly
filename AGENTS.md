@@ -114,6 +114,10 @@ component-structure, testability, and collocation rules are mandatory for every 
 
 Follow existing patterns first. Keep edits minimal and local.
 
+### Code Review Skill
+- For code reviews, load `.agents/skills/code-style-review/SKILL.md` and its bundled rules.
+- When review scope is unspecified, review staged, unstaged, and untracked non-ignored Git working-tree changes.
+
 ### Frontend Design
 - Read `DESIGN.md` before creating or substantially changing a frontend screen.
 - Preserve the established Leonly visual system, components, responsive patterns, and accessibility requirements.

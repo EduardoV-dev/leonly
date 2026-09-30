@@ -6,9 +6,10 @@ import { i18n } from "@/lib/i18n";
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { SpaceJoinSetupPage } from "./join-space-setup";
 
-const { navigation, fetchMock } = vi.hoisted(() => ({
+const { navigation, fetchMock, locationMock } = vi.hoisted(() => ({
   navigation: { push: vi.fn(), replace: vi.fn() },
   fetchMock: vi.fn(),
+  locationMock: { assign: vi.fn() },
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
@@ -20,12 +21,14 @@ describe("join invite code input", () => {
     localStorage.clear();
     navigation.push.mockReset();
     navigation.replace.mockReset();
+    locationMock.assign.mockReset();
     fetchMock.mockReset();
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ ok: true, data: { valid: true }, error: [], message: "OK" }),
     });
     vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("location", locationMock);
   });
 
   afterEach(() => {
@@ -55,4 +58,38 @@ describe("join invite code input", () => {
       });
     },
   );
+
+  it("redirects to authentication when invite validation reports an expired session", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ ok: false, data: null, error: [], message: "Unauthorized" }),
+    });
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("Invite code"), "lny7kmp2");
+    await user.click(screen.getByRole("button", { name: /join space/i }));
+
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.AUTH));
+  });
+
+  it("routes to dashboard when invite validation finds existing membership", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ ok: false, data: null, error: [], message: "Unavailable" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ok: true, data: { id: "space-id" }, error: [], message: "OK" }),
+      });
+    render(<SpaceJoinSetupPage screen={SPACE_SETUP_STEPS.JOIN_CODE} />);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("Invite code"), "lny7kmp2");
+    await user.click(screen.getByRole("button", { name: /join space/i }));
+
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/users/me/space");
+  });
 });

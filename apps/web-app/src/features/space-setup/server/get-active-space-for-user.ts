@@ -13,7 +13,7 @@ export type ActiveSpace = {
   start_date: string;
 };
 
-type ActiveSpaceResponse = {
+export type ActiveSpaceResponse = {
   data: ActiveSpace | null;
   error: [];
   message: string;

@@ -15,6 +15,9 @@ export default async function CreateInvitePage() {
   if (!activeSpace) {
     redirect(APP_ROUTES.WELCOME_CREATE_STEP("start"));
   }
+  if (activeSpace.onboarding_completed_at) {
+    redirect(APP_ROUTES.HOME);
+  }
 
   const inviteCode = activeSpace.invite_code;
   const inviteCodeExpiresAt = activeSpace.invite_code_expires_at;

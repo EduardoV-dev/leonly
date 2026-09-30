@@ -44,6 +44,7 @@ function createService() {
     },
     spaceMember: {
       findFirst: vi.fn(async () => (state.joined ? { id: "partner-membership" } : null)),
+      updateMany: vi.fn(async () => ({ count: 1 })),
       create: vi.fn(async () => {
         state.joined = true;
       }),
@@ -96,6 +97,20 @@ describe("SpacesService invite flow", () => {
       status: "locked",
     });
     expect(fixture.tx.space.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("marks the current active membership setup complete", async () => {
+    await expect(fixture.service.completeSetup("owner-user")).resolves.toBe(true);
+    expect(fixture.tx.spaceMember.updateMany).toHaveBeenCalledWith({
+      where: { userId: "owner-user", deletedAt: null, space: { deletedAt: null } },
+      data: { onboardingCompletedAt: expect.any(Date) },
+    });
+  });
+
+  it("reports when no active membership can be completed", async () => {
+    fixture.tx.spaceMember.updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(fixture.service.completeSetup("missing-user")).resolves.toBe(false);
   });
 
   it("shares the failed-attempt limit between validation and joining", async () => {

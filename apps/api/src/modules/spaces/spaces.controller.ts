@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   HttpCode,
   HttpException,
@@ -54,6 +55,19 @@ export class SpacesController {
         startDate: new Date(`${details.start_date}T00:00:00.000Z`),
       },
     });
+  }
+
+  @Post("memberships/onboarding")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Complete space setup" })
+  @ApiResponse({ status: 200, description: "Space setup completed" })
+  async completeSetup(@Req() request: AuthenticatedRequest): Promise<{ completed: true }> {
+    const didComplete = await this.spacesService.completeSetup(request.authUser.id);
+    if (!didComplete) {
+      throw new ConflictException({ error: "You do not belong to an active space." });
+    }
+
+    return { completed: true };
   }
 
   @Post("invite-validations")

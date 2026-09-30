@@ -134,7 +134,7 @@ export class SpacesService {
                   userId,
                   displayName: name,
                   role: SpaceMemberRole.owner,
-                  onboardingCompletedAt: new Date(),
+                  onboardingCompletedAt: null,
                 },
               },
             },
@@ -153,6 +153,15 @@ export class SpacesService {
 
       throw error;
     }
+  }
+
+  async completeSetup(userId: string): Promise<boolean> {
+    const result = await this.prisma.spaceMember.updateMany({
+      where: { userId, deletedAt: null, space: { deletedAt: null } },
+      data: { onboardingCompletedAt: new Date() },
+    });
+
+    return result.count > 0;
   }
 
   async validateInvite({

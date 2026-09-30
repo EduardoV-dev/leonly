@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_ROUTES } from "@/constants/routes";
 import CreateDatePage from "./date/page";
 import CreateInvitePage from "./invite/page";
 import CreateNamePage from "./name/page";
+import CreateStartPage from "./start/page";
 
 const { getActiveSpace, redirect } = vi.hoisted(() => ({
   getActiveSpace: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("@/features/space-setup", () => ({
     CREATE_NAME: "create-name",
     CREATE_DATE: "create-date",
     CREATE_INVITE: "create-invite",
+    CREATE_START: "create-start",
   },
   SpaceCreateSetupPage: ({
     screen,
@@ -29,6 +31,23 @@ vi.mock("@/features/space-setup/server/get-active-space-or-redirect", () => ({
 }));
 
 describe("create-space route guards", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("allows the create start step when no active space exists", async () => {
+    getActiveSpace.mockResolvedValue(null);
+
+    expect(await CreateStartPage()).toHaveProperty("props.screen", "create-start");
+  });
+
+  it("routes members away from the create start step", async () => {
+    getActiveSpace.mockResolvedValue({ id: "space-id" });
+    redirect.mockImplementation((path: string) => {
+      throw new Error(`NEXT_REDIRECT:${path}`);
+    });
+
+    await expect(CreateStartPage()).rejects.toThrow(`NEXT_REDIRECT:${APP_ROUTES.HOME}`);
+  });
+
   it("allows name and date steps when no active space exists", async () => {
     getActiveSpace.mockResolvedValue(null);
     expect(await CreateNamePage()).toHaveProperty("props.screen", "create-name");
@@ -36,13 +55,31 @@ describe("create-space route guards", () => {
   });
 
   it("routes existing members to the dashboard", async () => {
-    getActiveSpace.mockResolvedValue({ id: "space-id" });
+    getActiveSpace.mockResolvedValue({
+      id: "space-id",
+      onboarding_completed_at: "2026-09-30T00:00:00.000Z",
+    });
     redirect.mockImplementation((path: string) => {
       throw new Error(`NEXT_REDIRECT:${path}`);
     });
 
     await expect(CreateNamePage()).rejects.toThrow(`NEXT_REDIRECT:${APP_ROUTES.HOME}`);
     await expect(CreateDatePage()).rejects.toThrow(`NEXT_REDIRECT:${APP_ROUTES.HOME}`);
+    await expect(CreateInvitePage()).rejects.toThrow(`NEXT_REDIRECT:${APP_ROUTES.HOME}`);
+  });
+
+  it("allows the invite page while setup is incomplete", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-30T00:00:00.000Z"));
+    getActiveSpace.mockResolvedValue({
+      id: "space-id",
+      invite_code: "leoabc23",
+      invite_code_expires_at: "2026-10-01T00:00:00.000Z",
+      onboarding_completed_at: null,
+    });
+
+    const page = await CreateInvitePage();
+    expect(page).toHaveProperty("props.inviteCode", "LEO-ABC23");
   });
 
   it("routes expired invites to an unavailable state while keeping dashboard continuation", async () => {
