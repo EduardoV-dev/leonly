@@ -1,7 +1,10 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getWebAppOrigins } from "../../common/config/environment-variables.config";
+import {
+  ENVIRONMENT_VARIABLES,
+  getWebAppOrigin,
+} from "../../common/config/environment-variables.config";
 import type { PrismaService } from "../../common/prisma/prisma.service";
 import { createAuth } from "./auth.config";
 
@@ -10,16 +13,18 @@ vi.mock("better-auth/adapters/prisma", () => ({ prismaAdapter: vi.fn(() => "data
 vi.mock("../../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
+    BETTER_AUTH_COOKIE_DOMAIN: "",
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
-    WEB_APP_ORIGINS: "http://localhost:3000",
+    WEB_APP_ORIGIN: "http://localhost:3000",
   },
-  getWebAppOrigins: vi.fn(() => ["http://localhost:3000"]),
+  getWebAppOrigin: vi.fn(() => "http://localhost:3000"),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getWebAppOrigins).mockReturnValue(["http://localhost:3000"]);
+  Object.assign(ENVIRONMENT_VARIABLES, { BETTER_AUTH_COOKIE_DOMAIN: "" });
+  vi.mocked(getWebAppOrigin).mockReturnValue("http://localhost:3000");
 });
 
 describe("createAuth", () => {
@@ -38,20 +43,39 @@ describe("createAuth", () => {
     expect(options?.baseURL).toBe("http://localhost:3000");
     expect(options?.trustedOrigins).toEqual(["http://localhost:3000"]);
     expect(options?.emailAndPassword).toEqual({ enabled: false });
+    expect(options?.advanced?.crossSubDomainCookies?.enabled).toBe(false);
     expect(Object.keys(options?.socialProviders ?? {})).toEqual(["google"]);
   });
 
-  it("uses the first origin for callbacks and trusts all configured origins", () => {
-    const origins = ["https://app.example.com", "https://preview.example.com"];
-    vi.mocked(getWebAppOrigins).mockReturnValue(origins);
+  it("uses the configured origin for callbacks and origin checks", () => {
+    const origin = "https://app.example.com";
+    vi.mocked(getWebAppOrigin).mockReturnValue(origin);
     createAuth({} as PrismaService);
     const options = vi.mocked(betterAuth).mock.calls[0]?.[0];
-    expect(options?.baseURL).toBe(origins[0]);
-    expect(options?.trustedOrigins).toEqual(origins);
+    expect(options?.baseURL).toBe(origin);
+    expect(options?.trustedOrigins).toEqual([origin]);
   });
 
-  it("rejects missing canonical origins", () => {
-    vi.mocked(getWebAppOrigins).mockReturnValue([]);
-    expect(() => createAuth({} as PrismaService)).toThrow("WEB_APP_ORIGINS");
+  it("rejects a missing web app origin", () => {
+    vi.mocked(getWebAppOrigin).mockReturnValue("");
+    expect(() => createAuth({} as PrismaService)).toThrow("WEB_APP_ORIGIN");
+  });
+
+  it("shares auth cookies across configured frontend and API subdomains", () => {
+    vi.mocked(getWebAppOrigin).mockReturnValue("https://app.example.com");
+    Object.assign(ENVIRONMENT_VARIABLES, { BETTER_AUTH_COOKIE_DOMAIN: ".example.com" });
+    createAuth({} as PrismaService);
+    const options = vi.mocked(betterAuth).mock.calls[0]?.[0];
+    expect(options?.baseURL).toBe("https://app.example.com");
+    expect(options?.advanced?.crossSubDomainCookies).toEqual({
+      enabled: true,
+      domain: ".example.com",
+    });
+  });
+
+  it("rejects a cookie domain that cannot be set by the auth proxy", () => {
+    vi.mocked(getWebAppOrigin).mockReturnValue("https://app.example.com");
+    Object.assign(ENVIRONMENT_VARIABLES, { BETTER_AUTH_COOKIE_DOMAIN: "api.example.com" });
+    expect(() => createAuth({} as PrismaService)).toThrow("BETTER_AUTH_COOKIE_DOMAIN");
   });
 });

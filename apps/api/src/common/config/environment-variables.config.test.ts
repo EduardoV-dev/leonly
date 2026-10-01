@@ -3,12 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const ENVIRONMENT_VARIABLE_NAMES = [
   "NODE_ENV",
   "BETTER_AUTH_SECRET",
+  "BETTER_AUTH_COOKIE_DOMAIN",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "DATABASE_URL",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
-  "WEB_APP_ORIGINS",
+  "WEB_APP_ORIGIN",
 ] as const;
 
 afterEach(() => {
@@ -27,12 +28,13 @@ describe("ENVIRONMENT_VARIABLES", () => {
     expect(ENVIRONMENT_VARIABLES).toEqual({
       NODE_ENV: "",
       BETTER_AUTH_SECRET: "",
+      BETTER_AUTH_COOKIE_DOMAIN: "",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
       DATABASE_URL: "",
       UPSTASH_REDIS_REST_URL: "",
       UPSTASH_REDIS_REST_TOKEN: "",
-      WEB_APP_ORIGINS: "",
+      WEB_APP_ORIGIN: "",
     });
   });
 
@@ -45,12 +47,12 @@ describe("ENVIRONMENT_VARIABLES", () => {
     expect(ENVIRONMENT_VARIABLES.NODE_ENV).toBe("production");
   });
 
-  it("parses configured web app origins", async () => {
-    vi.stubEnv("WEB_APP_ORIGINS", " https://app.example.com, https://admin.example.com ");
+  it("trims the configured web app origin", async () => {
+    vi.stubEnv("WEB_APP_ORIGIN", " https://app.example.com ");
 
-    const { getWebAppOrigins } = await import("./environment-variables.config");
+    const { getWebAppOrigin } = await import("./environment-variables.config");
 
-    expect(getWebAppOrigins()).toEqual(["https://app.example.com", "https://admin.example.com"]);
+    expect(getWebAppOrigin()).toBe("https://app.example.com");
   });
 
   it("passes configured values through unchanged", async () => {

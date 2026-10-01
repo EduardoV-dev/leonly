@@ -26,7 +26,11 @@ vi.mock("../../auth/config/auth.config", () => ({
 }));
 
 vi.mock("../../common/config/environment-variables.config", () => ({
-  getWebAppOrigins: () => ["http://localhost:3000"],
+  ENVIRONMENT_VARIABLES: {
+    UPSTASH_REDIS_REST_URL: "https://redis.example.com",
+    UPSTASH_REDIS_REST_TOKEN: "test-redis-token",
+  },
+  getWebAppOrigin: () => "http://localhost:3000",
 }));
 
 const validBody = {

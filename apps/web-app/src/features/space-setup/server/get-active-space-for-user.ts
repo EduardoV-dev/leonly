@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { cache } from "react";
-import { api } from "@/lib/axios/api";
+import { serverApi } from "@/lib/axios/server-api";
 import type { ApiResponse } from "@/types/api-response";
 import type { ActiveSpace } from "../types/active-space";
 
@@ -15,7 +15,7 @@ export class ActiveSpaceAuthenticationError extends Error {
 
 export const getActiveSpaceForCurrentUser = cache(async (): Promise<ActiveSpace | null> => {
   const requestHeaders = await headers();
-  const response = await api.get<ApiResponse<ActiveSpace>>("/api/users/me/space", {
+  const response = await serverApi.get<ApiResponse<ActiveSpace>>("/users/me/space", {
     headers: { cookie: requestHeaders.get("cookie") ?? "" },
     validateStatus: () => true,
   });

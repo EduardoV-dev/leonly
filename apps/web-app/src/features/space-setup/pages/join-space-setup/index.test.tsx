@@ -5,7 +5,7 @@ import { i18n } from "@/lib/i18n";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import { SpaceJoinSetupPage } from ".";
-import "../setup-web-app-api-tests";
+import "../setup-api-tests";
 
 const { fetchMock, locationMock, navigation } = vi.hoisted(() => ({
   fetchMock: vi.fn(),
@@ -129,8 +129,8 @@ describe.each([
     await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "/api/users/me/space",
-      expect.objectContaining({ method: "GET" }),
+      "https://api.example.com/api/users/me/space",
+      expect.objectContaining({ credentials: "include", method: "GET" }),
     );
     expect(navigation.push).not.toHaveBeenCalled();
   });

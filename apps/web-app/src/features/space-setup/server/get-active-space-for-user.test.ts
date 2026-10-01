@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "@/lib/axios/api";
+import { serverApi as api } from "@/lib/axios/server-api";
 import {
   ActiveSpaceAuthenticationError,
   getActiveSpaceForCurrentUser,
@@ -8,7 +8,7 @@ import {
 const headersMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/headers", () => ({ headers: headersMock }));
-vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
+vi.mock("@/lib/axios/server-api", () => ({ serverApi: { get: vi.fn() } }));
 
 const space = {
   active_members: [
@@ -34,7 +34,7 @@ describe("getActiveSpaceForCurrentUser", () => {
     vi.mocked(api.get).mockResolvedValue({ status: 200, data: { ok: true, data: space } } as never);
 
     await expect(getActiveSpaceForCurrentUser()).resolves.toEqual(space);
-    expect(api.get).toHaveBeenCalledWith("/api/users/me/space", {
+    expect(api.get).toHaveBeenCalledWith("/users/me/space", {
       headers: { cookie: "better-auth.session_token=secret" },
       validateStatus: expect.any(Function),
     });

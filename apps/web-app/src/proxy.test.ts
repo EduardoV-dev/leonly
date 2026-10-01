@@ -5,8 +5,8 @@ const { apiGetMock } = vi.hoisted(() => ({
   apiGetMock: vi.fn(),
 }));
 
-vi.mock("@/lib/axios/api", () => ({
-  api: { get: apiGetMock },
+vi.mock("@/lib/axios/server-api", () => ({
+  serverApi: { get: apiGetMock },
 }));
 
 import { proxy } from "./proxy";
@@ -71,12 +71,20 @@ describe("auth proxy", () => {
 
     expect(response.status).toBe(200);
     expect(apiGetMock).toHaveBeenCalledWith(
-      "/api/auth/get-session",
+      "/auth/get-session",
       expect.objectContaining({
         headers: expect.objectContaining({
           cookie: "better-auth.session_token=session-token",
         }),
       }),
     );
+  });
+
+  it("treats unsuccessful session responses as unauthenticated", async () => {
+    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 500 });
+
+    const response = await proxy(new NextRequest("http://localhost:3000/timeline"));
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/auth");
   });
 });

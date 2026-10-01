@@ -4,7 +4,7 @@ import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
 import { AuthService } from "./auth/auth.service";
 import { createAuthHandler } from "./auth/handler";
-import { getWebAppOrigins } from "./common/config/environment-variables.config";
+import { getWebAppOrigin } from "./common/config/environment-variables.config";
 
 export async function createApiApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, new ExpressAdapter(), {
@@ -12,7 +12,12 @@ export async function createApiApp(): Promise<NestExpressApplication> {
   });
   app.useLogger(app.get(Logger));
   app.setGlobalPrefix("api");
-  app.enableCsrfProtection({ trustedOrigins: getWebAppOrigins() });
+  app.enableCors({
+    origin: [getWebAppOrigin()],
+    credentials: true,
+    exposedHeaders: ["Retry-After"],
+  });
+  app.enableCsrfProtection({ trustedOrigins: [getWebAppOrigin()] });
 
   const express = app.getHttpAdapter().getInstance();
   express.all("/api/auth/*splat", createAuthHandler(app.get(AuthService)));

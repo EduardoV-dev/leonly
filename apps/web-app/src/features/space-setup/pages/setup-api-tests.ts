@@ -1,6 +1,8 @@
-import { webAppApi } from "@/lib/axios/web-app-api";
+import { api } from "@/lib/axios/api";
 
-webAppApi.defaults.adapter = async (config) => {
+api.defaults.baseURL = "https://api.example.com/api";
+
+api.defaults.adapter = async (config) => {
   const headers = Object.fromEntries(
     Object.entries(config.headers.toJSON()).map(([name, value]) => [
       name.toLowerCase(),
@@ -8,9 +10,13 @@ webAppApi.defaults.adapter = async (config) => {
     ]),
   );
   if (config.data === undefined || config.data instanceof FormData) delete headers["content-type"];
-  const options: RequestInit = { headers, method: config.method?.toUpperCase() };
+  const options: RequestInit = {
+    credentials: config.withCredentials ? "include" : "same-origin",
+    headers,
+    method: config.method?.toUpperCase(),
+  };
   if (config.data !== undefined) options.body = config.data;
-  const response = await fetch(webAppApi.getUri(config), options);
+  const response = await fetch(api.getUri(config), options);
   const data =
     response.status === 204 || typeof response.json !== "function"
       ? null

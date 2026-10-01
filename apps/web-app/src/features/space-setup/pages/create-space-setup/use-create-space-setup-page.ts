@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import { webAppApi } from "@/lib/axios/web-app-api";
+import { api } from "@/lib/axios/api";
 import type { ApiResponse } from "@/types/api-response";
 import { normalizeInviteCode } from "../../constants/validation";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -110,7 +110,7 @@ export function useCreateSpaceSetupPage({
     const values = getValues();
 
     try {
-      const response = await webAppApi.post<ApiResponse<{ space_id: string }>>("/spaces", {
+      const response = await api.post<ApiResponse<{ space_id: string }>>("/spaces", {
         display_name: values.displayName,
         space_name: values.spaceName,
         start_date: values.firstDay,
@@ -177,7 +177,7 @@ export function useCreateSpaceSetupPage({
     setIsSubmitting(true);
 
     try {
-      const response = await webAppApi.post<ApiResponse<{ completed: true }>>(
+      const response = await api.post<ApiResponse<{ completed: true }>>(
         "/spaces/memberships/onboarding",
       );
       if (response.status === 401) {

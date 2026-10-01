@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import { webAppApi } from "@/lib/axios/web-app-api";
+import { api } from "@/lib/axios/api";
 import type { ApiResponse } from "@/types/api-response";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -32,7 +32,7 @@ type JoinSpaceSetupPageState = {
 class JoinSetupError extends Error {}
 
 async function redirectIfMembershipExists(failureMessage: string): Promise<boolean> {
-  const response = await webAppApi.get<ApiResponse<ActiveSpace>>("/users/me/space");
+  const response = await api.get<ApiResponse<ActiveSpace>>("/users/me/space");
   if (response.status === 401) {
     globalThis.location.assign(APP_ROUTES.AUTH);
     return true;
@@ -101,10 +101,9 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await webAppApi.post<ApiResponse<{ valid: true }>>(
-        "/spaces/invite-validations",
-        { invite_code: values.inviteCode },
-      );
+      const response = await api.post<ApiResponse<{ valid: true }>>("/spaces/invite-validations", {
+        invite_code: values.inviteCode,
+      });
 
       if (response.status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
@@ -159,13 +158,10 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await webAppApi.post<ApiResponse<{ space_id: string }>>(
-        "/spaces/memberships",
-        {
-          display_name: values.displayName,
-          invite_code: values.inviteCode,
-        },
-      );
+      const response = await api.post<ApiResponse<{ space_id: string }>>("/spaces/memberships", {
+        display_name: values.displayName,
+        invite_code: values.inviteCode,
+      });
       if (response.status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
         return;

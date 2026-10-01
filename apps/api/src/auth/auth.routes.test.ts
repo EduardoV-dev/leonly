@@ -9,9 +9,11 @@ vi.mock("../common/config/environment-variables.config", () => ({
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
     DATABASE_URL: "postgresql://localhost/auth",
-    WEB_APP_ORIGINS: "http://localhost:3000",
+    UPSTASH_REDIS_REST_URL: "https://redis.example.com",
+    UPSTASH_REDIS_REST_TOKEN: "test-redis-token",
+    WEB_APP_ORIGIN: "http://localhost:3000",
   },
-  getWebAppOrigins: () => ["http://localhost:3000"],
+  getWebAppOrigin: () => "http://localhost:3000",
 }));
 vi.mock("../common/prisma/prisma.service", () => ({
   PrismaService: class {

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { APP_ROUTES } from "@/constants/routes";
 import type { authClient } from "@/features/auth/api/auth-client";
-import { api } from "@/lib/axios/api";
+import { serverApi } from "@/lib/axios/server-api";
 
 type SessionResponse = {
   session: Pick<typeof authClient.$Infer.Session.session, "id">;
@@ -12,14 +12,13 @@ async function hasBetterAuthSession(request: NextRequest): Promise<boolean> {
   const cookie = request.headers.get("cookie");
 
   try {
-    const response = await api.get<SessionResponse>("/api/auth/get-session", {
+    const response = await serverApi.get<SessionResponse>("/auth/get-session", {
       headers: {
-        accept: "application/json",
         ...(cookie ? { cookie } : {}),
       },
     });
 
-    return Boolean(response.data?.session);
+    return response.status === 200 && Boolean(response.data?.session);
   } catch {
     return false;
   }

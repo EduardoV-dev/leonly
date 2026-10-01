@@ -1,6 +1,6 @@
 import "server-only";
 import type { AxiosRequestConfig } from "axios";
-import { api } from "@/lib/axios/api";
+import { serverApi } from "@/lib/axios/server-api";
 
 const REQUEST_HEADERS_TO_STRIP = new Set([
   "accept-encoding",
@@ -31,7 +31,7 @@ type AuthRouteContext = {
 
 function getApiPath(request: Request, path: string[]): string {
   const authPath = path.map((segment) => encodeURIComponent(segment)).join("/");
-  return `/api/auth/${authPath}${new URL(request.url).search}`;
+  return `/auth/${authPath}${new URL(request.url).search}`;
 }
 
 function getSetCookies(headers: Record<string, unknown>): string[] {
@@ -53,7 +53,7 @@ async function proxyAuthRequest(request: Request, context: AuthRouteContext): Pr
   }
 
   const method = request.method.toUpperCase() as AxiosRequestConfig["method"];
-  const response = await api.request<ArrayBuffer>({
+  const response = await serverApi.request<ArrayBuffer>({
     url: getApiPath(request, path),
     method,
     headers: Object.fromEntries(requestHeaders.entries()),

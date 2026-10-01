@@ -6,7 +6,7 @@ import { i18n } from "@/lib/i18n";
 import { CREATE_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
 import { SpaceCreateSetupPage } from ".";
-import "../setup-web-app-api-tests";
+import "../setup-api-tests";
 
 const fetchMock = vi.hoisted(() => vi.fn());
 const locationMock = vi.hoisted(() => ({ assign: vi.fn() }));
@@ -59,8 +59,8 @@ describe("create-space API response", () => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
     });
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/spaces",
-      expect.objectContaining({ method: "POST" }),
+      "https://api.example.com/api/spaces",
+      expect.objectContaining({ credentials: "include", method: "POST" }),
     );
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       display_name: "Leo",
@@ -123,9 +123,13 @@ describe("create-space API response", () => {
     expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
     await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
-      headers: { accept: "application/json" },
-      method: "POST",
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/spaces/memberships/onboarding",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+        method: "POST",
+      },
+    );
   });
 });

@@ -7,7 +7,7 @@ import { CREATE_SPACE_STORAGE_KEY, JOIN_SPACE_STORAGE_KEY } from "../constants/l
 import { SPACE_SETUP_STEPS } from "../constants/welcome-steps";
 import { SpaceCreateSetupPage } from "./create-space-setup";
 import { SpaceJoinSetupPage } from "./join-space-setup";
-import "./setup-web-app-api-tests";
+import "./setup-api-tests";
 
 const navigationMock = vi.hoisted(() => ({
   push: vi.fn(),
@@ -172,10 +172,14 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships/onboarding", {
-      headers: { accept: "application/json" },
-      method: "POST",
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/spaces/memberships/onboarding",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+        method: "POST",
+      },
+    );
   });
 
   it("validates join code on native form submission", async () => {
@@ -222,11 +226,15 @@ describe("space setup flow validation and guards", () => {
       expect(navigationMock.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name"));
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/invite-validations", {
-      body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
-      headers: { accept: "application/json", "content-type": "application/json" },
-      method: "POST",
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/spaces/invite-validations",
+      {
+        credentials: "include",
+        body: JSON.stringify({ invite_code: "LNY-7KMP2" }),
+        headers: { accept: "application/json", "content-type": "application/json" },
+        method: "POST",
+      },
+    );
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toContain(SPACE_SETUP_STEPS.JOIN_CODE);
   });
 
@@ -304,7 +312,8 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).toHaveBeenCalledWith("/api/spaces/memberships", {
+    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/spaces/memberships", {
+      credentials: "include",
       body: JSON.stringify({ display_name: "", invite_code: "LNY-7KMP2" }),
       headers: { accept: "application/json", "content-type": "application/json" },
       method: "POST",

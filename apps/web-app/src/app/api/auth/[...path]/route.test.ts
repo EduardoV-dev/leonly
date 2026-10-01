@@ -6,8 +6,8 @@ const { apiRequestMock } = vi.hoisted(() => ({
   apiRequestMock: vi.fn(),
 }));
 
-vi.mock("@/lib/axios/api", () => ({
-  api: { request: apiRequestMock },
+vi.mock("@/lib/axios/server-api", () => ({
+  serverApi: { request: apiRequestMock },
 }));
 
 import { GET } from "./route";
@@ -30,7 +30,9 @@ describe("Better Auth API proxy", () => {
       statusText: "OK",
       headers: {
         "content-type": "application/json",
-        "set-cookie": ["better-auth.session_token=value; Path=/; HttpOnly"],
+        "set-cookie": [
+          "better-auth.session_token=value; Domain=example.com; Path=/; HttpOnly; Secure; SameSite=Lax",
+        ],
       },
     });
 
@@ -43,12 +45,14 @@ describe("Better Auth API proxy", () => {
       expect.objectContaining({
         method: "GET",
         responseType: "arraybuffer",
-        url: "/api/auth/get-session?source=web",
+        url: "/auth/get-session?source=web",
         maxRedirects: 0,
       }),
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain("better-auth.session_token=value");
+    expect(response.headers.get("set-cookie")).toContain("Domain=example.com");
+    expect(response.headers.get("set-cookie")).toContain("HttpOnly; Secure; SameSite=Lax");
   });
 
   it("preserves OAuth redirects without following them", async () => {
@@ -69,7 +73,7 @@ describe("Better Auth API proxy", () => {
     expect(apiRequestMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxRedirects: 0,
-        url: "/api/auth/callback/google",
+        url: "/auth/callback/google",
       }),
     );
   });
