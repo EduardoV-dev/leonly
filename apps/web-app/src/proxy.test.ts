@@ -39,13 +39,13 @@ describe("auth proxy", () => {
   });
 
   it("redirects an unauthenticated null session response to auth", async () => {
-    apiGetMock.mockResolvedValue({ data: null, status: 200 });
+    apiGetMock.mockResolvedValue({ data: null });
     const response = await proxy(new NextRequest("http://localhost:3000/timeline"));
     expect(response.headers.get("location")).toBe("http://localhost:3000/auth");
   });
 
   it("sends authenticated users through the dashboard membership guard", async () => {
-    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 200 });
+    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } } });
 
     const response = await proxy(new NextRequest("http://localhost:3000/auth"));
 
@@ -61,7 +61,7 @@ describe("auth proxy", () => {
   });
 
   it("allows authenticated application requests and forwards the session cookie", async () => {
-    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 200 });
+    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } } });
 
     const response = await proxy(
       new NextRequest("http://localhost:3000/timeline", {
@@ -81,7 +81,7 @@ describe("auth proxy", () => {
   });
 
   it("treats unsuccessful session responses as unauthenticated", async () => {
-    apiGetMock.mockResolvedValue({ data: { session: { id: "session-id" } }, status: 500 });
+    apiGetMock.mockRejectedValue({ isAxiosError: true, response: { status: 500 } });
 
     const response = await proxy(new NextRequest("http://localhost:3000/timeline"));
 

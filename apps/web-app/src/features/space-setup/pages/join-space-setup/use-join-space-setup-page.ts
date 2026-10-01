@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import { api } from "@/lib/axios/api";
+import { api, isAxiosError } from "@/lib/axios/api";
 import type { ApiResponse } from "@/types/api-response";
 import { JOIN_SPACE_STORAGE_KEY } from "../../constants/local-storage";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -31,28 +31,26 @@ type JoinSpaceSetupPageState = {
 
 class JoinSetupError extends Error {}
 
-async function redirectIfMembershipExists(failureMessage: string): Promise<boolean> {
-  const response = await api.get<ApiResponse<ActiveSpace>>("/users/me/space");
-  if (response.status === 401) {
-    globalThis.location.assign(APP_ROUTES.AUTH);
-    return true;
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw new JoinSetupError(failureMessage);
-  }
+async function redirectIfInviteUnavailable(
+  status: number | undefined,
+  failureMessage: string,
+): Promise<boolean> {
+  if (status !== 404) return false;
 
-  const payload = response.data;
-  if (!payload.ok) {
-    throw new JoinSetupError(failureMessage);
+  try {
+    const { data: payload } = await api.get<ApiResponse<ActiveSpace>>("/users/me/space");
+    const hasActiveSpace = payload.data !== null;
+    if (hasActiveSpace) globalThis.location.assign(APP_ROUTES.HOME);
+    return hasActiveSpace;
+  } catch (error) {
+    const isApiError = isAxiosError(error);
+    const isUnauthenticated = isApiError && error.response?.status === 401;
+    if (isUnauthenticated) {
+      globalThis.location.assign(APP_ROUTES.AUTH);
+      return true;
+    }
+    throw new JoinSetupError(failureMessage, { cause: error });
   }
-
-  const hasActiveSpace = payload.data !== null;
-
-  if (hasActiveSpace) {
-    globalThis.location.assign(APP_ROUTES.HOME);
-  }
-
-  return hasActiveSpace;
 }
 
 function getInviteCodeErrorMessage(status: number, fallback: string): string {
@@ -101,33 +99,49 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await api.post<ApiResponse<{ valid: true }>>("/spaces/invite-validations", {
-        invite_code: values.inviteCode,
-      });
+      const { data: payload } = await api.post<ApiResponse<{ valid: true }>>(
+        "/spaces/invite-validations",
+        {
+          invite_code: values.inviteCode,
+        },
+      );
 
-      if (response.status === 401) {
+      const isInviteValid = payload.data?.valid;
+      if (!isInviteValid) {
+        throw new JoinSetupError(t("errors.validateInviteCode"));
+      }
+    } catch (error) {
+      let setupFailure = error;
+      const isApiError = isAxiosError<ApiResponse<{ valid: true }>>(error);
+      const apiError = isApiError ? error : undefined;
+      const status = apiError?.response?.status;
+      if (status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
+        setIsSubmittingCode(false);
         return;
       }
 
-      const payload = response.data;
-      const isInviteUnavailable = response.status === 404;
-      const shouldRedirect = isInviteUnavailable
-        ? await redirectIfMembershipExists(t("errors.validateInviteCode"))
-        : false;
-      if (shouldRedirect) return;
+      try {
+        const shouldRedirect = await redirectIfInviteUnavailable(
+          status,
+          t("errors.validateInviteCode"),
+        );
+        if (shouldRedirect) return;
+      } catch (lookupError) {
+        setupFailure = lookupError;
+      }
 
-      const isInviteValid = response.status === 200 && payload.ok && payload.data?.valid;
-      if (!isInviteValid) {
-        throw new JoinSetupError(
-          t(getInviteCodeErrorMessage(response.status, "errors.validateInviteCode")),
+      const shouldWrapApiError = isApiError && !(setupFailure instanceof JoinSetupError);
+      if (shouldWrapApiError) {
+        setupFailure = new JoinSetupError(
+          t(getInviteCodeErrorMessage(status ?? 0, "errors.validateInviteCode")),
+          { cause: error },
         );
       }
-    } catch (error) {
       const setupError =
-        error instanceof JoinSetupError
-          ? error
-          : new JoinSetupError(t("errors.validateInviteCode"), { cause: error });
+        setupFailure instanceof JoinSetupError
+          ? setupFailure
+          : new JoinSetupError(t("errors.validateInviteCode"), { cause: setupFailure });
       setError("inviteCode", {
         message: setupError.message,
       });
@@ -158,40 +172,55 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const response = await api.post<ApiResponse<{ space_id: string }>>("/spaces/memberships", {
-        display_name: values.displayName,
-        invite_code: values.inviteCode,
-      });
-      if (response.status === 401) {
+      const { data: payload } = await api.post<ApiResponse<{ space_id: string }>>(
+        "/spaces/memberships",
+        {
+          display_name: values.displayName,
+          invite_code: values.inviteCode,
+        },
+      );
+
+      const isJoinSuccessful = Boolean(payload.data?.space_id);
+      if (!isJoinSuccessful) {
+        throw new JoinSetupError(t("errors.joinSpace"));
+      }
+    } catch (error) {
+      let setupFailure = error;
+      const isApiError = isAxiosError<ApiResponse<{ space_id: string }>>(error);
+      const apiError = isApiError ? error : undefined;
+      const status = apiError?.response?.status;
+      if (status === 401) {
         globalThis.location.assign(APP_ROUTES.AUTH);
+        setIsSubmittingJoin(false);
         return;
       }
 
-      const payload = response.data;
-      const isInviteUnavailable = response.status === 404;
-      const shouldRedirect = isInviteUnavailable
-        ? await redirectIfMembershipExists(t("errors.joinSpace"))
-        : false;
-      if (shouldRedirect) return;
+      try {
+        const shouldRedirect = await redirectIfInviteUnavailable(status, t("errors.joinSpace"));
+        if (shouldRedirect) return;
+      } catch (lookupError) {
+        setupFailure = lookupError;
+      }
 
-      const fieldError = payload.error[0];
-      const hasDisplayNameError = response.status !== 200 && fieldError?.field === "display_name";
-      if (hasDisplayNameError) {
+      const fieldError = apiError?.response?.data?.error?.[0];
+      if (fieldError?.field === "display_name") {
         setError("displayName", { message: fieldError.message || t("errors.joinSpace") });
         focusInvalidField("join-display-name");
         setIsSubmittingJoin(false);
         return;
       }
-      const isJoinSuccessful =
-        response.status === 200 && payload.ok && Boolean(payload.data?.space_id);
-      if (!isJoinSuccessful) {
-        throw new JoinSetupError(t(getInviteCodeErrorMessage(response.status, "errors.joinSpace")));
+
+      const shouldWrapApiError = isApiError && !(setupFailure instanceof JoinSetupError);
+      if (shouldWrapApiError) {
+        setupFailure = new JoinSetupError(
+          t(getInviteCodeErrorMessage(status ?? 0, "errors.joinSpace")),
+          { cause: error },
+        );
       }
-    } catch (error) {
       const setupError =
-        error instanceof JoinSetupError
-          ? error
-          : new JoinSetupError(t("errors.joinSpace"), { cause: error });
+        setupFailure instanceof JoinSetupError
+          ? setupFailure
+          : new JoinSetupError(t("errors.joinSpace"), { cause: setupFailure });
       setSubmitError(setupError.message);
       setIsSubmittingJoin(false);
       return;

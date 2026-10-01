@@ -1,13 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
-
-const { apiRequestMock } = vi.hoisted(() => ({
+const { apiRequestMock, logServerErrorMock, requestLoggerMock } = vi.hoisted(() => ({
   apiRequestMock: vi.fn(),
+  logServerErrorMock: vi.fn(),
+  requestLoggerMock: {},
 }));
 
-vi.mock("@/lib/axios/server-api", () => ({
-  serverApi: { request: apiRequestMock },
+vi.mock("axios", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("axios")>();
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      create: vi.fn(() => ({ request: apiRequestMock })),
+    },
+  };
+});
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/server-logger", () => ({
+  createRequestLogger: () => requestLoggerMock,
+  logServerError: logServerErrorMock,
+}));
+vi.mock("@/constants/environment-variables", () => ({
+  ENVIRONMENT_VARIABLES: { NEXT_PUBLIC_API_BASE_URL: "http://nest-api.test" },
 }));
 
 import { GET } from "./route";
@@ -75,6 +91,26 @@ describe("Better Auth API proxy", () => {
         maxRedirects: 0,
         url: "/auth/callback/google",
       }),
+    );
+  });
+
+  it("returns a gateway error when the authentication service cannot be reached", async () => {
+    const connectionError = new Error("Connection refused");
+    apiRequestMock.mockRejectedValue(connectionError);
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/auth/get-session"),
+      context(["get-session"]),
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      message: "Authentication service is unavailable.",
+    });
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      { event: "auth_proxy_failed", operation: "proxy_auth_request" },
+      connectionError,
+      requestLoggerMock,
     );
   });
 });

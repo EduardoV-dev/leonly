@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { serverApi as api } from "@/lib/axios/server-api";
+import type { ApiResponse } from "@/types/api-response";
 import {
+  type ActiveSpace,
   ActiveSpaceAuthenticationError,
   getActiveSpaceForCurrentUser,
 } from "./get-active-space-for-user";
@@ -8,7 +10,11 @@ import {
 const headersMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/headers", () => ({ headers: headersMock }));
-vi.mock("@/lib/axios/server-api", () => ({ serverApi: { get: vi.fn() } }));
+vi.mock("@/lib/axios/server-api", () => ({
+  isAxiosError: (error: unknown): error is { response?: { status: number } } =>
+    typeof error === "object" && error !== null && "isAxiosError" in error,
+  serverApi: { get: vi.fn() },
+}));
 
 const space = {
   active_members: [
@@ -31,30 +37,38 @@ describe("getActiveSpaceForCurrentUser", () => {
   });
 
   it("forwards the current session and validates the active-space response", async () => {
-    vi.mocked(api.get).mockResolvedValue({ status: 200, data: { ok: true, data: space } } as never);
+    vi.mocked(api.get).mockResolvedValue({
+      data: { ok: true, data: space, error: [], message: "ok" },
+    });
 
     await expect(getActiveSpaceForCurrentUser()).resolves.toEqual(space);
     expect(api.get).toHaveBeenCalledWith("/users/me/space", {
       headers: { cookie: "better-auth.session_token=secret" },
-      validateStatus: expect.any(Function),
     });
   });
 
   it("returns null only for a successful absent-membership response", async () => {
-    vi.mocked(api.get).mockResolvedValue({ status: 200, data: { ok: true, data: null } } as never);
+    vi.mocked(api.get).mockResolvedValue({
+      data: { ok: true, data: null, error: [], message: "ok" },
+    });
     await expect(getActiveSpaceForCurrentUser()).resolves.toBeNull();
   });
 
   it("distinguishes unauthenticated callers from absent membership", async () => {
-    vi.mocked(api.get).mockResolvedValue({ status: 401, data: {} } as never);
+    vi.mocked(api.get).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 401, data: {} as ApiResponse<ActiveSpace> },
+    });
     await expect(getActiveSpaceForCurrentUser()).rejects.toBeInstanceOf(
       ActiveSpaceAuthenticationError,
     );
   });
 
   it("rejects unsuccessful responses", async () => {
-    const response = { status: 503, data: { ok: false, data: null } };
-    vi.mocked(api.get).mockResolvedValue(response as never);
+    vi.mocked(api.get).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 503, data: { ok: false, data: null } },
+    });
     await expect(getActiveSpaceForCurrentUser()).rejects.toThrow(
       "Failed to load the active space.",
     );

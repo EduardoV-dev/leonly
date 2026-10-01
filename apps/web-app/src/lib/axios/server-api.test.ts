@@ -17,6 +17,6 @@ describe("server API client", () => {
     expect(serverApi.defaults.timeout).toBe(5000);
     expect(serverApi.defaults.responseType).toBe("json");
     expect(serverApi.defaults.headers.Accept).toBe("application/json");
-    expect(serverApi.defaults.validateStatus?.(429)).toBe(true);
+    expect(serverApi.defaults.validateStatus?.(429)).toBe(false);
   });
 });

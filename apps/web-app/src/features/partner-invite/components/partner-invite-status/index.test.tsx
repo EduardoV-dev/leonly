@@ -6,7 +6,13 @@ import { PartnerInviteStatus } from "./index";
 const axiosPostMock = vi.hoisted(() => vi.fn());
 const refreshMock = vi.hoisted(() => vi.fn());
 
-vi.mock("axios", () => ({ default: { post: axiosPostMock } }));
+vi.mock("axios", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("axios")>();
+  return {
+    ...actual,
+    default: { ...actual.default, post: axiosPostMock },
+  };
+});
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
 describe("PartnerInviteStatus", () => {
@@ -128,10 +134,13 @@ describe("PartnerInviteStatus", () => {
   });
 
   it("announces a rate limit without retrying the mutation", async () => {
-    axiosPostMock.mockResolvedValue({
-      data: {},
-      headers: { "retry-after": "413" },
-      status: 429,
+    axiosPostMock.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        data: {},
+        headers: { "retry-after": "413" },
+        status: 429,
+      },
     });
     render(<PartnerInviteStatus code={null} expiresAt={null} membershipState="one-member" />);
 
@@ -162,7 +171,10 @@ describe("PartnerInviteStatus", () => {
   });
 
   it("shows joined state and refreshes without exposing code after a stale response", async () => {
-    axiosPostMock.mockResolvedValue({ data: { code: "joined" }, headers: {}, status: 409 });
+    axiosPostMock.mockRejectedValue({
+      isAxiosError: true,
+      response: { data: { code: "joined" }, headers: {}, status: 409 },
+    });
     render(<PartnerInviteStatus code={null} expiresAt={null} membershipState="one-member" />);
 
     await fireEvent.click(screen.getByRole("button", { name: "Create a new invitation" }));

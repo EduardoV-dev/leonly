@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Control } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
-import { api } from "@/lib/axios/api";
+import { api, isAxiosError } from "@/lib/axios/api";
 import type { ApiResponse } from "@/types/api-response";
 import { normalizeInviteCode } from "../../constants/validation";
 import { SPACE_SETUP_STEPS } from "../../constants/welcome-steps";
@@ -110,49 +110,53 @@ export function useCreateSpaceSetupPage({
     const values = getValues();
 
     try {
-      const response = await api.post<ApiResponse<{ space_id: string }>>("/spaces", {
+      const { data: payload } = await api.post<ApiResponse<{ space_id: string }>>("/spaces", {
         display_name: values.displayName,
         space_name: values.spaceName,
         start_date: values.firstDay,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
-      if (response.status === 401) {
-        globalThis.location.assign(APP_ROUTES.AUTH);
-        return;
-      }
-
-      if (response.status === 409) {
-        globalThis.location.assign(APP_ROUTES.HOME);
-        return;
-      }
-
-      const payload = response.data;
-
-      if (response.status < 200 || response.status >= 300) {
-        const startDateError = payload.error.find((error) => error.field === "start_date");
-        const validationError = payload.error[0];
-        const message = payload.message || t("errors.createSpace");
-
-        if (startDateError) {
-          setError("firstDay", {
-            message: startDateError.message || message,
-          });
-          focusInvalidField("first-day-trigger");
-          setIsSubmitting(false);
-          return;
-        }
-
-        const hasValidationError = response.status === 400 && Boolean(validationError);
-        throw new Error(hasValidationError ? validationError.message : message);
-      }
-
-      const isCreatedSpace = payload.ok && Boolean(payload.data?.space_id);
+      const isCreatedSpace = Boolean(payload.data?.space_id);
       if (!isCreatedSpace) {
         throw new Error(t("errors.createSpace"));
       }
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : t("errors.createSpace"));
+      const isApiError = isAxiosError<ApiResponse<{ space_id: string }>>(error);
+      if (!isApiError) {
+        setSubmitError(error instanceof Error ? error.message : t("errors.createSpace"));
+        setIsSubmitting(false);
+        return;
+      }
+
+      const status = error.response?.status;
+      if (status === 401) {
+        globalThis.location.assign(APP_ROUTES.AUTH);
+        return;
+      }
+      if (status === 409) {
+        globalThis.location.assign(APP_ROUTES.HOME);
+        return;
+      }
+
+      const payload = error.response?.data;
+      const startDateError = payload?.error?.find(
+        (fieldError) => fieldError.field === "start_date",
+      );
+      if (startDateError) {
+        setError("firstDay", {
+          message: startDateError.message || payload?.message || t("errors.createSpace"),
+        });
+        focusInvalidField("first-day-trigger");
+        setIsSubmitting(false);
+        return;
+      }
+
+      setSubmitError(
+        status === 400
+          ? payload?.error?.[0]?.message || payload?.message || t("errors.createSpace")
+          : t("errors.createSpace"),
+      );
       setIsSubmitting(false);
       return;
     }
@@ -177,17 +181,14 @@ export function useCreateSpaceSetupPage({
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<ApiResponse<{ completed: true }>>(
-        "/spaces/memberships/onboarding",
-      );
-      if (response.status === 401) {
+      await api.post<ApiResponse<{ completed: true }>>("/spaces/memberships/onboarding");
+    } catch (error) {
+      const isApiError = isAxiosError(error);
+      const isUnauthenticated = isApiError && error.response?.status === 401;
+      if (isUnauthenticated) {
         globalThis.location.assign(APP_ROUTES.AUTH);
         return;
       }
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(t("errors.completeSetup"));
-      }
-    } catch {
       setSubmitError(t("errors.completeSetup"));
       setIsSubmitting(false);
       return;

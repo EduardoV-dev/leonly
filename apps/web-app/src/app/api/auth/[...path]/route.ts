@@ -1,6 +1,16 @@
 import "server-only";
-import type { AxiosRequestConfig } from "axios";
-import { serverApi } from "@/lib/axios/server-api";
+import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
+import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
+import { createRequestLogger, logServerError } from "@/lib/server-logger";
+
+const authApi = axios.create({
+  baseURL: `${ENVIRONMENT_VARIABLES.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "")}/api`,
+  withCredentials: true,
+  timeout: 5000,
+  responseType: "arraybuffer",
+  headers: { Accept: "application/json" },
+  validateStatus: () => true,
+});
 
 const REQUEST_HEADERS_TO_STRIP = new Set([
   "accept-encoding",
@@ -53,16 +63,25 @@ async function proxyAuthRequest(request: Request, context: AuthRouteContext): Pr
   }
 
   const method = request.method.toUpperCase() as AxiosRequestConfig["method"];
-  const response = await serverApi.request<ArrayBuffer>({
-    url: getApiPath(request, path),
-    method,
-    headers: Object.fromEntries(requestHeaders.entries()),
-    data: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
-    responseType: "arraybuffer",
-    maxRedirects: 0,
-    validateStatus: () => true,
-    transformResponse: [],
-  });
+  let response: AxiosResponse<ArrayBuffer>;
+  try {
+    response = await authApi.request<ArrayBuffer>({
+      url: getApiPath(request, path),
+      method,
+      headers: Object.fromEntries(requestHeaders.entries()),
+      data: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
+      responseType: "arraybuffer",
+      maxRedirects: 0,
+      transformResponse: [],
+    });
+  } catch (error) {
+    logServerError(
+      { event: "auth_proxy_failed", operation: "proxy_auth_request" },
+      error,
+      createRequestLogger(request),
+    );
+    return Response.json({ message: "Authentication service is unavailable." }, { status: 502 });
+  }
   const responseHeaders = new Headers();
 
   for (const [header, value] of Object.entries(response.headers)) {

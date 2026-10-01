@@ -1,5 +1,6 @@
 import axios from "axios";
 import { z } from "zod";
+import { isAxiosError } from "@/lib/axios/is-axios-error";
 
 const regeneratedInviteSchema = z.object({
   invite_code: z.string().min(1),
@@ -25,9 +26,7 @@ function getRetryAfter(value: unknown): number {
 
 export async function regeneratePartnerInvite(): Promise<PartnerInviteRegenerationResult> {
   try {
-    const response = await axios.post("/api/spaces/invite/regenerate", undefined, {
-      validateStatus: () => true,
-    });
+    const response = await axios.post("/api/spaces/invite/regenerate");
 
     if (response.status === 200) {
       const invite = regeneratedInviteSchema.safeParse(response.data);
@@ -41,18 +40,28 @@ export async function regeneratePartnerInvite(): Promise<PartnerInviteRegenerati
         : { status: "failed" };
     }
 
-    const errorCode = errorCodeSchema.safeParse(response.data);
+    return { status: "failed" };
+  } catch (error) {
+    const isApiError = isAxiosError(error);
+    if (!isApiError) return { status: "failed" };
 
-    if (response.status === 409 && errorCode.success && errorCode.data.code === "joined") {
+    const status = error.response?.status;
+    const errorCode = errorCodeSchema.safeParse(error.response?.data);
+
+    const isPartnerJoined = status === 409 && errorCode.success && errorCode.data.code === "joined";
+    if (isPartnerJoined) {
       return { status: "joined" };
     }
 
-    if (response.status === 429) {
-      return { retryAfter: getRetryAfter(response.headers["retry-after"]), status: "locked" };
+    if (status === 429) {
+      return {
+        retryAfter: getRetryAfter(error.response?.headers["retry-after"]),
+        status: "locked",
+      };
     }
 
-    return response.status === 404 ? { status: "unavailable" } : { status: "failed" };
-  } catch {
+    if (status === 404) return { status: "unavailable" };
+
     return { status: "failed" };
   }
 }

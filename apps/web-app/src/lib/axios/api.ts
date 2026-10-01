@@ -9,5 +9,6 @@ export const api = axios.create({
   timeout: 5000,
   responseType: "json",
   headers: { Accept: "application/json" },
-  validateStatus: () => true,
 });
+
+export { isAxiosError } from "./is-axios-error";

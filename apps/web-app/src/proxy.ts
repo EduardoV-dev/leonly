@@ -12,13 +12,13 @@ async function hasBetterAuthSession(request: NextRequest): Promise<boolean> {
   const cookie = request.headers.get("cookie");
 
   try {
-    const response = await serverApi.get<SessionResponse>("/auth/get-session", {
+    const { data: session } = await serverApi.get<SessionResponse>("/auth/get-session", {
       headers: {
         ...(cookie ? { cookie } : {}),
       },
     });
 
-    return response.status === 200 && Boolean(response.data?.session);
+    return Boolean(session?.session);
   } catch {
     return false;
   }
