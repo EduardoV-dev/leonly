@@ -14,3 +14,14 @@ variable "image_tag_mutability" {
 variable "function_name" {
   type = string
 }
+
+variable "image_tag" {
+  type = string
+}
+
+variable "environment_variables" {
+  description = "Environment variables configured on the Lambda function."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+}

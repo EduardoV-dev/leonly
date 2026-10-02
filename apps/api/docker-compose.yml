@@ -2,6 +2,8 @@ services:
   floci:
     image: floci/floci:latest
     user: "0:0"
+    environment:
+      FLOCI_SERVICES_LAMBDA_DOCKER_NETWORK: api_default
     ports:
       - "4566:4566"
     volumes:

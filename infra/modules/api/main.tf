@@ -48,8 +48,14 @@ resource "aws_lambda_function" "api" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_execution.arn
   package_type  = "Image"
-  image_uri     = "${aws_ecr_repository.api.repository_url}:local"
+  image_uri     = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
   architectures = ["x86_64"]
+  memory_size   = 512
+  timeout       = 10
+
+  environment {
+    variables = var.environment_variables
+  }
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_basic_execution,

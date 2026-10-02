@@ -11,11 +11,11 @@ async function bootstrap(): Promise<Handler> {
   return serverlessExpress({ app: app.getHttpAdapter().getInstance() });
 }
 
-export const handler: Handler = async (event, context, callback) => {
+export const handler: Handler = async (event, context) => {
   serverPromise ??= bootstrap().catch((error: unknown) => {
     serverPromise = undefined;
     throw error;
   });
   const server = await serverPromise;
-  return server(event, context, callback);
+  return server(event, context, undefined as never);
 };
