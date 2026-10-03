@@ -40,6 +40,22 @@ describe("GET /api/health", () => {
       .get("/api/health")
       .expect(status)
       .expect("Cache-Control", "no-store")
-      .expect(health);
+      .expect({
+        ok: status === 200,
+        data: health,
+        error:
+          status === 200
+            ? []
+            : [
+                {
+                  code: "HTTP_503",
+                  message: "Service is temporarily unavailable. Please try again later.",
+                },
+              ],
+        message:
+          status === 200
+            ? "Request completed successfully"
+            : "Service is temporarily unavailable. Please try again later.",
+      });
   });
 });

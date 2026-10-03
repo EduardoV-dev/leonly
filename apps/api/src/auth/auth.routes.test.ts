@@ -1,7 +1,7 @@
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
-import { createApiApp } from "../create-app";
+import { createApiApp } from "../app/create-app";
 
 vi.mock("../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
@@ -45,7 +45,15 @@ describe("Google authentication routes", () => {
       await app.init();
       const server = app.getHttpServer();
 
-      await request(server).get("/api/health").expect(200).expect({ database: true, redis: true });
+      await request(server)
+        .get("/api/health")
+        .expect(200)
+        .expect({
+          ok: true,
+          data: { database: true, redis: true },
+          error: [],
+          message: "Request completed successfully",
+        });
       await request(server).get("/docs").expect(404);
       await request(server).get("/openapi.json").expect(404);
       const googleSignIn = await request(server)

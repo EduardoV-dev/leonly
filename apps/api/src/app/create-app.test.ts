@@ -1,11 +1,11 @@
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { type AuthenticatedRequest, AuthGuard } from "../auth/auth.guard";
 import { mountApiDocs } from "./api-docs";
-import { type AuthenticatedRequest, AuthGuard } from "./auth/auth.guard";
 import { createApiApp } from "./create-app";
 
-vi.mock("./common/config/environment-variables.config", () => ({
+vi.mock("../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
@@ -17,8 +17,9 @@ vi.mock("./common/config/environment-variables.config", () => ({
   },
   getWebAppOrigin: () => "http://localhost:3000",
 }));
-vi.mock("./common/prisma/prisma.service", () => ({
+vi.mock("../common/prisma/prisma.service", () => ({
   PrismaService: class {
+    spaceMember = { findFirst: vi.fn().mockResolvedValue(null) };
     verification = {
       create: vi.fn(({ data }) => data),
       findFirst: vi.fn(),
@@ -53,6 +54,50 @@ describe("API application", () => {
     const reference = await request(app.getHttpServer()).get("/docs").expect(200);
     expect(reference.text).toContain("/openapi.json");
     await request(app.getHttpServer()).get("/api/docs").expect(404);
+  });
+
+  it("documents response bodies and authentication for every Nest operation", async () => {
+    const { body: document } = await request(app.getHttpServer()).get("/openapi.json").expect(200);
+    const expectedOperations = [
+      ["/api/health", "get", [200, 500, 503]],
+      ["/api/spaces", "post", [200, 400, 401, 403, 409, 500]],
+      ["/api/spaces/memberships/onboarding", "post", [200, 401, 403, 409, 500]],
+      ["/api/spaces/invite-validations", "post", [200, 400, 401, 403, 404, 429, 500]],
+      ["/api/spaces/memberships", "post", [200, 400, 401, 403, 404, 429, 500]],
+      ["/api/users/me/space", "get", [200, 401, 500]],
+    ] as const;
+
+    for (const [path, method, statuses] of expectedOperations) {
+      const operation = document.paths[path][method];
+      expect(operation.description).toBeTruthy();
+      if (path !== "/api/health") expect(operation.security).toEqual([{ session: [] }]);
+      for (const status of statuses) {
+        const schema = operation.responses[status].content["application/json"].schema;
+        expect(schema.required).toEqual(["ok", "data", "error", "message"]);
+        expect(schema.properties.ok.enum).toEqual([status === 200]);
+        expect(schema.example).toEqual({
+          ok: status === 200,
+          data:
+            status === 200 || (path === "/api/health" && status === 503)
+              ? expect.any(Object)
+              : null,
+          error: status === 200 ? [] : expect.any(Array),
+          message: expect.any(String),
+        });
+      }
+    }
+    expect(
+      document.paths["/api/users/me/space"].get.responses[200].content["application/json"].schema
+        .properties.data.nullable,
+    ).toBe(true);
+    expect(
+      document.paths["/api/spaces/memberships"].post.responses[429].headers["Retry-After"].schema,
+    ).toMatchObject({ type: "integer", minimum: 1 });
+    expect(document.components.securitySchemes.session).toMatchObject({
+      type: "apiKey",
+      in: "cookie",
+      name: "better-auth.session_token",
+    });
   });
 
   it("returns 404 for unmatched routes", async () => {
@@ -97,12 +142,40 @@ describe("API application", () => {
       .expect(401);
   });
 
+  it("preserves a successful JSON body when a route returns null", async () => {
+    const authentication = vi
+      .spyOn(app.get(AuthGuard), "canActivate")
+      .mockImplementation(async (context) => {
+        context.switchToHttp().getRequest<AuthenticatedRequest>().authUser = { id: "test-user" };
+        return true;
+      });
+
+    try {
+      await request(app.getHttpServer()).get("/api/users/me/space").expect(200).expect({
+        ok: true,
+        data: null,
+        error: [],
+        message: "Request completed successfully",
+      });
+    } finally {
+      authentication.mockRestore();
+    }
+  });
+
   it("rejects cross-site state-changing requests", async () => {
     await request(app.getHttpServer())
       .post("/api/spaces")
       .set("Sec-Fetch-Site", "cross-site")
       .send({ space_name: "Example", start_date: "2026-07-22", timezone: "UTC" })
-      .expect(403);
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          ok: false,
+          data: null,
+          error: expect.any(Array),
+          message: expect.any(String),
+        });
+      });
   });
 
   it("allows configured frontend origins through CSRF protection", async () => {

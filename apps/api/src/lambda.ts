@@ -1,7 +1,7 @@
 import "dotenv/config";
 import serverlessExpress from "@codegenie/serverless-express";
 import type { Handler } from "aws-lambda";
-import { createApiApp } from "./create-app";
+import { createApiApp } from "./app/create-app";
 
 let serverPromise: Promise<Handler> | undefined;
 

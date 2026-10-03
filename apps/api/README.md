@@ -1,9 +1,86 @@
-# API Google sign-in
+# Leonly API
+
+## API reference
+
+Run the API locally, then open `http://localhost:3001/docs` for the Scalar reference or
+`http://localhost:3001/openapi.json` for the OpenAPI document. Nest endpoints use the `/api`
+prefix. Protected endpoints require the Better Auth session cookie; browser clients must send
+credentials. State-changing browser requests must come from the configured `WEB_APP_ORIGIN`.
+
+| Method | Endpoint | Successful `data` | Endpoint-specific failures |
+| --- | --- | --- | --- |
+| GET | `/api/health` | `{ "database": true, "redis": true }` | 503 if either dependency is unhealthy |
+| POST | `/api/spaces` | `{ "space_id": "<uuid>" }` | 400 invalid fields; 409 active membership already exists |
+| POST | `/api/spaces/memberships/onboarding` | `{ "completed": true }` | 409 no active membership |
+| POST | `/api/spaces/invite-validations` | `{ "valid": true }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
+| POST | `/api/spaces/memberships` | `{ "space_id": "<uuid>" }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
+| GET | `/api/users/me/space` | Active space with members, or `null` | 401 missing or expired session |
+
+All successful Nest operations return HTTP 200 with a JSON body, including when `data` is null:
+
+```json
+{
+  "ok": true,
+  "data": { "space_id": "0199a9aa-1234-7000-8000-111111111111" },
+  "error": [],
+  "message": "Request completed successfully"
+}
+```
+
+### Error responses
+
+Errors use the same envelope with `ok: false`, a nonempty `error` array, and a readable
+`message`. Each error has a `code`, `message`, and optional `field`. Ordinary errors have
+`data: null`; health failures preserve dependency diagnostics. Documented examples are generic;
+validation and domain failures can provide more specific messages.
+
+| Status | Meaning | Error code |
+| --- | --- | --- |
+| 400 | Invalid request; validation errors identify the affected field | `HTTP_400` or `VALIDATION_ERROR` |
+| 401 | Missing or expired authentication | `HTTP_401` |
+| 403 | Request forbidden, including rejected cross-site mutations | `HTTP_403` |
+| 404 | Resource or usable invite not found | `HTTP_404` |
+| 409 | Request conflicts with the user's membership state | `HTTP_409` |
+| 429 | Invite attempts locked; wait the `Retry-After` number of seconds | `HTTP_429` |
+| 500 | Unexpected server failure; internal details are not returned | `INTERNAL_ERROR` |
+| 503 | Service temporarily unavailable | `HTTP_503` |
+
+```json
+{
+  "ok": false,
+  "data": null,
+  "error": [
+    { "code": "VALIDATION_ERROR", "field": "space_name", "message": "Space name must be between 2 and 100 characters." }
+  ],
+  "message": "Space name must be between 2 and 100 characters."
+}
+```
+
+### Health checks
+
+`GET /api/health` is public and returns `Cache-Control: no-store`. A failed PostgreSQL or Redis
+probe returns HTTP 503 while preserving both results:
+
+```json
+{
+  "ok": false,
+  "data": { "database": false, "redis": true },
+  "error": [
+    { "code": "HTTP_503", "message": "Service is temporarily unavailable. Please try again later." }
+  ],
+  "message": "Service is temporarily unavailable. Please try again later."
+}
+```
+
+## Google sign-in
 
 The API hosts Better Auth at `/api/auth/*` and stores users, Google accounts, sessions, and
 OAuth verification records in PostgreSQL through Prisma. The first Google sign-in creates an
 auth user and account; subsequent sign-ins reuse them. Email/password sign-in and automatic
 email-based account linking are disabled.
+
+Better Auth routes use their own response and redirect protocol, rather than the Nest envelope,
+and are not included in the generated Nest OpenAPI document.
 
 ## Local setup
 

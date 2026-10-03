@@ -3,11 +3,22 @@ import { Transform } from "class-transformer";
 import { IsOptional, IsString } from "class-validator";
 
 export class JoinSpaceDto {
-  @ApiProperty({ type: String })
+  @ApiProperty({
+    type: String,
+    example: "leoabcde",
+    description:
+      "Space invite code; an optional hyphen after the prefix and letter casing are normalized.",
+  })
   @IsString()
   invite_code!: string;
 
-  @ApiPropertyOptional({ type: String, nullable: true })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: "Leo",
+    description:
+      "Member name, 2 to 100 characters after trimming. Omit, send null, or leave empty to use the account name.",
+  })
   @Transform(({ value }: { value: unknown }) => (typeof value === "string" ? value.trim() : value))
   @IsOptional()
   @IsString()
@@ -15,7 +26,12 @@ export class JoinSpaceDto {
 }
 
 export class ValidateSpaceInviteDto {
-  @ApiProperty({ type: String })
+  @ApiProperty({
+    type: String,
+    example: "leoabcde",
+    description:
+      "Space invite code; an optional hyphen after the prefix and letter casing are normalized.",
+  })
   @IsString()
   invite_code!: string;
 }

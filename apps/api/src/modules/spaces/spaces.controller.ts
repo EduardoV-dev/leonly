@@ -11,37 +11,36 @@ import {
   Req,
   Res,
 } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../auth/auth.guard";
+import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
 import { JOIN_LOCK_MESSAGE } from "./constants/spaces.constants";
 import { CreateSpaceDto } from "./dtos/create-space.dto";
 import { JoinSpaceDto, ValidateSpaceInviteDto } from "./dtos/join-space.dto";
+import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "./dtos/space-response.docs";
 import { SpacesService } from "./spaces.service";
 
 @Controller("spaces")
+@ApiTags("Spaces")
+@ApiCookieAuth("session")
+@ApiErrorResponses(401, 403, 500)
 export class SpacesController {
   constructor(private readonly spacesService: SpacesService) {}
 
   @Post()
   @HttpCode(200)
-  @ApiOperation({ summary: "Create a space" })
-  @ApiBody({ type: CreateSpaceDto })
-  @ApiResponse({
-    status: 200,
-    description: "Space created",
-    schema: {
-      example: {
-        ok: true,
-        data: { space_id: "0199a9aa-1234-7000-8000-111111111111" },
-        error: [],
-        message: "Request completed successfully",
-      },
-    },
+  @ApiOperation({
+    summary: "Create a space",
+    description: "Create a space and its owner membership for the authenticated user.",
   })
-  @ApiResponse({ status: 400, description: "Invalid request" })
-  @ApiResponse({ status: 401, description: "Authentication required" })
-  @ApiResponse({ status: 409, description: "Already belongs to an active space" })
+  @ApiBody({ type: CreateSpaceDto })
+  @ApiSuccessResponse({
+    description: "Space created",
+    data: SPACE_ID_SCHEMA,
+    example: SPACE_ID_EXAMPLE,
+  })
+  @ApiErrorResponses(400, 409)
   async create(
     @Req() request: AuthenticatedRequest,
     @Body() details: CreateSpaceDto,
@@ -59,8 +58,20 @@ export class SpacesController {
 
   @Post("memberships/onboarding")
   @HttpCode(200)
-  @ApiOperation({ summary: "Complete space setup" })
-  @ApiResponse({ status: 200, description: "Space setup completed" })
+  @ApiOperation({
+    summary: "Complete space setup",
+    description: "Record onboarding completion for the authenticated user's active membership.",
+  })
+  @ApiSuccessResponse({
+    description: "Space setup completed",
+    data: {
+      type: "object",
+      required: ["completed"],
+      properties: { completed: { type: "boolean", enum: [true] } },
+    },
+    example: { completed: true },
+  })
+  @ApiErrorResponses(409)
   async completeSetup(@Req() request: AuthenticatedRequest): Promise<{ completed: true }> {
     const didComplete = await this.spacesService.completeSetup(request.authUser.id);
     if (!didComplete) {
@@ -72,9 +83,22 @@ export class SpacesController {
 
   @Post("invite-validations")
   @HttpCode(200)
-  @ApiOperation({ summary: "Validate a space invite" })
+  @ApiOperation({
+    summary: "Validate a space invite",
+    description:
+      "Check whether an invite is usable without joining. Invalid attempts count toward the join limit. Unavailable invites return 404; locked attempts return 429 with Retry-After.",
+  })
   @ApiBody({ type: ValidateSpaceInviteDto })
-  @ApiResponse({ status: 200, description: "Invite is usable" })
+  @ApiSuccessResponse({
+    description: "Invite is usable",
+    data: {
+      type: "object",
+      required: ["valid"],
+      properties: { valid: { type: "boolean", enum: [true] } },
+    },
+    example: { valid: true },
+  })
+  @ApiErrorResponses(400, 404, 429)
   async validateInvite(
     @Req() request: AuthenticatedRequest,
     @Body() body: ValidateSpaceInviteDto,
@@ -90,9 +114,18 @@ export class SpacesController {
 
   @Post("memberships")
   @HttpCode(200)
-  @ApiOperation({ summary: "Join a space with an invite" })
+  @ApiOperation({
+    summary: "Join a space with an invite",
+    description:
+      "Create a partner membership and consume the invite. Expired, full, self-owned, or otherwise unavailable invites return 404. Locked attempts return 429 with Retry-After.",
+  })
   @ApiBody({ type: JoinSpaceDto })
-  @ApiResponse({ status: 200, description: "Space joined" })
+  @ApiSuccessResponse({
+    description: "Space joined",
+    data: SPACE_ID_SCHEMA,
+    example: SPACE_ID_EXAMPLE,
+  })
+  @ApiErrorResponses(400, 404, 429)
   async join(
     @Req() request: AuthenticatedRequest,
     @Body() body: JoinSpaceDto,

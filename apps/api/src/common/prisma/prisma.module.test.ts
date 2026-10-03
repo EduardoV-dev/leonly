@@ -1,6 +1,6 @@
 import { GLOBAL_MODULE_METADATA, MODULE_METADATA } from "@nestjs/common/constants";
 import { describe, expect, it } from "vitest";
-import { AppModule } from "../../app.module";
+import { AppModule } from "../../app/app.module";
 import { PrismaModule } from "./prisma.module";
 import { PrismaService } from "./prisma.service";
 

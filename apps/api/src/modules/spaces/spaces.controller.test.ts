@@ -4,7 +4,7 @@ import { NestFactory } from "@nestjs/core";
 import { ExpressAdapter } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { AppModule } from "../../app.module";
+import { AppModule } from "../../app/app.module";
 import { Prisma } from "../../generated/prisma/client";
 
 const { session, findFirst, create, updateMany } = vi.hoisted(() => ({

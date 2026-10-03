@@ -8,9 +8,7 @@ import {
 } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
-import type { ApiError, ApiResponse } from "./api-response";
-
-const INTERNAL_MESSAGE = "We could not complete your request. Please try again.";
+import { type ApiError, type ApiResponse, createApiError } from "./api-response";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -30,17 +28,17 @@ function clientErrors(response: unknown, status: number): ApiError[] {
 
   const field =
     isRecord(response) && typeof response.field === "string" ? response.field : undefined;
-  const message = clientErrorMessage(response);
+  const message = clientErrorMessage(response, status);
   return [{ code: `HTTP_${status}`, message, ...(field ? { field } : {}) }];
 }
 
-function clientErrorMessage(response: unknown): string {
+function clientErrorMessage(response: unknown, status: number): string {
   if (typeof response === "string") return response;
-  if (!isRecord(response)) return "Request failed.";
+  if (!isRecord(response)) return createApiError(status).message;
   const errorMessage = response.error;
   const hasErrorMessage = typeof errorMessage === "string";
   if (hasErrorMessage) return errorMessage;
-  return "Request failed.";
+  return createApiError(status).message;
 }
 
 @Catch()
@@ -59,7 +57,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const error =
       exception instanceof HttpException && !isServerError
         ? clientErrors(exception.getResponse(), status)
-        : [{ code: "INTERNAL_ERROR", message: INTERNAL_MESSAGE }];
+        : [createApiError(status)];
     const response: ApiResponse<null> = {
       ok: false,
       data: null,
