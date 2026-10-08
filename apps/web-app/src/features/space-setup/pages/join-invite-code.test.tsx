@@ -53,7 +53,7 @@ describe("join invite code input", () => {
         expect(navigation.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name"));
       });
       expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.example.com/api/spaces/invite-validations",
+        "https://api.example.com/api/spaces/invites/validations",
         {
           credentials: "include",
           body: JSON.stringify({ invite_code: "LNY-7KMP2" }),

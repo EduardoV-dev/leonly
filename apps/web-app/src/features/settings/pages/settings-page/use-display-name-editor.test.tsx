@@ -1,17 +1,17 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { settingsEditResponse as response, settingsReadResponse } from "./settings-test-responses";
 import { getDisplayNameError, useDisplayNameEditor } from "./use-display-name-editor";
 
 const refreshMock = vi.hoisted(() => vi.fn());
+const patchMock = vi.hoisted(() => vi.fn());
+const getMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/axios/api", () => ({ api: { patch: patchMock, get: getMock } }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
 const INITIAL_REVISION = "2026-09-05T16:00:00.000Z";
 const NEXT_REVISION = "2026-09-05T16:01:00.000Z";
-
-function response(status: number, body: unknown): Response {
-  return { json: async () => body, ok: status >= 200 && status < 300, status } as Response;
-}
 
 describe("useDisplayNameEditor", () => {
   beforeEach(() => {
@@ -27,13 +27,12 @@ describe("useDisplayNameEditor", () => {
 
   it("preserves padded input, saves once, and adopts the trimmed canonical response", async () => {
     const onSaved = vi.fn();
-    const fetchMock = vi.fn().mockResolvedValue(
+    patchMock.mockResolvedValue(
       response(200, {
         displayName: "Leo Vance",
         updatedAt: NEXT_REVISION,
       }),
     );
-    vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() =>
       useDisplayNameEditor({
         displayName: "Leo",
@@ -50,15 +49,15 @@ describe("useDisplayNameEditor", () => {
       await Promise.all([result.current.save(), result.current.save()]);
     });
 
-    expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock).toHaveBeenCalledWith("/api/membership/display-name", {
-      body: JSON.stringify({
+    expect(patchMock).toHaveBeenCalledOnce();
+    expect(patchMock).toHaveBeenCalledWith(
+      "/memberships/display-name",
+      {
         displayName: "  Leo Vance  ",
         expectedUpdatedAt: INITIAL_REVISION,
-      }),
-      headers: { "content-type": "application/json" },
-      method: "PATCH",
-    });
+      },
+      expect.objectContaining({ validateStatus: expect.any(Function) }),
+    );
     expect(result.current.canonicalDisplayName).toBe("Leo Vance");
     expect(result.current.draft).toBe("Leo Vance");
     expect(result.current.isEditing).toBe(false);
@@ -68,8 +67,6 @@ describe("useDisplayNameEditor", () => {
   });
 
   it("preserves invalid input and cancels without sending a request", () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() =>
       useDisplayNameEditor({
         displayName: "Leo",
@@ -86,7 +83,7 @@ describe("useDisplayNameEditor", () => {
 
     expect(result.current.hasAttemptedSave).toBe(true);
     expect(result.current.draft).toBe(" ");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(patchMock).not.toHaveBeenCalled();
 
     act(() => result.current.cancel());
     expect(result.current.isEditing).toBe(false);
@@ -94,11 +91,9 @@ describe("useDisplayNameEditor", () => {
   });
 
   it("preserves the attempted name on failure and permits retry", async () => {
-    const fetchMock = vi
-      .fn()
+    patchMock
       .mockRejectedValueOnce(new Error("offline"))
       .mockResolvedValueOnce(response(200, { displayName: "Leo Retry", updatedAt: NEXT_REVISION }));
-    vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() =>
       useDisplayNameEditor({
         displayName: "Leo",
@@ -118,21 +113,15 @@ describe("useDisplayNameEditor", () => {
     expect(result.current.isEditing).toBe(true);
 
     await act(async () => result.current.save());
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(patchMock).toHaveBeenCalledTimes(2);
     expect(result.current.canonicalDisplayName).toBe("Leo Retry");
   });
 
   it("accepts the current canonical name after a conflict", async () => {
     const onSaved = vi.fn();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        response(409, {
-          code: "conflict",
-          displayName: "Leo Current",
-          updatedAt: NEXT_REVISION,
-        }),
-      ),
+    patchMock.mockResolvedValue(response(409));
+    getMock.mockResolvedValue(
+      settingsReadResponse({ displayName: "Leo Current", updatedAt: NEXT_REVISION }),
     );
     const { result } = renderHook(() =>
       useDisplayNameEditor({ displayName: "Leo", onSaved, updatedAt: INITIAL_REVISION }),
@@ -145,6 +134,7 @@ describe("useDisplayNameEditor", () => {
     await act(async () => result.current.save());
     expect(result.current.draft).toBe("Leo Attempt");
     expect(result.current.canonicalDisplayName).toBe("Leo Current");
+    expect(getMock).toHaveBeenCalledWith("/users/me/settings");
 
     act(() => result.current.acceptCurrent());
     expect(result.current.isEditing).toBe(false);
@@ -152,23 +142,16 @@ describe("useDisplayNameEditor", () => {
     expect(onSaved).toHaveBeenCalledWith("Leo Current", NEXT_REVISION);
   });
 
-  it("retries a preserved conflict draft against the returned revision", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        response(409, {
-          code: "conflict",
-          displayName: "Leo Current",
-          updatedAt: NEXT_REVISION,
-        }),
-      )
-      .mockResolvedValueOnce(
-        response(200, {
-          displayName: "Leo Attempt",
-          updatedAt: "2026-09-05T16:02:00.000Z",
-        }),
-      );
-    vi.stubGlobal("fetch", fetchMock);
+  it("retries a preserved conflict draft against the freshly read revision", async () => {
+    getMock.mockResolvedValue(
+      settingsReadResponse({ displayName: "Leo Current", updatedAt: NEXT_REVISION }),
+    );
+    patchMock.mockResolvedValueOnce(response(409)).mockResolvedValueOnce(
+      response(200, {
+        displayName: "Leo Attempt",
+        updatedAt: "2026-09-05T16:02:00.000Z",
+      }),
+    );
     const { result } = renderHook(() =>
       useDisplayNameEditor({
         displayName: "Leo",
@@ -184,8 +167,25 @@ describe("useDisplayNameEditor", () => {
     await act(async () => result.current.save());
     await act(async () => result.current.save());
 
-    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
-      body: JSON.stringify({ displayName: "Leo Attempt", expectedUpdatedAt: NEXT_REVISION }),
+    expect(patchMock.mock.calls[1]?.[1]).toMatchObject({
+      displayName: "Leo Attempt",
+      expectedUpdatedAt: NEXT_REVISION,
     });
+  });
+
+  it("preserves the draft when reading current settings after a conflict fails", async () => {
+    patchMock.mockResolvedValueOnce(response(409));
+    getMock.mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() =>
+      useDisplayNameEditor({ displayName: "Leo", onSaved: vi.fn(), updatedAt: INITIAL_REVISION }),
+    );
+    act(() => {
+      result.current.startEditing();
+      result.current.updateDraft("Leo Attempt");
+    });
+    await act(async () => result.current.save());
+    expect(result.current.draft).toBe("Leo Attempt");
+    expect(result.current.outcome).toBe("failed");
+    expect(result.current.isSaving).toBe(false);
   });
 });

@@ -47,29 +47,32 @@ describe("create-space API response", () => {
     );
   });
 
-  it("routes a successfully created space to the invite interstitial", async () => {
-    fetchMock.mockResolvedValue({
-      json: async () => ({ ok: true, data: { space_id: "space-id" }, error: [], message: "OK" }),
-      ok: true,
-    });
-    render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
-    fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
+  it.each([{ space_id: "space-id" }, null])(
+    "routes a successfully created space to the invite interstitial with data %j",
+    async (data) => {
+      fetchMock.mockResolvedValue({
+        json: async () => ({ ok: true, data, error: [], message: "OK" }),
+        ok: true,
+      });
+      render(<SpaceCreateSetupPage screen={SPACE_SETUP_STEPS.CREATE_DATE} />);
+      fireEvent.click(await screen.findByRole("button", { name: "Start Our Story" }));
 
-    await waitFor(() => {
-      expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.com/api/spaces",
-      expect.objectContaining({ credentials: "include", method: "POST" }),
-    );
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
-      display_name: "Leo",
-      space_name: "Forever Us",
-      start_date: "2023-03-26",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
-    expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
-  });
+      await waitFor(() => {
+        expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.WELCOME_CREATE_STEP("invite"));
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.example.com/api/spaces",
+        expect.objectContaining({ credentials: "include", method: "POST" }),
+      );
+      expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+        display_name: "Leo",
+        space_name: "Forever Us",
+        start_date: "2023-03-26",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      expect(sessionStorage.getItem(CREATE_SPACE_STORAGE_KEY)).toBeNull();
+    },
+  );
 
   it("keeps create state and shows the API field error", async () => {
     fetchMock.mockResolvedValue({
@@ -123,13 +126,10 @@ describe("create-space API response", () => {
     expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
     await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.com/api/spaces/memberships/onboarding",
-      {
-        credentials: "include",
-        headers: { accept: "application/json" },
-        method: "POST",
-      },
-    );
+    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/memberships/onboarding", {
+      credentials: "include",
+      headers: { accept: "application/json" },
+      method: "POST",
+    });
   });
 });

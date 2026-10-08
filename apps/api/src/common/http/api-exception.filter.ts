@@ -54,9 +54,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const isServerError = status >= 500;
     if (isServerError) this.logger.error({ err: exception }, "Unhandled API error");
 
+    const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : null;
     const error =
       exception instanceof HttpException && !isServerError
-        ? clientErrors(exception.getResponse(), status)
+        ? clientErrors(exceptionResponse, status)
         : [createApiError(status)];
     const response: ApiResponse<null> = {
       ok: false,

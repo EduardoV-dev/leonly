@@ -1,16 +1,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { z } from "zod";
+import { api } from "@/lib/axios/api";
+import type { ApiResponse } from "@/types/api-response";
+import { getCurrentSettings } from "../../api/get-current-settings";
 
-const responseSchema = z.object({
-  name: z.string().min(2).max(100),
-  updatedAt: z.string().datetime({ offset: true }),
-});
-const conflictSchema = z.object({
-  code: z.literal("conflict"),
-  name: z.string().min(2).max(100),
-  updatedAt: z.string().datetime({ offset: true }),
-});
+type SpaceNameResponse = { name: string; updatedAt: string; status: "updated" };
 
 export function getSpaceNameError(name: string): "length" | null {
   const length = Array.from(name.trim()).length;
@@ -77,28 +71,30 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
     setIsConflict(false);
     setOutcome(null);
     try {
-      const response = await fetch("/api/spaces/name", {
-        body: JSON.stringify({ expectedUpdatedAt: revisionRef.current, name: draft }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      });
-      const payload: unknown = await response.json().catch(() => null);
-      const success = responseSchema.safeParse(payload);
-      if (response.ok && success.success) {
-        revisionRef.current = success.data.updatedAt;
-        setCanonicalName(success.data.name);
-        setDraft(success.data.name);
+      const response = await api.patch<ApiResponse<SpaceNameResponse | null>>(
+        "/spaces/name",
+        {
+          expectedUpdatedAt: revisionRef.current,
+          name: draft,
+        },
+        { validateStatus: (status) => status === 200 || status === 409 },
+      );
+      const canonical = response.data.data;
+      if (response.status === 200 && canonical) {
+        revisionRef.current = canonical.updatedAt;
+        setCanonicalName(canonical.name);
+        setDraft(canonical.name);
         setHasAttemptedSave(false);
         setIsEditing(false);
         setOutcome("success");
-        onSaved(success.data.name, success.data.updatedAt);
+        onSaved(canonical.name, canonical.updatedAt);
         startTransition(() => router.refresh());
         return;
       }
-      const conflict = conflictSchema.safeParse(payload);
-      if (response.status === 409 && conflict.success) {
-        revisionRef.current = conflict.data.updatedAt;
-        setCanonicalName(conflict.data.name);
+      if (response.status === 409) {
+        const settings = await getCurrentSettings();
+        revisionRef.current = settings.space.updatedAt;
+        setCanonicalName(settings.space.name);
         setIsConflict(true);
         return;
       }

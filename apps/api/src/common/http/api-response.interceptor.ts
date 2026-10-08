@@ -16,7 +16,12 @@ export class ApiResponseInterceptor implements NestInterceptor {
         const { statusCode } = context.switchToHttp().getResponse<{ statusCode: number }>();
         if (statusCode >= 400) {
           const error = createApiError(statusCode);
-          return { ok: false, data: data ?? null, error: [error], message: error.message };
+          return {
+            ok: false,
+            data: data ?? null,
+            error: [error],
+            message: error.message,
+          };
         }
         return { ok: true, data: data ?? null, error: [], message: API_SUCCESS_MESSAGE };
       }),

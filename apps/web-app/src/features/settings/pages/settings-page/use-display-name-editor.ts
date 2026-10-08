@@ -1,22 +1,19 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { z } from "zod";
+import { api } from "@/lib/axios/api";
+import type { ApiResponse } from "@/types/api-response";
+import { getCurrentSettings } from "../../api/get-current-settings";
 
 export function getDisplayNameError(displayName: string): "length" | null {
   const length = Array.from(displayName.trim()).length;
   return length < 2 || length > 100 ? "length" : null;
 }
 
-const displayNameSchema = z.string().refine((value) => getDisplayNameError(value) === null);
-const responseSchema = z.object({
-  displayName: displayNameSchema,
-  updatedAt: z.string().datetime({ offset: true }),
-});
-const conflictSchema = z.object({
-  code: z.literal("conflict"),
-  displayName: displayNameSchema,
-  updatedAt: z.string().datetime({ offset: true }),
-});
+type DisplayNameResponse = {
+  displayName: string;
+  updatedAt: string;
+  status: "updated";
+};
 
 type UseDisplayNameEditorOptions = {
   displayName: string;
@@ -83,28 +80,32 @@ export function useDisplayNameEditor({
     setIsConflict(false);
     setOutcome(null);
     try {
-      const response = await fetch("/api/membership/display-name", {
-        body: JSON.stringify({ displayName: draft, expectedUpdatedAt: revisionRef.current }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      });
-      const payload: unknown = await response.json().catch(() => null);
-      const success = responseSchema.safeParse(payload);
-      if (response.ok && success.success) {
-        revisionRef.current = success.data.updatedAt;
-        setCanonicalDisplayName(success.data.displayName);
-        setDraft(success.data.displayName);
+      const response = await api.patch<ApiResponse<DisplayNameResponse | null>>(
+        "/memberships/display-name",
+        {
+          displayName: draft,
+          expectedUpdatedAt: revisionRef.current,
+        },
+        { validateStatus: (status) => status === 200 || status === 409 },
+      );
+      const canonical = response.data.data;
+      if (response.status === 200 && canonical) {
+        revisionRef.current = canonical.updatedAt;
+        setCanonicalDisplayName(canonical.displayName);
+        setDraft(canonical.displayName);
         setHasAttemptedSave(false);
         setIsEditing(false);
         setOutcome("success");
-        onSaved(success.data.displayName, success.data.updatedAt);
+        onSaved(canonical.displayName, canonical.updatedAt);
         startTransition(() => router.refresh());
         return;
       }
-      const conflict = conflictSchema.safeParse(payload);
-      if (response.status === 409 && conflict.success) {
-        revisionRef.current = conflict.data.updatedAt;
-        setCanonicalDisplayName(conflict.data.displayName);
+      if (response.status === 409) {
+        const settings = await getCurrentSettings();
+        const currentMember = settings.activeMembers.find((member) => member.isCurrentMember);
+        if (!currentMember) throw new Error("Current membership is unavailable.");
+        revisionRef.current = currentMember.updatedAt;
+        setCanonicalDisplayName(currentMember.displayName);
         setIsConflict(true);
         return;
       }

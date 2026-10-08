@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/shadcn-button";
 import { formatInviteCodeDisplay } from "@/features/space-setup/constants/validation";
-import { regeneratePartnerInvite } from "../../hooks/use-regenerate-partner-invite";
+import { regeneratePartnerInvite } from "../../api/regenerate-partner-invite";
 import type { InviteFeedback, InviteState } from "../../types/invite-state";
 import styles from "./partner-invite-status.module.css";
 

@@ -1,16 +1,13 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { useActionState } from "react";
 import { useTranslation } from "react-i18next";
-import { type SignOutState, signOutCurrentSession } from "../../../server/sign-out-current-session";
 import styles from "./sign-out-form.module.css";
-
-const INITIAL_STATE: SignOutState = { status: "idle" };
+import { useSignOut } from "./use-sign-out";
 
 export function SignOutForm() {
   const { t } = useTranslation("settings");
-  const [state, action, isPending] = useActionState(signOutCurrentSession, INITIAL_STATE);
+  const [state, action, isPending] = useSignOut();
 
   return (
     <form action={action} className={styles.form}>

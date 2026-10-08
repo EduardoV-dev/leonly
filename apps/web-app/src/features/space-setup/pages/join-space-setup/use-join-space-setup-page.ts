@@ -38,7 +38,7 @@ async function redirectIfInviteUnavailable(
   if (status !== 404) return false;
 
   try {
-    const { data: payload } = await api.get<ApiResponse<ActiveSpace>>("/users/me/space");
+    const { data: payload } = await api.get<ApiResponse<ActiveSpace | null>>("/users/me/space");
     const hasActiveSpace = payload.data !== null;
     if (hasActiveSpace) globalThis.location.assign(APP_ROUTES.HOME);
     return hasActiveSpace;
@@ -99,20 +99,12 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const { data: payload } = await api.post<ApiResponse<{ valid: true }>>(
-        "/spaces/invite-validations",
-        {
-          invite_code: values.inviteCode,
-        },
-      );
-
-      const isInviteValid = payload.data?.valid;
-      if (!isInviteValid) {
-        throw new JoinSetupError(t("errors.validateInviteCode"));
-      }
+      await api.post<ApiResponse<{ valid: true }>>("/spaces/invites/validations", {
+        invite_code: values.inviteCode,
+      });
     } catch (error) {
       let setupFailure = error;
-      const isApiError = isAxiosError<ApiResponse<{ valid: true }>>(error);
+      const isApiError = isAxiosError<ApiResponse<null>>(error);
       const apiError = isApiError ? error : undefined;
       const status = apiError?.response?.status;
       if (status === 401) {
@@ -172,21 +164,13 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      const { data: payload } = await api.post<ApiResponse<{ space_id: string }>>(
-        "/spaces/memberships",
-        {
-          display_name: values.displayName,
-          invite_code: values.inviteCode,
-        },
-      );
-
-      const isJoinSuccessful = Boolean(payload.data?.space_id);
-      if (!isJoinSuccessful) {
-        throw new JoinSetupError(t("errors.joinSpace"));
-      }
+      await api.post<ApiResponse<{ space_id: string }>>("/memberships", {
+        display_name: values.displayName,
+        invite_code: values.inviteCode,
+      });
     } catch (error) {
       let setupFailure = error;
-      const isApiError = isAxiosError<ApiResponse<{ space_id: string }>>(error);
+      const isApiError = isAxiosError<ApiResponse<null>>(error);
       const apiError = isApiError ? error : undefined;
       const status = apiError?.response?.status;
       if (status === 401) {

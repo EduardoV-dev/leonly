@@ -48,19 +48,17 @@ describe.each([
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it.each(["network", "json"])("shows retry guidance after a %s failure", async (failure) => {
+  it.each(["network", "HTTP"])("shows retry guidance after a %s failure", async (failure) => {
     fetchMock.mockReset();
     const failureMessage = "Unexpected request detail";
     if (failure === "network") {
       fetchMock.mockRejectedValueOnce(new TypeError(failureMessage));
     }
-    if (failure === "json") {
+    if (failure === "HTTP") {
       fetchMock.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => {
-          throw new SyntaxError(failureMessage);
-        },
+        ok: false,
+        status: 500,
+        json: async () => ({ ok: false, data: null, error: [], message: failureMessage }),
       });
     }
     render(<SpaceJoinSetupPage screen={step} />);
@@ -75,6 +73,26 @@ describe.each([
     expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).not.toBeNull();
     expect(locationMock.assign).not.toHaveBeenCalled();
     expect(navigation.push).not.toHaveBeenCalled();
+  });
+
+  it("continues after HTTP success even when response data is null", async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, data: null, error: [], message: "OK" }),
+    });
+    render(<SpaceJoinSetupPage screen={step} />);
+    fireEvent.click(await screen.findByRole("button", { name: action }));
+
+    if (step === SPACE_SETUP_STEPS.JOIN_CODE) {
+      await waitFor(() =>
+        expect(navigation.push).toHaveBeenCalledWith(APP_ROUTES.WELCOME_JOIN_STEP("name")),
+      );
+      return;
+    }
+    await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
+    expect(sessionStorage.getItem(JOIN_SPACE_STORAGE_KEY)).toBeNull();
   });
 
   it("shows a retryable lookup error and preserves the form when membership lookup fails", async () => {

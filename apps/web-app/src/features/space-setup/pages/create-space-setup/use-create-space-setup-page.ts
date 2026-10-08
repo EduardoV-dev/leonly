@@ -110,19 +110,14 @@ export function useCreateSpaceSetupPage({
     const values = getValues();
 
     try {
-      const { data: payload } = await api.post<ApiResponse<{ space_id: string }>>("/spaces", {
+      await api.post<ApiResponse<{ space_id: string }>>("/spaces", {
         display_name: values.displayName,
         space_name: values.spaceName,
         start_date: values.firstDay,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-
-      const isCreatedSpace = Boolean(payload.data?.space_id);
-      if (!isCreatedSpace) {
-        throw new Error(t("errors.createSpace"));
-      }
     } catch (error) {
-      const isApiError = isAxiosError<ApiResponse<{ space_id: string }>>(error);
+      const isApiError = isAxiosError<ApiResponse<null>>(error);
       if (!isApiError) {
         setSubmitError(error instanceof Error ? error.message : t("errors.createSpace"));
         setIsSubmitting(false);
@@ -181,7 +176,7 @@ export function useCreateSpaceSetupPage({
     setIsSubmitting(true);
 
     try {
-      await api.post<ApiResponse<{ completed: true }>>("/spaces/memberships/onboarding");
+      await api.post<ApiResponse<{ completed: true }>>("/memberships/onboarding");
     } catch (error) {
       const isApiError = isAxiosError(error);
       const isUnauthenticated = isApiError && error.response?.status === 401;

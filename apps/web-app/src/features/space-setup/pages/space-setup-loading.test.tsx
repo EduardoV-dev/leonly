@@ -159,14 +159,11 @@ describe("space setup submit feedback", () => {
 
     await waitFor(() => expectLoadingButton(button, "Completing setup..."));
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        "https://api.example.com/api/spaces/memberships/onboarding",
-        {
-          credentials: "include",
-          headers: { accept: "application/json" },
-          method: "POST",
-        },
-      ),
+      expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/memberships/onboarding", {
+        credentials: "include",
+        headers: { accept: "application/json" },
+        method: "POST",
+      }),
     );
     resolveCompletion({ json: async () => ({ ok: true }), ok: true });
 

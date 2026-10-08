@@ -55,4 +55,26 @@ describe("ApiExceptionFilter", () => {
       500,
     );
   });
+
+  it.each([400, 409, 500])("discards exception response data for HTTP %s", (status) => {
+    const reply = vi.fn();
+    const filter = new ApiExceptionFilter(
+      { httpAdapter: { reply } } as never,
+      { error: vi.fn() } as never,
+    );
+    const host = { switchToHttp: () => ({ getResponse: () => ({}) }) } as never;
+    const currentValue = {
+      displayName: "Current name",
+      status: "conflict",
+      updatedAt: "2026-09-05T16:00:00.123456Z",
+    };
+
+    filter.catch(new HttpException({ data: currentValue }, status), host);
+
+    expect(reply).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ ok: false, data: null }),
+      status,
+    );
+  });
 });

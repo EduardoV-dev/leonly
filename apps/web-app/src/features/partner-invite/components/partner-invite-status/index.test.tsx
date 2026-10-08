@@ -6,11 +6,11 @@ import { PartnerInviteStatus } from "./index";
 const axiosPostMock = vi.hoisted(() => vi.fn());
 const refreshMock = vi.hoisted(() => vi.fn());
 
-vi.mock("axios", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("axios")>();
+vi.mock("@/lib/axios/api", async () => {
+  const actual = await import("axios");
   return {
-    ...actual,
-    default: { ...actual.default, post: axiosPostMock },
+    api: { post: axiosPostMock },
+    isAxiosError: actual.isAxiosError,
   };
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
@@ -87,8 +87,11 @@ describe("PartnerInviteStatus", () => {
   it("creates an invite only after the explicit action and keeps the result visible", async () => {
     axiosPostMock.mockResolvedValue({
       data: {
-        invite_code: "lny7kmp2",
-        invite_code_expires_at: "2099-01-02T00:00:00.000Z",
+        ok: true,
+        data: {
+          invite_code: "lny7kmp2",
+          invite_code_expires_at: "2099-01-02T00:00:00.000Z",
+        },
       },
       headers: {},
       status: 200,
@@ -125,7 +128,10 @@ describe("PartnerInviteStatus", () => {
     }
 
     resolveRequest({
-      data: { invite_code: "lny7kmp2", invite_code_expires_at: "2099-01-02T00:00:00.000Z" },
+      data: {
+        ok: true,
+        data: { invite_code: "lny7kmp2", invite_code_expires_at: "2099-01-02T00:00:00.000Z" },
+      },
       headers: {},
       status: 200,
     });
@@ -173,7 +179,11 @@ describe("PartnerInviteStatus", () => {
   it("shows joined state and refreshes without exposing code after a stale response", async () => {
     axiosPostMock.mockRejectedValue({
       isAxiosError: true,
-      response: { data: { code: "joined" }, headers: {}, status: 409 },
+      response: {
+        data: { ok: false, data: null, error: [{ code: "joined", message: "Partner joined." }] },
+        headers: {},
+        status: 409,
+      },
     });
     render(<PartnerInviteStatus code={null} expiresAt={null} membershipState="one-member" />);
 

@@ -1,17 +1,11 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { z } from "zod";
+import { api } from "@/lib/axios/api";
+import type { ApiResponse } from "@/types/api-response";
 import { parseCalendarDate } from "@/utils/calendar-date";
+import { getCurrentSettings } from "../../api/get-current-settings";
 
-const responseSchema = z.object({
-  startDate: z.iso.date(),
-  updatedAt: z.string().datetime({ offset: true }),
-});
-const conflictSchema = z.object({
-  code: z.literal("conflict"),
-  startDate: z.iso.date(),
-  updatedAt: z.string().datetime({ offset: true }),
-});
+type StartDateResponse = { startDate: string; updatedAt: string; status: "updated" };
 
 type UseStartDateEditorOptions = {
   onSaved: (startDate: string, updatedAt: string) => void;
@@ -73,32 +67,31 @@ export function useStartDateEditor({ startDate, updatedAt, onSaved }: UseStartDa
     setIsConflict(false);
     setOutcome(null);
     try {
-      const response = await fetch("/api/spaces/start-date", {
-        body: JSON.stringify({
+      const response = await api.patch<ApiResponse<StartDateResponse | null>>(
+        "/spaces/start-date",
+        {
           expectedUpdatedAt: revisionRef.current,
           startDate: draft,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        }),
-        headers: { "content-type": "application/json" },
-        method: "PATCH",
-      });
-      const payload: unknown = await response.json().catch(() => null);
-      const success = responseSchema.safeParse(payload);
-      if (response.ok && success.success) {
-        revisionRef.current = success.data.updatedAt;
-        setCanonicalStartDate(success.data.startDate);
-        setDraft(success.data.startDate);
+        },
+        { validateStatus: (status) => status === 200 || status === 409 },
+      );
+      const canonical = response.data.data;
+      if (response.status === 200 && canonical) {
+        revisionRef.current = canonical.updatedAt;
+        setCanonicalStartDate(canonical.startDate);
+        setDraft(canonical.startDate);
         setHasAttemptedSave(false);
         setIsEditing(false);
         setOutcome("success");
-        onSaved(success.data.startDate, success.data.updatedAt);
+        onSaved(canonical.startDate, canonical.updatedAt);
         startTransition(() => router.refresh());
         return;
       }
-      const conflict = conflictSchema.safeParse(payload);
-      if (response.status === 409 && conflict.success) {
-        revisionRef.current = conflict.data.updatedAt;
-        setCanonicalStartDate(conflict.data.startDate);
+      if (response.status === 409) {
+        const settings = await getCurrentSettings();
+        revisionRef.current = settings.space.updatedAt;
+        setCanonicalStartDate(settings.space.startDate);
         setIsConflict(true);
         return;
       }

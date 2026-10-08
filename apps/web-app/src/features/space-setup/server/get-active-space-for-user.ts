@@ -15,15 +15,15 @@ export class ActiveSpaceAuthenticationError extends Error {
 
 export const getActiveSpaceForCurrentUser = cache(async (): Promise<ActiveSpace | null> => {
   const requestHeaders = await headers();
-  let payload: ApiResponse<ActiveSpace>;
+  let payload: ApiResponse<ActiveSpace | null>;
 
   try {
-    const response = await serverApi.get<ApiResponse<ActiveSpace>>("/users/me/space", {
+    const response = await serverApi.get<ApiResponse<ActiveSpace | null>>("/users/me/space", {
       headers: { cookie: requestHeaders.get("cookie") ?? "" },
     });
     payload = response.data;
   } catch (error) {
-    const isApiError = isAxiosError<ApiResponse<ActiveSpace>>(error);
+    const isApiError = isAxiosError<ApiResponse<null>>(error);
     if (!isApiError) throw error;
 
     if (error.response?.status === 401) throw new ActiveSpaceAuthenticationError();

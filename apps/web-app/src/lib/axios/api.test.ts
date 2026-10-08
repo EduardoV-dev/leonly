@@ -33,7 +33,7 @@ describe("api", () => {
       }),
     );
     const response = await api.post<ApiResponse<null>>(
-      "/spaces/invite-validations",
+      "/spaces/invites/validations",
       { invite_code: "example" },
       { adapter },
     );

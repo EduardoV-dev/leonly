@@ -1,222 +1,46 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { logServerError } from "@/lib/server-logger";
-import { createClient } from "@/lib/supabase/server";
 import { getSettingsForCurrentUser } from "./get-settings-for-current-user";
 
+const { get, cookieHeaders } = vi.hoisted(() => ({ get: vi.fn(), cookieHeaders: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
-vi.mock("@/lib/server-logger", () => ({ logServerError: vi.fn() }));
-
-const CURRENT_MEMBERSHIP_ID = "7d8e8d54-e7a7-490c-805f-a342d407523f";
-const AUTH_SUBJECT = "9e12d25f-5f14-492e-8844-36dab92e740d";
-const PARTNER_MEMBERSHIP_ID = "4f62149f-680c-43af-aef1-23f89972b771";
-const SPACE_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-
-const currentMember = {
-  avatar_url: "https://example.com/leo.jpg",
-  created_at: "2025-04-27T10:00:00.000Z",
-  display_name: "Leo",
-  is_current_member: true,
-  membership_id: CURRENT_MEMBERSHIP_ID,
-  role: "owner",
-  updated_at: "2026-09-05T17:00:00.000Z",
-};
-const partnerMember = {
-  avatar_url: null,
-  created_at: "2025-05-01T12:30:00.000Z",
-  display_name: "Annie",
-  is_current_member: false,
-  membership_id: PARTNER_MEMBERSHIP_ID,
-  role: "partner",
-  updated_at: "2026-09-05T17:05:00.000Z",
-};
-const rpcSettings = {
-  active_members: [currentMember],
-  id: SPACE_ID,
-  invite_code: "twofw3k3",
-  invite_code_expires_at: "2026-09-05T12:00:00.000Z",
-  invite_code_is_available: true,
-  name: "Our Space",
-  start_date: "2025-04-27",
-  updated_at: "2026-09-05T16:00:00.000Z",
-};
-
-function mockSupabase({
-  authError = null,
-  rpcData = rpcSettings,
-  rpcError = null,
-  user = {
-    app_metadata: { provider: "google" },
-    email: "leo@example.com",
-    id: AUTH_SUBJECT,
-  },
-}: {
-  authError?: unknown;
-  rpcData?: unknown;
-  rpcError?: unknown;
-  user?: null | { app_metadata: Record<string, unknown>; email?: string; id: string };
-} = {}) {
-  const getUser = vi.fn().mockResolvedValue({ data: { user }, error: authError });
-  const rpc = vi.fn().mockResolvedValue({ data: rpcData, error: rpcError });
-  vi.mocked(createClient).mockResolvedValue({ auth: { getUser }, rpc } as never);
-  return { getUser, rpc };
-}
+vi.mock("next/headers", () => ({ headers: cookieHeaders }));
+vi.mock("@/lib/axios/server-api", () => ({
+  serverApi: { get },
+  isAxiosError: (error: { isAxiosError?: boolean }) => error.isAxiosError,
+}));
 
 describe("getSettingsForCurrentUser", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("returns the one-member Settings model without raw auth or member user IDs", async () => {
-    const { rpc } = mockSupabase();
-
-    await expect(getSettingsForCurrentUser()).resolves.toEqual({
-      settings: {
-        account: { email: "leo@example.com", providerLabel: "Google" },
-        activeMembers: [
-          {
-            avatarUrl: "https://example.com/leo.jpg",
-            displayName: "Leo",
-            id: CURRENT_MEMBERSHIP_ID,
-            isCurrentMember: true,
-            joinedAt: "2025-04-27T10:00:00.000Z",
-            role: "owner",
-            updatedAt: "2026-09-05T17:00:00.000Z",
-          },
-        ],
-        invite: {
-          code: "twofw3k3",
-          expiresAt: "2026-09-05T12:00:00.000Z",
-          isAvailable: true,
-        },
-        membershipState: "one-member",
-        space: {
-          name: "Our Space",
-          startDate: "2025-04-27",
-          updatedAt: "2026-09-05T16:00:00.000Z",
-        },
-      },
-      status: "success",
-    });
-    expect(rpc).toHaveBeenCalledWith("get_active_space_settings");
-    expect(rpc.mock.calls[0]).toHaveLength(1);
-    expect(JSON.stringify(await getSettingsForCurrentUser())).not.toContain(AUTH_SUBJECT);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cookieHeaders.mockResolvedValue(new Headers({ cookie: "better-auth.session_token=session" }));
   });
 
-  it("returns two members and no actionable invite", async () => {
-    mockSupabase({
-      rpcData: {
-        ...rpcSettings,
-        active_members: [currentMember, partnerMember],
-        invite_code: null,
-        invite_code_expires_at: null,
-        invite_code_is_available: false,
-      },
-    });
-
-    const result = await getSettingsForCurrentUser();
-
-    expect(result.status).toBe("success");
-    if (result.status !== "success") {
-      throw new Error("Expected Settings to load.");
-    }
-    expect(result.settings.membershipState).toBe("two-member");
-    expect(result.settings.activeMembers).toHaveLength(2);
-    expect(result.settings.invite).toEqual({ code: null, expiresAt: null, isAvailable: false });
-  });
-
-  it("rejects malformed or expanded member payloads", async () => {
-    mockSupabase({
-      rpcData: {
-        ...rpcSettings,
-        active_members: [{ ...currentMember, updated_at: "not-a-timestamp" }],
-      },
-    });
-
-    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
-
-    mockSupabase({
-      rpcData: {
-        ...rpcSettings,
-        active_members: [{ ...currentMember, user_id: AUTH_SUBJECT }],
-      },
-    });
-
-    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
-    expect(logServerError).toHaveBeenCalledWith(
-      { event: "supabase_operation_failed", operation: "parse_active_space_settings" },
-      expect.anything(),
-    );
-  });
-
-  it("rejects member payloads without exactly one current member", async () => {
-    mockSupabase({
-      rpcData: {
-        ...rpcSettings,
-        active_members: [currentMember, { ...partnerMember, is_current_member: true }],
-      },
-    });
-
-    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
-  });
-
-  it("uses safe fallbacks for missing account, invite, and avatar data", async () => {
-    mockSupabase({
-      rpcData: {
-        ...rpcSettings,
-        active_members: [{ ...currentMember, avatar_url: null }],
-        invite_code: null,
-        invite_code_expires_at: null,
-        invite_code_is_available: false,
-      },
-      user: { app_metadata: { provider: "unsupported-provider" }, id: AUTH_SUBJECT },
-    });
-
-    const result = await getSettingsForCurrentUser();
-
-    expect(result).toMatchObject({
-      settings: {
-        account: { email: null, providerLabel: null },
-        activeMembers: [{ avatarUrl: null }],
-        invite: { code: null, expiresAt: null, isAvailable: false },
-      },
-      status: "success",
+  it("loads the Nest settings model with the current session cookie", async () => {
+    const settings = {
+      account: { email: "leo@example.com", providerLabel: "Google" },
+      activeMembers: [],
+    };
+    get.mockResolvedValue({ data: { ok: true, data: settings } });
+    await expect(getSettingsForCurrentUser()).resolves.toEqual({ status: "success", settings });
+    expect(get).toHaveBeenCalledWith("/users/me/settings", {
+      headers: { cookie: "better-auth.session_token=session" },
     });
   });
 
-  it("returns unauthenticated without calling the RPC", async () => {
-    const { rpc } = mockSupabase({ user: null });
-
-    await expect(getSettingsForCurrentUser()).resolves.toEqual({ status: "unauthenticated" });
-    expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it("returns no-active-space for a null RPC result", async () => {
-    mockSupabase({ rpcData: null });
-
+  it("preserves the setup redirect state when Nest returns no active space", async () => {
+    get.mockResolvedValue({ data: { ok: true, data: null } });
     await expect(getSettingsForCurrentUser()).resolves.toEqual({ status: "no-active-space" });
   });
 
-  it("logs and throws a safe error when auth verification fails", async () => {
-    const authError = { code: "unexpected_failure", message: "private auth detail" };
-    const { rpc } = mockSupabase({ authError, user: null });
-
-    await expect(getSettingsForCurrentUser()).rejects.toThrow(
-      "Failed to load Settings account context.",
-    );
-    expect(logServerError).toHaveBeenCalledWith(
-      { event: "supabase_operation_failed", operation: "get_settings_current_user" },
-      authError,
-    );
-    expect(rpc).not.toHaveBeenCalled();
+  it("preserves the authentication redirect state for an expired session", async () => {
+    get.mockRejectedValue({ isAxiosError: true, response: { status: 401 } });
+    await expect(getSettingsForCurrentUser()).resolves.toEqual({ status: "unauthenticated" });
   });
 
-  it("logs and throws a safe error when the RPC fails", async () => {
-    const rpcError = { code: "42501", message: "private database detail" };
-    mockSupabase({ rpcData: null, rpcError });
-
+  it("throws a safe recoverable error on API or network failures", async () => {
+    get.mockRejectedValue(new Error("private connection detail"));
     await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
-    expect(logServerError).toHaveBeenCalledWith(
-      { event: "supabase_operation_failed", operation: "get_active_space_settings" },
-      rpcError,
-    );
+    get.mockRejectedValue({ isAxiosError: true, response: { status: 500 } });
+    await expect(getSettingsForCurrentUser()).rejects.toThrow("Failed to load Settings.");
   });
 });

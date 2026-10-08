@@ -7,11 +7,22 @@ import { apiValidationPipe } from "../common/http/api-validation.pipe";
 import { ApiLoggerModule } from "../common/logger/logger.module";
 import { PrismaModule } from "../common/prisma/prisma.module";
 import { HealthModule } from "../health/health.module";
+import { MembershipsModule } from "../modules/memberships/memberships.module";
+import { SettingsModule } from "../modules/settings/settings.module";
 import { SpacesModule } from "../modules/spaces/spaces.module";
 import { UsersModule } from "../modules/users/users.module";
 
 @Module({
-  imports: [ApiLoggerModule, PrismaModule, HealthModule, AuthModule, SpacesModule, UsersModule],
+  imports: [
+    ApiLoggerModule,
+    PrismaModule,
+    HealthModule,
+    AuthModule,
+    SpacesModule,
+    MembershipsModule,
+    UsersModule,
+    SettingsModule,
+  ],
   providers: [
     { provide: APP_PIPE, useValue: apiValidationPipe },
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

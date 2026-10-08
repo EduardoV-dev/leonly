@@ -15,8 +15,8 @@ const axiosPostMock = vi.hoisted(() => vi.fn());
 const axiosIsAxiosErrorMock = vi.hoisted(() => vi.fn());
 const pathnameMock = vi.hoisted(() => vi.fn());
 
-vi.mock("axios", () => ({
-  default: {
+vi.mock("@/lib/axios/api", () => ({
+  api: {
     post: axiosPostMock,
   },
   isAxiosError: axiosIsAxiosErrorMock,
@@ -71,8 +71,11 @@ describe("DashboardPage", () => {
     pathnameMock.mockReturnValue("/");
     axiosPostMock.mockResolvedValue({
       data: {
-        invite_code: "newcode",
-        invite_code_expires_at: "2023-03-29T12:00:00.000Z",
+        ok: true,
+        data: {
+          invite_code: "newcode",
+          invite_code_expires_at: "2023-03-29T12:00:00.000Z",
+        },
       },
     });
     redirectMock.mockImplementation((path: string) => {

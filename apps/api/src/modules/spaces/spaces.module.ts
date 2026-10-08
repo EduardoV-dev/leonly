@@ -1,14 +1,15 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../../auth/auth.module";
 import { RateLimitModule } from "../../common/rate-limit/rate-limit.module";
-import { JoinAttemptRateLimiter } from "./join-attempt-rate-limiter";
-import { SpacesController } from "./spaces.controller";
-import { SpacesService } from "./spaces.service";
+import { MembershipsModule } from "../memberships/memberships.module";
+import { SpacesController } from "./controllers/spaces.controller";
+import { InviteRegenerationService } from "./services/invite-regeneration.service";
+import { SpacesService } from "./services/spaces.service";
 
 @Module({
-  imports: [AuthModule, RateLimitModule],
+  imports: [AuthModule, RateLimitModule, MembershipsModule],
   controllers: [SpacesController],
-  providers: [SpacesService, JoinAttemptRateLimiter],
+  providers: [SpacesService, InviteRegenerationService],
   exports: [SpacesService],
 })
 export class SpacesModule {}

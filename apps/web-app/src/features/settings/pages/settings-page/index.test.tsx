@@ -6,10 +6,12 @@ import type { SettingsReadModel } from "../../server/get-settings-for-current-us
 import { SettingsError } from "./error";
 import { SettingsPage } from "./index";
 import { SettingsLoading } from "./loading";
+import { settingsEditResponse, settingsReadResponse } from "./settings-test-responses";
 
-vi.mock("../../server/sign-out-current-session", () => ({
-  signOutCurrentSession: vi.fn(),
-}));
+vi.mock("@/features/auth/api/auth-client", () => ({ authClient: { signOut: vi.fn() } }));
+const patchMock = vi.hoisted(() => vi.fn());
+const getMock = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/axios/api", () => ({ api: { patch: patchMock, get: getMock } }));
 
 const refreshMock = vi.hoisted(() => vi.fn());
 
@@ -178,12 +180,12 @@ describe("SettingsPage", () => {
   });
 
   it("edits the shared name with labelled controls, validation, and an authoritative refresh", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({ name: "Our archive", updatedAt: "2026-09-05T16:01:00.000Z" }),
-      ok: true,
-      status: 200,
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    patchMock.mockResolvedValue(
+      settingsEditResponse(200, {
+        name: "Our archive",
+        updatedAt: "2026-09-05T16:01:00.000Z",
+      }),
+    );
     render(<SettingsPage settings={twoMemberSettings} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit name" }));
@@ -211,15 +213,12 @@ describe("SettingsPage", () => {
   });
 
   it("supports focused, associated validation and keyboard form submission", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({
+    patchMock.mockResolvedValue(
+      settingsEditResponse(200, {
         displayName: "Leo Vance",
         updatedAt: "2026-09-05T16:01:00.000Z",
       }),
-      ok: true,
-      status: 200,
-    });
-    vi.stubGlobal("fetch", fetchMock);
+    );
     render(<SettingsPage settings={twoMemberSettings} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
@@ -232,7 +231,7 @@ describe("SettingsPage", () => {
     expect(alert).toHaveTextContent("Enter a display name between 2 and 100 characters.");
     expect(input.getAttribute("aria-describedby")?.split(" ")).toContain(alert.id);
     expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(patchMock).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: "Leo Vance" } });
     fireEvent.submit(input.closest("form") as HTMLFormElement);
@@ -241,13 +240,12 @@ describe("SettingsPage", () => {
 
   it("disables editing controls while pending and updates every current-member occurrence", async () => {
     let resolveRequest!: (value: unknown) => void;
-    const fetchMock = vi.fn().mockImplementation(
+    patchMock.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolveRequest = resolve;
         }),
     );
-    vi.stubGlobal("fetch", fetchMock);
     render(<SettingsPage settings={twoMemberSettings} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
@@ -258,16 +256,14 @@ describe("SettingsPage", () => {
     await waitFor(() => expect(screen.getByText("Saving…", { selector: "p" })).toBeInTheDocument());
     expect(input).toBeDisabled();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
-    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(patchMock).toHaveBeenCalledOnce();
 
-    resolveRequest({
-      json: async () => ({
+    resolveRequest(
+      settingsEditResponse(200, {
         displayName: "Leo Hart",
         updatedAt: "2026-09-05T16:01:00.000Z",
       }),
-      ok: true,
-      status: 200,
-    });
+    );
     await waitFor(() => expect(screen.getAllByText("Leo Hart")).toHaveLength(2));
     expect(screen.getAllByRole("img", { name: "Leo Hart's avatar" })).toHaveLength(2);
     expect(screen.getByText("Annie Chen")).toBeInTheDocument();
@@ -275,8 +271,6 @@ describe("SettingsPage", () => {
   });
 
   it("cancels without a request and restores focus to the edit action", () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
     render(<SettingsPage settings={twoMemberSettings} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
@@ -287,21 +281,13 @@ describe("SettingsPage", () => {
 
     expect(screen.getByRole("button", { name: "Edit display name" })).toHaveFocus();
     expect(screen.getAllByText("Leo Vance")).not.toHaveLength(0);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(patchMock).not.toHaveBeenCalled();
   });
 
   it("preserves conflict input and supports accepting the canonical name", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        json: async () => ({
-          code: "conflict",
-          displayName: "Leo Current",
-          updatedAt: "2026-09-05T16:01:00.000Z",
-        }),
-        ok: false,
-        status: 409,
-      }),
+    patchMock.mockResolvedValue(settingsEditResponse(409));
+    getMock.mockResolvedValue(
+      settingsReadResponse({ displayName: "Leo Current", updatedAt: "2026-09-05T16:01:00.000Z" }),
     );
     render(<SettingsPage settings={twoMemberSettings} />);
 
@@ -322,18 +308,12 @@ describe("SettingsPage", () => {
   });
 
   it("announces failure, preserves input, and retries successfully", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce({
-        json: async () => ({
-          displayName: "Leo Retry",
-          updatedAt: "2026-09-05T16:01:00.000Z",
-        }),
-        ok: true,
-        status: 200,
-      });
-    vi.stubGlobal("fetch", fetchMock);
+    patchMock.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(
+      settingsEditResponse(200, {
+        displayName: "Leo Retry",
+        updatedAt: "2026-09-05T16:01:00.000Z",
+      }),
+    );
     render(<SettingsPage settings={twoMemberSettings} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit display name" }));
@@ -349,7 +329,7 @@ describe("SettingsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
     await waitFor(() => expect(screen.getByText("Display name saved.")).toBeInTheDocument());
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(patchMock).toHaveBeenCalledTimes(2);
   });
 
   it("offers both members an accessible start-date editor that can be cancelled", () => {

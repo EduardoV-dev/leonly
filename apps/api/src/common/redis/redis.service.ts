@@ -30,8 +30,10 @@ export class RedisService {
     while (true) {
       const isLockAcquired = await this.redis.set(key, lockToken, { nx: true, px: LOCK_TTL_MS });
       if (isLockAcquired) break;
+
       const hasTimedOut = Date.now() >= deadline;
       if (hasTimedOut) throw new Error("Could not acquire Redis lock.");
+
       await delay(LOCK_POLL_MS);
     }
 

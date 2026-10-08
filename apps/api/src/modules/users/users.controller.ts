@@ -3,7 +3,7 @@ import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
 import { ACTIVE_SPACE_EXAMPLE, ACTIVE_SPACE_SCHEMA } from "../spaces/dtos/space-response.docs";
-import { SpacesService } from "../spaces/spaces.service";
+import { SpacesService } from "../spaces/services/spaces.service";
 
 @Controller("users/me")
 @ApiTags("Users")

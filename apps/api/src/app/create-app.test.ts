@@ -51,6 +51,10 @@ describe("API application", () => {
     expect(document.body.components.schemas.CreateSpaceDto.required).toEqual(
       expect.arrayContaining(["space_name", "start_date", "timezone"]),
     );
+    expect(document.body.components.schemas.JoinSpaceDto.required).toContain("invite_code");
+    expect(document.body.paths["/api/memberships"].post.tags).toEqual(["Memberships"]);
+    expect(document.body.paths["/api/spaces/invites/validations"].post.tags).toEqual(["Spaces"]);
+    expect(document.body.paths["/api/spaces/invites/regenerations"].post.tags).toEqual(["Spaces"]);
     const reference = await request(app.getHttpServer()).get("/docs").expect(200);
     expect(reference.text).toContain("/openapi.json");
     await request(app.getHttpServer()).get("/api/docs").expect(404);
@@ -61,9 +65,9 @@ describe("API application", () => {
     const expectedOperations = [
       ["/api/health", "get", [200, 500, 503]],
       ["/api/spaces", "post", [200, 400, 401, 403, 409, 500]],
-      ["/api/spaces/memberships/onboarding", "post", [200, 401, 403, 409, 500]],
-      ["/api/spaces/invite-validations", "post", [200, 400, 401, 403, 404, 429, 500]],
-      ["/api/spaces/memberships", "post", [200, 400, 401, 403, 404, 429, 500]],
+      ["/api/memberships/onboarding", "post", [200, 401, 403, 409, 500]],
+      ["/api/spaces/invites/validations", "post", [200, 400, 401, 403, 404, 429, 500]],
+      ["/api/memberships", "post", [200, 400, 401, 403, 404, 429, 500]],
       ["/api/users/me/space", "get", [200, 401, 500]],
     ] as const;
 
@@ -91,7 +95,7 @@ describe("API application", () => {
         .properties.data.nullable,
     ).toBe(true);
     expect(
-      document.paths["/api/spaces/memberships"].post.responses[429].headers["Retry-After"].schema,
+      document.paths["/api/memberships"].post.responses[429].headers["Retry-After"].schema,
     ).toMatchObject({ type: "integer", minimum: 1 });
     expect(document.components.securitySchemes.session).toMatchObject({
       type: "apiKey",
