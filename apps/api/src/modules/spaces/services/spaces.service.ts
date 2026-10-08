@@ -31,20 +31,21 @@ type ActiveSpace = {
   start_date: string;
 };
 
-const getColumnConfigs = (value: string) => Object.freeze({
-  name: {
-    column: Prisma.sql`name`,
-    transformation: Prisma.sql`${value}`
-  },
-  startDate: {
-    column: Prisma.sql`start_date`,
-    transformation: Prisma.sql`${value}::date`
-  },
-})
+const getColumnConfigs = (value: string) =>
+  Object.freeze({
+    name: {
+      column: Prisma.sql`name`,
+      transformation: Prisma.sql`${value}`,
+    },
+    startDate: {
+      column: Prisma.sql`start_date`,
+      transformation: Prisma.sql`${value}::date`,
+    },
+  });
 
 @Injectable()
 export class SpacesService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   updateName(options: SpaceEditOptions & { name: string }): Promise<SpaceEditResult> {
     return this.updateSpace({ ...options, field: "name", value: options.name });
