@@ -8,8 +8,6 @@ import { SpaceMemberRole } from "../../../generated/prisma/client";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,
-  JOIN_FAILURE_LIMIT,
-  JOIN_LOCK_SECONDS,
 } from "../constants/memberships.constants";
 import type {
   DisplayNameEditResult,
@@ -17,14 +15,10 @@ import type {
   JoinResult,
   ValidateInviteParams,
 } from "../memberships.types";
-import { JoinAttemptRateLimiter } from "./join-attempt-rate-limiter";
 
 @Injectable()
 export class MembershipsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly joinAttempts: JoinAttemptRateLimiter,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async updateDisplayName({
     userId,
@@ -77,32 +71,75 @@ export class MembershipsService {
   }: ValidateInviteParams): Promise<
     Exclude<JoinResult, { status: "joined" }> | { status: "valid" }
   > {
-    return this.joinAttempts.withUserLock(userId, async () => {
-      const lock = getActiveLock(await this.joinAttempts.getState(userId), new Date());
-      if (lock) return lock;
+    return this.prisma.$transaction(async (transaction) => {
+      const isCodeValid = isValidInviteCode(inviteCode);
+      if (!isCodeValid) return { status: "malformed" } as const;
+      const normalizedCode = normalizeInviteCode(inviteCode);
 
-      const result = await this.prisma.$transaction(async (transaction) => {
+      const [space, existingMember] = await Promise.all([
+        transaction.space.findFirst({
+          where: { inviteCode: normalizedCode, deletedAt: null },
+          select: {
+            createdByUserId: true,
+            id: true,
+            inviteCodeExpiresAt: true,
+            members: { where: { deletedAt: null }, select: { id: true } },
+          },
+        }),
+        transaction.spaceMember.findFirst({
+          where: { userId, deletedAt: null },
+          select: { id: true },
+        }),
+      ]);
+
+      if (!space?.inviteCodeExpiresAt) return { status: "unavailable" } as const;
+
+      const isInviteExpired = space.inviteCodeExpiresAt <= new Date();
+      const hasAvailableSlot = space.members.length === 1;
+      const isSelfJoin = space.createdByUserId === userId;
+      const isInviteUnavailable =
+        isInviteExpired || !hasAvailableSlot || isSelfJoin || Boolean(existingMember);
+
+      if (isInviteUnavailable) {
+        return { status: "unavailable" } as const;
+      }
+
+      return { status: "valid" } as const;
+    });
+  }
+
+  async join({ userId, accountName, inviteCode, displayName }: JoinParams): Promise<JoinResult> {
+    try {
+      return await this.prisma.$transaction<JoinResult>(async (transaction) => {
+        const normalizedName = normalizeDisplayName(displayName, accountName);
+        if (!normalizedName) return { status: "invalid_name" };
+
         const isCodeValid = isValidInviteCode(inviteCode);
-        if (!isCodeValid) return { status: "malformed" } as const;
+        if (!isCodeValid) return { status: "malformed" };
         const normalizedCode = normalizeInviteCode(inviteCode);
 
-        const [space, existingMember] = await Promise.all([
-          transaction.space.findFirst({
-            where: { inviteCode: normalizedCode, deletedAt: null },
-            select: {
-              createdByUserId: true,
-              id: true,
-              inviteCodeExpiresAt: true,
-              members: { where: { deletedAt: null }, select: { id: true } },
-            },
-          }),
-          transaction.spaceMember.findFirst({
-            where: { userId, deletedAt: null },
-            select: { id: true },
-          }),
-        ]);
+        const spaces = await transaction.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM spaces WHERE invite_code = ${normalizedCode} AND deleted_at IS NULL FOR UPDATE
+          `;
+        const spaceId = spaces[0]?.id;
+        const space = spaceId
+          ? await transaction.space.findUnique({
+              where: { id: spaceId },
+              select: {
+                createdByUserId: true,
+                id: true,
+                inviteCodeExpiresAt: true,
+                members: { where: { deletedAt: null }, select: { id: true } },
+              },
+            })
+          : null;
 
-        if (!space?.inviteCodeExpiresAt) return { status: "unavailable" } as const;
+        if (!space?.inviteCodeExpiresAt) return { status: "unavailable" };
+
+        const existingMember = await transaction.spaceMember.findFirst({
+          where: { userId, deletedAt: null },
+          select: { id: true },
+        });
 
         const isInviteExpired = space.inviteCodeExpiresAt <= new Date();
         const hasAvailableSlot = space.members.length === 1;
@@ -111,122 +148,33 @@ export class MembershipsService {
           isInviteExpired || !hasAvailableSlot || isSelfJoin || Boolean(existingMember);
 
         if (isInviteUnavailable) {
-          return { status: "unavailable" } as const;
+          return { status: "unavailable" };
         }
 
-        return { status: "valid" } as const;
+        await Promise.all([
+          transaction.spaceMember.create({
+            data: {
+              spaceId: space.id,
+              userId,
+              displayName: normalizedName,
+              role: SpaceMemberRole.partner,
+              onboardingCompletedAt: new Date(),
+            },
+          }),
+          transaction.space.update({
+            where: { id: space.id },
+            data: { inviteCode: null, inviteCodeExpiresAt: null, updatedByUserId: userId },
+          }),
+        ]);
+
+        return { status: "joined", space_id: space.id };
       });
-
-      const shouldRecordFailure = result.status === "malformed" || result.status === "unavailable";
-      if (shouldRecordFailure) await this.joinAttempts.recordFailure(userId);
-
-      return result;
-    });
+    } catch (error) {
+      const uniqueIndex = getUniqueIndex(error);
+      const isMembershipConflict =
+        uniqueIndex === ACTIVE_SPACE_MEMBER_INDEX || uniqueIndex === ACTIVE_SPACE_ROLE_INDEX;
+      if (!isMembershipConflict) throw error;
+      return { status: "unavailable" };
+    }
   }
-
-  async join({ userId, accountName, inviteCode, displayName }: JoinParams): Promise<JoinResult> {
-    return this.joinAttempts.withUserLock(userId, async () => {
-      const lock = getActiveLock(await this.joinAttempts.getState(userId), new Date());
-      if (lock) return lock;
-
-      let result: JoinResult;
-
-      try {
-        result = await this.prisma.$transaction(async (transaction) => {
-          const normalizedName = normalizeDisplayName(displayName, accountName);
-          if (!normalizedName) return { status: "invalid_name" };
-
-          const isCodeValid = isValidInviteCode(inviteCode);
-          if (!isCodeValid) return { status: "malformed" };
-          const normalizedCode = normalizeInviteCode(inviteCode);
-
-          const spaces = await transaction.$queryRaw<Array<{ id: string }>>`
-            SELECT id FROM spaces WHERE invite_code = ${normalizedCode} AND deleted_at IS NULL FOR UPDATE
-          `;
-          const spaceId = spaces[0]?.id;
-          const space = spaceId
-            ? await transaction.space.findUnique({
-                where: { id: spaceId },
-                select: {
-                  createdByUserId: true,
-                  id: true,
-                  inviteCodeExpiresAt: true,
-                  members: { where: { deletedAt: null }, select: { id: true } },
-                },
-              })
-            : null;
-
-          if (!space?.inviteCodeExpiresAt) return { status: "unavailable" };
-
-          const existingMember = await transaction.spaceMember.findFirst({
-            where: { userId, deletedAt: null },
-            select: { id: true },
-          });
-
-          const isInviteExpired = space.inviteCodeExpiresAt <= new Date();
-          const hasAvailableSlot = space.members.length === 1;
-          const isSelfJoin = space.createdByUserId === userId;
-          const isInviteUnavailable =
-            isInviteExpired || !hasAvailableSlot || isSelfJoin || Boolean(existingMember);
-
-          if (isInviteUnavailable) {
-            return { status: "unavailable" };
-          }
-
-          await Promise.all([
-            transaction.spaceMember.create({
-              data: {
-                spaceId: space.id,
-                userId,
-                displayName: normalizedName,
-                role: SpaceMemberRole.partner,
-                onboardingCompletedAt: new Date(),
-              },
-            }),
-            transaction.space.update({
-              where: { id: space.id },
-              data: { inviteCode: null, inviteCodeExpiresAt: null, updatedByUserId: userId },
-            }),
-          ]);
-
-          return { status: "joined", space_id: space.id };
-        });
-      } catch (error) {
-        const uniqueIndex = getUniqueIndex(error);
-        const isMembershipConflict =
-          uniqueIndex === ACTIVE_SPACE_MEMBER_INDEX || uniqueIndex === ACTIVE_SPACE_ROLE_INDEX;
-        if (!isMembershipConflict) throw error;
-        result = { status: "unavailable" };
-      }
-
-      if (result.status === "joined") {
-        await this.joinAttempts.clear(userId);
-        return result;
-      }
-
-      const shouldRecordFailure =
-        result.status === "invalid_name" ||
-        result.status === "malformed" ||
-        result.status === "unavailable";
-
-      if (shouldRecordFailure) {
-        await this.joinAttempts.recordFailure(userId);
-      }
-      return result;
-    });
-  }
-}
-
-function getActiveLock(
-  attempt: { failures: number; lockedUntil: Date | null },
-  now: Date,
-): Extract<JoinResult, { status: "locked" }> | null {
-  if (attempt.lockedUntil) {
-    return {
-      status: "locked",
-      retryAfter: Math.max(1, Math.ceil((attempt.lockedUntil.getTime() - now.getTime()) / 1000)),
-    };
-  }
-  if (attempt.failures < JOIN_FAILURE_LIMIT) return null;
-  return { status: "locked", retryAfter: JOIN_LOCK_SECONDS };
 }

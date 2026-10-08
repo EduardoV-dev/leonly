@@ -1,4 +1,4 @@
-import { applyDecorators } from "@nestjs/common";
+import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiResponse, type SchemaObject } from "@nestjs/swagger";
 import { API_SUCCESS_MESSAGE, createApiError } from "./api-response";
 
@@ -34,12 +34,13 @@ export function apiResponseSchema(options: {
 }
 
 export function ApiSuccessResponse(options: {
+  status?: number;
   description: string;
   data: SchemaObject;
   example: unknown;
 }): MethodDecorator & ClassDecorator {
   return ApiResponse({
-    status: 200,
+    status: options.status ?? HttpStatus.OK,
     description: options.description,
     schema: apiResponseSchema({
       data: options.data,
@@ -61,7 +62,7 @@ export function ApiErrorResponses(...statuses: number[]): MethodDecorator & Clas
           ok: false,
           example: { ok: false, data: null, error: [error], message: error.message },
         }),
-        ...(status === 429
+        ...(status === HttpStatus.TOO_MANY_REQUESTS
           ? {
               headers: {
                 "Retry-After": {

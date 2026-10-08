@@ -4,19 +4,20 @@ import { SwaggerModule } from "@nestjs/swagger";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../../app/app.module";
+import { rateLimitStorage } from "../../common/rate-limit/test-setup";
 import { Prisma } from "../../generated/prisma/client";
 
-const { session, queryRaw, findUser, findMember, countMembers, updateSpace, limiter, withLock } =
-  vi.hoisted(() => ({
+const { session, queryRaw, findUser, findMember, countMembers, updateSpace, withLock } = vi.hoisted(
+  () => ({
     session: vi.fn(),
     queryRaw: vi.fn(),
     findUser: vi.fn(),
     findMember: vi.fn(),
     countMembers: vi.fn(),
     updateSpace: vi.fn(),
-    limiter: { getRemaining: vi.fn(), record: vi.fn() },
     withLock: vi.fn(),
-  }));
+  }),
+);
 
 vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
@@ -31,13 +32,6 @@ vi.mock("../../common/prisma/prisma.service", () => ({
 }));
 vi.mock("../../auth/config/auth.config", () => ({
   createAuth: () => ({ api: { getSession: session } }),
-}));
-vi.mock("../../common/rate-limit/rate-limit.service", () => ({
-  RateLimitService: class {
-    create() {
-      return limiter;
-    }
-  },
 }));
 vi.mock("../../common/redis/redis.service", () => ({
   RedisService: class {
@@ -105,8 +99,6 @@ describe("settings API", () => {
       inviteCode: "lny7kmp2",
       inviteCodeExpiresAt: new Date("2099-01-02T00:00:00.000Z"),
     });
-    limiter.getRemaining.mockResolvedValue({ remaining: 5, reset: Date.now() + 600_000 });
-    limiter.record.mockResolvedValue(undefined);
     withLock.mockImplementation(async (_key: string, operation: () => Promise<unknown>) =>
       operation(),
     );
@@ -292,7 +284,7 @@ describe("settings API", () => {
   it("regenerates an expired invite with a 24-hour expiry and audit actor", async () => {
     queryRaw.mockResolvedValue([{ id: SPACE_ID, expiresAt: new Date("2020-01-01") }]);
     const before = Date.now();
-    const { body } = await regenerate().expect(200);
+    const { body } = await regenerate().expect(201);
     expect(body.data.invite_code).toBe("lny7kmp2");
     const details = updateSpace.mock.calls[0]?.[0];
     expect(details.data.updatedByUserId).toBe("current-user");
@@ -300,7 +292,10 @@ describe("settings API", () => {
       /^(leo|lov|mem|our|duo|two|joy|sun|lny)[abcdefghjkmnpqrstuvwxyz23456789]{5}$/,
     );
     expect(details.data.inviteCodeExpiresAt.getTime()).toBeGreaterThanOrEqual(before + 86_400_000);
-    expect(limiter.record).toHaveBeenCalledWith("invite-regeneration:current-user");
+    expect(rateLimitStorage.limit).toHaveBeenCalledWith(
+      "user:current-user",
+      expect.objectContaining({ prefix: expect.stringContaining("endpoint:invite-regeneration") }),
+    );
   });
 
   it("does not replace a still-valid invite", async () => {
@@ -318,17 +313,24 @@ describe("settings API", () => {
   });
 
   it("enforces the regeneration limit and returns Retry-After", async () => {
-    limiter.getRemaining.mockResolvedValue({ remaining: 0, reset: Date.now() + 600_000 });
+    rateLimitStorage.limit.mockImplementation(async (_identifier, options) =>
+      options.prefix.includes("endpoint:invite-regeneration")
+        ? { success: false, reset: Date.now() + 600_000, pending: Promise.resolve() }
+        : undefined,
+    );
     const response = await regenerate().expect(429);
     expect(Number(response.headers["retry-after"])).toBeGreaterThanOrEqual(599);
     expect(updateSpace).not.toHaveBeenCalled();
-    expect(limiter.record).not.toHaveBeenCalled();
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 
-  it("does not consume a regeneration attempt without an active membership", async () => {
+  it("counts regeneration requests even without an active membership", async () => {
     findMember.mockResolvedValue(null);
     await regenerate().expect(404);
-    expect(limiter.record).not.toHaveBeenCalled();
+    expect(rateLimitStorage.limit).toHaveBeenCalledWith(
+      "user:current-user",
+      expect.objectContaining({ prefix: expect.stringContaining("endpoint:invite-regeneration") }),
+    );
   });
 
   it("retries invite collisions in a fresh transaction", async () => {
@@ -340,9 +342,9 @@ describe("settings API", () => {
         meta: { target: "spaces_active_invite_code_unique" },
       }),
     );
-    await regenerate().expect(200);
+    await regenerate().expect(201);
     expect(updateSpace).toHaveBeenCalledTimes(2);
-    expect(limiter.record).toHaveBeenCalledOnce();
+    expect(rateLimitStorage.limit).toHaveBeenCalledTimes(2);
   });
 
   it("documents settings reads and mutations under their owning resource tags", () => {

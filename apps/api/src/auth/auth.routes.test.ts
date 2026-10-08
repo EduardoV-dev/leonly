@@ -2,6 +2,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { createApiApp } from "../app/create-app";
+import { rateLimitStorage } from "../common/rate-limit/test-setup";
 
 vi.mock("../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
@@ -36,6 +37,56 @@ vi.mock("../common/redis/redis.service", () => ({
 }));
 
 describe("Google authentication routes", () => {
+  it.each(["/api/auth/get-session", "/api/auth/callback/google"])(
+    "applies the global limit to %s",
+    async (path) => {
+      const app = await createApiApp();
+      try {
+        await app.init();
+        rateLimitStorage.limit.mockResolvedValue({
+          success: false,
+          reset: Date.now() + 20_000,
+          pending: Promise.resolve(),
+        });
+        const response = await request(app.getHttpServer()).get(path).expect(429);
+        expect(response.body).toMatchObject({ ok: false, data: null });
+        expect(Number(response.headers["retry-after"])).toBeGreaterThanOrEqual(19);
+        expect(rateLimitStorage.limit).toHaveBeenCalledOnce();
+      } finally {
+        await app.close();
+      }
+    },
+  );
+
+  it.each(["/api/auth/sign-in/social", "/api/auth/sign-in/social/"])(
+    "adds an IP-scoped sign-in limit at %s",
+    async (path) => {
+      const app = await createApiApp();
+      try {
+        await app.init();
+        rateLimitStorage.limit.mockImplementation(async (_identifier, options) =>
+          options.prefix.includes("endpoint:auth-sign-in")
+            ? { success: false, reset: Date.now() + 20_000, pending: Promise.resolve() }
+            : undefined,
+        );
+        const response = await request(app.getHttpServer())
+          .post(path)
+          .send({ provider: "google" })
+          .expect(429);
+        expect(response.body).toMatchObject({ ok: false, data: null });
+        expect(Number(response.headers["retry-after"])).toBeGreaterThanOrEqual(19);
+        expect(rateLimitStorage.limit).toHaveBeenCalledTimes(2);
+        expect(rateLimitStorage.limit).toHaveBeenLastCalledWith(
+          expect.stringMatching(/^ip:/),
+          expect.objectContaining({
+            limiter: { strategy: "sliding-window", limit: 5, window: "1 m" },
+          }),
+        );
+      } finally {
+        await app.close();
+      }
+    },
+  );
   it("keeps health available and starts Google sign-in in production mode", async () => {
     vi.stubEnv("NODE_ENV", "production");
     let app: NestExpressApplication | undefined;

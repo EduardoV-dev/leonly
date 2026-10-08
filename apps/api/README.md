@@ -150,3 +150,52 @@ frontend and API domains cannot share this session cookie. Existing host-only se
 require clearing old cookies and signing in again after changing the cookie domain.
 
 The web app's Supabase-backed endpoints remain Next.js routes and are not sent to Nest.
+
+## Rate limiting
+
+Nest routes receive a global 300 requests/minute sliding-window limit per verified user, with
+an IP fallback for anonymous requests. The Express Better Auth adapter applies the same global
+policy and an additional 5 requests/minute IP-scoped sliding-window policy to sign-in requests.
+Better Auth's process-local limiter is disabled in favor of these distributed Upstash policies.
+
+| Endpoint policy | Scope | Limit | Strategy |
+| --- | --- | --- | --- |
+| Join and invite validation, shared quota | User | 5 requests/10 minutes | Fixed window |
+| Invite regeneration | User | 5 requests/10 minutes | Fixed window |
+| Space creation | User | 5 requests/10 minutes | Fixed window |
+| Space name, start date, and membership display name edits, shared quota | User | 30 requests/minute | Sliding window |
+
+The settings-write quota is shared by `PATCH /api/spaces/name`, `PATCH /api/spaces/start-date`,
+and `PATCH /api/memberships/display-name`. Switching fields does not create a fresh quota.
+Space creation has its own quota, separate from invite operations and settings writes.
+Active-space reads, settings reads, onboarding completion, and health checks use only the global policy.
+
+Every request that reaches a policy consumes an attempt, including successful requests, invalid
+DTOs, and requests whose database operation fails. A successful join does not clear the quota.
+Fixed windows use Upstash's clock-aligned boundaries; rejected requests do not extend the window.
+
+Configure the global policy in `src/common/rate-limit/rate-limit.constants.ts`. Configure endpoint
+policies with `@RateLimit` on a controller or handler; handler metadata overrides controller metadata:
+
+```ts
+@RateLimit({
+  limit: 5,
+  window: "10 m",
+  strategy: "fixed-window",
+  scope: "user",
+  key: "shared-operation",
+})
+```
+
+Strategies are `fixed-window` and `sliding-window`. Scopes are `user` and `ip`; user scope falls back
+to IP when anonymous. Omit `key` for an independent controller/handler quota.
+Routes sharing a key must use the same limit, window, strategy, and scope. Changing those values
+creates a new Redis namespace. Global and endpoint quotas never share counters. A rejected request
+returns the standard API error envelope with status 429 and a `Retry-After` header in seconds.
+Storage failures and limiter timeouts return 503 rather than allowing the request through.
+
+IP identity comes from the connection address, not client-supplied forwarding headers. The Lambda
+adapter uses API Gateway's `requestContext.http.sourceIp` as that address. Anonymous authentication
+requests forwarded by Next.js consequently share the proxy's IP quota. Per-browser-IP quotas behind
+that proxy require an authenticated proxy-to-API identity boundary before forwarding headers can
+be trusted. Supabase-backed Next.js routes retain their existing policies.

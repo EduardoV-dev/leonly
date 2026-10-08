@@ -11,25 +11,6 @@ const invite = {
 };
 
 function createService() {
-  const attempts = new Map<string, { failures: number[]; lockedUntil: Date | null }>();
-  const joinAttempts = {
-    withUserLock: vi.fn(async (_userId: string, operation: () => Promise<unknown>) => operation()),
-    getState: vi.fn(async (userId: string) => {
-      const state = attempts.get(userId) ?? { failures: [], lockedUntil: null };
-      if (state.lockedUntil && state.lockedUntil <= new Date()) state.lockedUntil = null;
-      if (!state.lockedUntil && state.failures.length >= 5)
-        state.lockedUntil = new Date(Date.now() + 10 * 60 * 1000);
-      return { failures: state.failures.length, lockedUntil: state.lockedUntil };
-    }),
-    recordFailure: vi.fn(async (userId: string) => {
-      const state = attempts.get(userId) ?? { failures: [], lockedUntil: null };
-      state.failures = [...state.failures, Date.now()].filter(
-        (timestamp) => timestamp > Date.now() - 10 * 60 * 1000,
-      );
-      attempts.set(userId, state);
-    }),
-    clear: vi.fn(async (userId: string) => attempts.delete(userId)),
-  };
   const state = {
     invite: { ...invite, members: [...invite.members] },
     inviteAvailable: true,
@@ -67,11 +48,9 @@ function createService() {
     },
   };
   return {
-    attempts,
-    service: new MembershipsService(prisma as never, joinAttempts as never),
+    service: new MembershipsService(prisma as never),
     state,
     tx,
-    joinAttempts,
   };
 }
 
@@ -80,24 +59,6 @@ describe("MembershipsService invite flow", () => {
 
   beforeEach(() => {
     fixture = createService();
-  });
-
-  it("counts malformed validation failures and starts a fixed lock on request six", async () => {
-    for (let index = 0; index < 5; index += 1) {
-      expect(
-        await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "bad-code" }),
-      ).toEqual({
-        status: "malformed",
-      });
-    }
-
-    expect(
-      await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "lny7kmp2" }),
-    ).toMatchObject({
-      retryAfter: 600,
-      status: "locked",
-    });
-    expect(fixture.tx.space.findFirst).not.toHaveBeenCalled();
   });
 
   it("marks the current active membership setup complete", async () => {
@@ -114,50 +75,15 @@ describe("MembershipsService invite flow", () => {
     await expect(fixture.service.completeSetup("missing-user")).rejects.toThrow(ConflictException);
   });
 
-  it("shares the failed-attempt limit between validation and joining", async () => {
-    for (let index = 0; index < 4; index += 1) {
-      await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "bad-code" });
-    }
-    expect(
-      await fixture.service.join({
-        userId: "partner-user",
-        accountName: "Partner",
-        inviteCode: "bad-code",
-      }),
-    ).toEqual({
-      status: "malformed",
-    });
-
-    expect(
-      await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
-    ).toMatchObject({
-      retryAfter: 600,
-      status: "locked",
-    });
-    expect(fixture.tx.space.findFirst).not.toHaveBeenCalled();
-    expect(fixture.tx.$queryRaw).not.toHaveBeenCalled();
-  });
-
-  it("isolates failure histories by Better Auth user ID", async () => {
-    await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "bad-code" });
-    await fixture.service.validateInvite({ userId: "another-user", inviteCode: "bad-code" });
-
-    expect(fixture.attempts.get("partner-user")?.failures).toHaveLength(1);
-    expect(fixture.attempts.get("another-user")?.failures).toHaveLength(1);
-  });
-
   it.each(["lny7kmp2", "LNY-7KMP2", " \tLnY-7kMp2\r ", "\u00a0LNY-7KMP2\u00a0"])(
-    "normalizes usable invite %s without clearing previous failures",
+    "normalizes usable invite %s",
     async (inviteCode) => {
-      fixture.attempts.set("partner-user", { failures: [Date.now()], lockedUntil: null });
-
       expect(await fixture.service.validateInvite({ userId: "partner-user", inviteCode })).toEqual({
         status: "valid",
       });
       expect(fixture.tx.space.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { inviteCode: "lny7kmp2", deletedAt: null } }),
       );
-      expect(fixture.attempts.get("partner-user")?.failures).toHaveLength(1);
     },
   );
 
@@ -175,7 +101,7 @@ describe("MembershipsService invite flow", () => {
     },
   );
 
-  it("records unavailable and expired invites as failures", async () => {
+  it("rejects unavailable and expired invites", async () => {
     fixture.state.inviteAvailable = false;
     expect(
       await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
@@ -189,16 +115,14 @@ describe("MembershipsService invite flow", () => {
     ).toEqual({
       status: "unavailable",
     });
-    expect(fixture.attempts.get("partner-user")?.failures).toHaveLength(2);
   });
 
-  it("does not count transient database failures", async () => {
+  it("propagates transient database failures", async () => {
     fixture.tx.space.findFirst.mockRejectedValueOnce(new Error("private database error"));
 
     await expect(
       fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
     ).rejects.toThrow("private database error");
-    expect(fixture.attempts.has("partner-user")).toBe(false);
   });
 
   it("rejects a supplied invalid name before touching invite state", async () => {
@@ -257,7 +181,6 @@ describe("MembershipsService invite flow", () => {
     ).toEqual({
       status: "unavailable",
     });
-    expect(fixture.attempts.get("partner-user")?.failures).toHaveLength(1);
   });
 
   it("allows only one of two concurrent requests to consume the last slot", async () => {
@@ -278,9 +201,7 @@ describe("MembershipsService invite flow", () => {
     expect(fixture.tx.spaceMember.create).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the account-name fallback and clears attempts after atomic redemption", async () => {
-    fixture.attempts.set("partner-user", { failures: [Date.now()], lockedUntil: null });
-
+  it("uses the account-name fallback during atomic redemption", async () => {
     expect(
       await fixture.service.join({
         userId: "partner-user",
@@ -303,6 +224,5 @@ describe("MembershipsService invite flow", () => {
       where: { id: "space-id" },
       data: { inviteCode: null, inviteCodeExpiresAt: null, updatedByUserId: "partner-user" },
     });
-    expect(fixture.joinAttempts.clear).toHaveBeenCalledWith("partner-user");
   });
 });

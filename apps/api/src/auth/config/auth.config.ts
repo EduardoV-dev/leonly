@@ -24,6 +24,7 @@ export function createAuth(prisma: PrismaService) {
     baseURL,
     secret: ENVIRONMENT_VARIABLES.BETTER_AUTH_SECRET,
     trustedOrigins: [baseURL],
+    rateLimit: { enabled: false },
     advanced: {
       crossSubDomainCookies: {
         enabled: Boolean(cookieDomain),

@@ -43,6 +43,7 @@ describe("createAuth", () => {
     expect(options?.baseURL).toBe("http://localhost:3000");
     expect(options?.trustedOrigins).toEqual(["http://localhost:3000"]);
     expect(options?.emailAndPassword).toEqual({ enabled: false });
+    expect(options?.rateLimit?.enabled).toBe(false);
     expect(options?.advanced?.crossSubDomainCookies?.enabled).toBe(false);
     expect(Object.keys(options?.socialProviders ?? {})).toEqual(["google"]);
   });

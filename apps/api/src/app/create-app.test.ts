@@ -2,6 +2,7 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { type AuthenticatedRequest, AuthGuard } from "../auth/auth.guard";
+import { rateLimitStorage } from "../common/rate-limit/test-setup";
 import { mountApiDocs } from "./api-docs";
 import { createApiApp } from "./create-app";
 
@@ -64,31 +65,48 @@ describe("API application", () => {
     const { body: document } = await request(app.getHttpServer()).get("/openapi.json").expect(200);
     const expectedOperations = [
       ["/api/health", "get", [200, 500, 503]],
-      ["/api/spaces", "post", [200, 400, 401, 403, 409, 500]],
+      ["/api/spaces", "post", [201, 400, 401, 403, 409, 429, 500]],
       ["/api/memberships/onboarding", "post", [200, 401, 403, 409, 500]],
       ["/api/spaces/invites/validations", "post", [200, 400, 401, 403, 404, 429, 500]],
-      ["/api/memberships", "post", [200, 400, 401, 403, 404, 429, 500]],
+      ["/api/memberships", "post", [201, 400, 401, 403, 404, 429, 500]],
       ["/api/users/me/space", "get", [200, 401, 500]],
+      ["/api/users/me/settings", "get", [200, 401, 500]],
+      ["/api/spaces/name", "patch", [200, 400, 401, 403, 404, 409, 429, 500]],
+      ["/api/spaces/start-date", "patch", [200, 400, 401, 403, 404, 409, 429, 500]],
+      ["/api/memberships/display-name", "patch", [200, 400, 401, 404, 409, 429, 500]],
+      ["/api/spaces/invites/regenerations", "post", [201, 401, 403, 404, 409, 429, 500]],
     ] as const;
 
     for (const [path, method, statuses] of expectedOperations) {
       const operation = document.paths[path][method];
-      expect(operation.description).toBeTruthy();
+      expect(operation.summary).toBeTruthy();
       if (path !== "/api/health") expect(operation.security).toEqual([{ session: [] }]);
       for (const status of statuses) {
+        const isSuccess = status < 400;
         const schema = operation.responses[status].content["application/json"].schema;
         expect(schema.required).toEqual(["ok", "data", "error", "message"]);
-        expect(schema.properties.ok.enum).toEqual([status === 200]);
+        expect(schema.properties.ok.enum).toEqual([isSuccess]);
         expect(schema.example).toEqual({
-          ok: status === 200,
-          data:
-            status === 200 || (path === "/api/health" && status === 503)
-              ? expect.any(Object)
-              : null,
-          error: status === 200 ? [] : expect.any(Array),
+          ok: isSuccess,
+          data: isSuccess || (path === "/api/health" && status === 503) ? expect.any(Object) : null,
+          error: isSuccess ? [] : expect.any(Array),
           message: expect.any(String),
         });
+        if (isSuccess) {
+          for (const field of schema.properties.data.required) {
+            expect(schema.example.data).toHaveProperty(field);
+          }
+        }
+        if (status === 409) {
+          const [error] = schema.example.error;
+          expect(error.code).toBe(
+            path === "/api/spaces/invites/regenerations" ? "joined" : "HTTP_409",
+          );
+          expect(error.message).not.toBe("string");
+          expect(error.message).toBe(schema.example.message);
+        }
       }
+      if (statuses[0] === 201) expect(operation.responses[200]).toBeUndefined();
     }
     expect(
       document.paths["/api/users/me/space"].get.responses[200].content["application/json"].schema
@@ -106,6 +124,36 @@ describe("API application", () => {
 
   it("returns 404 for unmatched routes", async () => {
     await request(app.getHttpServer()).get("/missing").expect(404);
+  });
+
+  it("applies the global limit before authentication and ignores spoofed forwarding headers", async () => {
+    rateLimitStorage.limit.mockResolvedValue({
+      success: false,
+      reset: Date.now() + 10_000,
+      pending: Promise.resolve(),
+    });
+    const response = await request(app.getHttpServer())
+      .get("/api/users/me/space")
+      .set("X-Forwarded-For", "203.0.113.99")
+      .expect(429);
+    expect(response.body).toMatchObject({
+      ok: false,
+      data: null,
+      error: [{ code: "HTTP_429", message: expect.any(String) }],
+    });
+    expect(Number(response.headers["retry-after"])).toBeGreaterThanOrEqual(9);
+    const [identifier, options] = rateLimitStorage.limit.mock.calls[0];
+    expect(identifier).toMatch(/^ip:/);
+    expect(identifier).not.toContain("203.0.113.99");
+    expect(options.prefix).toContain("global");
+    expect(rateLimitStorage.limit).toHaveBeenCalledOnce();
+  });
+
+  it("returns 503 instead of bypassing an unavailable limiter", async () => {
+    rateLimitStorage.limit.mockRejectedValue(new Error("private Redis connection error"));
+    const response = await request(app.getHttpServer()).get("/api/users/me/space").expect(503);
+    expect(response.body).toMatchObject({ ok: false, data: null });
+    expect(JSON.stringify(response.body)).not.toContain("private Redis");
   });
 
   it("allows credentialed browser preflights from the configured frontend", async () => {

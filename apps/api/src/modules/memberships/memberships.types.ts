@@ -6,8 +6,7 @@ export type JoinParams = ValidateInviteParams & {
 
 export type JoinResult =
   | { status: "joined"; space_id: string }
-  | { status: "invalid_name" | "malformed" | "unavailable" }
-  | { status: "locked"; retryAfter: number };
+  | { status: "invalid_name" | "malformed" | "unavailable" };
 
 export type DisplayNameEditResult = {
   displayName: string;

@@ -1,22 +1,16 @@
 import { retry } from "@leonly/utils";
-import { ConflictException, HttpException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../../common/prisma/prisma.service";
-import { RateLimitService } from "../../../common/rate-limit/rate-limit.service";
 import { RedisService } from "../../../common/redis/redis.service";
 import { generateInviteCode, getUniqueIndex } from "../../../common/utils/invite-code";
 import { ACTIVE_INVITE_CODE_INDEX, INVITE_CODE_TTL_MS } from "../constants/spaces.constants";
 
-const REGENERATION_LIMIT = 5;
-const REGENERATION_WINDOW = "10 m";
 const MAX_REGENERATION_ATTEMPTS = 10;
 
 @Injectable()
 export class InviteRegenerationService {
-  private rateLimiter?: ReturnType<RateLimitService["create"]>;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly rateLimit: RateLimitService,
     private readonly redis: RedisService,
   ) {}
 
@@ -29,26 +23,6 @@ export class InviteRegenerationService {
         select: { id: true },
       });
       if (!membership) throw new NotFoundException();
-
-      this.rateLimiter ??= this.rateLimit.create({
-        limit: REGENERATION_LIMIT,
-        window: REGENERATION_WINDOW,
-      });
-
-      const identifier = `invite-regeneration:${userId}`;
-      const { remaining, reset } = await this.rateLimiter.getRemaining(identifier);
-
-      if (remaining === 0) {
-        throw new HttpException(
-          {
-            error: "Too many invite requests. Try again in 10 minutes.",
-            retryAfter: Math.max(1, Math.ceil((reset - Date.now()) / 1000)),
-          },
-          429,
-        );
-      }
-
-      await this.rateLimiter.record(identifier);
 
       return retry(
         () =>

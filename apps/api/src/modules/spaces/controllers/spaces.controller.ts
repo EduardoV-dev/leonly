@@ -1,9 +1,15 @@
-import { Body, Controller, HttpCode, HttpException, Patch, Post, Req, Res } from "@nestjs/common";
-import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { Response } from "express";
+import { Body, Controller, HttpCode, HttpStatus, Patch, Post, Req } from "@nestjs/common";
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../../auth/auth.guard";
-import { ApiErrorResponses, ApiSuccessResponse } from "../../../common/http/api-response.docs";
+import {
+  ApiErrorResponses,
+  ApiSuccessResponse,
+  apiResponseSchema,
+} from "../../../common/http/api-response.docs";
 import { EditResponse } from "../../../common/http/edit-response.docs";
+import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
+import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
+import { JOIN_RATE_LIMIT } from "../../memberships/constants/memberships.constants";
 import { ValidateSpaceInviteDto } from "../../memberships/dtos/join-space.dto";
 import { MembershipsService } from "../../memberships/services/memberships.service";
 import { throwJoinError } from "../../memberships/utils/throw-join-error";
@@ -18,17 +24,22 @@ import type { SpaceEditResult } from "../spaces.types";
 @Controller("spaces")
 @ApiTags("Spaces")
 @ApiCookieAuth("session")
-@ApiErrorResponses(401, 403, 500)
+@ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.FORBIDDEN, HttpStatus.INTERNAL_SERVER_ERROR)
 export class SpacesController {
   constructor(
     private readonly spacesService: SpacesService,
     private readonly invitesService: InviteRegenerationService,
     private readonly membershipsService: MembershipsService,
-  ) { }
+  ) {}
 
   @Patch("name")
-  @ApiOperation({ summary: "Rename the current shared space" })
-  @ApiErrorResponses(400, 404)
+  @RateLimit(SETTINGS_WRITE_RATE_LIMIT)
+  @ApiOperation({
+    summary: "Rename the current shared space",
+    description:
+      "Settings mutations share thirty requests per minute per user, using a sliding window.",
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
   @EditResponse("name")
   async rename(
     @Req() request: AuthenticatedRequest,
@@ -42,8 +53,13 @@ export class SpacesController {
   }
 
   @Patch("start-date")
-  @ApiOperation({ summary: "Update the current shared space's start date" })
-  @ApiErrorResponses(400, 404)
+  @RateLimit(SETTINGS_WRITE_RATE_LIMIT)
+  @ApiOperation({
+    summary: "Update the current shared space's start date",
+    description:
+      "Settings mutations share thirty requests per minute per user, using a sliding window.",
+  })
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
   @EditResponse("startDate")
   async startDate(
     @Req() request: AuthenticatedRequest,
@@ -57,11 +73,12 @@ export class SpacesController {
   }
 
   @Post("invites/validations")
-  @HttpCode(200)
+  @RateLimit(JOIN_RATE_LIMIT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Validate a space invite",
     description:
-      "Check whether an invite is usable without joining. Invalid attempts count toward the join limit. Unavailable invites return 404; locked attempts return 429 with Retry-After.",
+      "Check whether an invite is usable without joining. Validation and joining share five requests per ten-minute fixed window, including successful requests. Unavailable invites return 404; throttled requests return 429 with Retry-After.",
   })
   @ApiBody({ type: ValidateSpaceInviteDto })
   @ApiSuccessResponse({
@@ -73,63 +90,91 @@ export class SpacesController {
     },
     example: { valid: true },
   })
-  @ApiErrorResponses(400, 404, 429)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
   async validateInvite(
     @Req() request: AuthenticatedRequest,
     @Body() body: ValidateSpaceInviteDto,
-    @Res({ passthrough: true }) response: Response,
   ): Promise<{ valid: true }> {
     const result = await this.membershipsService.validateInvite({
       userId: request.authUser.id,
       inviteCode: body.invite_code,
     });
     if (result.status === "valid") return { valid: true };
-    throwJoinError(result, response);
+    throwJoinError(result);
   }
 
   @Post("invites/regenerations")
-  @HttpCode(200)
+  @RateLimit({
+    limit: 5,
+    window: "10 m",
+    strategy: "fixed-window",
+    scope: "user",
+    key: "invite-regeneration",
+    message: "Too many invite requests. Try again in 10 minutes.",
+  })
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Regenerate an unavailable partner invite",
     description:
       "Five requests per ten minutes. Valid invites cannot be replaced. Partner-joined conflicts use error code joined.",
   })
-  @ApiErrorResponses(404, 409, 429)
+  @ApiErrorResponses(HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Your partner has already joined this space.",
+    schema: apiResponseSchema({
+      data: { type: "object", nullable: true, enum: [null] },
+      ok: false,
+      example: {
+        ok: false,
+        data: null,
+        error: [{ code: "joined", message: "Your partner has already joined this space." }],
+        message: "Your partner has already joined this space.",
+      },
+    }),
+  })
   @ApiSuccessResponse({
+    status: HttpStatus.CREATED,
     description: "New invite, valid for 24 hours",
     data: INVITE_SCHEMA,
-    example: undefined,
+    example: { invite_code: "lny7kmp2", invite_code_expires_at: "2026-07-23T12:00:00.000Z" },
   })
   async regenerate(
     @Req() request: AuthenticatedRequest,
-    @Res({ passthrough: true }) response: Response,
   ): Promise<{ invite_code: string; invite_code_expires_at: string }> {
-    try {
-      return await this.invitesService.regenerate(request.authUser.id);
-    } catch (error) {
-      if (error instanceof HttpException && error.getStatus() === 429) {
-        const details = error.getResponse();
-        if (typeof details === "object" && "retryAfter" in details) {
-          response.setHeader("Retry-After", String(details.retryAfter));
-        }
-      }
-      throw error;
-    }
+    return this.invitesService.regenerate(request.authUser.id);
   }
 
   @Post()
-  @HttpCode(200)
+  @RateLimit({ limit: 5, window: "10 m", strategy: "fixed-window", scope: "user" })
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Create a space",
-    description: "Create a space and its owner membership for the authenticated user.",
+    description:
+      "Create a space and its owner membership for the authenticated user. Five requests per ten-minute fixed window per user.",
   })
   @ApiBody({ type: CreateSpaceDto })
   @ApiSuccessResponse({
     description: "Space created",
+    status: HttpStatus.CREATED,
     data: SPACE_ID_SCHEMA,
     example: SPACE_ID_EXAMPLE,
   })
-  @ApiErrorResponses(400, 409)
+  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.TOO_MANY_REQUESTS)
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "You already belong to an active space.",
+    schema: apiResponseSchema({
+      data: { type: "object", nullable: true, enum: [null] },
+      ok: false,
+      example: {
+        ok: false,
+        data: null,
+        error: [{ code: "HTTP_409", message: "You already belong to an active space." }],
+        message: "You already belong to an active space.",
+      },
+    }),
+  })
   async create(
     @Req() request: AuthenticatedRequest,
     @Body() details: CreateSpaceDto,

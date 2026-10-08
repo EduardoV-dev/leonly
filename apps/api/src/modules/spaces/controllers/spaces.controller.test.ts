@@ -95,7 +95,7 @@ describe("spaces API", () => {
   });
 
   it("accepts requests without an Origin header", async () => {
-    expect((await post()).status).toBe(200);
+    expect((await post()).status).toBe(201);
   });
 
   it.each([
@@ -196,7 +196,7 @@ describe("spaces API", () => {
 
   it("atomically creates the space and owner using the session identity", async () => {
     const response = await post({ ...validBody, space_name: "  Forever Us  ", display_name: "" });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.body).toEqual({
       ok: true,
       data: { space_id: "0199a9aa-1234-7000-8000-111111111111" },
@@ -232,12 +232,12 @@ describe("spaces API", () => {
       display_name: "  Leo  ",
       role: "admin",
     });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(create.mock.calls[0][0].data).toMatchObject({
       name: "Forever Us",
       members: { create: { displayName: "Leo", role: "owner" } },
     });
-    expect(await post({ ...validBody, display_name: null })).toHaveProperty("status", 200);
+    expect(await post({ ...validBody, display_name: null })).toHaveProperty("status", 201);
     expect(create.mock.calls[1][0].data.members.create.displayName).toBe("Account Name");
   });
 
@@ -266,7 +266,7 @@ describe("spaces API", () => {
   it("retries only invite-code collisions", async () => {
     create.mockRejectedValueOnce(collision(["invite_code"]));
     const response = await post();
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(create).toHaveBeenCalledTimes(2);
   });
 

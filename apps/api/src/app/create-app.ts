@@ -4,6 +4,7 @@ import { Logger } from "nestjs-pino";
 import { AuthService } from "../auth/auth.service";
 import { createAuthHandler } from "../auth/handler";
 import { getWebAppOrigin } from "../common/config/environment-variables.config";
+import { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
 import { AppModule } from "./app.module";
 
 export async function createApiApp(): Promise<NestExpressApplication> {
@@ -20,6 +21,6 @@ export async function createApiApp(): Promise<NestExpressApplication> {
   app.enableCsrfProtection({ trustedOrigins: [getWebAppOrigin()] });
 
   const express = app.getHttpAdapter().getInstance();
-  express.all("/api/auth/*splat", createAuthHandler(app.get(AuthService)));
+  express.all("/api/auth/*splat", createAuthHandler(app.get(AuthService), app.get(RateLimitGuard)));
   return app;
 }
