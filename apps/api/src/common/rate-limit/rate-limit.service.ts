@@ -48,7 +48,7 @@ export class RateLimitService {
         prefix: `${RATE_LIMIT_PREFIX}:${key}`,
         timeout: RATE_LIMIT_TIMEOUT_MS,
         analytics: true,
-        ephemeralCache: false,
+        ephemeralCache: policy.strategy === "fixed-window" ? undefined : false,
       });
 
       this.limiters.set(key, limiter);

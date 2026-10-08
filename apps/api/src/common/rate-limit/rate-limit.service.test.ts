@@ -35,6 +35,8 @@ describe("RateLimitService", () => {
     expect(sdk.slidingWindow).toHaveBeenCalledWith(300, "1 m");
     expect(sdk.fixedWindow).toHaveBeenCalledWith(5, "10 m");
     expect(sdk.configure).toHaveBeenCalledTimes(2);
+    const cacheOptions = sdk.configure.mock.calls.map(([options]) => options.ephemeralCache);
+    expect(cacheOptions).toEqual([false, undefined]);
     const prefixes = sdk.configure.mock.calls.map(([options]) => options.prefix);
     expect(prefixes[0]).toContain("global");
     expect(prefixes[1]).toContain("endpoint:join-attempts");
@@ -58,6 +60,8 @@ describe("RateLimitService", () => {
     });
     const prefixes = sdk.configure.mock.calls.map(([options]) => options.prefix);
     expect(new Set(prefixes).size).toBe(4);
+    const cacheOptions = sdk.configure.mock.calls.map(([options]) => options.ephemeralCache);
+    expect(cacheOptions).toEqual([undefined, undefined, undefined, false]);
   });
 
   it("returns denial metadata without resetting counters", async () => {
