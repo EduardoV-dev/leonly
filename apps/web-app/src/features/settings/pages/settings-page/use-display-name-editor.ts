@@ -81,7 +81,7 @@ export function useDisplayNameEditor({
     setOutcome(null);
     try {
       const response = await api.patch<ApiResponse<DisplayNameResponse | null>>(
-        "/memberships/display-name",
+        "/spaces/memberships/display-name",
         {
           displayName: draft,
           expectedUpdatedAt: revisionRef.current,

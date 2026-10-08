@@ -75,7 +75,7 @@ const lockedSettings = {
 const edits = [
   { path: "/api/spaces/name", field: "name", value: "New Space" },
   { path: "/api/spaces/start-date", field: "startDate", value: "2025-04-28", timezone: "UTC" },
-  { path: "/api/memberships/display-name", field: "displayName", value: "Leo Hart" },
+  { path: "/api/spaces/memberships/display-name", field: "displayName", value: "Leo Hart" },
 ];
 
 describe("settings API", () => {
@@ -229,7 +229,7 @@ describe("settings API", () => {
   it.each(["name", "displayName"])(
     "trims and validates Unicode %s without changing another member",
     async (field) => {
-      const path = field === "name" ? "/api/spaces/name" : "/api/memberships/display-name";
+      const path = field === "name" ? "/api/spaces/name" : "/api/spaces/memberships/display-name";
       for (const value of ["x", " ", "😀".repeat(101), 42]) {
         await patch(path, { [field]: value, expectedUpdatedAt: REVISION }).expect(400);
       }
@@ -269,7 +269,7 @@ describe("settings API", () => {
       expectedUpdatedAt: REVISION,
       userId: "other-user",
     }).expect(200);
-    await patch("/api/memberships/display-name", {
+    await patch("/api/spaces/memberships/display-name", {
       displayName: "Valid",
       expectedUpdatedAt: REVISION,
       membershipId: "other-member",

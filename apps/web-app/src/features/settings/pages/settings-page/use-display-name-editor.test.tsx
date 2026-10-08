@@ -51,7 +51,7 @@ describe("useDisplayNameEditor", () => {
 
     expect(patchMock).toHaveBeenCalledOnce();
     expect(patchMock).toHaveBeenCalledWith(
-      "/memberships/display-name",
+      "/spaces/memberships/display-name",
       {
         displayName: "  Leo Vance  ",
         expectedUpdatedAt: INITIAL_REVISION,

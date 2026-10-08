@@ -176,7 +176,7 @@ export function useCreateSpaceSetupPage({
     setIsSubmitting(true);
 
     try {
-      await api.post<ApiResponse<{ completed: true }>>("/memberships/onboarding");
+      await api.post<ApiResponse<{ completed: true }>>("/spaces/memberships/onboarding");
     } catch (error) {
       const isApiError = isAxiosError(error);
       const isUnauthenticated = isApiError && error.response?.status === 401;

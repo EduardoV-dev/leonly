@@ -36,7 +36,7 @@ const SETTINGS_REQUESTS = [
     body: { startDate: "2025-04-28", timezone: "UTC", expectedUpdatedAt: REVISION },
   },
   {
-    path: "/api/memberships/display-name",
+    path: "/api/spaces/memberships/display-name",
     body: { displayName: "Leo Hart", expectedUpdatedAt: REVISION },
   },
 ];

@@ -4,7 +4,7 @@ import { Prisma } from "../../generated/prisma/client";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,
-} from "../../modules/memberships/constants/memberships.constants";
+} from "../../modules/spaces/constants/memberships.constants";
 import {
   ACTIVE_INVITE_CODE_INDEX,
   INVITE_CODE_COLUMN,

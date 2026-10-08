@@ -11,11 +11,11 @@ credentials. State-changing browser requests must come from the configured `WEB_
 | --- | --- | --- | --- |
 | GET | `/api/health` | `{ "database": true, "redis": true }` | 503 if either dependency is unhealthy |
 | POST | `/api/spaces` | `{ "space_id": "<uuid>" }` | 400 invalid fields; 409 active membership already exists |
-| POST | `/api/memberships/onboarding` | `{ "completed": true }` | 409 no active membership |
-| PATCH | `/api/memberships/display-name` | `{ "displayName": "Leo", "status": "updated", "updatedAt": "<timestamp>" }` | 400 invalid input; 404 no active membership; 409 stale revision |
+| POST | `/api/spaces/memberships/onboarding` | `{ "completed": true }` | 409 no active membership |
+| PATCH | `/api/spaces/memberships/display-name` | `{ "displayName": "Leo", "status": "updated", "updatedAt": "<timestamp>" }` | 400 invalid input; 404 no active membership; 409 stale revision |
 | POST | `/api/spaces/invites/validations` | `{ "valid": true }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
 | POST | `/api/spaces/invites/regenerations` | `{ "invite_code": "<code>", "invite_code_expires_at": "<timestamp>" }` | 404 unavailable space; 409 partner already joined; 429 regeneration locked |
-| POST | `/api/memberships` | `{ "space_id": "<uuid>" }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
+| POST | `/api/spaces/memberships` | `{ "space_id": "<uuid>" }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
 | GET | `/api/users/me/space` | Active space with members, or `null` | 401 missing or expired session |
 
 All successful Nest operations return HTTP 200 with a JSON body, including when `data` is null:
@@ -166,7 +166,7 @@ Better Auth's process-local limiter is disabled in favor of these distributed Up
 | Space name, start date, and membership display name edits, shared quota | User | 30 requests/minute | Sliding window |
 
 The settings-write quota is shared by `PATCH /api/spaces/name`, `PATCH /api/spaces/start-date`,
-and `PATCH /api/memberships/display-name`. Switching fields does not create a fresh quota.
+and `PATCH /api/spaces/memberships/display-name`. Switching fields does not create a fresh quota.
 Space creation has its own quota, separate from invite operations and settings writes.
 Active-space reads, settings reads, onboarding completion, and health checks use only the global policy.
 

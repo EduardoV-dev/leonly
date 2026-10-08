@@ -18,7 +18,7 @@ vi.mock("@upstash/ratelimit", () => ({
   },
 }));
 
-import { JOIN_RATE_LIMIT } from "../../modules/memberships/constants/memberships.constants";
+import { JOIN_RATE_LIMIT } from "../../modules/spaces/constants/memberships.constants";
 import { RateLimitService } from "./rate-limit.service";
 
 describe("RateLimitService", () => {

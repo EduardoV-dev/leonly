@@ -126,10 +126,13 @@ describe("create-space API response", () => {
     expect(screen.queryByRole("button", { name: "Copy Code" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Continue to dashboard" }));
     await waitFor(() => expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME));
-    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/memberships/onboarding", {
-      credentials: "include",
-      headers: { accept: "application/json" },
-      method: "POST",
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/spaces/memberships/onboarding",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+        method: "POST",
+      },
+    );
   });
 });

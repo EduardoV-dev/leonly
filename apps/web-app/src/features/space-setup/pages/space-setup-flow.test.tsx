@@ -172,11 +172,14 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/memberships/onboarding", {
-      credentials: "include",
-      headers: { accept: "application/json" },
-      method: "POST",
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.com/api/spaces/memberships/onboarding",
+      {
+        credentials: "include",
+        headers: { accept: "application/json" },
+        method: "POST",
+      },
+    );
   });
 
   it("validates join code on native form submission", async () => {
@@ -309,7 +312,7 @@ describe("space setup flow validation and guards", () => {
     await waitFor(() => {
       expect(locationMock.assign).toHaveBeenCalledWith(APP_ROUTES.HOME);
     });
-    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/memberships", {
+    expect(fetchMock).toHaveBeenCalledWith("https://api.example.com/api/spaces/memberships", {
       credentials: "include",
       body: JSON.stringify({ display_name: "", invite_code: "LNY-7KMP2" }),
       headers: { accept: "application/json", "content-type": "application/json" },

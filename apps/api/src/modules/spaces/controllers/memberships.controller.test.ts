@@ -73,18 +73,19 @@ describe("memberships API", () => {
       .set("Cookie", "better-auth.session_token=secret")
       .send(body);
 
-  it.each(["/api/memberships", "/api/spaces/invites/validations", "/api/memberships/onboarding"])(
-    "requires Better Auth for %s",
-    async (path) => {
-      session.mockResolvedValue(null);
-      const response = await post(path, { invite_code: "bad-code", user_id: "forged-user" });
-      expect(response.status).toBe(401);
-      expect(response.body).toMatchObject({ ok: false, data: null });
-      expect(member.create).not.toHaveBeenCalled();
-      expect(member.updateMany).not.toHaveBeenCalled();
-      expect(transaction).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    "/api/spaces/memberships",
+    "/api/spaces/invites/validations",
+    "/api/spaces/memberships/onboarding",
+  ])("requires Better Auth for %s", async (path) => {
+    session.mockResolvedValue(null);
+    const response = await post(path, { invite_code: "bad-code", user_id: "forged-user" });
+    expect(response.status).toBe(401);
+    expect(response.body).toMatchObject({ ok: false, data: null });
+    expect(member.create).not.toHaveBeenCalled();
+    expect(member.updateMany).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+  });
 
   it("rejects non-string invite codes before service lookup", async () => {
     const response = await post("/api/spaces/invites/validations", { invite_code: 42 });
@@ -94,7 +95,7 @@ describe("memberships API", () => {
   });
 
   it("completes setup for the authenticated membership", async () => {
-    const response = await post("/api/memberships/onboarding");
+    const response = await post("/api/spaces/memberships/onboarding");
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ ok: true, data: { completed: true } });
     expect(member.updateMany).toHaveBeenCalledWith({
@@ -105,7 +106,7 @@ describe("memberships API", () => {
 
   it("rejects setup completion without an active membership", async () => {
     member.updateMany.mockResolvedValue({ count: 0 });
-    expect((await post("/api/memberships/onboarding")).status).toBe(409);
+    expect((await post("/api/spaces/memberships/onboarding")).status).toBe(409);
     expect(member.updateMany).toHaveBeenCalledOnce();
   });
 
@@ -117,7 +118,7 @@ describe("memberships API", () => {
   });
 
   it("joins through the memberships route using the authenticated identity", async () => {
-    const response = await post("/api/memberships", {
+    const response = await post("/api/spaces/memberships", {
       invite_code: "LNY-7KMP2",
       user_id: "forged-user",
     });
@@ -128,7 +129,7 @@ describe("memberships API", () => {
     });
   });
 
-  it.each(["/api/memberships", "/api/spaces/invites/validations"])(
+  it.each(["/api/spaces/memberships", "/api/spaces/invites/validations"])(
     "preserves Retry-After for locked attempts at %s",
     async (path) => {
       rateLimitStorage.limit.mockImplementation(async (_identifier, options) =>
@@ -154,14 +155,14 @@ describe("memberships API", () => {
     for (let index = 0; index < 4; index += 1) {
       await post("/api/spaces/invites/validations", { invite_code: "LNY-7KMP2" }).expect(200);
     }
-    await post("/api/memberships", { invite_code: "LNY-7KMP2" }).expect(201);
+    await post("/api/spaces/memberships", { invite_code: "LNY-7KMP2" }).expect(201);
     await post("/api/spaces/invites/validations", { invite_code: "LNY-7KMP2" }).expect(429);
     expect(transaction).toHaveBeenCalledTimes(5);
     expect(session).toHaveBeenCalledTimes(6);
   });
 
   it("counts DTO validation failures before database work", async () => {
-    await post("/api/memberships", { invite_code: 42 }).expect(400);
+    await post("/api/spaces/memberships", { invite_code: 42 }).expect(400);
     expect(rateLimitStorage.limit).toHaveBeenCalledWith(
       "user:better-auth-user",
       expect.objectContaining({ prefix: expect.stringContaining("endpoint:join-attempts") }),

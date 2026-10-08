@@ -5,14 +5,14 @@ import { PrismaService } from "../../../common/prisma/prisma.service";
 import { normalizeDisplayName } from "../../../common/utils/display-name";
 import { generateInviteCode, getUniqueIndex } from "../../../common/utils/invite-code";
 import { Prisma, SpaceMemberRole } from "../../../generated/prisma/client";
-import { ACTIVE_SPACE_MEMBER_INDEX } from "../../memberships/constants/memberships.constants";
+import { ACTIVE_SPACE_MEMBER_INDEX } from "../constants/memberships.constants";
 import {
   ACTIVE_INVITE_CODE_INDEX,
   ACTIVE_SPACE_CONFLICT_MESSAGE,
   INVITE_CODE_TTL_MS,
   MAX_INVITE_ATTEMPTS,
 } from "../constants/spaces.constants";
-import type { SpaceEditOptions, SpaceEditResult } from "../spaces.types";
+import type { SpaceEditOptions, SpaceEditResult } from "../types/spaces.types";
 
 type CreateParams = {
   userId: string;

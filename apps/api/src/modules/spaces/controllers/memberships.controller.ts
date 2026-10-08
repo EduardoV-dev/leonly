@@ -9,15 +9,15 @@ import {
 import { EditResponse } from "../../../common/http/edit-response.docs";
 import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
 import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
-import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../../spaces/dtos/space-response.docs";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
 import { EditDisplayNameDto } from "../dtos/edit-display-name.dto";
 import { JoinSpaceDto } from "../dtos/join-space.dto";
-import type { DisplayNameEditResult } from "../memberships.types";
+import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../dtos/space-response.docs";
 import { MembershipsService } from "../services/memberships.service";
+import type { DisplayNameEditResult } from "../types/memberships.types";
 import { throwJoinError } from "../utils/throw-join-error";
 
-@Controller("memberships")
+@Controller("spaces/memberships")
 @ApiTags("Memberships")
 @ApiCookieAuth("session")
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)

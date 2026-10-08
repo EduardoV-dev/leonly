@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import type { JoinResult } from "../memberships.types";
+import type { JoinResult } from "../types/memberships.types";
 
 export function throwJoinError(result: Exclude<JoinResult, { status: "joined" }>): never {
   if (result.status === "malformed") {

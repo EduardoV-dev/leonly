@@ -10,7 +10,6 @@ import { PrismaModule } from "../common/prisma/prisma.module";
 import { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
 import { RateLimitModule } from "../common/rate-limit/rate-limit.module";
 import { HealthModule } from "../health/health.module";
-import { MembershipsModule } from "../modules/memberships/memberships.module";
 import { SettingsModule } from "../modules/settings/settings.module";
 import { SpacesModule } from "../modules/spaces/spaces.module";
 import { UsersModule } from "../modules/users/users.module";
@@ -23,7 +22,6 @@ import { UsersModule } from "../modules/users/users.module";
     AuthModule,
     RateLimitModule,
     SpacesModule,
-    MembershipsModule,
     UsersModule,
     SettingsModule,
   ],

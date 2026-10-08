@@ -164,7 +164,7 @@ export function useJoinSpaceSetupPage(screen: SpaceSetupJoinSteps): JoinSpaceSet
 
     const values = getValues();
     try {
-      await api.post<ApiResponse<{ space_id: string }>>("/memberships", {
+      await api.post<ApiResponse<{ space_id: string }>>("/spaces/memberships", {
         display_name: values.displayName,
         invite_code: values.inviteCode,
       });

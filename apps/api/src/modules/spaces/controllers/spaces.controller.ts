@@ -9,17 +9,17 @@ import {
 import { EditResponse } from "../../../common/http/edit-response.docs";
 import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
 import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
-import { JOIN_RATE_LIMIT } from "../../memberships/constants/memberships.constants";
-import { ValidateSpaceInviteDto } from "../../memberships/dtos/join-space.dto";
-import { MembershipsService } from "../../memberships/services/memberships.service";
-import { throwJoinError } from "../../memberships/utils/throw-join-error";
+import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
 import { CreateSpaceDto } from "../dtos/create-space.dto";
 import { EditStartDateDto, RenameSpaceDto } from "../dtos/edit-space.dto";
 import { INVITE_SCHEMA } from "../dtos/edit-space-response.docs";
+import { ValidateSpaceInviteDto } from "../dtos/join-space.dto";
 import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../dtos/space-response.docs";
 import { InviteRegenerationService } from "../services/invite-regeneration.service";
+import { MembershipsService } from "../services/memberships.service";
 import { SpacesService } from "../services/spaces.service";
-import type { SpaceEditResult } from "../spaces.types";
+import type { SpaceEditResult } from "../types/spaces.types";
+import { throwJoinError } from "../utils/throw-join-error";
 
 @Controller("spaces")
 @ApiTags("Spaces")

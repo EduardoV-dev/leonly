@@ -14,7 +14,7 @@ import type {
   JoinParams,
   JoinResult,
   ValidateInviteParams,
-} from "../memberships.types";
+} from "../types/memberships.types";
 
 @Injectable()
 export class MembershipsService {
