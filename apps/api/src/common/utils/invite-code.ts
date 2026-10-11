@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
+import { Prisma } from "@leonly/database/client";
 import { INVITE_ALPHABET, INVITE_CODE_LENGTH, INVITE_PREFIXES } from "@leonly/utils/invite-code";
-import { Prisma } from "../../generated/prisma/client";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,

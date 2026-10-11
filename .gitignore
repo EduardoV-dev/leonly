@@ -19,6 +19,8 @@ supabase/.branches/
 .codegraph/
 apps/api/data/
 apps/api/src/generated/prisma
+apps/workers/src/generated/prisma/
+packages/database/src/generated/prisma/
 .terraform/
 *.tfstate
 *.tfstate.*
@@ -28,3 +30,6 @@ anti-slop/
 .serena/memories/
 .impeccable/critique/
 apps/web-app/.impeccable/critique/
+.claude/
+apps/workers/dist
+apps/workers/node_modules

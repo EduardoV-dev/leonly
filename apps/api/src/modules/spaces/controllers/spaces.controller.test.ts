@@ -1,3 +1,4 @@
+import { Prisma } from "@leonly/database/client";
 import { formatInviteCodeDisplay, isValidInviteCode } from "@leonly/utils/invite-code";
 import type { INestApplication } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
@@ -5,7 +6,6 @@ import { ExpressAdapter } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../../../app/app.module";
-import { Prisma } from "../../../generated/prisma/client";
 
 const { session, findFirst, create } = vi.hoisted(() => ({
   session: vi.fn(),
@@ -28,6 +28,13 @@ vi.mock("../../../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     UPSTASH_REDIS_REST_URL: "https://redis.example.com",
     UPSTASH_REDIS_REST_TOKEN: "test-redis-token",
+    STORAGE_ENDPOINT: "http://localhost:4566",
+    STORAGE_REGION: "us-east-1",
+    STORAGE_BUCKET: "test-bucket",
+    STORAGE_ACCESS_KEY_ID: "test-access",
+    STORAGE_SECRET_ACCESS_KEY: "test-secret",
+    SQS_QUEUES_URLS: { memories: "http://localhost:4566/000000000000/images" },
+    AWS_REGION: "us-east-1",
   },
   getWebAppOrigin: () => "http://localhost:3000",
 }));

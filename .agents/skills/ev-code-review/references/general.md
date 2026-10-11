@@ -75,11 +75,22 @@ features/space-setup/
   framework-required names and established component, hook, and predicate conventions.
 - Keep transformations pure where practical and make side effects explicit.
 - Use descriptive domain names for files, functions, classes, methods, variables, and types.
+- Prefer an `Error` suffix for constants, functions, and classes responsible for error creation,
+  following identifier casing: `validationError`, `createValidationError()`, `ValidationError`, or
+  `VALIDATION_ERROR`. Preserve framework-required names and external contracts.
 - Prefix booleans with `is`, `has`, `can`, or `should`.
 - Avoid vague names such as `data`, `item`, `thing`, `helper`, or `manager` when a precise domain name
   is available.
 - Use `UPPER_SNAKE_CASE` only for true module-level constants.
 - Keep public APIs small and return domain-oriented values rather than implementation details.
+
+## Asynchronous Operations
+
+- Prefer `await Promise.all([operationA(), operationB()])` over consecutive awaits when operations
+  are independent and can safely run concurrently.
+- Keep sequential awaits when results, ordering, shared state, or rate limits require them.
+  Preserve error handling and side-effect safety: `Promise.all` rejects on the first rejection
+  without cancelling operations already started.
 
 ## Magic Values
 
@@ -163,7 +174,8 @@ not a claim of exhaustive coverage.
 
 - No authored code file exceeds 400 lines; files live at the narrowest ownership level.
 - Names are descriptive, function and method names start with behavior-appropriate verbs, and
-  behavioral values are explained.
+  error-creation names prefer an `Error` suffix; behavioral values are explained.
+- Independent asynchronous operations use `Promise.all` where concurrent execution is safe.
 - Environment reads use the owning project's constants boundary; missing variables are added there,
   with public/private separation and evaluation timing preserved.
 - Relevant tests cover observable behavior; applicable domain/technology checklists are satisfied.

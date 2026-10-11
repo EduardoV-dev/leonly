@@ -7,7 +7,7 @@ import {
   INVITE_PREFIXES,
   isValidInviteCode,
   normalizeInviteCode,
-} from "./invite-code";
+} from "./index";
 
 describe("invite codes", () => {
   it.each(["lny7kmp2", "LNY-7KMP2", " \tLnY-7kMp2\r\n ", "\u00a0LNY-7KMP2\u00a0"])(

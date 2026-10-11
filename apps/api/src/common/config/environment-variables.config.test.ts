@@ -10,6 +10,15 @@ const ENVIRONMENT_VARIABLE_NAMES = [
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
   "WEB_APP_ORIGIN",
+  "STORAGE_ENDPOINT",
+  "STORAGE_SIGNING_ENDPOINT",
+  "STORAGE_REGION",
+  "STORAGE_BUCKET",
+  "STORAGE_ACCESS_KEY_ID",
+  "STORAGE_SECRET_ACCESS_KEY",
+  "SQS_QUEUES_URLS",
+  "SQS_ENDPOINT",
+  "AWS_REGION",
 ] as const;
 
 afterEach(() => {
@@ -35,6 +44,15 @@ describe("ENVIRONMENT_VARIABLES", () => {
       UPSTASH_REDIS_REST_URL: "",
       UPSTASH_REDIS_REST_TOKEN: "",
       WEB_APP_ORIGIN: "",
+      STORAGE_ENDPOINT: "",
+      STORAGE_SIGNING_ENDPOINT: "",
+      STORAGE_REGION: "",
+      STORAGE_BUCKET: "",
+      STORAGE_ACCESS_KEY_ID: "",
+      STORAGE_SECRET_ACCESS_KEY: "",
+      SQS_QUEUES_URLS: {},
+      SQS_ENDPOINT: "",
+      AWS_REGION: "",
     });
   });
 
@@ -57,7 +75,12 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
   it("passes configured values through unchanged", async () => {
     const configuredValues = Object.fromEntries(
-      ENVIRONMENT_VARIABLE_NAMES.map((name) => [name, `configured-${name}`]),
+      ENVIRONMENT_VARIABLE_NAMES.map((name) => [
+        name,
+        name === "SQS_QUEUES_URLS"
+          ? '{"memories":"https://sqs.example.com/memories"}'
+          : `configured-${name}`,
+      ]),
     ) as Record<(typeof ENVIRONMENT_VARIABLE_NAMES)[number], string>;
 
     for (const [name, value] of Object.entries(configuredValues)) {
@@ -66,7 +89,32 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
     const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
 
-    expect(ENVIRONMENT_VARIABLES).toEqual(configuredValues);
+    expect(ENVIRONMENT_VARIABLES).toEqual({
+      ...configuredValues,
+      SQS_QUEUES_URLS: JSON.parse(configuredValues.SQS_QUEUES_URLS),
+    });
     expect(Object.isFrozen(ENVIRONMENT_VARIABLES)).toBe(true);
+  });
+
+  it("parses kebab-case queue URLs", async () => {
+    vi.stubEnv(
+      "SQS_QUEUES_URLS",
+      '{"memories":"https://sqs.example.com/memories","email-notifications":"https://sqs.example.com/email"}',
+    );
+
+    const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
+
+    expect(ENVIRONMENT_VARIABLES.SQS_QUEUES_URLS).toEqual({
+      memories: "https://sqs.example.com/memories",
+      "email-notifications": "https://sqs.example.com/email",
+    });
+  });
+
+  it("rejects queue names that are not kebab-case", async () => {
+    vi.stubEnv("SQS_QUEUES_URLS", '{"emailNotifications":"https://sqs.example.com/email"}');
+
+    await expect(import("./environment-variables.config")).rejects.toThrow(
+      'SQS_QUEUES_URLS key "emailNotifications" must use kebab-case',
+    );
   });
 });

@@ -49,9 +49,10 @@ The core works without technology companions.
 3. Read core references. Discover companions from harness skill lists/registries, otherwise known
    project/user locations (`.agents/skills`, `.opencode/skills`, `~/.config/opencode/skills`). Resolve
    exact paths; never assume sibling installation.
-   Match `ev-review-typescript`, `ev-review-react`, `ev-review-nextjs`, `ev-review-postgres`, and
-   `ev-review-supabase` (also PostgREST) to scoped usage; read their applicability conditions. Report
-   detected technologies lacking installed coverage, including unknown ones; continue with core rules.
+   Match `ev-review-typescript`, `ev-review-react`, `ev-review-nextjs`, `ev-review-nestjs`,
+   `ev-review-postgres`, and `ev-review-supabase` (also PostgREST) to scoped usage; read their
+   applicability conditions. Report detected technologies lacking installed coverage, including
+   unknown ones; continue with core rules.
 4. Review directly or assign frontend, backend, and—when warranted—cross-cutting contracts/security
    reviewers. Include shared-only changes; create only useful assignments. Pass exact scope/baseline,
    file ownership, rule paths, contextual-read permission, and read-only/output contracts. Everyone

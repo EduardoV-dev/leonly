@@ -10,20 +10,26 @@ import { PrismaModule } from "../common/prisma/prisma.module";
 import { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
 import { RateLimitModule } from "../common/rate-limit/rate-limit.module";
 import { HealthModule } from "../health/health.module";
+import { FilesModule } from "../modules/files/files.module";
+import { MemoriesModule } from "../modules/memories/memories.module";
 import { SettingsModule } from "../modules/settings/settings.module";
 import { SpacesModule } from "../modules/spaces/spaces.module";
 import { UsersModule } from "../modules/users/users.module";
+import { AppOutboxModule } from "./outbox.module";
 
 @Module({
   imports: [
     ApiLoggerModule,
     PrismaModule,
+    AppOutboxModule,
     HealthModule,
     AuthModule,
     RateLimitModule,
     SpacesModule,
     UsersModule,
     SettingsModule,
+    FilesModule,
+    MemoriesModule,
   ],
   providers: [
     { provide: APP_GUARD, useExisting: RateLimitGuard },

@@ -1,10 +1,10 @@
+import { SpaceMemberRole } from "@leonly/database/client";
 import { isValidInviteCode, normalizeInviteCode } from "@leonly/utils/invite-code";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { normalizeDisplayName } from "../../../common/utils/display-name";
 import { getUniqueIndex } from "../../../common/utils/invite-code";
-import { SpaceMemberRole } from "../../../generated/prisma/client";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,

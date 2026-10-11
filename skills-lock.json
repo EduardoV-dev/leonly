@@ -5,7 +5,13 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "5b2d611f7b4087ed0d6d96cd4a4e411f2b1dea9e110487ee96dd1c3583a9edc7"
+      "computedHash": "0e6c5116562763bff517e55a3ba8eb43010e30cff6671fdb00ea538555add88d"
+    },
+    "ev-review-nestjs": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-review-nestjs/SKILL.md",
+      "computedHash": "99eae97b8bccf24251a596ed37a4c3d3b29ca54b01b3fe7cfe275cb7b8f49ce2"
     },
     "ev-review-nextjs": {
       "source": "EduardoV-dev/my-skills",

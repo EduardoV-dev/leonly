@@ -1,4 +1,4 @@
-name: API Verify
+name: Backend Verify
 
 on:
   pull_request:
@@ -27,13 +27,13 @@ jobs:
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Biome check
-        run: pnpm --filter api check
+        run: pnpm --filter 'api...' --filter 'workers...' check
 
       - name: Type check
-        run: pnpm --filter api typecheck
+        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 typecheck
 
       - name: Run tests
-        run: pnpm --filter api test:run
+        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 test:run
 
       - name: Build
-        run: pnpm --filter api build
+        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 build

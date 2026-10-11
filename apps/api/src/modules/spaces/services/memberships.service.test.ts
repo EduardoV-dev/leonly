@@ -1,6 +1,6 @@
+import { Prisma } from "@leonly/database/client";
 import { ConflictException } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Prisma } from "../../../generated/prisma/client";
 import { MembershipsService } from "./memberships.service";
 
 const invite = {

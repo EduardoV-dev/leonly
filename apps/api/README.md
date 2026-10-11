@@ -17,8 +17,10 @@ credentials. State-changing browser requests must come from the configured `WEB_
 | POST | `/api/spaces/invites/regenerations` | `{ "invite_code": "<code>", "invite_code_expires_at": "<timestamp>" }` | 404 unavailable space; 409 partner already joined; 429 regeneration locked |
 | POST | `/api/spaces/memberships` | `{ "space_id": "<uuid>" }` | 400 invalid input; 404 unavailable invite; 429 attempts locked |
 | GET | `/api/users/me/space` | Active space with members, or `null` | 401 missing or expired session |
+| POST | `/api/files/uploads` | Ordered `uploads` with IDs, signed staging PUT URLs, required headers, and deadlines | 400 invalid purpose/descriptors or client-controlled fields; 404 no active space |
+| POST | `/api/memories` | `{ "id": "<uuid>", "visibility": "timeline" }` | 400 invalid details; 404 unavailable uploads/space; 409 changed-input key reuse or creation in progress |
 
-All successful Nest operations return HTTP 200 with a JSON body, including when `data` is null:
+Successful Nest operations return HTTP 200 or their documented HTTP 201 creation status with a JSON body, including when `data` is null:
 
 ```json
 {
@@ -100,6 +102,16 @@ Set these environment variables for the API:
 | `UPSTASH_REDIS_REST_TOKEN` | Redis HTTP token; local Docker setup uses `local-redis-token` |
 | `WEB_APP_ORIGIN` | Frontend origin allowed by CORS, Better Auth, and CSRF protection, and used for OAuth callbacks, for example `http://localhost:3000` |
 | `BETTER_AUTH_COOKIE_DOMAIN` | Optional shared parent domain for frontend and API subdomains, for example `example.com`. Leave unset on localhost |
+| `STORAGE_ENDPOINT` | Server-side S3 origin. Use `http://localhost:4566` for host-run Floci or the account's HTTPS R2 S3 origin |
+| `STORAGE_SIGNING_ENDPOINT` | Optional browser-reachable S3 origin; defaults to `STORAGE_ENDPOINT`. Set `http://localhost:4566` when the server uses an internal Docker hostname |
+| `STORAGE_REGION` | `us-east-1` for local Floci; `auto` for R2 |
+| `STORAGE_BUCKET` | Existing private upload bucket; bucket bootstrap belongs to infrastructure setup |
+| `STORAGE_ACCESS_KEY_ID` | Server-only bucket-scoped access key; local Floci accepts `test` |
+| `STORAGE_SECRET_ACCESS_KEY` | Server-only bucket-scoped secret; local Floci accepts `test` |
+| `SQS_QUEUES_URLS` | JSON object of queue URLs with kebab-case keys; include `memories`, for example `{"memories":"http://localhost:4566/000000000000/memories"}` |
+| `AWS_REGION` | Shared AWS region; `us-east-1` for local Floci |
+| `SQS_ENDPOINT` | Optional local SQS origin, for example `http://localhost:4566`; omit in AWS |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Standard AWS SDK credentials; omit in AWS Lambda to use the execution role |
 
 In Google Cloud, register `http://localhost:3000/api/auth/callback/google` as an authorized
 redirect URI (replace the origin for other environments). The Next.js authentication proxy
@@ -111,7 +123,26 @@ pnpm --filter api prisma:migrate
 pnpm --filter api dev
 ```
 
-The API loads `apps/api/.env` through `dotenv` for both Prisma CLI commands and Nest startup. The build is split into `pnpm --filter api prisma:generate` and `pnpm --filter api build:app`; `pnpm --filter api build` runs both. Use `pnpm --filter api prisma:migrate:dev` to create or evolve migrations during local development, and `pnpm --filter api prisma:migrate` to apply existing migrations. Database migrations are never run during the container build.
+`@leonly/database` owns `packages/database/prisma/schema.prisma`, the existing migration history,
+and the shared generated Prisma client. The API-owned CLI config loads `apps/api/.env` and injects
+`DATABASE_URL` into the package's config factory; deployment-provided environment variables take
+precedence. The API constructs its own runtime client and connection
+pool through `PrismaService`. `@leonly/utils/storage` supplies reusable object operations,
+`@leonly/utils/queue` supplies SQS client creation and publishing, and `@leonly/utils/contracts`
+supplies shared event validation.
+
+`pnpm --filter api build` builds its workspace dependencies, including client generation, then
+runs `pnpm --filter api build:app`. Existing `prisma:generate`, `prisma:migrate:dev`, and
+`prisma:migrate` API commands use `@leonly/database`; migration commands select the API-owned config.
+Direct commands, `pnpm --filter @leonly/database <command>`, require an externally supplied
+`DATABASE_URL` for migrations. Database migrations are never run during container builds.
+
+Storage configuration is required at API startup and fails fast when incomplete. Signing uses the configured browser endpoint directly; never rewrite a signed hostname. Upload URLs last 600 seconds, attachment eligibility lasts 4,200 seconds, and finalization claims last 120 seconds. The bucket's browser CORS must allow the frontend's PUT requests with `Content-Type`.
+
+The upload and creation JSON contracts are in `openspec/changes/create-memory-upload-worker/contracts.md`. Matching creation retries return the existing result before checking consumed uploads. Originals are validated and promoted with destination-create-only writes; image events are persisted atomically. Creation awaits a bounded post-commit publication attempt and succeeds even when publication fails. The independent `apps/workers` Lambda generates variants; new reads and cleanup remain deferred.
+
+Recovery of unpublished outbox events is deferred. No replay command or scheduled publisher
+exists; a commit-before-send interruption or queue outage can leave image variants pending.
 
 When the API runs on the host, use:
 

@@ -49,6 +49,16 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["packages/database/src/connection.ts"],
+      "linter": {
+        "rules": {
+          "complexity": { "noStaticOnlyClass": "off" }
+        }
+      }
+    }
+  ],
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "javascript": {
     "formatter": {

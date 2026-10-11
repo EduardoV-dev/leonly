@@ -9,15 +9,43 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./logger": {
+      "types": "./dist/logger/index.d.ts",
+      "default": "./dist/logger/index.js"
+    },
     "./invite-code": {
-      "types": "./dist/invite-code.d.ts",
-      "default": "./dist/invite-code.js"
+      "types": "./dist/invite-code/index.d.ts",
+      "default": "./dist/invite-code/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contracts/index.js"
+    },
+    "./queue": {
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "default": "./dist/storage/index.js"
     }
   },
   "typesVersions": {
     "*": {
+      "logger": [
+        "dist/logger/index.d.ts"
+      ],
       "invite-code": [
-        "dist/invite-code.d.ts"
+        "dist/invite-code/index.d.ts"
+      ],
+      "contracts": [
+        "dist/contracts/index.d.ts"
+      ],
+      "queue": [
+        "dist/queue/index.d.ts"
+      ],
+      "storage": [
+        "dist/storage/index.d.ts"
       ]
     }
   },
@@ -25,13 +53,21 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "pnpm exec biome check .",
     "test:run": "vitest run"
   },
   "dependencies": {
-    "cockatiel": "^3.2.1"
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@aws-sdk/client-sqs": "^3.1149.0",
+    "@aws-sdk/s3-request-presigner": "^3.1149.0",
+    "cockatiel": "^3.2.1",
+    "pino": "^10.1.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@types/node": "^22.20.4",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
   }

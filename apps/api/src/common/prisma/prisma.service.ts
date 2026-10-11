@@ -1,6 +1,6 @@
+import { PrismaConnection } from "@leonly/database";
+import { type Prisma, PrismaClient } from "@leonly/database/client";
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { type Prisma, PrismaClient } from "../../generated/prisma/client";
 import { ENVIRONMENT_VARIABLES } from "../config/environment-variables.config";
 
 @Injectable()
@@ -17,7 +17,7 @@ export class PrismaService
 
     const isDevelopment = ENVIRONMENT_VARIABLES.NODE_ENV === "development";
     super({
-      adapter: new PrismaPg({ connectionString }),
+      adapter: PrismaConnection.createAdapter({ connectionString }),
       log: isDevelopment ? [{ emit: "event", level: "query" }] : [],
     });
 

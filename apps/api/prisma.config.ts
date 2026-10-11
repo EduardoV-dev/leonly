@@ -1,9 +1,7 @@
+import { resolve } from "node:path";
 import { config } from "dotenv";
-import { defineConfig } from "prisma/config";
+import { createPrismaConfig } from "../../packages/database/prisma-config";
 
-config();
+config({ path: resolve(__dirname, ".env") });
 
-export default defineConfig({
-  schema: "prisma/schema.prisma",
-  datasource: { url: process.env.DATABASE_URL },
-});
+export default createPrismaConfig(process.env.DATABASE_URL);

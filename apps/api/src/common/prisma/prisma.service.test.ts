@@ -1,5 +1,5 @@
+import { PrismaConnection } from "@leonly/database";
 import { Logger } from "@nestjs/common";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { connect, disconnect, clientConstructor, onQuery } = vi.hoisted(() => ({
@@ -9,8 +9,10 @@ const { connect, disconnect, clientConstructor, onQuery } = vi.hoisted(() => ({
   onQuery: vi.fn(),
 }));
 
-vi.mock("@prisma/adapter-pg", () => ({ PrismaPg: vi.fn() }));
-vi.mock("../../generated/prisma/client", () => ({
+vi.mock("@leonly/database", () => ({
+  PrismaConnection: { createAdapter: vi.fn(() => ({})) },
+}));
+vi.mock("@leonly/database/client", () => ({
   PrismaClient: class {
     constructor(options: unknown) {
       clientConstructor(options);
@@ -40,14 +42,16 @@ describe("PrismaService", () => {
     delete process.env.DATABASE_URL;
     const { PrismaService } = await import("./prisma.service");
     expect(() => new PrismaService()).toThrow("DATABASE_URL is required");
-    expect(PrismaPg).not.toHaveBeenCalled();
+    expect(PrismaConnection.createAdapter).not.toHaveBeenCalled();
   });
 
   it("connects and disconnects through the Nest lifecycle", async () => {
     process.env.DATABASE_URL = "postgresql://localhost/auth";
     const { PrismaService } = await import("./prisma.service");
     const service = new PrismaService();
-    expect(PrismaPg).toHaveBeenCalledWith({ connectionString: process.env.DATABASE_URL });
+    expect(PrismaConnection.createAdapter).toHaveBeenCalledWith({
+      connectionString: process.env.DATABASE_URL,
+    });
     expect(clientConstructor).toHaveBeenCalledWith({ adapter: expect.anything(), log: [] });
     await service.onModuleInit();
     await service.onModuleDestroy();

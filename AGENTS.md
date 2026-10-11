@@ -5,13 +5,15 @@ Guidance for agentic coding agents working in this repository.
 - Monorepo uses `pnpm` workspaces + Turborepo.
 - Main app: `apps/web-app` (Next.js 16 + React 19 + TypeScript + Vitest).
 - Task graph: `turbo.json`.
+- Shared packages: `packages/database` and `packages/utils`.
+- Prisma schema, migrations, and generated client belong to `packages/database`; apps construct their own runtime clients.
 - Lint/format: Biome (`biome.json`).
 - Git hooks: Husky (`.husky/`).
 
 ## Environment
 - Node.js 22+ (CI uses 22).
 - Package manager: `pnpm@9.12.0`.
-- Workspaces: `apps/*` in `pnpm-workspace.yaml`.
+- Workspaces: `apps/*` and `packages/*` in `pnpm-workspace.yaml`.
 - `.npmrc` has `ignore-scripts=true`.
 - Since install scripts blocked, run once per clone if hooks needed:
 
@@ -26,6 +28,10 @@ pnpm exec husky install
 - `biome.json`
 - `tsconfig.base.json`
 - `apps/api/package.json`
+- `apps/workers/package.json`
+- `packages/database/package.json`
+- `packages/database/prisma/schema.prisma`
+- `packages/utils/package.json`
 - `apps/web-app/package.json`
 - `apps/web-app/next.config.ts`
 - `apps/web-app/vitest.config.ts`
@@ -88,11 +94,28 @@ Web app CI (`.github/workflows/web-app-verify.yml`) requires:
 3. `pnpm --filter web-app test:run`
 4. `pnpm --filter web-app build`
 
-API CI (`.github/workflows/api-verify.yml`) requires:
-1. `pnpm --filter api check`
-2. `pnpm --filter api typecheck`
-3. `pnpm --filter api test:run`
-4. `pnpm --filter api build`
+Backend CI (`.github/workflows/api-verify.yml`) requires these gates for API, workers, and their workspace dependencies:
+1. `pnpm --filter 'api...' --filter 'workers...' check`
+2. `pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 typecheck`
+3. `pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 test:run`
+4. `pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 build`
+
+API and worker scripts build their workspace dependencies before compilation/tests. Prisma schema,
+migrations, CLI configuration, and generated client belong to `packages/database`. Its single
+generator targets `packages/database/src/generated/prisma`. Each application constructs its own
+runtime Prisma client and selects its own pool limits through `PrismaConnection.createAdapter`.
+Database CLI commands use the caller's `DATABASE_URL`; API migration aliases load `apps/api/.env`
+through an API-owned config. API and worker generation aliases forward to the package.
+Run backend gates one at a time. Shared client generation writes one directory, so workspace
+gates and root Turbo build/test/typecheck commands serialize application preparation.
+Queue, storage, and contracts modules in `packages/utils` are framework-agnostic. Keep upload authorization, outbox
+bookkeeping, image processing, and cleanup decisions in their owning applications. Worker entry
+points live under `src/functions/<function-name>`; image-generation services live under `src/services/image`.
+Keep test fixtures local to the owning application; do not import another application's test helpers.
+
+`packages/utils/src` contains only `index.ts` and module folders with collocated tests.
+Use explicit subpaths such as `@leonly/utils/storage`, `@leonly/utils/queue`, and
+`@leonly/utils/contracts`; keep backend modules out of the browser-safe root entry point.
 
 Local hooks:
 - Pre-commit (`.husky/pre-commit`)
@@ -165,8 +188,9 @@ Follow existing patterns first. Keep edits minimal and local.
 - Framework stack: Vitest + Testing Library + `@testing-library/jest-dom`.
 - Test environment: `jsdom` configured in `apps/web-app/vitest.config.ts`.
 - Setup file: `apps/web-app/vitest.setup.ts`.
-- Do not add database integration tests or database test suites. Cover application behavior through the web
-  test suite instead.
+- Do not add database integration tests or database test suites. Cover application behavior through the
+  app that owns it: API tests in `apps/api`, worker tests in `apps/workers`, and frontend tests in
+  `apps/web-app`. Collocate tests with the code they exercise and mock external boundaries.
 - Prefer accessible queries (`getByRole` + name) over brittle selectors.
 - Keep tests deterministic; mock timers/network when needed.
 
