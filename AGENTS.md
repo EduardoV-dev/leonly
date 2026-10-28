@@ -23,7 +23,10 @@ pnpm exec husky install
 
 ## Important Files
 - `package.json`
-- `.agents/skills/code-style-review/references/code-style.md`
+- `.agents/skills/ev-code-review/SKILL.md`
+- `.agents/skills/ev-code-review/references/general.md`
+- `.agents/skills/ev-code-review/references/frontend.md`
+- `.agents/skills/ev-code-review/references/backend.md`
 - `turbo.json`
 - `biome.json`
 - `tsconfig.base.json`
@@ -132,14 +135,17 @@ pnpm exec biome check --write
 Targets: `*.{js,jsx,ts,tsx,cjs,mjs,json}`.
 
 ## Code Style Guidelines
-Read `.agents/skills/code-style-review/references/code-style.md` before writing or refactoring code.
-Its architecture, naming, file-size, component-structure, testability, and collocation rules are
-mandatory for every change.
+Read `.agents/skills/ev-code-review/references/general.md` before writing or refactoring code.
+Also read `frontend.md` for UI/browser work and `backend.md` for server/data/infrastructure work
+from the same directory; mixed changes require both. These rules are mandatory for every change.
+Apply the installed technology companions identified by `.agents/skills/ev-code-review/SKILL.md`
+when relevant.
 
 Follow existing patterns first. Keep edits minimal and local.
 
 ### Code Review Skill
-- For code reviews, load `.agents/skills/code-style-review/SKILL.md` and its bundled rules.
+- For code reviews, load `.agents/skills/ev-code-review/SKILL.md` and its applicable references
+  and installed technology companions.
 - When review scope is unspecified, review staged, unstaged, and untracked non-ignored Git working-tree changes.
 
 ### Frontend Design
@@ -222,12 +228,3 @@ Searched for repository rule files:
 
 Status: none found in this repository.
 If added later, treat as highest-priority local instructions and update this file.
-
-<!-- antislop:start -->
-## antislop
-For UI, copy, people, mobile layout, or code comments work, load the antislop skill for the task:
-- Core filter, always on: `antislop`
-- Code comments: `antislop-code`
-- People: `antislop-human`
-Before starting, ask the user when antislop applies: during the work, or after it is done.
-<!-- antislop:end -->
