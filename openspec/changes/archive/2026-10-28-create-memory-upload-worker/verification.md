@@ -215,8 +215,12 @@ follow-up work.
   modified memory specs; it reports no structural spec errors.
 - Backend workspace check, serialized typecheck, serialized tests, and serialized
   build passed. The API suite passed 266 tests and the worker suite passed 19.
-- Web Biome check passed across 455 files. Commit/push hooks enforce web
-  typechecking, the full web test suite, and the production build at delivery.
+- Web Biome check passed across 455 files. Explicit web typechecking, the full
+  test suite (100 files, 589 tests with `--maxWorkers=2 --minWorkers=1`), and the
+  production build passed. Git hooks are not configured in this checkout, so
+  these gates were run directly rather than relying on commit/push hooks.
+- The local deploy script passed Biome and Node's strip-types syntax check;
+  deployment-command tests remain removed as previously requested.
 - Terraform recursive formatting and validation of staging, local Floci, and
   the shared image queue module passed. No infrastructure was applied and no
   live provider or persisted-flow probe was rerun during archive reconciliation.
