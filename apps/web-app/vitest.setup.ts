@@ -10,11 +10,16 @@ vi.mock("next/image", () => ({
     src,
     unoptimized: _unoptimized,
     ...props
-  }: ImageProps) =>
-    createElement("img", {
+  }: ImageProps) => {
+    let imageSource = src;
+    if (typeof imageSource !== "string") {
+      imageSource = "src" in imageSource ? imageSource.src : imageSource.default.src;
+    }
+    return createElement("img", {
       ...props,
-      src: typeof src === "string" ? src : "src" in src ? src.src : src.default.src,
-    }),
+      src: imageSource,
+    });
+  },
 }));
 
 class IntersectionObserverMock {

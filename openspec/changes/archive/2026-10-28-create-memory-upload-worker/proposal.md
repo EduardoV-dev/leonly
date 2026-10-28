@@ -8,16 +8,16 @@ Memory creation currently finalizes photos and generates variants in the Next.js
 - Add NestJS `POST /api/memories` accepting JSON details and uploaded file IDs. Promote staging objects to server-only final keys and validate the final copies.
 - Persist memory creation idempotency in PostgreSQL using `idempotency_key`, `creation_request_hash`, and a user/space-scoped unique constraint. Redis is not part of creation idempotency.
 - Atomically persist memories, attached assets, original/variant metadata, consumed uploads, and one image-generation outbox event per image.
-- Attempt SQS publication after commit and provide manual replay of unpublished events. Generate variants in an independently deployed SQS-triggered Lambda.
+- Attempt bounded SQS publication after commit and retain unpublished events for future recovery. Generate variants in an independently deployed SQS-triggered Lambda.
 - **BREAKING**: The new creation contract replaces memory-specific upload grants and synchronous variant generation. No legacy request compatibility, backfill, or dual writes are required.
-- Defer memory reads, frontend original fallback, edit/comment/reaction migration, automatic outbox publication, and all cleanup mechanisms. Do not configure R2 lifecycle rules.
+- Defer memory reads, frontend original fallback, edit/comment/reaction migration, the operator replay CLI, automatic outbox publication, and all cleanup mechanisms. Do not configure R2 lifecycle rules. Live R2 compatibility checks remain a pre-deployment follow-up rather than an archive prerequisite for this locally verified slice.
 
 ## Capabilities
 
 ### New Capabilities
 
 - `file-upload-lifecycle`: Authorized, purpose-specific upload issuance, durable staging/final tracking, and recoverable promotion without memory-domain staging rows.
-- `transactional-outbox`: Atomic event persistence, post-commit publication bookkeeping, and duplicate-safe manual replay.
+- `transactional-outbox`: Atomic event persistence, bounded post-commit publication bookkeeping, and stable identities for future recovery.
 - `memory-image-generation`: Versioned, retry-safe image processing through SQS and Lambda, with independent variant readiness.
 
 ### Modified Capabilities
@@ -27,7 +27,7 @@ Memory creation currently finalizes photos and generates variants in the Next.js
 
 ## Impact
 
-- `apps/api`: Files/memories modules, Prisma models and migrations, authorization, storage client, outbox publication, and operator replay command.
+- `apps/api`: Files/memories modules, Prisma models and migrations, authorization, storage client, and outbox publication; no operator replay command.
 - `apps/web-app`: Creation submission plumbing and behavioral tests; no new read endpoints or original-fallback implementation.
 - A worker workspace for the image Lambda, shared event contracts where actually reused, and deployment configuration for private R2, SQS, DLQ, and Lambda.
 - Local Floci S3/SQS configuration and a runnable local worker path; provider-specific final-copy semantics require verification against R2 and Floci.

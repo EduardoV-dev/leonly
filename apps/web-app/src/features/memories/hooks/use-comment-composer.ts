@@ -34,8 +34,9 @@ export function cropCommentDraft(draft: string): string {
 export function getCommentDraftState(draft: string): CommentDraftState {
   const count = Array.from(draft).length;
   const trimmedCount = Array.from(draft.trim()).length;
-  const error =
-    trimmedCount === 0 ? "required" : trimmedCount > MAX_COMMENT_LENGTH ? "overLimit" : null;
+  let error: CommentDraftState["error"] = null;
+  if (trimmedCount > MAX_COMMENT_LENGTH) error = "overLimit";
+  if (trimmedCount === 0) error = "required";
 
   return {
     count,

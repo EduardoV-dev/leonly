@@ -4,6 +4,10 @@ services:
     user: "0:0"
     environment:
       FLOCI_SERVICES_LAMBDA_DOCKER_NETWORK: api_default
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+      FLOCI_SERVICES_ECR_URI_STYLE: path
+      FLOCI_SERVICES_ECR_PREFER_LOCAL_IMAGES: "true"
     ports:
       - "4566:4566"
     volumes:

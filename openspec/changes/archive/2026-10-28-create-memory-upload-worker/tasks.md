@@ -2,9 +2,9 @@
 
 - [x] 1.1 Map current API authorization, response envelopes, Prisma identity types, workspace/deployment conventions, and creation-client boundaries; preserve existing users/spaces and keep reads outside this change.
 - [x] 1.2 Define upload/create JSON contracts and version-1 image event contract with schema version distinct from recipe version; document the 10-minute URL lifetime and choose the independent attachment deadline plus lease durations.
-- [ ] 1.3 Verify first-write-wins promotion using the same bounded staging GET and destination PUT with `If-None-Match: *` on R2 and Floci, including simultaneous writes and reuse of an existing destination; vary configuration only and do not use HEAD plus unconditional copy/PUT as a fallback.
+- [x] 1.3 Record local first-write-wins promotion evidence using bounded staging GET and destination PUT with `If-None-Match: *`, including simultaneous writes and existing-destination reuse; retain the same implementation for R2 and defer live R2 verification to the pre-deployment follow-up.
 
-Live R2 verification is deferred with user approval, including implementation of sections 3 and 4. Local Floci evidence is recorded in `provider-feasibility.md`; task 1.3 remains incomplete until live R2 checks run.
+Live R2 verification is deferred with user approval. The 2026-10-28 archive reconciliation closes this task for the locally verified scope; it does not claim live R2 results. Local Floci evidence and the outstanding provider checks are recorded in `provider-feasibility.md`.
 
 ## 2. Persistence and integrity
 
@@ -27,12 +27,12 @@ Live R2 verification is deferred with user approval, including implementation of
 - [x] 4.4 Handle concurrent insertion/consumption conflicts with transaction rollback followed by winner lookup or retryable in-progress outcomes; include no-image creation and no Redis dependency.
 - [x] 4.5 Cover lost-response recovery, changed hash, concurrent requests, cross-user/space uploads, cover/order integrity, staging replacement, crash-after-copy recovery, stale leases, and atomic rollback through behavior-first web tests with controlled dependency failures.
 
-## 5. Publication and manual replay
+## 5. Publication and durable recovery state
 
 - [x] 5.1 Implement the shared bounded outbox-to-SQS send path with stable event envelopes, per-event attempts/errors, publication only after commit, and `published_at` only after acknowledgment.
 - [x] 5.2 Wire immediate publication into creation without turning send/bookkeeping failures into failed committed creation, including mixed per-image publication outcomes.
-- [x] 5.3 Add an operator-only bounded unpublished-event replay command with ID/limit selection; do not add a scheduled publisher or automatic reconciliation.
-- [x] 5.4 Cover rollback-without-send, failed send with successful creation, partial publication, acceptance-before-bookkeeping failure, and repeated manual replay through behavioral checks.
+- [x] 5.3 Retain bounded unpublished-event selection in the shared publisher and document that the operator replay CLI was removed at the user's request; defer both operator tooling and automatic reconciliation.
+- [x] 5.4 Cover rollback-without-send, failed send with successful creation, partial publication, acceptance-before-bookkeeping failure, and repeated bounded publisher invocation through behavioral checks.
 
 ## 6. Image Lambda
 
@@ -43,20 +43,21 @@ Live R2 verification is deferred with user approval, including implementation of
 
 ## 7. Infrastructure and local execution
 
-- [ ] 7.1 Configure the private R2 bucket and permitted browser CORS, standard SQS queue/DLQ, Lambda event-source mapping with partial batch responses, least-privilege access/secrets, and compatible Sharp runtime packaging; add no R2 lifecycle rules or cleanup infrastructure.
-- [ ] 7.2 Select and document bounded Lambda memory/time/concurrency, visibility timeout, batch size, and redrive settings from measured processing behavior and deployment conventions.
-- [ ] 7.3 Add Floci S3/SQS startup/bootstrap configuration and a local runner invoking the same processing function; verify Lambda emulation explicitly if using it instead of the runner.
+- [x] 7.1 Configure the private R2 bucket and permitted browser CORS, standard SQS queue/DLQ, Lambda event-source mapping with partial batch responses, least-privilege access/secrets, and compatible Sharp runtime packaging; add no R2 lifecycle rules or cleanup infrastructure.
+- [x] 7.2 Select and document bounded Lambda memory/time/concurrency, visibility timeout, batch size, and redrive settings from measured processing behavior and deployment conventions.
+- [x] 7.3 Add Floci S3/SQS startup/bootstrap configuration, ECR image publication, and automatic Lambda event-source execution; verify image processing, duplicate delivery, and restart persistence without a manual queue runner.
+- [x] 7.4 Add a single-command local worker image rebuild/deploy without ECR publication, preserving Terraform settings and excluding API Lambda updates; verify failure handling and automatic processing with the locally built image.
 
 ## 8. Creation-client integration
 
-- [ ] 8.1 Apply relevant frontend/local instructions before editing the creation hook; replace create-only memory-grant submission with batch upload issuance, direct PUTs, and JSON creation using existing authenticated API plumbing.
-- [ ] 8.2 Preserve input/prepared upload IDs/key for unchanged retries, assign a new key for changed input, handle in-progress and field errors, and report committed success without waiting for variants; do not implement new reads or original fallback.
-- [ ] 8.3 Cover direct upload sequencing, partial upload recovery, uncertain creation response, changed input, single-flight behavior, and success with pending variants in the existing web test suite.
+- [x] 8.1 Apply relevant frontend/local instructions before editing the creation hook; replace create-only memory-grant submission with batch upload issuance, direct PUTs, and JSON creation using existing authenticated API plumbing.
+- [x] 8.2 Preserve input/prepared upload IDs/key for unchanged retries, assign a new key for changed input, handle in-progress and field errors, and report committed success without waiting for variants; do not implement new reads or original fallback.
+- [x] 8.3 Cover direct upload sequencing, partial upload recovery, uncertain creation response, changed input, single-flight behavior, and success with pending variants in the existing web test suite.
 
 ## 9. Verification and handoff
 
-- [ ] 9.1 Exercise local issuance → PUT → immutable promotion → creation → SQS → worker → ready variants, inspect persisted outcomes, and repeat a creation and worker delivery to verify stable identities; do not claim timeline rendering.
-- [ ] 9.2 Record provider compatibility evidence for R2/Floci signing, browser CORS, destination-copy conditions, and finalized-byte validation; document the operator replay invocation and accepted publication gap.
-- [ ] 9.3 Run `pnpm --filter api check`, `pnpm --filter api typecheck`, `pnpm --filter api test:run`, and `pnpm --filter api build`; run equivalent worker checks once its scripts exist.
-- [ ] 9.4 Run `pnpm --filter web-app check`, `pnpm --filter web-app typecheck`, `pnpm --filter web-app test:run`, and `pnpm --filter web-app build`; keep behavioral tests out of database integration suites.
-- [ ] 9.5 Document deployment/rollback ordering, no legacy data compatibility, deferred reads/fallback/publisher, and retained staging/unconsumed final objects with no cleanup guarantee; verify no lifecycle rules, cleanup tasks, or deletion events shipped accidentally.
+- [x] 9.1 Exercise local issuance → PUT → immutable promotion → creation → SQS → worker → ready variants, inspect persisted outcomes, and repeat a creation and worker delivery to verify stable identities; do not claim timeline rendering.
+- [x] 9.2 Record Floci signing, HTTP CORS preflight, conditional PUT/reuse, and finalized-byte evidence; identify unverified live R2/browser behavior and document the accepted publication gap with no operator replay invocation.
+- [x] 9.3 Run `pnpm --filter api check`, `pnpm --filter api typecheck`, `pnpm --filter api test:run`, and `pnpm --filter api build`; run equivalent worker checks once its scripts exist.
+- [x] 9.4 Run `pnpm --filter web-app check`, `pnpm --filter web-app typecheck`, `pnpm --filter web-app test:run`, and `pnpm --filter web-app build`; keep behavioral tests out of database integration suites.
+- [x] 9.5 Document deployment/rollback ordering, no legacy data compatibility, deferred reads/fallback/replay CLI/publisher, and retained staging/unconsumed final objects with no cleanup guarantee; inspect the delivered infrastructure and event contract for accidental lifecycle rules, cleanup tasks, or deletion events.

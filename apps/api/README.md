@@ -139,7 +139,7 @@ Direct commands, `pnpm --filter @leonly/database <command>`, require an external
 
 Storage configuration is required at API startup and fails fast when incomplete. Signing uses the configured browser endpoint directly; never rewrite a signed hostname. Upload URLs last 600 seconds, attachment eligibility lasts 4,200 seconds, and finalization claims last 120 seconds. The bucket's browser CORS must allow the frontend's PUT requests with `Content-Type`.
 
-The upload and creation JSON contracts are in `openspec/changes/create-memory-upload-worker/contracts.md`. Matching creation retries return the existing result before checking consumed uploads. Originals are validated and promoted with destination-create-only writes; image events are persisted atomically. Creation awaits a bounded post-commit publication attempt and succeeds even when publication fails. The independent `apps/workers` Lambda generates variants; new reads and cleanup remain deferred.
+The upload and creation JSON contracts are in `openspec/changes/archive/2026-10-28-create-memory-upload-worker/contracts.md`. Matching creation retries return the existing result before checking consumed uploads. Originals are validated and promoted with destination-create-only writes; image events are persisted atomically. Creation awaits a bounded post-commit publication attempt and succeeds even when publication fails. The independent `apps/workers` Lambda generates variants; new reads and cleanup remain deferred.
 
 Recovery of unpublished outbox events is deferred. No replay command or scheduled publisher
 exists; a commit-before-send interruption or queue outage can leave image variants pending.

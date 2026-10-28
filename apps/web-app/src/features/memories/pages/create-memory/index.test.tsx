@@ -14,8 +14,14 @@ function renderCreateMemoryPage() {
 }
 
 const pushMock = vi.hoisted(() => vi.fn());
+const postMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
+vi.mock("@/lib/axios/api", () => ({ api: { post: postMock } }));
+
+function createMemoryResponse(visibility: "timeline" | "vault" = "timeline") {
+  return { data: { ok: true, data: { id: "memory-id", visibility }, error: [], message: "Saved" } };
+}
 
 vi.mock("@/components/past-date-picker", () => ({
   PastDatePicker: ({
@@ -34,6 +40,7 @@ vi.mock("@/components/past-date-picker", () => ({
 describe("CreateMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
+    postMock.mockReset();
     window.sessionStorage.clear();
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
@@ -57,15 +64,13 @@ describe("CreateMemoryPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("submits only once while the creation request is pending", async () => {
-    let resolveRequest: (response: Response) => void = () => {};
-    vi.mocked(fetch)
-      .mockImplementationOnce(
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveRequest = resolve;
-          }),
-      )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
+    let resolveRequest = () => {};
+    postMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRequest = () => resolve(createMemoryResponse());
+        }),
+    );
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
@@ -78,20 +83,15 @@ describe("CreateMemoryPage", () => {
     fireEvent.submit(form);
     fireEvent.submit(form);
 
-    expect(fetch).toHaveBeenCalledTimes(1);
-    resolveRequest(
-      new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
-    );
+    expect(postMock).toHaveBeenCalledTimes(1);
+    resolveRequest();
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/timeline"));
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(postMock).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("keeps valid input and navigates to the timeline after a success", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
-      )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
+    postMock.mockResolvedValueOnce(createMemoryResponse());
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our picnic" } });
@@ -108,11 +108,7 @@ describe("CreateMemoryPage", () => {
   });
 
   it("navigates to the new Vault detail after preserving a Vault memory", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ grant: "signed-grant", uploads: [] }), { status: 200 }),
-      )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "memory-id" }), { status: 201 }));
+    postMock.mockResolvedValueOnce(createMemoryResponse("vault"));
     renderCreateMemoryPage();
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Our hidden picnic" } });
@@ -129,16 +125,17 @@ describe("CreateMemoryPage", () => {
   });
 
   it("submits through application validation instead of browser validation", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          code: "validation_failed",
-          error: "Please review the highlighted fields.",
-          fields: { memoryDate: "Choose a valid date.", title: "Required." },
-        }),
-        { status: 400 },
-      ),
-    );
+    postMock.mockResolvedValue({
+      data: {
+        ok: false,
+        data: null,
+        error: [
+          { code: "VALIDATION_ERROR", field: "memoryDate", message: "Choose a valid date." },
+          { code: "VALIDATION_ERROR", field: "title", message: "Required." },
+        ],
+        message: "Please review the highlighted fields.",
+      },
+    });
     renderCreateMemoryPage();
 
     const preserveButton = screen.getByRole("button", { name: "Preserve Memory" });
@@ -146,7 +143,7 @@ describe("CreateMemoryPage", () => {
     fireEvent.click(preserveButton);
 
     expect(await screen.findAllByText("Please review the highlighted fields.")).toHaveLength(2);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(postMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps a visible route back to the timeline", () => {

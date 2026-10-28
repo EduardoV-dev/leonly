@@ -1,6 +1,6 @@
 ## Purpose
 
-Persist downstream work atomically with business creation, preserving stable event identity and publication evidence while allowing manual recovery of unsent events.
+Persist downstream work atomically with business creation, preserving stable event identity and publication evidence for future recovery of unsent events.
 
 ## ADDED Requirements
 
@@ -26,20 +26,20 @@ The system SHALL attempt publication only after successful commit, preserve the 
 
 #### Scenario: Only some image events publish
 - **WHEN** a memory's events have mixed publication outcomes
-- **THEN** successful acknowledgments are tracked individually and unsent events remain replayable
+- **THEN** successful acknowledgments are tracked individually and unsent events remain durable for future recovery
 
 #### Scenario: Broker accepts before bookkeeping fails
 - **WHEN** SQS accepts an event but publication bookkeeping fails or the process crashes
-- **THEN** replay can publish the same event ID again without requiring a new memory or new event
+- **THEN** the event retains its identity for a later publication attempt without requiring a new memory or new event, and the worker tolerates duplicate delivery
 
-### Requirement: Bounded manual replay and intentional reconciliation gap
+### Requirement: Durable unpublished events and intentional reconciliation gap
 
-The system SHALL provide operator-only bounded replay of unpublished events using their existing identities and publication contract. Automatic outbox reconciliation SHALL remain deferred. Aggregate grouping MUST NOT be represented as a guarantee of strict queue ordering.
+The system SHALL retain unpublished events with their existing identities and publication contract. The shared publishing function SHALL bound event selection and preserve per-event outcomes on repeated invocation. An operator replay CLI and automatic outbox reconciliation SHALL remain deferred; this delivery MUST NOT claim a supported operator invocation or guaranteed eventual publication. Aggregate grouping MUST NOT be represented as a guarantee of strict queue ordering.
 
-#### Scenario: Operator retries unpublished work
-- **WHEN** an operator selects unpublished events for replay
-- **THEN** the system sends existing events and updates per-event publication outcomes without creating duplicate business records
+#### Scenario: Publishing function is invoked repeatedly
+- **WHEN** the shared publishing function receives a bounded selection of unpublished events
+- **THEN** it uses existing event identities and updates per-event outcomes without creating duplicate business records
 
 #### Scenario: Process stops before sending
 - **WHEN** creation commits but publication never occurs
-- **THEN** the event remains durable for manual replay and no automatic-publication guarantee is claimed
+- **THEN** the event remains durable for a future recovery mechanism and variants may remain pending indefinitely because neither an operator CLI nor an automatic-publication guarantee ships

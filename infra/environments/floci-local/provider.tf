@@ -5,9 +5,14 @@ provider "aws" {
   skip_requesting_account_id  = true
 
   endpoints {
-    apigatewayv2 = "http://localhost:4566"
-    ecr          = "http://localhost:4566"
-    iam          = "http://localhost:4566"
-    lambda       = "http://localhost:4566"
+    apigatewayv2   = "http://localhost:4566"
+    ecr            = "http://localhost:4566"
+    iam            = "http://localhost:4566"
+    lambda         = "http://localhost:4566"
+    cloudwatchlogs = "http://localhost:4566"
+    s3             = "http://localhost:4566"
+    sqs            = "http://localhost:4566"
   }
+
+  s3_use_path_style = true
 }

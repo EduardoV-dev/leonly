@@ -65,6 +65,7 @@ export const memoriesEn = {
       photoSize: "Each photo must be {{size}} MB or smaller.",
       photoType: "Photos must be JPEG, PNG, or WebP images.",
       saveFailed: "We could not save this memory. Please try again.",
+      inProgress: "This memory is still being saved. Try again without changing the details.",
       serverInvalid: "Please review the highlighted fields.",
     },
   },

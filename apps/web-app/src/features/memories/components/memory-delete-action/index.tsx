@@ -49,16 +49,14 @@ export function MemoryDeleteAction({
     event.preventDefault();
     deletion.remove();
   };
-  const statusMessage =
-    deletion.status === "pending"
-      ? t("detail.delete.pending")
-      : deletion.status === "conflict"
-        ? t("detail.delete.conflict")
-        : deletion.status === "unavailable"
-          ? t("detail.delete.unavailable")
-          : deletion.status === "failed"
-            ? t("detail.delete.failed")
-            : "";
+  let statusMessage = "";
+  if (deletion.status === "pending") statusMessage = t("detail.delete.pending");
+  if (deletion.status === "conflict") statusMessage = t("detail.delete.conflict");
+  if (deletion.status === "unavailable") statusMessage = t("detail.delete.unavailable");
+  if (deletion.status === "failed") statusMessage = t("detail.delete.failed");
+  let confirmLabel = t("detail.delete.confirm");
+  if (deletion.isPending) confirmLabel = t("detail.delete.deleting");
+  if (deletion.status === "failed") confirmLabel = t("detail.delete.retry");
 
   return (
     <div className={styles.action}>
@@ -102,11 +100,7 @@ export function MemoryDeleteAction({
               disabled={deletion.isPending}
               onClick={handleConfirm}
             >
-              {deletion.status === "failed"
-                ? t("detail.delete.retry")
-                : deletion.isPending
-                  ? t("detail.delete.deleting")
-                  : t("detail.delete.confirm")}
+              {confirmLabel}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

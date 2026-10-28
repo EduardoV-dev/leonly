@@ -30,6 +30,16 @@ The system SHALL persist each memory with a UUID identifier, exactly one UUID ow
 
 New creation photo objects SHALL reside in a private Cloudflare R2 bucket. Staging keys SHALL use `staging/memories/{spaceId}/{uploadId}/original`; final originals and variants SHALL use `memories/{spaceId}/{uploadId}/...`. Upload capability MUST be authorized by authenticated available membership and limited to its staging key. Final writes MUST remain server-controlled and actual final bytes MUST be validated before attachment. Every intended final copy SHALL be durably attributed to an upload record before copying. Public access and client-side storage credentials MUST NOT be available. New read/download endpoints, storage cleanup, and R2 lifecycle rules SHALL be deferred.
 
+Existing Supabase-backed readers SHALL retain their available-memory membership authorization. These legacy read guarantees MUST NOT imply R2 read support for newly created PostgreSQL memories.
+
+#### Scenario: Available member reads a cover object
+- **WHEN** an available member reads a legacy cover through the existing storage reader
+- **THEN** that reader authorizes only the object belonging to an available memory in the member's available space
+
+#### Scenario: Object belongs to an unavailable or other-space memory
+- **WHEN** an existing reader receives a request for an object belonging to a deleted, unauthorized, or other-space memory
+- **THEN** it returns no authorized object and exposes no parent-memory metadata
+
 #### Scenario: Creation stages a prospective object
 - **WHEN** an authenticated available member obtains a staging upload capability
 - **THEN** it targets only the authorized staging key and an upload record exists before the client uploads
@@ -45,6 +55,10 @@ New creation photo objects SHALL reside in a private Cloudflare R2 bucket. Stagi
 ### Requirement: Use UUID identifiers at application boundaries
 
 The system SHALL use UUID identifiers for spaces, memberships, file uploads, memories, memory assets, object metadata, and outbox events. User references MUST retain the existing API authentication identity type rather than introduce a new user identity mapping for creation. Generic outbox aggregate IDs SHALL be capable of representing non-UUID identifiers. Supabase RPC identifier contracts SHALL NOT govern the new API creation endpoints.
+
+#### Scenario: RPC receives a memory identifier
+- **WHEN** an unchanged legacy memory reader calls a Supabase lookup RPC
+- **THEN** that RPC continues to accept and return UUID-string memory identifiers without imposing its user identity contract on the new API
 
 #### Scenario: API receives memory-domain identifiers
 - **WHEN** upload or memory creation receives upload, cover, or idempotency identifiers

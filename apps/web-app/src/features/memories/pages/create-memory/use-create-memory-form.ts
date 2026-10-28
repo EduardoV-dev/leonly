@@ -21,11 +21,10 @@ import {
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
 import {
-  type PreparedMemoryUpload,
-  uploadStagedMemoryPhotos,
-} from "../../utils/upload-staged-memory-photos";
-
-type CreateMemoryResponse = { code?: string; fields?: Record<string, string>; id?: string };
+  MemoryCreationRequestError,
+  type PreparedCreationUpload,
+  submitMemoryCreation,
+} from "./create-memory-request";
 
 const initialValues: MemoryEditorValues = {
   description: "",
@@ -46,37 +45,14 @@ function hasAcceptedPhotoExtension(photo: File): boolean {
   );
 }
 
-function createFormData(
-  values: MemoryEditorValues,
-  photos: MemoryEditorPhoto[],
-  coverPhotoKey: string | null,
-  mutationId: string,
-): FormData {
-  const formData = new FormData();
-  formData.set("title", values.title);
-  formData.set("description", values.description);
-  formData.set("location", values.location);
-  formData.set("memoryDate", values.memoryDate);
-  formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
-  formData.set("visibility", values.visibility);
-  formData.set("mutationId", mutationId);
-  const coverPhoto = photos.find((photo) => photo.key === coverPhotoKey);
-  if (coverPhoto) formData.set("coverPhotoId", coverPhoto.id);
-  for (const photo of photos) {
-    if (photo.kind === "new") {
-      formData.append("photoIds", photo.id);
-      formData.append("photoNames", photo.name);
-    }
-  }
-  return formData;
-}
-
 export function useCreateMemoryForm() {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
-  const mutationId = useRef(createUuidV7());
+  const preparedUpload = useRef<PreparedCreationUpload | null>(null);
+  const idempotencyKey = useRef(createUuidV7());
+  const submissionInFlight = useRef(false);
+  const hasCommitted = useRef(false);
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
@@ -135,7 +111,7 @@ export function useCreateMemoryForm() {
 
   const resetPreparedUpload = () => {
     preparedUpload.current = null;
-    mutationId.current = createUuidV7();
+    idempotencyKey.current = createUuidV7();
     setSubmitError(null);
     setIsDirty(true);
   };
@@ -150,11 +126,13 @@ export function useCreateMemoryForm() {
     key: TKey,
     value: MemoryEditorValues[TKey],
   ) => {
+    if (submissionInFlight.current || values[key] === value) return;
     resetPreparedUpload();
     clearFieldError(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
   const addPhotos = (files: File[]) => {
+    if (submissionInFlight.current || files.length === 0) return;
     if (photos.length + files.length > MAX_MEMORY_PHOTO_COUNT) {
       setFields((current) => ({
         ...current,
@@ -197,6 +175,7 @@ export function useCreateMemoryForm() {
     setCoverPhotoKey((current) => current ?? additions[0]?.key ?? null);
   };
   const removePhoto = (key: string) => {
+    if (submissionInFlight.current) return;
     const removed = photos.find((photo) => photo.key === key);
     if (!removed) return;
     if (removed.kind === "new") {
@@ -210,64 +189,83 @@ export function useCreateMemoryForm() {
     setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
   const selectCoverPhoto = (key: string) => {
+    if (submissionInFlight.current || coverPhotoKey === key) return;
     resetPreparedUpload();
     clearFieldError("photos");
     setCoverPhotoKey(key);
   };
   const submit = async () => {
-    if (isSubmitting) return;
+    if (submissionInFlight.current || hasCommitted.current) return;
+    submissionInFlight.current = true;
     setFields({});
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const response = await uploadStagedMemoryPhotos({
+      const memory = await submitMemoryCreation({
         preparedUpload: preparedUpload.current,
-        finalMethod: "POST",
-        finalUrl: "/api/memories",
-        formData: createFormData(values, photos, coverPhotoKey, mutationId.current),
+        values,
+        coverPhotoKey,
+        idempotencyKey: idempotencyKey.current,
         onPrepared: (prepared) => {
           preparedUpload.current = prepared;
         },
         photos,
-        prepareUrl: "/api/memories/uploads",
       });
-      const payload = (await response.json()) as CreateMemoryResponse;
-      if (!response.ok || !payload.id) {
-        if (response.status < 500) preparedUpload.current = null;
-        setFields(
-          Object.fromEntries(
-            Object.keys(payload.fields ?? {}).map((field) => [
-              field,
-              t("create.validation.serverInvalid"),
-            ]),
-          ),
-        );
-        if (payload.code === "validation_failed") return;
-        throw new Error(t("create.validation.saveFailed"));
-      }
+      hasCommitted.current = true;
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
       preparedUpload.current = null;
       discardDraft();
       router.push(
-        values.visibility === "vault"
-          ? APP_ROUTES.VAULT_MEMORY_DETAIL(payload.id)
+        memory.visibility === "vault"
+          ? APP_ROUTES.VAULT_MEMORY_DETAIL(memory.id)
           : APP_ROUTES.TIMELINE,
       );
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : t("create.validation.saveFailed"));
+      if (error instanceof MemoryCreationRequestError) {
+        const fieldErrors = error.errors.flatMap(({ field }) => {
+          if (!field) return [];
+          const isPhotoField =
+            field.startsWith("files") || field === "uploadIds" || field === "coverUploadId";
+          const localField = isPhotoField ? "photos" : field;
+          const hasVisibleField = [
+            "title",
+            "memoryDate",
+            "description",
+            "location",
+            "photos",
+          ].includes(localField);
+          if (!hasVisibleField) return [];
+          return [[localField, t("create.validation.serverInvalid")]];
+        });
+        if (fieldErrors.length > 0) {
+          setFields(Object.fromEntries(fieldErrors));
+          return;
+        }
+        const isInProgress = error.errors.some(({ code }) => code === "CREATION_IN_PROGRESS");
+        if (isInProgress) {
+          setSubmitError(t("create.validation.inProgress"));
+          return;
+        }
+      }
+      setSubmitError(t("create.validation.saveFailed"));
     } finally {
+      submissionInFlight.current = false;
       setIsSubmitting(false);
     }
   };
 
+  let draftNotice: string | null = null;
+  if (draftWasRestored) {
+    draftNotice = t("create.draft.restored");
+    if (restoredPhotoNames.length > 0) {
+      draftNotice = t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") });
+    }
+  }
+
   return {
     coverPhotoKey,
     fields,
-    draftNotice: draftWasRestored
-      ? restoredPhotoNames.length > 0
-        ? t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") })
-        : t("create.draft.restored")
-      : null,
+    draftNotice,
     isSubmitting,
     photos,
     submitError,

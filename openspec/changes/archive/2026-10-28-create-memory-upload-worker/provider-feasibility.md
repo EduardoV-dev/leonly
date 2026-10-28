@@ -1,6 +1,6 @@
 # Immutable promotion verification
 
-Task 1.3 remains incomplete because live R2 verification is deferred with user approval, including implementation of sections 3 and 4. The user requires the same promotion code on R2 and Floci.
+Task 1.3 is closed for the locally verified scope by the user-approved 2026-10-28 archive reconciliation. Live R2 verification remains a pre-deployment follow-up, not a verified result. The user requires the same promotion code on R2 and Floci.
 
 ## Local Floci results
 
@@ -38,3 +38,31 @@ This probe uses controlled upload persistence, not an application-database trans
 [Cloudflare's S3 compatibility documentation](https://developers.cloudflare.com/r2/api/s3/api/) also lists `If-None-Match` support for PutObject, permitting the common promotion primitive. R2 may return rate-limit failures for concurrent writes to the same key; these must not trigger unconditional writes.
 
 Documentation was retrieved through Context7 on 2026-10-11. Live R2 sequential/concurrent conditional PUT and reuse checks have not run. Documentation support alone is not a verified provider result. No production credentials, bucket, or endpoint were selected.
+
+## Floci infrastructure and local queue runner (section 7.3)
+
+On 2026-10-11, started the existing Floci service through the API Docker Compose
+configuration. An isolated Terraform probe under
+`/tmp/opencode/leonly-floci-infra-probe` applied six additive resources to Floci:
+S3 bucket, public-access block, PUT-only CORS, image queue, DLQ, and the DLQ
+redrive allowance. It used the repository's `infra/modules/image-queue` with
+AWS provider 6.66.0. The bucket and queue names are
+`leonly-infra-probe-20261011-234000`; these are probe fixtures, not selected
+application environment names. No existing infrastructure was altered or
+destroyed. Probe resources and its failed message remain retained.
+
+`node /tmp/opencode/leonly-local-worker-probe.cjs` exercised the built
+`runLocalImageBatch` against that live SQS queue. It verified retained queue
+attributes (visibility 720, receive limit 5, SSE configuration requested), a
+valid event for a controlled unavailable asset acknowledged through the same
+production processor, and malformed JSON diagnosed as `INVALID_JSON` without
+acknowledgment. Floci reported one message still in flight after failure.
+
+An HTTP OPTIONS request for upload from `http://localhost:3000` returned 200
+with that allowed origin and PUT method. This is HTTP preflight evidence, not
+a completed browser upload or production provider security verification.
+The processor probe used a controlled missing-asset database boundary: it did
+not query application PostgreSQL or verify the full creation-to-variants flow.
+Permanent worker tests cover actual variant completion and acknowledgment-loss
+redelivery with controlled external dependencies. Local Lambda emulation was
+not used; the separately runnable processor is the supported local path.

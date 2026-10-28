@@ -25,6 +25,7 @@ packages/database/src/generated/prisma/
 *.tfstate
 *.tfstate.*
 *.tfvars
+*.auto.tfvars
 !example.tfvars
 anti-slop/
 .serena/memories/

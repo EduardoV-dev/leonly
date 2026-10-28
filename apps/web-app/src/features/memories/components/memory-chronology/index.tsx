@@ -85,6 +85,9 @@ export function MemoryChronology({
   const activeMonthVariants = shouldReduceMotion ? reducedMotionVariants : monthVariants;
   const language = i18n.resolvedLanguage === "es" ? "es" : "en";
   const months = groupMemoriesByMonth(memories, language);
+  let paginationLabel = pagination?.loadLabel;
+  if (pagination?.isError) paginationLabel = pagination.retryLabel;
+  if (pagination?.isLoading) paginationLabel = pagination.loadingLabel;
 
   return (
     <div className={styles.timeline} aria-live="polite">
@@ -133,11 +136,7 @@ export function MemoryChronology({
                 : (pagination.loadAriaLabel ?? pagination.loadLabel)
             }
           >
-            {pagination.isLoading
-              ? pagination.loadingLabel
-              : pagination.isError
-                ? pagination.retryLabel
-                : pagination.loadLabel}
+            {paginationLabel}
           </button>
         </div>
       ) : null}

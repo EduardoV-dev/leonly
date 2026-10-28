@@ -1,5 +1,12 @@
 # Sections 5 and 6 implementation evidence
 
+Historical section-5/6 snapshot. For the delivered scope and final task status,
+see `verification.md`. The operator CLI described below was subsequently removed
+at the user's request; only bounded shared publication remains. Section 7 later
+added deployment infrastructure and automatic local Lambda execution. Current
+queue configuration uses `AWS_REGION`, `SQS_ENDPOINT`, and `SQS_QUEUES_URLS` as
+documented in `apps/api/README.md`; the former names below are historical.
+
 Sections 5 and 6 are complete: 22/34 tasks. The user approved `apps/workers` before implementation. Infrastructure sizing, queue redrive/event-source settings, production Sharp packaging, and local polling remain section 7 work.
 
 ## Implemented behavior

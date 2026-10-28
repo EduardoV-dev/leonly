@@ -136,7 +136,8 @@ export function MemoryEditorPhotoWorkspace({
             })}
           </div>
         </fieldset>
-      ) : mode === "edit" ? (
+      ) : null}
+      {photos.length === 0 && mode === "edit" ? (
         <p className={styles.empty}>{t("edit.photos.empty")}</p>
       ) : null}
       <FieldError id="memory-photos-error">{error}</FieldError>

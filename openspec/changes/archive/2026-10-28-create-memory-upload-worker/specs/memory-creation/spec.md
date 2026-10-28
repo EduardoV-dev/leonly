@@ -18,7 +18,7 @@ The API SHALL accept `POST /api/memories` as JSON memory details, ordered upload
 
 The system SHALL complete creation after validated final originals and a transaction containing memory metadata, ordered assets, object records, upload consumption, and image-generation events have persisted successfully. Cover/detail generation and SQS acknowledgment MUST NOT be prerequisites for creation success. Staged objects and unconsumed final copies MUST remain private and attributable to upload records. Cleanup SHALL be deferred; creation failures MUST NOT promise scheduled removal or configure automatic storage deletion.
 
-#### Scenario: Every original and metadata record succeeds
+#### Scenario: Every selected photo and metadata record succeeds
 - **WHEN** all final originals validate and the creation transaction commits
 - **THEN** creation succeeds with pending variants even if publication has not succeeded
 

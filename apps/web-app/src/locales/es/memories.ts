@@ -66,6 +66,8 @@ export const memoriesEs = {
       photoSize: "Cada foto debe ocupar {{size}} MB o menos.",
       photoType: "Las fotos deben ser imágenes JPEG, PNG o WebP.",
       saveFailed: "No pudimos guardar este recuerdo. Inténtalo de nuevo.",
+      inProgress:
+        "Este recuerdo todavía se está guardando. Inténtalo de nuevo sin cambiar los detalles.",
       serverInvalid: "Revisa los campos marcados.",
     },
   },

@@ -10,22 +10,15 @@ define creation APIs or UI, binary uploads, or memory/photo management flows.
 
 ### Requirement: Persist memory lifecycle state
 
-The system SHALL persist each memory with a UUID identifier, exactly one UUID owning space, UUID creator,
-content required by consumers, memory date, creation and update timestamps, nullable `deleted_at`, and
-visibility. A `NULL` `deleted_at` means the memory is available. Creator attribution MUST NOT grant access
-independently of available membership.
+The system SHALL persist each memory with a UUID identifier, exactly one UUID owning space, creator membership and stable creator-user attribution compatible with the API identity model, content required by consumers, memory date, timestamps, nullable deletion timestamp, and visibility. It SHALL additionally persist its immutable creation key/hash. A null deletion timestamp means the memory is not deleted but MUST NOT imply variants are ready or deferred readers are implemented. Creator attribution MUST NOT independently grant access.
 
 #### Scenario: Memory lifecycle data is stored
-
-- GIVEN a memory record belongs to an existing space and creator
-- WHEN its lifecycle state is persisted
-- THEN all required UUID ownership, content, date, timestamp, deletion, and visibility data remains addressable
+- **WHEN** a memory belongs to an existing space and valid creator membership
+- **THEN** its content, ownership, lifecycle fields, and creation identity remain persistently addressable
 
 #### Scenario: Creator is not an authorization authority
-
-- GIVEN a creator is no longer an available member of the memory's space
-- WHEN the creator requests the memory
-- THEN access is denied unless the requester independently has active-space authorization
+- **WHEN** the creator no longer has available membership and requests an operation
+- **THEN** creator attribution alone does not authorize access
 
 ### Requirement: Keep visibility and soft deletion independent
 
@@ -67,43 +60,29 @@ behavior.
 
 ### Requirement: Protect private photo objects by available-memory membership
 
-The system SHALL store memory photo objects in a private Supabase Storage bucket. Each
-`memory_photos.object_path` MUST identify an object whose name is scoped to that photo's owning space. A
-requester MAY select object metadata or download an object only when authenticated as an available member
-of the referenced photo's available parent memory space. Public bucket access, public object URLs, and
-client-side service-role credentials MUST NOT be available.
+New creation photo objects SHALL reside in a private Cloudflare R2 bucket. Staging keys SHALL use `staging/memories/{spaceId}/{uploadId}/original`; final originals and variants SHALL use `memories/{spaceId}/{uploadId}/...`. Upload capability MUST be authorized by authenticated available membership and limited to its staging key. Final writes MUST remain server-controlled and actual final bytes MUST be validated before attachment. Every intended final copy SHALL be durably attributed to an upload record before copying. Public access and client-side storage credentials MUST NOT be available. New read/download endpoints, storage cleanup, and R2 lifecycle rules SHALL be deferred.
 
-The system SHALL permit a server-controlled creation workflow to stage a prospective photo object only
-after it has derived an authenticated available member and that member's active space. A staged object MUST
-remain unreadable to members until the parent memory and photo metadata are available. Each staged object
-MUST be durably associated with its creation attempt before upload so that a failed or interrupted attempt
-can remove it. The browser MUST NOT receive a storage object path or a credential that bypasses this
-authorization boundary.
+Existing Supabase-backed readers SHALL retain their available-memory membership authorization. These legacy read guarantees MUST NOT imply R2 read support for newly created PostgreSQL memories.
 
 #### Scenario: Available member reads a cover object
-
-- GIVEN a cover photo belongs to an available memory in the requester's available space
-- WHEN the requester reads its object metadata or downloads the object
-- THEN Storage authorizes the request for that object only
+- **WHEN** an available member reads a legacy cover through the existing storage reader
+- **THEN** that reader authorizes only the object belonging to an available memory in the member's available space
 
 #### Scenario: Object belongs to an unavailable or other-space memory
-
-- GIVEN a photo object is referenced by a deleted, unauthorized, or other-space parent memory
-- WHEN the requester reads its object metadata or downloads the object
-- THEN Storage returns no authorized object and exposes no parent-memory metadata
+- **WHEN** an existing reader receives a request for an object belonging to a deleted, unauthorized, or other-space memory
+- **THEN** it returns no authorized object and exposes no parent-memory metadata
 
 #### Scenario: Creation stages a prospective object
-
-- GIVEN an authenticated available member starts an authorized memory-creation attempt
-- WHEN the server stages a validated photo object for that attempt
-- THEN the object is scoped to the member's active space, is unreadable before final persistence, and is
-  tracked for completion or cleanup
+- **WHEN** an authenticated available member obtains a staging upload capability
+- **THEN** it targets only the authorized staging key and an upload record exists before the client uploads
 
 #### Scenario: Staged creation cannot complete
+- **WHEN** an upload cannot commit a parent memory and asset records
+- **THEN** its staging/final copies remain private and attributable without a cleanup-execution promise
 
-- GIVEN a staged photo object belongs to a creation attempt that fails or is interrupted
-- WHEN the attempt cannot persist an available parent memory and photo metadata
-- THEN members cannot read the staged object and server-side cleanup removes it
+#### Scenario: Staging URL is reused after promotion
+- **WHEN** the client writes staging again after the final copy is accepted
+- **THEN** the accepted final original and worker input do not change
 
 ### Requirement: Resolve private cover previews on the server
 
@@ -174,12 +153,24 @@ null`. These indexes MUST support bounded reads without requiring client-side fi
 
 ### Requirement: Use UUID identifiers at application boundaries
 
-The system SHALL use UUID primary keys for `spaces`, `space_members`, `memories`, and `memory_photos`.
-Existing `users` and `join_attempt_limits` identifiers SHALL remain UUID. Every identifier exposed to the
-application or an RPC MUST be a UUID string. `join_attempt_limits` remains transient and is outside the
-soft-deletion lifecycle.
+The system SHALL use UUID identifiers for spaces, memberships, file uploads, memories, memory assets, object metadata, and outbox events. User references MUST retain the existing API authentication identity type rather than introduce a new user identity mapping for creation. Generic outbox aggregate IDs SHALL be capable of representing non-UUID identifiers. Supabase RPC identifier contracts SHALL NOT govern the new API creation endpoints.
 
 #### Scenario: RPC receives a memory identifier
+- **WHEN** an unchanged legacy memory reader calls a Supabase lookup RPC
+- **THEN** that RPC continues to accept and return UUID-string memory identifiers without imposing its user identity contract on the new API
 
-- WHEN the application calls a memory lookup RPC with an identifier
-- THEN the RPC accepts and returns UUID-string identifiers only
+#### Scenario: API receives memory-domain identifiers
+- **WHEN** upload or memory creation receives upload, cover, or idempotency identifiers
+- **THEN** those identifiers are validated as UUID strings while the user identity is derived from the existing authenticated session
+
+### Requirement: Memory assets exclude staging lifecycle
+
+`memory_assets` SHALL reference exactly one committed memory and a deterministic nonnegative position. `memory_asset_objects` SHALL represent only final originals and their variants, with one object per asset/variant pair and unique final paths. Upload issuance, promotion attempts, and unattached objects MUST be represented by `file_uploads`, not by nullable-memory staging assets. Asset-space and cover-memory integrity MUST be enforced.
+
+#### Scenario: Upload is issued without a memory
+- **WHEN** an upload record is created or an original is promoted before memory commit
+- **THEN** no committed memory asset or memory asset object exists solely to represent that staging/finalization attempt
+
+#### Scenario: Memory commits accepted images
+- **WHEN** the memory transaction attaches uploads
+- **THEN** every asset references that memory and its consumed upload, has a unique position, and owns an original plus pending cover/detail metadata

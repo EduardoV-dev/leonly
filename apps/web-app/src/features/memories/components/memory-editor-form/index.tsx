@@ -80,6 +80,8 @@ export function MemoryEditorForm({
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activeVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
   const isDraftLocked = isSubmitting || isConflict;
+  const savingLabel = mode === "create" ? "create.status.saving" : "edit.status.saving";
+  const submitLabel = mode === "create" ? "create.actions.preserve" : "edit.actions.save";
 
   useEffect(() => {
     if (Object.keys(fields).length > 0) {
@@ -302,7 +304,8 @@ export function MemoryEditorForm({
               <Link href={backHref}>{t("edit.conflict.return")}</Link>
             </div>
           </motion.section>
-        ) : submitError || isSubmitting ? (
+        ) : null}
+        {!isConflict && (submitError || isSubmitting) ? (
           <motion.div className={wideStyles.feedback} variants={activeVariants}>
             {submitError ? (
               <div className={styles.submitError} role="alert">
@@ -338,15 +341,7 @@ export function MemoryEditorForm({
             type="submit"
           >
             {!isSubmitting ? <Save aria-hidden="true" /> : null}
-            {t(
-              isSubmitting
-                ? mode === "create"
-                  ? "create.status.saving"
-                  : "edit.status.saving"
-                : mode === "create"
-                  ? "create.actions.preserve"
-                  : "edit.actions.save",
-            )}
+            {t(isSubmitting ? savingLabel : submitLabel)}
           </Button>
         </motion.footer>
       </motion.form>

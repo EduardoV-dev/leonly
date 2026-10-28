@@ -8,7 +8,7 @@ This change creates new backend contracts. It does not migrate data or provide o
 
 **Goals:** Keep upload progress durable before a memory exists; isolate client-writable staging from accepted originals; commit creation and events atomically; tolerate uncertain responses and duplicate delivery; run the production processing function locally.
 
-**Non-Goals:** Reads, fallback media delivery, cleanup selection/execution, R2 lifecycle rules, an automatic outbox publisher, edits/comments/reactions, broad authentication changes, and new file-category processors.
+**Non-Goals:** Reads, fallback media delivery, cleanup selection/execution, R2 lifecycle rules, an operator replay CLI, an automatic outbox publisher, edits/comments/reactions, broad authentication changes, and new file-category processors. Live R2 verification is a pre-deployment follow-up for this locally verified delivery.
 
 ## Decisions
 
@@ -61,7 +61,7 @@ Persist both keys on issuance before any copy. The ID can become the asset ID wh
 
 Claim an eligible upload using a compare-and-set lease lasting 120 seconds. Use the same bounded staging GET followed by final PUT with `If-None-Match: *` on R2 and Floci. Only endpoint, credentials, region, and bucket configuration differ. On a destination-exists outcome, validate that final object and reuse it; never overwrite it from staging. The running Floci ignores R2's `cf-copy-destination-if-none-match` CopyObject extension, so do not add provider-specific CopyObject branches. A plain HEAD followed by unconditional COPY or PUT is not a safe substitute. See `provider-feasibility.md` for evidence and outstanding live R2 checks.
 
-The user explicitly approved implementing sections 3 and 4 while deferring live R2 verification. Local Floci application evidence is recorded separately; task 1.3 remains incomplete and no live R2 compatibility is claimed.
+The user explicitly approved implementing sections 3 and 4 while deferring live R2 verification. The 2026-10-28 archive reconciliation closes task 1.3 for the locally verified scope. Local Floci application evidence is recorded separately; no live R2 compatibility is claimed.
 
 Validate the final copy, not solely staging before promotion: the client can replace staging while its URL remains valid. Bound staging downloads and reject excess bytes before a final PUT. Download final bytes with a bounded size, check detected format and declared policy, decode with the existing pixel limit, and record verified metadata. Do not generate variants on the API request path. An invalid immutable final copy requires a new upload ID, not replacement of that key.
 
@@ -91,9 +91,9 @@ The image event is `ImageVariantsRequested`, aggregate type `memory_asset`, sche
 
 After commit, await a bounded SQS send attempt using the persisted event ID and envelope. Acknowledge acceptance before updating `published_at`. Update publication attempts and sanitized error information without replacing event ID/payload. Capture outcomes per event; partial publication does not change creation success. Do not send before commit or use an unawaited task in request-scoped Lambda execution.
 
-The standard SQS queue gives at-least-once processing; strict aggregate ordering is unnecessary for immutable originals. A crash between commit and send leaves unpublished events. Acceptance followed by a bookkeeping failure can cause replayed publication. These are intentional and require manual replay plus worker idempotency.
+The standard SQS queue gives at-least-once processing after publication; strict aggregate ordering is unnecessary for immutable originals. A crash between commit and send leaves unpublished events. Acceptance followed by a bookkeeping failure can cause duplicate publication on a later attempt. Worker idempotency handles duplicates, but this delivery does not guarantee recovery of unpublished work.
 
-Provide a bounded operator CLI supporting event IDs/limits and selecting unpublished rows. API and CLI use the same publishing function. The future publisher will reconcile these rows, but scheduling, publisher leases, retry dates, and automatic reconciliation are deferred.
+The shared publishing function supports bounded event IDs/limits and selects unpublished rows. The operator CLI was removed at the user's request; no supported replay invocation ships. Operator tooling, scheduling, publisher leases, retry dates, and automatic reconciliation are deferred. Retained events provide recovery state for a future publisher, while variants can remain pending indefinitely.
 
 Alternative: a scheduled publisher now would close the gap but was explicitly deferred by the user.
 
@@ -111,7 +111,7 @@ Return partial batch failures for failed records, acknowledge successful records
 
 Configure R2 S3 region `auto` in production, endpoint/credentials/bucket overrides for local Floci, and separate SQS endpoint configuration. Enable private bucket CORS for allowed frontend origins and upload headers. Browser-signed hostnames must be reachable from the browser; do not rewrite a URL host after signing.
 
-Floci verifies the full S3/SQS flow locally; confirm destination-create-only PUT and presigned behavior on R2 too, since S3 compatibility is not feature equivalence. Use the same promotion code for both providers. Reuse the processing function from a local SQS runner, or verify Floci Lambda event-source execution explicitly; Lambda emulation fidelity is not assumed.
+Floci verifies the full S3/SQS flow locally; confirm destination-create-only PUT and presigned behavior on R2 too, since S3 compatibility is not feature equivalence. Use the same promotion code for both providers. For everyday development, `pnpm workers:deploy:local` builds the existing worker Dockerfile under a fresh local image reference and applies only worker infrastructure through Terraform; Floci uses the image already on the Docker daemon without ECR publication. Persist the reference in ignored local tfvars, preserve other settings, reject API/destructive plan changes, and wait for Lambda readiness. Keep the ECR push/digest flow available for deployment verification, and production digest-pinned. Let an enabled SQS event-source mapping invoke the production handler automatically. Worker containers use the Compose network's database/storage endpoints; host clients retain browser-reachable endpoints. Persist Floci state across restarts. Verify actual image execution, generated variants, duplicate delivery, and restart recovery; Lambda emulation fidelity is not assumed. The manual queue runner is removed.
 
 Switch only create submission plumbing to upload issuance, direct PUTs, and JSON creation. Reuse prepared upload IDs and the same key for unchanged retries; changed input receives a new key. Display success based on the committed API result. Do not add reads/fallback or claim timeline visibility. Keep UI redesign out of scope and resolve frontend-specific local instructions before modifying UI.
 
@@ -119,7 +119,7 @@ Switch only create submission plumbing to upload issuance, direct PUTs, and JSON
 
 - [Final copy survives failed commit] → Its upload record already contains the key; retry can recover it. Cleanup is deferred, so tracking is not a promise of eventual deletion.
 - [Staging and abandoned final copies accumulate] → Explicitly accepted for this slice; add no lifecycle rules or destructive cleanup. Keep upload records for later reconciliation.
-- [Publication gap leaves variants pending indefinitely] → Return creation success, retain unpublished events, and provide manual replay. No automatic-delivery guarantee until the publisher ships.
+- [Publication gap leaves variants pending indefinitely] → Return creation success and retain unpublished events. No operator replay CLI or automatic-delivery guarantee ships; recovery tooling is deferred.
 - [Destination-copy support differs locally] → Use one bounded GET and conditional PUT implementation on both providers and verify provider behavior. Live R2 verification is deferred for sections 3 and 4 with explicit user approval. This transfers originals through the API, so measure its memory and execution budgets. Never fall back to unsafe overwrite behavior.
 - [Crash leaves finalization/processing busy] → Expiring leases with token fencing support bounded recovery; monitor stale leases and pending ages.
 - [API decodes several images] → Size/pixel limits, bounded concurrency, and measured Lambda memory/time budgets; do not run expensive variant generation inline.
@@ -129,11 +129,11 @@ Switch only create submission plumbing to upload issuance, direct PUTs, and JSON
 
 1. Add additive Prisma models/constraints and deploy private R2/SQS/DLQ plus worker infrastructure. Preserve existing identity and space data.
 2. Deploy the compatible worker/event contract before publishing production events.
-3. Deploy API upload/promotion/creation plus operator replay, then switch the creation submission client.
+3. Complete the deferred live R2 conditional-write/reuse, signing, and browser CORS checks before enabling production creation. Deploy API upload/promotion/creation, then switch the creation submission client. No operator replay CLI is included.
 4. Verify a bounded end-to-end creation and inspect final objects, event publication, and variant readiness. No legacy data migration is run.
-5. Roll back by disabling new creation traffic/publication and pausing the event-source mapping when necessary. Preserve records and objects; never drop schema/storage to roll back. Existing unpublished events remain replayable with a supported worker.
+5. Roll back by disabling new creation traffic/publication and pausing the event-source mapping when necessary. Preserve records and objects; never drop schema/storage to roll back. Existing unpublished events remain retained for future recovery tooling, not a shipped replay command.
 
 ## Open Questions
 
-- Worker workspace naming is approved as `apps/workers`. Select Lambda memory/concurrency and event-source batch settings in section 7 from existing deployment conventions and measured image-processing behavior.
-- Cleanup retention and execution approach, automatic publisher scheduling, and read migration belong to subsequent changes, not prerequisites for this delivery.
+- Worker workspace naming is approved as `apps/workers`; `worker-sizing.md` records the selected 1024 MiB/120-second Lambda, one-record batches, and concurrency 2 with local measurements and their limits.
+- Live R2/browser compatibility checks must precede production enablement. Cleanup retention and execution, replay tooling, automatic publisher scheduling, and read migration belong to subsequent work, not prerequisites for archiving this locally verified delivery.

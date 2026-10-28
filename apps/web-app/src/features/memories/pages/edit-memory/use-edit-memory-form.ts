@@ -329,14 +329,18 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     }
   };
 
+  let draftNotice: string | null = null;
+  if (draftWasRestored) {
+    draftNotice = t("create.draft.restored");
+    if (restoredPhotoNames.length > 0) {
+      draftNotice = t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") });
+    }
+  }
+
   return {
     addPhotos,
     coverPhotoKey,
-    draftNotice: draftWasRestored
-      ? restoredPhotoNames.length > 0
-        ? t("create.draft.restoredWithPhotos", { photos: restoredPhotoNames.join(", ") })
-        : t("create.draft.restored")
-      : null,
+    draftNotice,
     fields,
     isConflict,
     isSubmitting,

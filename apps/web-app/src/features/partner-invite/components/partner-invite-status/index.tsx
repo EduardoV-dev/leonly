@@ -146,20 +146,17 @@ export function PartnerInviteStatus({
     }
   };
 
-  const feedbackMessage =
-    feedback?.status === "manual-copy"
-      ? t("inviteManagement.manualCopy")
-      : feedback?.status === "regenerated"
-        ? t("inviteManagement.regenerated")
-        : feedback?.status === "joined"
-          ? t("inviteManagement.joined")
-          : feedback?.status === "rate-limited"
-            ? t("inviteManagement.rateLimited", { seconds: feedback.retryAfter })
-            : feedback?.status === "failed"
-              ? t("inviteManagement.failed")
-              : isRegenerating || isPending
-                ? t("inviteManagement.pending")
-                : null;
+  let feedbackMessage = isRegenerating || isPending ? t("inviteManagement.pending") : null;
+  if (feedback?.status === "manual-copy") feedbackMessage = t("inviteManagement.manualCopy");
+  if (feedback?.status === "regenerated") feedbackMessage = t("inviteManagement.regenerated");
+  if (feedback?.status === "joined") feedbackMessage = t("inviteManagement.joined");
+  if (feedback?.status === "rate-limited") {
+    feedbackMessage = t("inviteManagement.rateLimited", { seconds: feedback.retryAfter });
+  }
+  if (feedback?.status === "failed") feedbackMessage = t("inviteManagement.failed");
+  let inviteDescription = t("inviteManagement.unavailableDescription");
+  if (inviteState.status === "valid") inviteDescription = t("inviteManagement.validDescription");
+  if (inviteState.status === "joined") inviteDescription = t("inviteManagement.joinedDescription");
 
   return (
     <section className={styles.card} aria-labelledby="partner-invite-heading">
@@ -172,13 +169,7 @@ export function PartnerInviteStatus({
             ? t("inviteManagement.joinedHeading")
             : t("inviteManagement.heading")}
         </h2>
-        <p>
-          {inviteState.status === "joined"
-            ? t("inviteManagement.joinedDescription")
-            : inviteState.status === "valid"
-              ? t("inviteManagement.validDescription")
-              : t("inviteManagement.unavailableDescription")}
-        </p>
+        <p>{inviteDescription}</p>
 
         {inviteState.status === "valid" ? (
           <div className={styles.codeControls}>

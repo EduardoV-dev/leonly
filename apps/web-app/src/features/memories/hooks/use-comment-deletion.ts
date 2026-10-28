@@ -121,13 +121,12 @@ export function useCommentDeletion({
     }
   };
 
+  let errorMessage: string | null = null;
+  if (outcome === "conflict") errorMessage = t("detail.comments.delete.conflict");
+  if (outcome === "failed") errorMessage = t("detail.comments.delete.failed");
+
   return {
-    errorMessage:
-      outcome === "conflict"
-        ? t("detail.comments.delete.conflict")
-        : outcome === "failed"
-          ? t("detail.comments.delete.failed")
-          : null,
+    errorMessage,
     isDeleting: mutation.isPending,
     outcome,
     remove,
