@@ -1,7 +1,7 @@
 import { Controller, Get, HttpStatus, Res } from "@nestjs/common";
 import { ApiOperation, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import { Public } from "../auth/decorators/public";
+import { Public } from "../auth/decorators/public.decorator";
 import { createApiError } from "../common/http/api-response";
 import {
   ApiErrorResponses,

@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { mountApiDocs } from "./app/api-docs";
-import { createApiApp } from "./app/create-app";
+import { mountApiDocs } from "./app/api-docs/api-docs";
+import { createApiApp } from "./app/create-app/create-app";
 
 async function bootstrap(): Promise<void> {
   const app = await createApiApp();

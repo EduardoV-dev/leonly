@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import { isUUID } from "class-validator";
-import { invalidInput, MAX_IMAGE_COUNT, requireObject } from "../files/upload-validation";
+import {
+  invalidInput,
+  MAX_IMAGE_COUNT,
+  requireObject,
+} from "../../files/utils/upload-validation.util";
 
 export type CreationInput = {
   title: string;

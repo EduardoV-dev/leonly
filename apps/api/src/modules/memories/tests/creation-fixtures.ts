@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 import { type FileUpload, type Memory, Prisma } from "@leonly/database/client";
 import { ObjectSizeError, type ObjectStorage } from "@leonly/utils/storage";
 import { vi } from "vitest";
-import type { OutboxPublisher, PublicationOutcome } from "../../common/outbox/outbox-publisher";
-import type { PrismaService } from "../../common/prisma/prisma.service";
-import { UploadFinalizationService } from "../files/upload-finalization.service";
-import { MemoriesService } from "./memories.service";
+import type { OutboxPublisher, PublicationOutcome } from "../../../common/outbox/outbox-publisher";
+import type { PrismaService } from "../../../common/prisma/prisma.service";
+import { UploadFinalizationService } from "../../files/services/upload-finalization.service";
+import { MemoriesService } from "../memories.service";
 
 export const SPACE_ID = "01900000-0000-7000-8000-000000000005";
 export const MEMBER_ID = "01900000-0000-7000-8000-000000000006";

@@ -1,8 +1,8 @@
 import { ObjectStorage, UPLOAD_URL_SECONDS } from "@leonly/utils/storage";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { v7 as uuidv7 } from "uuid";
-import { PrismaService } from "../../common/prisma/prisma.service";
-import { ATTACHMENT_SECONDS, validateUploadRequest } from "./upload-validation";
+import { PrismaService } from "../../../common/prisma/prisma.service";
+import { ATTACHMENT_SECONDS, validateUploadRequest } from "../utils/upload-validation.util";
 
 export type UploadIssuanceResult = {
   uploads: {

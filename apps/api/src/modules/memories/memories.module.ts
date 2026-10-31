@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { StorageModule } from "../../common/storage/storage.module";
-import { UploadFinalizationService } from "../files/upload-finalization.service";
+import { UploadFinalizationService } from "../files/services/upload-finalization.service";
 import { MemoriesController } from "./memories.controller";
 import { MemoriesService } from "./memories.service";
 

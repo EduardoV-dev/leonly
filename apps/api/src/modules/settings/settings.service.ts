@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
-import { PrismaService } from "../../../common/prisma/prisma.service";
-import type { SettingsMember, SettingsReadModel } from "../settings.types";
+import { POSTGRES_TIMESTAMP_FORMAT } from "../../common/constants/timestamp.constants";
+import { PrismaService } from "../../common/prisma/prisma.service";
+import type { SettingsMember, SettingsReadModel } from "./types/settings.types";
 
 type SettingsRow = SettingsMember & {
   spaceName: string;

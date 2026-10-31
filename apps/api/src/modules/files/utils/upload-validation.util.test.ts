@@ -5,7 +5,7 @@ import {
 } from "@leonly/utils/storage";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
-import { validateFinalImage } from "./upload-validation";
+import { validateFinalImage } from "./upload-validation.util";
 
 describe("bounded immutable image validation", () => {
   it("fully decodes final pixels and rejects declaration mismatch and corrupt payloads", async () => {

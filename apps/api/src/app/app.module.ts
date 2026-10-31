@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
-import { AuthGuard } from "../auth/auth.guard";
 import { AuthModule } from "../auth/auth.module";
+import { AuthGuard } from "../auth/guards/auth.guard";
 import { ApiExceptionFilter } from "../common/http/api-exception.filter";
 import { ApiResponseInterceptor } from "../common/http/api-response.interceptor";
 import { apiValidationPipe } from "../common/http/api-validation.pipe";

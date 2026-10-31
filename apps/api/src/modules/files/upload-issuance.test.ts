@@ -1,8 +1,8 @@
 import { ObjectStorage } from "@leonly/utils/storage";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createApiApp } from "../../app/create-app";
-import { creationRequest } from "../memories/creation-fixtures";
-import { MAX_IMAGE_BYTES } from "./upload-validation";
+import { createApiApp } from "../../app/create-app/create-app";
+import { creationRequest } from "../memories/tests/creation-fixtures";
+import { MAX_IMAGE_BYTES } from "./utils/upload-validation.util";
 
 const fixtures = vi.hoisted(() => ({
   member: { findFirst: vi.fn() },

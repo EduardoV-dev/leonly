@@ -3,7 +3,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { apiReference } from "@scalar/nestjs-api-reference";
 import { getCookies } from "better-auth/cookies";
 import type { Request, Response } from "express";
-import { AuthService } from "../auth/auth.service";
+import { AuthService } from "../../auth/auth.service";
 
 export function mountApiDocs(app: NestExpressApplication): void {
   const { sessionToken } = getCookies(app.get(AuthService).auth.options);

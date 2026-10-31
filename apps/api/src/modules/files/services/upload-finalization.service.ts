@@ -2,17 +2,17 @@ import { randomUUID } from "node:crypto";
 import type { FileUpload } from "@leonly/database/client";
 import { ObjectSizeError, ObjectStorage } from "@leonly/utils/storage";
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../../common/prisma/prisma.service";
+import { PrismaService } from "../../../common/prisma/prisma.service";
 import {
   throwCreationInProgressError,
   throwUnavailableUploadError,
-} from "../memories/creation-errors";
+} from "../../memories/utils/creation-errors.util";
 import {
   FINALIZATION_LEASE_SECONDS,
   InvalidImageError,
   MAX_IMAGE_BYTES,
   validateFinalImage,
-} from "./upload-validation";
+} from "../utils/upload-validation.util";
 
 export type FinalizedUpload = FileUpload & {
   leaseToken: string;

@@ -1,5 +1,5 @@
 import type { SchemaObject } from "@nestjs/swagger";
-import type { SettingsReadModel } from "../settings.types";
+import type { SettingsReadModel } from "../types/settings.types";
 
 export const SETTINGS_EXAMPLE: SettingsReadModel = {
   account: { email: "alex@example.com", providerLabel: "Google" },

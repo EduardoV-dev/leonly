@@ -1,7 +1,7 @@
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
-import { createApiApp } from "../app/create-app";
+import { createApiApp } from "../app/create-app/create-app";
 import { rateLimitStorage } from "../common/rate-limit/test-setup";
 
 vi.mock("../common/config/environment-variables.config", () => ({

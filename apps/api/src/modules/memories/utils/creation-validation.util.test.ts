@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { creationRequest } from "./creation-fixtures";
-import { hashCreation, normalizeCreation } from "./creation-validation";
+import { creationRequest } from "../tests/creation-fixtures";
+import { hashCreation, normalizeCreation } from "./creation-validation.util";
 
 describe("canonical creation contract", () => {
   beforeEach(() => {

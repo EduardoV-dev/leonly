@@ -1,8 +1,8 @@
 import { toNodeHandler } from "better-auth/node";
 import type { NextFunction, Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import type { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
-import type { AuthService } from "./auth.service";
+import type { RateLimitGuard } from "../../common/rate-limit/rate-limit.guard";
+import type { AuthService } from "../auth.service";
 
 const { auth, nodeHandler } = vi.hoisted(() => ({
   auth: { handler: vi.fn() },

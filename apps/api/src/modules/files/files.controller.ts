@@ -1,8 +1,8 @@
 import { Body, Controller, HttpStatus, Post, Req } from "@nestjs/common";
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
-import type { AuthenticatedRequest } from "../../auth/auth.guard";
+import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
-import { FilesService, type UploadIssuanceResult } from "./files.service";
+import { FilesService, type UploadIssuanceResult } from "./services/files.service";
 
 @Controller("files")
 @ApiTags("Files")

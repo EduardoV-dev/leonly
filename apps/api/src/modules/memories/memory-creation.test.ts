@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCreationFixtures, creationRequest } from "./creation-fixtures";
+import { createCreationFixtures, creationRequest } from "./tests/creation-fixtures";
 
 describe("atomic memory creation and recovery", () => {
   let fixtures: ReturnType<typeof createCreationFixtures>;

@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { expect, it } from "vitest";
-import { AuthService } from "../auth/auth.service";
+import { AuthService } from "../../auth/auth.service";
 import { mountApiDocs } from "./api-docs";
 
 const authOptions = { baseURL: "http://localhost:3000" };

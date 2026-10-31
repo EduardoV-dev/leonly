@@ -1,6 +1,6 @@
 import { parseImageEvent } from "@leonly/utils/contracts";
-import { ENVIRONMENT_VARIABLES } from "../../common/config/environment-variables.config";
-import type { OutboxRoute } from "../../common/outbox/outbox-publisher";
+import { ENVIRONMENT_VARIABLES } from "../../../common/config/environment-variables.config";
+import type { OutboxRoute } from "../../../common/outbox/outbox-publisher";
 
 export function getMemoryOutboxRoute(): OutboxRoute {
   return {

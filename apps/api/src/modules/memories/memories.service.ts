@@ -5,9 +5,16 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import {
   type FinalizedUpload,
   UploadFinalizationService,
-} from "../files/upload-finalization.service";
-import { throwConflictingCreationError, throwCreationInProgressError } from "./creation-errors";
-import { type CreationInput, hashCreation, normalizeCreation } from "./creation-validation";
+} from "../files/services/upload-finalization.service";
+import {
+  throwConflictingCreationError,
+  throwCreationInProgressError,
+} from "./utils/creation-errors.util";
+import {
+  type CreationInput,
+  hashCreation,
+  normalizeCreation,
+} from "./utils/creation-validation.util";
 
 export type CreationResult = { id: string; visibility: "timeline" | "vault" };
 type CreationScope = { userId: string; spaceId: string; memberId: string };

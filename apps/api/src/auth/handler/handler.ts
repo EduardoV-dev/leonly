@@ -1,8 +1,8 @@
 import { toNodeHandler } from "better-auth/node";
 import type { RequestHandler } from "express";
-import type { RateLimitOptions } from "../common/rate-limit/rate-limit.decorator";
-import type { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
-import type { AuthService } from "./auth.service";
+import type { RateLimitOptions } from "../../common/rate-limit/rate-limit.decorator";
+import type { RateLimitGuard } from "../../common/rate-limit/rate-limit.guard";
+import type { AuthService } from "../auth.service";
 
 const SIGN_IN_RATE_LIMIT = {
   limit: 5,

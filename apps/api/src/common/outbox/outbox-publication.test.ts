@@ -3,7 +3,10 @@ import { type SendMessageCommand, SQSClient } from "@leonly/utils/queue";
 import { Logger } from "@nestjs/common";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCreationFixtures, creationRequest } from "../../modules/memories/creation-fixtures";
+import {
+  createCreationFixtures,
+  creationRequest,
+} from "../../modules/memories/tests/creation-fixtures";
 import type { PrismaService } from "../prisma/prisma.service";
 import { OutboxPublisher } from "./outbox-publisher";
 

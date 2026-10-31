@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Patch, Post, Req } from "@nestjs/common";
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import type { AuthenticatedRequest } from "../../../auth/auth.guard";
+import type { AuthenticatedRequest } from "../../../auth/guards/auth.guard";
 import {
   ApiErrorResponses,
   ApiSuccessResponse,
@@ -10,9 +10,9 @@ import { EditResponse } from "../../../common/http/edit-response.docs";
 import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
 import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
+import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../docs/space-response.docs";
 import { EditDisplayNameDto } from "../dtos/edit-display-name.dto";
 import { JoinSpaceDto } from "../dtos/join-space.dto";
-import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../dtos/space-response.docs";
 import { MembershipsService } from "../services/memberships.service";
 import type { DisplayNameEditResult } from "../types/memberships.types";
 import { throwJoinError } from "../utils/throw-join-error";

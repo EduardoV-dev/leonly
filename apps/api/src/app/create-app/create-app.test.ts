@@ -1,12 +1,12 @@
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { type AuthenticatedRequest, AuthGuard } from "../auth/auth.guard";
-import { rateLimitStorage } from "../common/rate-limit/test-setup";
-import { mountApiDocs } from "./api-docs";
+import { type AuthenticatedRequest, AuthGuard } from "../../auth/guards/auth.guard";
+import { rateLimitStorage } from "../../common/rate-limit/test-setup";
+import { mountApiDocs } from "../api-docs/api-docs";
 import { createApiApp } from "./create-app";
 
-vi.mock("../common/config/environment-variables.config", () => ({
+vi.mock("../../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",
@@ -25,7 +25,7 @@ vi.mock("../common/config/environment-variables.config", () => ({
   },
   getWebAppOrigin: () => "http://localhost:3000",
 }));
-vi.mock("../common/prisma/prisma.service", () => ({
+vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
     spaceMember = { findFirst: vi.fn().mockResolvedValue(null) };
     verification = {
