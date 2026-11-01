@@ -1,41 +1,53 @@
 {
   "version": 1,
   "skills": {
+    "ev-api-contracts": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-api-contracts/SKILL.md",
+      "computedHash": "aff72e57c9456e286ce2204d23449923de170e5307ded223307932352ec8b8df"
+    },
     "ev-code-review": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "0e6c5116562763bff517e55a3ba8eb43010e30cff6671fdb00ea538555add88d"
+      "computedHash": "7ff0910be4a528027cdd1012f05d3b9ac1206f3e77a48319c87bfefb2e431b31"
+    },
+    "ev-coding-standards": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-coding-standards/SKILL.md",
+      "computedHash": "871092ece343f553f1436cef00d3ffd4585bac4e33e1a5fcd9848441f36a1326"
+    },
+    "ev-project-setup": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-project-setup/SKILL.md",
+      "computedHash": "74acca8fd7ddec987f5d10d0b17537c201358580dc6c4ee3f37737847bca1c8a"
     },
     "ev-review-nestjs": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-nestjs/SKILL.md",
-      "computedHash": "99eae97b8bccf24251a596ed37a4c3d3b29ca54b01b3fe7cfe275cb7b8f49ce2"
+      "computedHash": "64cf399f43e1dae1b8ff3e90d218facf4e03471b8bc48355b4c565f8ef6f2992"
     },
     "ev-review-nextjs": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-nextjs/SKILL.md",
-      "computedHash": "1b7817241d8dc3f2b5f430fbfed7b83b3bbf0ef7f1794b597d4ce9eaef2f5f7c"
-    },
-    "ev-review-postgres": {
-      "source": "EduardoV-dev/my-skills",
-      "sourceType": "github",
-      "skillPath": "skills/ev-review-postgres/SKILL.md",
-      "computedHash": "a89a906dc13d1d669793fb5377526cfa0e42704acad148851e3e2d7141a7a4d9"
+      "computedHash": "ddc0b59efbd5e8b0d22b2c4e6af3001fe83a167cd7a67bd43000b91a4d709a12"
     },
     "ev-review-react": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-react/SKILL.md",
-      "computedHash": "ad731b9f01980ebe9f4cf4d409831b042f2b37b7e48cdae83bf7a4bfbcc8ff99"
+      "computedHash": "1894be22fefd315faf05fa9a996c70fc9ab4c73de21df23a893fb38236821fb7"
     },
     "ev-review-typescript": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-typescript/SKILL.md",
-      "computedHash": "497444c78f45c4592f619efb0a3aa3ed45ae01ba5c5986133bf75173eaa2ba7a"
+      "computedHash": "02c8b55d1c9e954884b840306f99fcbabf46a2cd818440444f910ee1460ae58b"
     },
     "grill-me": {
       "source": "mattpocock/skills",
@@ -47,13 +59,13 @@
       "source": "blader/humanizer",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "fa4ffac562a8e7349282f606391ede22d23118e998dc8b5ac931662fa734c1b7"
+      "computedHash": "1e67c3a4a675bd0c961b1fd8ebb718174f9a61a547d9bedad2ade5eb99cce831"
     },
     "neon-postgres": {
       "source": "neondatabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/neon-postgres/SKILL.md",
-      "computedHash": "b9763d379a3c5039e5555540a1333b1c529e2365d4f0b8fe2998ba41509814c5"
+      "computedHash": "4d4b3597581a024c7b114dcc2304e7d2bcd7b0a50aaecc91d184c34a6c66eea9"
     },
     "nestjs-best-practices": {
       "source": "kadajett/agent-nestjs-skills",
@@ -65,7 +77,7 @@
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "da388f632cd83783c02967446e21941c9ee8291ccb43ba74c23f7d4e9b7c298c"
+      "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
     },
     "tdd": {
       "source": "mattpocock/skills",

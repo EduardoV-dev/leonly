@@ -1,0 +1,64 @@
+---
+name: ev-api-contracts
+description: "Trigger: API response design, API implementation, pagination, cursor handling. Standardize response envelopes and guide pagination choices."
+license: Apache-2.0
+metadata:
+  author: "eduardovdev"
+  version: "1.0"
+---
+
+# EV API Contracts
+
+## Activation Contract
+
+Use when designing or implementing first-party JSON API responses, their consumers, or pagination.
+For review-only work, report contract violations without starting an implementation or decision workflow.
+
+## Hard Rules
+
+- Read [contracts](assets/contracts.md); use the exact exported `ApiError` and `ApiResponse<T>` types
+  in TypeScript. Reuse shared exports across producers and consumers; do not recreate endpoint-local types.
+- Wrap success, failure, and pagination payloads in `ApiResponse<T>`. Keep appropriate HTTP status codes.
+  Protocol-defined redirects, streams, file downloads, and bodyless responses retain their required format.
+- Before implementing pagination, recommend offset or cursor based on the use case, ask the user which
+  to use, and STOP until they answer. Honor an explicit choice already provided for the current task.
+- Require all offset metadata fields, using `totalItems` for the authorized, filtered dataset count,
+  not the current page's length. For cursor pagination, always emit `nextCursor` (nullable);
+  include `prevCursor` only when explicitly requested. Wrap the entire page, not just its items.
+- Create or reuse shared cursor encode/decode utilities. Validate cursor payloads with Zod, including
+  decoded untrusted input. Recognized malformed incoming encoding, JSON, or payloads are API validation
+  errors. Invalid server-generated cursor payloads and unexpected utility defects are internal failures,
+  not client validation errors; handle them safely with appropriate statuses and diagnostic evidence.
+- Use both `createdAt` and `id` whenever available, with matching deterministic query ordering and
+  lexicographic continuation predicates. Never paginate tied timestamps by timestamp alone.
+- Expose an extendable base cursor schema and schema-aware encode/decode methods so additional sort
+  fields can be validated without duplicating utilities. Preserve timestamp precision through round trips.
+
+## Decision Gates
+
+| Use case | Recommendation |
+| --- | --- |
+| Numbered pages, random page access, exact totals | Offset; note count/deep-offset costs and shifting rows. |
+| Sequential feeds, large or frequently changing datasets | Cursor; note lack of arbitrary page jumps. |
+| Use case unclear | Ask which navigation behavior is needed before recommending a strategy. |
+
+## Execution Steps
+
+1. Inspect response producers, consumers, shared contracts, ordering fields, and existing utilities.
+   Read the [paired examples and exceptions](references/examples.md).
+2. Resolve the pagination choice before pagination implementation; apply the contract template.
+3. Implement validated cursor utilities when needed; extend the base schema for the selected ordering.
+4. Verify success/error envelopes, empty and final pages, and applicable offset boundaries or cursor
+   round trips, malformed cursors, timestamp ties, client/internal failure attribution, and requested
+   backward traversal (query direction, lookahead trimming, restored order, anchors, and boundaries).
+
+## Output Contract
+
+Return the chosen strategy, changed contracts/producers/consumers, checks, and remaining gaps.
+At the pagination decision gate, return only the recommendation and one question; wait for the answer.
+
+## References
+
+- [Contract template](assets/contracts.md): exported API/page types and cursor utility requirements.
+- [Paired examples and exceptions](references/examples.md): page envelopes, offset counts, cursor
+  lookahead, ordering, and shared schema-aware utilities.

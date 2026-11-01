@@ -1,6 +1,6 @@
 ---
 name: ev-review-nextjs
-description: "Trigger: Next.js code review with ev-code-review. Supply route, rendering, client/server boundary, and public environment rules."
+description: "Trigger: implementing or reviewing Next.js. Supply route, rendering, client/server boundary, and environment rules before coding or with ev-code-review."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -11,23 +11,38 @@ metadata:
 
 ## Activation Contract
 
-Use as an optional `ev-code-review` companion for scoped Next.js routes, rendering, Server Actions,
-client/server boundaries, and environment configuration. Supply rules; do not start reviews or delegate.
+Use before implementing Next.js routes/rendering/Server Actions/boundaries/configuration, or as an
+optional `ev-code-review` companion. Load general/domain rules through `ev-coding-standards` for
+implementation; do not start reviews or delegate. Review output/check assignments apply only in reviews.
 
 ## Hard Rules
 
 - Preserve coordinator scope, baseline, read-only constraints, and general/domain rules.
 - Keep route files such as `page.tsx`, `error.tsx`, and `loading.tsx` thin; they may re-export their
-  feature implementation.
+  feature implementation. Routes may own framework integration, metadata, configuration, and data-loading
+  orchestration; move substantial feature UI and business workflows into feature modules. Preserve
+  framework-required filenames/locations, exports, directives, and signatures. React's `index.tsx`
+  folder convention applies to extracted feature components, not special Next.js entry files.
 - Where React Server Components are supported, prefer server components unless browser state or
-  interaction requires a client boundary; prevent unnecessary client components and request waterfalls.
+  interaction requires a client boundary. Trace module imports, not visual nesting: server-rendered
+  content may pass through a client component's props without its implementation entering the client graph.
+  Keep server loading/orchestration in async Server Components or server functions; React hook extraction
+  does not require moving it into client state/effect hooks.
+  Prevent unnecessary serialization of independent requests; preserve genuine dependencies, rate limits,
+  and side-effect ordering. A slow request alone does not prove a waterfall.
 - Keep server-only modules and secrets out of client import graphs. Never expose privileged values
   through `NEXT_PUBLIC_*` variables, client bundles, logs, errors, or fixtures.
+  Distinguish supported Server Action references from ordinary server-only implementation imports.
 - Use statically analyzable accesses when required by the bundler, such as literal
   `process.env.NEXT_PUBLIC_SITE_URL` reads inside the public environment constants module. Preserve
   general validation, defaults, initialization, and runtime/build-time evaluation requirements.
-- Treat Server Actions as untrusted server entry points; apply backend validation and authorization
-  for every read/mutation rather than trusting invocation from a UI.
+  Public values are exposed to browsers and normally frozen at build time; do not treat them as
+  runtime configuration or freeze values that genuinely require runtime lookup.
+- Treat Server Actions as untrusted server entry points; apply backend validation and the declared
+  public/private access policy for every read/mutation rather than trusting invocation from a UI or
+  typed arguments. Public actions do not automatically require login. Reuse existing
+  validation and resource-level authorization in invoked server boundaries; verify enforcement on every
+  invocation rather than duplicating checks at every layer.
 
 ## Decision Gates
 
@@ -41,12 +56,20 @@ client/server boundaries, and environment configuration. Supply rules; do not st
 
 ## Execution Steps
 
-1. Identify owning Next.js version, router, directives, imports, and relevant configuration.
+1. Identify owning Next.js version, router, directives, imports, and relevant configuration. Read the
+   [paired examples and exceptions](references/examples.md), adapting framework APIs to the installed version.
 2. Trace route ownership, client import graphs, rendering behavior, server entry points, and environment reads.
 3. Verify applicable exceptions and assigned checks; do not replace project conventions unnecessarily.
 
 ## Output Contract
 
-Return candidates with severity, `path:line`, rule wording, evidence/impact, and smallest fix, plus gaps.
-Checklist: thin routes, justified client boundaries, server-only imports, safe public environment
-accesses, and validated/authorized Server Actions. The coordinator consolidates findings.
+Return candidates with severity, `path:line`, rule wording, evidence/impact, and smallest fix, plus a
+result for each assigned coverage ID: `nextjs-routes-rendering-client-boundaries`;
+`nextjs-server-only-imports-environment`; `nextjs-server-entry-validation-authorization`.
+Each result must use the shared status/evidence contract in `ev-code-review/references/coverage.md`.
+The coordinator consolidates findings.
+
+## References
+
+- [Paired examples and exceptions](references/examples.md): thin routes, client graphs, request ordering,
+  public/private configuration, and Server Action trust boundaries.

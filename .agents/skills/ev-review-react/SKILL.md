@@ -1,6 +1,6 @@
 ---
 name: ev-review-react
-description: "Trigger: React components, hooks, or JSX code review with ev-code-review. Supply React structure, state, rendering, and testing rules."
+description: "Trigger: implementing or reviewing React components, hooks, or JSX. Supply structure, state, rendering, and testing rules before coding or with ev-code-review."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -11,25 +11,39 @@ metadata:
 
 ## Activation Contract
 
-Use as an optional `ev-code-review` companion for React components, hooks, JSX rendering, and their tests.
-Supply rules to the active review; do not start another review or delegate.
+Use before implementing React components/hooks/JSX/tests, or as an optional `ev-code-review` companion.
+Load general/domain rules through `ev-coding-standards` for implementation; do not start another review
+or delegate. Review output/check assignments apply only during reviews.
 
 ## Hard Rules
 
 - Preserve coordinator scope, baseline, read-only constraints, and general/domain rules.
-- Declare one React component per production `.tsx` file. Declare props readonly using `Readonly<Props>`
-  or readonly properties when TypeScript is used.
-- Use a kebab-case component folder with an `index.tsx` entry point and colocated CSS module in
-  TypeScript projects; use the language-appropriate JSX extension otherwise.
-- Components describe UI. Move non-trivial form handling, requests, navigation, effects, and
-  interaction state into a custom hook beside the component.
+- Declare one React component per production `.tsx` file, including private components and components
+  wrapped in `memo` or similar APIs. Inline JSX and JSX returned by `.map()` callbacks are not additional
+  component declarations.
+- Declare props readonly using `Readonly<Props>` or readonly properties when TypeScript is used.
+  Use readonly collections when receiving arrays; `Readonly<Props>` alone is shallow. Never mutate
+  received domain objects. Reuse existing immutable contracts rather than imposing recursive wrappers.
+- Use a kebab-case component folder with an `index.tsx` entry point in TypeScript projects; use the
+  language-appropriate JSX extension otherwise. Preserve the project's established styling system.
+  When none exists and custom styles are needed, use a colocated CSS module. Do not create empty stylesheets.
+  Framework-mandated entry files keep their required names and locations; this folder convention
+  applies to application-owned feature components, not renaming framework routes or boundaries.
+- Components describe UI. Extract meaningful client-side workflows coordinating requests, validation,
+  navigation, effects, or related state transitions into a custom hook beside the component. Keep simple
+  local interactions in the component; do not decide extraction solely by line count or number of hooks.
+  Server data loading/orchestration remains in async Server Components or server functions. Do not move
+  it into client state/effect hooks or add a client boundary merely to satisfy hook extraction.
 - A page-only hook belongs beside its page; feature-shared hooks belong in `feature/hooks`;
   cross-feature hooks belong in `src/hooks`. Expose domain-oriented state/actions, not implementation details.
 - Do not create a hook merely to wrap a simple derived value or trivial toggle. Derive values during
-  render instead of synchronizing duplicate state with effects.
+  render when existing props/state fully determine them, instead of synchronizing duplicate state with
+  effects. Editable drafts may be independent state initialized from props; define reset behavior
+  intentionally rather than automatically synchronizing them with an effect.
 - Prefix hooks with `use`, callback props with `on`, and internal event handlers with `handle`.
 - Tightly coupled compound primitives under `src/components/ui` may share a file when intentionally
-  consumed as one family. This exception does not apply to feature components.
+  consumed as one shared API. Names such as `Root` or `Content` alone do not establish a family.
+  This exception does not apply to feature components.
 - Render untrusted text through normal JSX interpolation so React escapes it. Do not use
   `dangerouslySetInnerHTML` with user-controlled content unless product-required HTML is sanitized at
   the final render boundary and tested as required by frontend rules.
@@ -43,15 +57,26 @@ Supply rules to the active review; do not start another review or delegate.
 | Plain domain utility in a React package | Do not impose component/hook structure. |
 | Non-React JSX | Do not infer React from the extension alone. |
 | Approved compound primitive family | Apply the one-component exception. |
+| Trivial local interaction or derived value | Keep it local; do not extract a hook solely to relocate code. |
+| Component needs custom styles | Follow the established styling system; otherwise use a colocated CSS module. |
+| Server Component data loading or framework entry file | Preserve server execution and framework filenames; do not force client hooks or an `index.tsx` rename. |
 
 ## Execution Steps
 
-1. Verify actual React usage, component ownership, hook consumers, and applicable test tooling.
+1. Verify actual React usage, component ownership, hook consumers, styling conventions, and applicable
+   test tooling. Read the [rule examples and exceptions](references/examples.md).
 2. Check component count/props, collocation, hook responsibilities, derived state, and safe rendering.
 3. Verify exceptions and behavioral impact; report assigned check results without duplicating shared runs.
 
 ## Output Contract
 
-Return candidates with severity, `path:line`, rule wording, evidence/impact, and smallest fix, plus gaps.
-Checklist: component count (with exception), readonly typed props, ownership, purposeful hooks, derived
-state, escaped/sanitized rendering, and accessible test queries. The coordinator consolidates findings.
+Return candidates with severity, `path:line`, rule wording, evidence/impact, and smallest fix, plus a
+result for each assigned coverage ID: `react-component-ownership-props`;
+`react-hooks-state-derived-values`; `react-safe-rendering-accessibility-testing`.
+Each result must use the shared status/evidence contract in `ev-code-review/references/coverage.md`.
+The coordinator consolidates findings.
+
+## References
+
+- [Rule examples and exceptions](references/examples.md): hook extraction, derived values, component
+  structure/styling, compound families, and readonly props.
