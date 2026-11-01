@@ -131,4 +131,32 @@ describe("first-write-wins original finalization", () => {
     await fixtures.memories.create({ userId: "user-a", body: creationRequest([upload.id]) });
     expect(fixtures.state.memories).toHaveLength(1);
   });
+
+  it("preserves a storage failure when claim cleanup also fails", async () => {
+    const upload = fixtures.addUpload({ bytes });
+    const storageError = new Error("Storage unavailable");
+    const update = fixtures.prisma.fileUpload.updateMany.getMockImplementation();
+    if (!update) throw new Error("Missing update fixture");
+    fixtures.prisma.fileUpload.updateMany
+      .mockImplementationOnce(update)
+      .mockRejectedValueOnce(new Error("Cleanup unavailable"));
+    fixtures.storage.getObject.mockRejectedValueOnce(storageError);
+
+    await expect(
+      fixtures.finalization.finalize({ id: upload.id, userId: "user-a", spaceId: SPACE_ID }),
+    ).rejects.toBe(storageError);
+  });
+
+  it("preserves the unavailable-upload response when invalid-image cleanup fails", async () => {
+    const upload = fixtures.addUpload({ bytes: Buffer.from("not an image") });
+    const update = fixtures.prisma.fileUpload.updateMany.getMockImplementation();
+    if (!update) throw new Error("Missing update fixture");
+    fixtures.prisma.fileUpload.updateMany
+      .mockImplementationOnce(update)
+      .mockRejectedValueOnce(new Error("Cleanup unavailable"));
+
+    await expect(
+      fixtures.finalization.finalize({ id: upload.id, userId: "user-a", spaceId: SPACE_ID }),
+    ).rejects.toMatchObject({ status: 404 });
+  });
 });

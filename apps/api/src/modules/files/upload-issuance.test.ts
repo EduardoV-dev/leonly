@@ -116,6 +116,7 @@ describe("authenticated upload issuance", () => {
         600_000,
       );
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-type");
+      expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-length");
       expect(url.searchParams.has("x-amz-checksum-crc32")).toBe(false);
       expect(upload.requiredHeaders).toEqual({ "Content-Type": "image/jpeg" });
       expect(record).toMatchObject({

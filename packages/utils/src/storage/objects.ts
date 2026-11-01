@@ -74,7 +74,12 @@ export class ObjectStorage {
     });
   }
 
-  async signUpload(options: { key: string; contentType: string; issuedAt: Date }): Promise<string> {
+  async signUpload(options: {
+    key: string;
+    contentType: string;
+    byteSize: number;
+    issuedAt: Date;
+  }): Promise<string> {
     return createUploadUrl({ ...options, client: this.signingClient, bucket: this.bucket });
   }
 

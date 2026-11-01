@@ -9,7 +9,6 @@ import {
 import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
 import { type ApiError, type ApiResponse, createApiError } from "./api-response";
-import { ApiServiceUnavailableError } from "./errors/api-service-unavailable.error";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -64,18 +63,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const isServerError = status >= 500;
-    const isPublicServiceFailure = exception instanceof ApiServiceUnavailableError;
-    const shouldLogServerError = isServerError && !isPublicServiceFailure;
 
-    if (shouldLogServerError) this.logger.error({ err: exception }, "Unhandled API error");
+    if (isServerError) this.logger.error({ err: exception }, "Unhandled API error");
 
     const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : null;
     const isClientError = exception instanceof HttpException && !isServerError;
     let error = [createApiError(status)];
 
-    if (isPublicServiceFailure) {
-      error = exception.errors;
-    } else if (isClientError) {
+    if (isClientError) {
       error = getClientErrors({ response: exceptionResponse, status });
     }
 

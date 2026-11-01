@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Redis } from "@upstash/redis";
 import { REDIS_CLIENT } from "./redis.tokens";
 
@@ -19,6 +19,8 @@ type WithLockParams<T> = { key: string; operation: () => Promise<T> };
 
 @Injectable()
 export class RedisService {
+  private readonly logger = new Logger(RedisService.name);
+
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
   async ping(): Promise<boolean> {
@@ -42,7 +44,11 @@ export class RedisService {
     try {
       return await operation();
     } finally {
-      await this.redis.createScript<number>(RELEASE_LOCK_SCRIPT).eval([key], [lockToken]);
+      try {
+        await this.redis.createScript<number>(RELEASE_LOCK_SCRIPT).eval([key], [lockToken]);
+      } catch {
+        this.logger.warn({ event: "redis_lock_release_failed" });
+      }
     }
   }
 }

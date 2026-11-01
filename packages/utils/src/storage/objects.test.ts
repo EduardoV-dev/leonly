@@ -21,6 +21,7 @@ describe("shared object storage", () => {
         await storage.signUpload({
           key: "staging/photo.png",
           contentType: "image/png",
+          byteSize: 1024,
           issuedAt: new Date("2026-10-11T00:00:00Z"),
         }),
       );
@@ -28,10 +29,43 @@ describe("shared object storage", () => {
       expect(url.pathname).toBe("/photos/staging/photo.png");
       expect(url.searchParams.get("X-Amz-Expires")).toBe("600");
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-type");
+      expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-length");
+      const differentSizeUrl = new URL(
+        await storage.signUpload({
+          key: "staging/photo.png",
+          contentType: "image/png",
+          byteSize: 1025,
+          issuedAt: new Date("2026-10-11T00:00:00Z"),
+        }),
+      );
+
+      expect(url.searchParams.get("X-Amz-Signature")).not.toBe(
+        differentSizeUrl.searchParams.get("X-Amz-Signature"),
+      );
     } finally {
       storage.destroy();
     }
   });
+
+  it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])(
+    "refuses invalid upload byte size %s before issuing a capability",
+    async (byteSize) => {
+      const storage = new ObjectStorage(configuration);
+
+      try {
+        await expect(
+          storage.signUpload({
+            key: "staging/photo.png",
+            contentType: "image/png",
+            byteSize,
+            issuedAt: new Date("2026-10-11T00:00:00Z"),
+          }),
+        ).rejects.toThrow("Upload byte size must be a positive safe integer");
+      } finally {
+        storage.destroy();
+      }
+    },
+  );
 
   it("bounds downloads and never overwrites an accepted object", async () => {
     const send = vi.spyOn(S3Client.prototype, "send");

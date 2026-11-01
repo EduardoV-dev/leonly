@@ -39,20 +39,27 @@ async function createHealthService(): Promise<CreateHealthServiceReturn> {
 describe("HealthService", () => {
   it("checks both dependencies", async () => {
     const { health, query, ping } = await createHealthService();
-    await expect(health.check()).resolves.toEqual({ database: true, redis: true });
+    await expect(health.check()).resolves.toEqual({
+      status: "ok",
+      checks: { database: "up", redis: "up" },
+    });
     expect(query).toHaveBeenCalledOnce();
     expect(ping).toHaveBeenCalledOnce();
   });
 
-  it.each(["database", "redis", "both"])(
-    "reports %s failures independently",
-    async (dependency) => {
+  it.each([
+    { dependency: "database", status: "degraded", database: "down", redis: "up" },
+    { dependency: "redis", status: "degraded", database: "up", redis: "down" },
+    { dependency: "both", status: "down", database: "down", redis: "down" },
+  ])(
+    "reports $dependency failures independently as $status",
+    async ({ dependency, status, database, redis }) => {
       const { health, query, ping } = await createHealthService();
       if (dependency !== "redis") query.mockRejectedValue(new Error("Database unavailable"));
       if (dependency !== "database") ping.mockRejectedValue(new Error("Redis unavailable"));
       await expect(health.check()).resolves.toEqual({
-        database: dependency === "redis",
-        redis: dependency === "database",
+        status,
+        checks: { database, redis },
       });
     },
   );
@@ -60,7 +67,10 @@ describe("HealthService", () => {
   it("reports an unexpected Redis ping response as unhealthy", async () => {
     const { health, ping } = await createHealthService();
     ping.mockResolvedValue(false);
-    await expect(health.check()).resolves.toEqual({ database: true, redis: false });
+    await expect(health.check()).resolves.toEqual({
+      status: "degraded",
+      checks: { database: "up", redis: "down" },
+    });
   });
 
   it("bounds concurrent probes and clears their timers", async () => {
@@ -72,7 +82,10 @@ describe("HealthService", () => {
     expect(query).toHaveBeenCalledOnce();
     expect(ping).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(HEALTH_CHECK_TIMEOUT_MS);
-    await expect(result).resolves.toEqual({ database: false, redis: false });
+    await expect(result).resolves.toEqual({
+      status: "down",
+      checks: { database: "down", redis: "down" },
+    });
     expect(vi.getTimerCount()).toBe(0);
   });
 });

@@ -9,7 +9,7 @@ import { ApiResponseInterceptor } from "../common/http/api-response.interceptor"
 import { HealthController } from "./health.controller";
 import { HealthService } from "./health.service";
 
-const check = vi.fn();
+const check = vi.fn<HealthService["check"]>();
 
 @Module({
   imports: [LoggerModule.forRoot({ pinoHttp: { level: "silent" } })],
@@ -34,33 +34,20 @@ describe("GET /api/health", () => {
   });
 
   it.each([
-    { database: true, redis: true, status: 200 },
-    { database: false, redis: true, status: 503 },
-    { database: true, redis: false, status: 503 },
-    { database: false, redis: false, status: 503 },
-  ])("returns $status for database=$database and redis=$redis", async ({ status, ...health }) => {
-    check.mockResolvedValue(health);
-    await request(app.getHttpServer())
-      .get("/api/health")
-      .expect(status)
-      .expect("Cache-Control", "no-store")
-      .expect({
-        ok: status === 200,
-        data: status === 200 ? health : null,
-        error:
-          status === 200
-            ? []
-            : Object.entries(health)
-                .filter(([, isHealthy]) => !isHealthy)
-                .map(([field]) => ({
-                  code: "HTTP_503",
-                  message: "Service is temporarily unavailable. Please try again later.",
-                  field,
-                })),
-        message:
-          status === 200
-            ? "Request completed successfully"
-            : "Service is temporarily unavailable. Please try again later.",
-      });
-  });
+    { database: "up", redis: "up", status: "ok", httpStatus: 200 },
+    { database: "down", redis: "up", status: "degraded", httpStatus: 503 },
+    { database: "up", redis: "down", status: "degraded", httpStatus: 503 },
+    { database: "down", redis: "down", status: "down", httpStatus: 503 },
+  ] as const)(
+    "returns $status directly for database=$database and redis=$redis",
+    async ({ database, redis, status, httpStatus }) => {
+      const health = { status, checks: { database, redis } };
+      check.mockResolvedValue(health);
+      await request(app.getHttpServer())
+        .get("/api/health")
+        .expect(httpStatus)
+        .expect("Cache-Control", "no-store")
+        .expect(health);
+    },
+  );
 });

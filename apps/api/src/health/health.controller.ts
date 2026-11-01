@@ -1,22 +1,26 @@
 import { Controller, Get, HttpStatus, Res } from "@nestjs/common";
-import { ApiOperation, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { Public } from "../auth/decorators/public.decorator";
-import { type ApiError, createApiError } from "../common/http/api-response";
-import {
-  ApiErrorResponses,
-  ApiSuccessResponse,
-  apiResponseSchema,
-} from "../common/http/api-response.docs";
-import { ApiServiceUnavailableError } from "../common/http/errors/api-service-unavailable.error";
-import { type DependencyHealth, HealthService } from "./health.service";
+import { ApiErrorResponses } from "../common/http/api-response.docs";
+import { SkipRateLimit } from "../common/rate-limit/decorators/skip-rate-limit.decorator";
+import { HealthService } from "./health.service";
 
 const HEALTH_SCHEMA = {
   type: "object" as const,
-  required: ["database", "redis"],
-  properties: { database: { type: "boolean" as const }, redis: { type: "boolean" as const } },
+  required: ["status", "checks"],
+  properties: {
+    status: { type: "string" as const, enum: ["ok", "degraded", "down"] },
+    checks: {
+      type: "object" as const,
+      required: ["database", "redis"],
+      properties: {
+        database: { type: "string" as const, enum: ["up", "down"] },
+        redis: { type: "string" as const, enum: ["up", "down"] },
+      },
+    },
+  },
 };
-const UNAVAILABLE_ERROR = createApiError(HttpStatus.SERVICE_UNAVAILABLE);
 
 @Controller()
 @ApiTags("Health")
@@ -25,40 +29,33 @@ export class HealthController {
 
   @Get("health")
   @Public()
+  @SkipRateLimit()
   @ApiOperation({
     summary: "Check API health",
     description:
-      "Public, uncached dependency check. Returns 200 when PostgreSQL and Redis are healthy, otherwise 503 with data: null and a structured error for each unhealthy dependency.",
+      "Public, uncached dependency check, independent of rate-limit storage. Returns a direct { status, checks } body: ok/200 when all dependencies are up, degraded/503 for mixed results, or down/503 when all are down.",
   })
-  @ApiSuccessResponse({
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: "All dependencies are healthy",
-    data: HEALTH_SCHEMA,
-    example: { database: true, redis: true },
+    schema: {
+      ...HEALTH_SCHEMA,
+      example: { status: "ok", checks: { database: "up", redis: "up" } },
+    },
   })
   @ApiServiceUnavailableResponse({
     description: "At least one dependency is unhealthy",
-    schema: apiResponseSchema({
-      data: { type: "object", nullable: true, enum: [null] },
-      ok: false,
-      example: {
-        ok: false,
-        data: null,
-        error: [{ ...UNAVAILABLE_ERROR, field: "database" }],
-        message: UNAVAILABLE_ERROR.message,
-      },
-    }),
+    schema: {
+      ...HEALTH_SCHEMA,
+      example: { status: "degraded", checks: { database: "down", redis: "up" } },
+    },
   })
   @ApiErrorResponses(HttpStatus.INTERNAL_SERVER_ERROR)
-  async getHealth(@Res({ passthrough: true }) response: Response): Promise<DependencyHealth> {
+  async getHealth(@Res() response: Response): Promise<void> {
     const health = await this.healthService.check();
-    const errors: ApiError[] = [];
-
-    if (!health.database) errors.push({ ...UNAVAILABLE_ERROR, field: "database" });
-    if (!health.redis) errors.push({ ...UNAVAILABLE_ERROR, field: "redis" });
+    const status = health.status === "ok" ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
 
     response.setHeader("Cache-Control", "no-store");
-    if (errors.length > 0) throw new ApiServiceUnavailableError(errors);
-
-    return health;
+    response.status(status).json(health);
   }
 }

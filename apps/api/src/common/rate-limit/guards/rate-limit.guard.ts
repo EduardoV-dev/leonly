@@ -9,6 +9,7 @@ import { Reflector } from "@nestjs/core";
 import type { Response } from "express";
 import { AuthService, type SessionRequest } from "../../../auth/auth.service";
 import { GLOBAL_RATE_LIMIT, RATE_LIMIT_KEY } from "../constants/rate-limit.constants";
+import { SKIP_RATE_LIMIT_KEY } from "../decorators/skip-rate-limit.decorator";
 import { RateLimitService } from "../rate-limit.service";
 import type { CheckReturn, RateLimitOptions } from "../types/rate-limit.types";
 
@@ -34,6 +35,13 @@ export class RateLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const shouldSkipRateLimit = this.reflector.getAllAndOverride<boolean>(SKIP_RATE_LIMIT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (shouldSkipRateLimit) return true;
+
     const http = context.switchToHttp();
     const policy = this.reflector.getAllAndOverride<RateLimitOptions>(RATE_LIMIT_KEY, [
       context.getHandler(),

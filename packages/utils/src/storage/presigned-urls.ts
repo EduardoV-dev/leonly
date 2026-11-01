@@ -8,17 +8,26 @@ export function createUploadUrl(options: {
   bucket: string;
   key: string;
   contentType: string;
+  byteSize: number;
   issuedAt: Date;
 }): Promise<string> {
-  const { client, bucket, key, contentType, issuedAt } = options;
+  const { client, bucket, key, contentType, byteSize, issuedAt } = options;
+  const hasInvalidByteSize = !Number.isSafeInteger(byteSize) || byteSize < 1;
+
+  if (hasInvalidByteSize) throw new Error("Upload byte size must be a positive safe integer");
 
   return getSignedUrl(
     client,
-    new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+      ContentLength: byteSize,
+    }),
     {
       expiresIn: UPLOAD_URL_SECONDS,
       signingDate: issuedAt,
-      signableHeaders: new Set(["content-type"]),
+      signableHeaders: new Set(["content-type", "content-length"]),
     },
   );
 }

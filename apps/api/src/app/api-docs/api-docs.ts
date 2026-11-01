@@ -12,7 +12,7 @@ export function mountApiDocs(app: NestExpressApplication): void {
     new DocumentBuilder()
       .setTitle("Leonly API")
       .setDescription(
-        "Nest endpoints use { ok, data, error, message } response bodies. Authentication uses a Better Auth session cookie. Errors include a code, message, and optional request field. Failure data is null; health errors identify each unhealthy dependency by field. Better Auth routes under /api/auth/* use their own protocol and are not included in this document.",
+        "Nest endpoints use { ok, data, error, message } response bodies, except health checks, which return { status, checks } directly. Authentication uses a Better Auth session cookie. Errors include a code, message, and optional request field. Failure data is null. Better Auth routes under /api/auth/* use their own protocol and are not included in this document.",
       )
       .setVersion("1.0")
       .addCookieAuth(sessionToken.name, { type: "apiKey", in: "cookie" }, "session")

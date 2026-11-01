@@ -55,6 +55,14 @@ describe("API application", () => {
   it("serves the prefixed OpenAPI document and Scalar reference", async () => {
     const document = await request(app.getHttpServer()).get("/openapi.json").expect(200);
     expect(document.body.paths).toHaveProperty("/api/health");
+    for (const status of [200, 503]) {
+      const schema =
+        document.body.paths["/api/health"].get.responses[status].content["application/json"].schema;
+      expect(schema.required).toEqual(["status", "checks"]);
+      expect(schema.properties.status.enum).toEqual(["ok", "degraded", "down"]);
+      expect(schema.example).toHaveProperty("checks.database");
+      expect(schema.example).not.toHaveProperty("ok");
+    }
     expect(document.body.paths).toHaveProperty("/api/spaces");
     expect(document.body.components.schemas.CreateSpaceDto.required).toEqual(
       expect.arrayContaining(["space_name", "start_date", "timezone"]),
@@ -71,7 +79,6 @@ describe("API application", () => {
   it("documents response bodies and authentication for every Nest operation", async () => {
     const { body: document } = await request(app.getHttpServer()).get("/openapi.json").expect(200);
     const expectedOperations = [
-      ["/api/health", "get", [200, 500, 503]],
       ["/api/spaces", "post", [201, 400, 401, 403, 409, 429, 500]],
       ["/api/spaces/memberships/onboarding", "post", [200, 401, 403, 409, 500]],
       ["/api/spaces/invites/validations", "post", [200, 400, 401, 403, 404, 429, 500]],
@@ -87,7 +94,7 @@ describe("API application", () => {
     for (const [path, method, statuses] of expectedOperations) {
       const operation = document.paths[path][method];
       expect(operation.summary).toBeTruthy();
-      if (path !== "/api/health") expect(operation.security).toEqual([{ session: [] }]);
+      expect(operation.security).toEqual([{ session: [] }]);
       for (const status of statuses) {
         const isSuccess = status < 400;
         const schema = operation.responses[status].content["application/json"].schema;

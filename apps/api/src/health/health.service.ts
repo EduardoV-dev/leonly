@@ -1,9 +1,9 @@
+import type { HealthResponse } from "@leonly/utils/contracts";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { RedisService } from "../common/redis/redis.service";
 
 export const HEALTH_CHECK_TIMEOUT_MS = 5_000;
-export type DependencyHealth = Readonly<{ database: boolean; redis: boolean }>;
 
 @Injectable()
 export class HealthService {
@@ -12,8 +12,8 @@ export class HealthService {
     private readonly redisService: RedisService,
   ) {}
 
-  async check(): Promise<DependencyHealth> {
-    const [database, redis] = await Promise.all([
+  async check(): Promise<HealthResponse> {
+    const [isDatabaseUp, isRedisUp] = await Promise.all([
       this.checkDependency(async () => {
         await this.prismaService.$queryRaw`SELECT 1`;
         return true;
@@ -21,7 +21,17 @@ export class HealthService {
       this.checkDependency(() => this.redisService.ping()),
     ]);
 
-    return { database, redis };
+    const isHealthy = isDatabaseUp && isRedisUp;
+    const isUnavailable = !isDatabaseUp && !isRedisUp;
+    let status: HealthResponse["status"] = "degraded";
+
+    if (isHealthy) status = "ok";
+    if (isUnavailable) status = "down";
+
+    return {
+      status,
+      checks: { database: isDatabaseUp ? "up" : "down", redis: isRedisUp ? "up" : "down" },
+    };
   }
 
   private async checkDependency(probe: () => Promise<boolean>): Promise<boolean> {

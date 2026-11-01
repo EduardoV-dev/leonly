@@ -60,6 +60,7 @@ export class FilesService {
       const putUrl = await this.storage.signUpload({
         key: record.stagingKey,
         contentType: record.declaredMimeType,
+        byteSize: record.declaredByteSize,
         issuedAt,
       });
 

@@ -9,7 +9,7 @@ credentials. State-changing browser requests must come from the configured `WEB_
 
 | Method | Endpoint | Successful `data` | Endpoint-specific failures |
 | --- | --- | --- | --- |
-| GET | `/api/health` | `{ "database": true, "redis": true }` | 503 if either dependency is unhealthy |
+| GET | `/api/health` | Direct `{ "status": "ok", "checks": { "database": "up", "redis": "up" } }`, without an envelope | 503 for `degraded` or `down` |
 | POST | `/api/spaces` | `{ "space_id": "<uuid>" }` | 400 invalid fields; 409 active membership already exists |
 | POST | `/api/spaces/memberships/onboarding` | `{ "completed": true }` | 409 no active membership |
 | PATCH | `/api/spaces/memberships/display-name` | `{ "displayName": "Leo", "status": "updated", "updatedAt": "<timestamp>" }` | 400 invalid input; 404 no active membership; 409 stale revision |
@@ -20,7 +20,7 @@ credentials. State-changing browser requests must come from the configured `WEB_
 | POST | `/api/files/uploads` | Ordered `uploads` with IDs, signed staging PUT URLs, required headers, and deadlines | 400 invalid purpose/descriptors or client-controlled fields; 404 no active space |
 | POST | `/api/memories` | `{ "id": "<uuid>", "visibility": "timeline" }` | 400 invalid details; 404 unavailable uploads/space; 409 changed-input key reuse or creation in progress |
 
-Successful Nest operations return HTTP 200 or their documented HTTP 201 creation status with a JSON body, including when `data` is null:
+Except for health checks, successful Nest operations return HTTP 200 or their documented HTTP 201 creation status with a JSON body, including when `data` is null:
 
 ```json
 {
@@ -35,7 +35,7 @@ Successful Nest operations return HTTP 200 or their documented HTTP 201 creation
 
 Errors use the same envelope with `ok: false`, a nonempty `error` array, and a readable
 `message` and `data: null`. Each error has a `code`, `message`, and optional `field`.
-Health errors identify each unhealthy dependency by `field`. Documented examples are generic;
+Health checks use the direct response described below. Documented examples are generic;
 validation and domain failures can provide more specific messages.
 
 | Status | Meaning | Error code |
@@ -62,18 +62,22 @@ validation and domain failures can provide more specific messages.
 
 ### Health checks
 
-`GET /api/health` is public and returns `Cache-Control: no-store`. A failed PostgreSQL or Redis
-probe returns HTTP 503 with an error for each unhealthy dependency. Dependencies absent from the
-error array passed their probes. For example, a failed database probe with healthy Redis returns:
+`GET /api/health` is public, bypasses Redis-backed rate limiting, and returns
+`Cache-Control: no-store`. Its body is returned directly without the ordinary API envelope.
+Each PostgreSQL/Redis probe reports `up` or `down`; failed or timed-out probes count as `down`.
+
+| Dependency results | `status` | HTTP status |
+| --- | --- | --- |
+| Both up | `ok` | 200 |
+| One up, one down | `degraded` | 503 |
+| Both down | `down` | 503 |
+
+For example, a failed database probe with healthy Redis returns HTTP 503:
 
 ```json
 {
-  "ok": false,
-  "data": null,
-  "error": [
-    { "code": "HTTP_503", "field": "database", "message": "Service is temporarily unavailable. Please try again later." }
-  ],
-  "message": "Service is temporarily unavailable. Please try again later."
+  "status": "degraded",
+  "checks": { "database": "down", "redis": "up" }
 }
 ```
 
@@ -140,6 +144,11 @@ Direct commands, `pnpm --filter @leonly/database <command>`, require an external
 
 Storage configuration is required at API startup and fails fast when incomplete. Signing uses the configured browser endpoint directly; never rewrite a signed hostname. Upload URLs last 600 seconds, attachment eligibility lasts 4,200 seconds, and finalization claims last 120 seconds. The bucket's browser CORS must allow the frontend's PUT requests with `Content-Type`.
 
+Each staging PUT signature binds `Content-Type` and the exact declared byte size through
+`Content-Length`. Upload the original `File`/`Blob` body so the browser supplies that length
+automatically; do not set the forbidden `Content-Length` header from browser code. A different
+body length requires a new upload capability.
+
 The upload and creation JSON contracts are in `openspec/changes/archive/2026-10-28-create-memory-upload-worker/contracts.md`. Matching creation retries return the existing result before checking consumed uploads. Originals are validated and promoted with destination-create-only writes; image events are persisted atomically. Creation awaits a bounded post-commit publication attempt and succeeds even when publication fails. The independent `apps/workers` Lambda generates variants; new reads and cleanup remain deferred.
 
 Recovery of unpublished outbox events is deferred. No replay command or scheduled publisher
@@ -185,7 +194,7 @@ The web app's Supabase-backed endpoints remain Next.js routes and are not sent t
 
 ## Rate limiting
 
-Nest routes receive a global 300 requests/minute sliding-window limit per verified user, with
+Nest routes except `/api/health` receive a global 300 requests/minute sliding-window limit per verified user, with
 an IP fallback for anonymous requests. The Express Better Auth adapter applies the same global
 policy and an additional 5 requests/minute IP-scoped sliding-window policy to sign-in requests.
 Better Auth's process-local limiter is disabled in favor of these distributed Upstash policies.
@@ -200,7 +209,8 @@ Better Auth's process-local limiter is disabled in favor of these distributed Up
 The settings-write quota is shared by `PATCH /api/spaces/name`, `PATCH /api/spaces/start-date`,
 and `PATCH /api/spaces/memberships/display-name`. Switching fields does not create a fresh quota.
 Space creation has its own quota, separate from invite operations and settings writes.
-Active-space reads, settings reads, onboarding completion, and health checks use only the global policy.
+Active-space reads, settings reads, and onboarding completion use only the global policy.
+Health checks bypass it so Redis outages can be reported by the dependency probes.
 
 Every request that reaches a policy consumes an attempt, including successful requests, invalid
 DTOs, and requests whose database operation fails. A successful join does not clear the quota.

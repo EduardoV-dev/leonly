@@ -127,13 +127,26 @@ describe("memberships API", () => {
   it("joins through the memberships route using the authenticated identity", async () => {
     const response = await post("/api/spaces/memberships", {
       invite_code: "LNY-7KMP2",
-      user_id: "forged-user",
     });
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ ok: true, data: { space_id: "space-id" } });
     expect(member.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: "better-auth-user", displayName: "Account Name" }),
     });
+  });
+
+  it("rejects a forged user field before joining", async () => {
+    const response = await post("/api/spaces/memberships", {
+      invite_code: "LNY-7KMP2",
+      user_id: "forged-user",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContainEqual(
+      expect.objectContaining({ code: "VALIDATION_ERROR", field: "user_id" }),
+    );
+    expect(transaction).not.toHaveBeenCalled();
+    expect(member.create).not.toHaveBeenCalled();
   });
 
   it.each(["/api/spaces/memberships", "/api/spaces/invites/validations"])(

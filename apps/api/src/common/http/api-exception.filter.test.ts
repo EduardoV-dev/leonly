@@ -5,7 +5,6 @@ import { ExpressAdapter } from "@nestjs/platform-express";
 import { PinoLogger } from "nestjs-pino";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiExceptionFilter } from "./api-exception.filter";
-import { ApiServiceUnavailableError } from "./errors/api-service-unavailable.error";
 
 class FilterFixture {
   readonly adapter = new ExpressAdapter();
@@ -25,20 +24,6 @@ class FilterFixture {
 afterEach(() => vi.restoreAllMocks());
 
 describe("ApiExceptionFilter", () => {
-  it("preserves explicitly public service diagnostics without response data", () => {
-    const { filter, host, reply, error: logError } = new FilterFixture();
-    const errors = [{ code: "HTTP_503", field: "database", message: "Try again later." }];
-
-    filter.catch(new ApiServiceUnavailableError(errors), host);
-
-    expect(reply).toHaveBeenCalledWith(
-      {},
-      { ok: false, data: null, error: errors, message: "Try again later." },
-      503,
-    );
-    expect(logError).not.toHaveBeenCalled();
-  });
-
   it.each([500, 503])("redacts arbitrary structured diagnostics on HTTP %s", (status) => {
     const { filter, host, reply } = new FilterFixture();
     const exception = new HttpException(

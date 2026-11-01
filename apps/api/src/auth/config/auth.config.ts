@@ -32,6 +32,7 @@ export function createAuth(prisma: PrismaService) {
       },
     },
     database: prismaAdapter(prisma, { provider: "postgresql" }),
+    account: { accountLinking: { enabled: false } },
     emailAndPassword: { enabled: false },
     socialProviders: {
       google: {

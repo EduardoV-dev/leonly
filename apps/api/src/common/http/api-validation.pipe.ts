@@ -31,6 +31,7 @@ export const apiValidationPipe = new ValidationPipe({
   transform: true,
   transformOptions: { enableImplicitConversion: false },
   whitelist: true,
+  forbidNonWhitelisted: true,
   exceptionFactory: (errors: ValidationError[]) =>
     new BadRequestException({ errors: validationErrors(errors) }),
 });

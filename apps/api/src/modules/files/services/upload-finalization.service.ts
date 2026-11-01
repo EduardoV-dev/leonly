@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FileUpload } from "@leonly/database/client";
 import { ObjectSizeError, ObjectStorage } from "@leonly/utils/storage";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import {
   throwCreationInProgressError,
@@ -24,6 +24,8 @@ type FinalizeParams = { id: string; userId: string; spaceId: string };
 
 @Injectable()
 export class UploadFinalizationService {
+  private readonly logger = new Logger(UploadFinalizationService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
@@ -102,27 +104,29 @@ export class UploadFinalizationService {
     } catch (error) {
       const isInvalidImage = error instanceof InvalidImageError || error instanceof ObjectSizeError;
 
-      if (isInvalidImage) {
+      try {
         await this.prismaService.fileUpload.updateMany({
           where: {
             id: upload.id,
             leaseToken,
             status: "finalizing",
-            leaseExpiresAt: { gt: new Date() },
+            ...(isInvalidImage ? { leaseExpiresAt: { gt: new Date() } } : {}),
           },
-          data: {
-            status: "failed",
-            failureCode: "INVALID_IMAGE",
-            leaseToken: null,
-            leaseExpiresAt: null,
-          },
+          data: isInvalidImage
+            ? {
+                status: "failed",
+                failureCode: "INVALID_IMAGE",
+                leaseToken: null,
+                leaseExpiresAt: null,
+              }
+            : { leaseToken: null, leaseExpiresAt: null },
         });
-        throwUnavailableUploadError();
+      } catch {
+        this.logger.warn({ event: "upload_finalization_cleanup_failed", uploadId: upload.id });
       }
-      await this.prismaService.fileUpload.updateMany({
-        where: { id: upload.id, leaseToken, status: "finalizing" },
-        data: { leaseToken: null, leaseExpiresAt: null },
-      });
+
+      if (isInvalidImage) throwUnavailableUploadError();
+
       throw error;
     }
   }

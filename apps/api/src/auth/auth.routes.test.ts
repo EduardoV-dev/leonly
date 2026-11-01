@@ -3,6 +3,7 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { createApiApp } from "../app/create-app/create-app";
 import { rateLimitStorage } from "../common/rate-limit/test-setup";
+import { RedisService } from "../common/redis/redis.service";
 
 vi.mock("../common/config/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
@@ -107,10 +108,8 @@ describe("Google authentication routes", () => {
         .get("/api/health")
         .expect(200)
         .expect({
-          ok: true,
-          data: { database: true, redis: true },
-          error: [],
-          message: "Request completed successfully",
+          status: "ok",
+          checks: { database: "up", redis: "up" },
         });
       await request(server).get("/docs").expect(404);
       await request(server).get("/openapi.json").expect(404);
@@ -137,6 +136,25 @@ describe("Google authentication routes", () => {
     } finally {
       await app?.close();
       vi.unstubAllEnvs();
+    }
+  });
+
+  it("reports Redis health even when rate-limit storage is unavailable", async () => {
+    const app = await createApiApp();
+    const ping = vi.spyOn(app.get(RedisService), "ping").mockRejectedValue(new Error("Redis down"));
+    rateLimitStorage.limit.mockRejectedValue(new Error("Rate-limit storage down"));
+
+    try {
+      await app.init();
+      await request(app.getHttpServer())
+        .get("/api/health")
+        .expect(503)
+        .expect("Cache-Control", "no-store")
+        .expect({ status: "degraded", checks: { database: "up", redis: "down" } });
+      expect(rateLimitStorage.limit).not.toHaveBeenCalled();
+    } finally {
+      ping.mockRestore();
+      await app.close();
     }
   });
 });

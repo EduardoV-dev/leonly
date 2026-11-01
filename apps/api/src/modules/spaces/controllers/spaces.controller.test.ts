@@ -232,12 +232,11 @@ describe("spaces API", () => {
     expect(data.inviteCodeExpiresAt.getTime() - Date.now()).toBeGreaterThan(23 * 60 * 60 * 1000);
   });
 
-  it("trims names, accepts nullable display name, and strips unknown fields", async () => {
+  it("trims names and accepts nullable display name", async () => {
     const response = await post({
       ...validBody,
       space_name: "  Forever Us  ",
       display_name: "  Leo  ",
-      role: "admin",
     });
     expect(response.status).toBe(201);
     expect(create.mock.calls[0][0].data).toMatchObject({
@@ -246,6 +245,17 @@ describe("spaces API", () => {
     });
     expect(await post({ ...validBody, display_name: null })).toHaveProperty("status", 201);
     expect(create.mock.calls[1][0].data.members.create.displayName).toBe("Account Name");
+  });
+
+  it("rejects unknown fields before creating a space", async () => {
+    const response = await post({ ...validBody, role: "admin" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContainEqual(
+      expect.objectContaining({ code: "VALIDATION_ERROR", field: "role" }),
+    );
+    expect(create).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 
   it.each(["", "A", "x".repeat(101)])(

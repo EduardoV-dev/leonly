@@ -263,9 +263,21 @@ describe("settings API", () => {
     expect(queryRaw).not.toHaveBeenCalled();
   });
 
-  it("rejects malformed revisions and ignores forged scope fields", async () => {
+  it("rejects malformed revisions and forged scope fields", async () => {
     await patch("/api/spaces/name", { name: "Valid", expectedUpdatedAt: "not-a-date" }).expect(400);
     expect(queryRaw).not.toHaveBeenCalled();
+    await patch("/api/spaces/name", {
+      name: "Valid",
+      expectedUpdatedAt: REVISION,
+      userId: "other-user",
+    }).expect(400);
+    await patch("/api/spaces/memberships/display-name", {
+      displayName: "Valid",
+      expectedUpdatedAt: REVISION,
+      membershipId: "other-member",
+    }).expect(400);
+    expect(queryRaw).not.toHaveBeenCalled();
+
     queryRaw
       .mockResolvedValueOnce([lockedSettings])
       .mockResolvedValueOnce([{ updatedAt: NEXT_REVISION }])
@@ -274,12 +286,10 @@ describe("settings API", () => {
     await patch("/api/spaces/name", {
       name: "Valid",
       expectedUpdatedAt: REVISION,
-      userId: "other-user",
     }).expect(200);
     await patch("/api/spaces/memberships/display-name", {
       displayName: "Valid",
       expectedUpdatedAt: REVISION,
-      membershipId: "other-member",
     }).expect(200);
     expect(queryRaw.mock.calls[0]?.slice(1)).toContain("current-user");
     expect(queryRaw.mock.calls[2]?.slice(1)).toContain("current-user");

@@ -46,4 +46,28 @@ describe("RedisService", () => {
 
     expect(evalScript).toHaveBeenCalledOnce();
   });
+
+  it("preserves a successful operation when releasing the lock fails", async () => {
+    const { evalScript, service } = createService();
+    evalScript.mockRejectedValueOnce(new Error("Release failed"));
+
+    await expect(
+      service.withLock({ key: "user:1:lock", operation: async () => "committed" }),
+    ).resolves.toBe("committed");
+  });
+
+  it("preserves the original operation error when releasing the lock also fails", async () => {
+    const { evalScript, service } = createService();
+    const operationError = new Error("Operation failed");
+    evalScript.mockRejectedValueOnce(new Error("Release failed"));
+
+    await expect(
+      service.withLock({
+        key: "user:1:lock",
+        operation: async () => {
+          throw operationError;
+        },
+      }),
+    ).rejects.toBe(operationError);
+  });
 });
