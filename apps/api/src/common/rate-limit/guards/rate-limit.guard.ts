@@ -7,21 +7,21 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import type { Response } from "express";
-import { AuthService, type SessionRequest } from "../../auth/auth.service";
-import { GLOBAL_RATE_LIMIT } from "./rate-limit.constants";
-import { RATE_LIMIT_KEY, type RateLimitOptions } from "./rate-limit.decorator";
-import { RateLimitService } from "./rate-limit.service";
+import { AuthService, type SessionRequest } from "../../../auth/auth.service";
+import { GLOBAL_RATE_LIMIT, RATE_LIMIT_KEY } from "../constants/rate-limit.constants";
+import { RateLimitService } from "../rate-limit.service";
+import type { CheckReturn, RateLimitOptions } from "../types/rate-limit.types";
 
 type EnforceParams = Readonly<{
   request: SessionRequest;
-  response: Response;
+  response: Pick<Response, "setHeader">;
   endpoint: string;
   policy?: RateLimitOptions;
 }>;
 
 type AssertAllowedParams = Readonly<{
-  result: { success: boolean; reset: number };
-  response: Response;
+  result: CheckReturn;
+  response: Pick<Response, "setHeader">;
   message?: string;
 }>;
 
@@ -29,8 +29,8 @@ type AssertAllowedParams = Readonly<{
 export class RateLimitGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly rateLimit: RateLimitService,
-    private readonly auth: AuthService,
+    private readonly rateLimitService: RateLimitService,
+    private readonly authService: AuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -51,7 +51,7 @@ export class RateLimitGuard implements CanActivate {
   }
 
   async enforce({ request, response, endpoint, policy }: EnforceParams): Promise<void> {
-    const user = await this.auth.getRequestUser(request);
+    const user = await this.authService.getRequestUser(request);
     const ip = request.socket.remoteAddress;
 
     if (!ip) throw new Error("Request client address is unavailable.");
@@ -59,14 +59,14 @@ export class RateLimitGuard implements CanActivate {
     const ipIdentifier = `ip:${ip}`;
     const userIdentifier = user ? `user:${user.id}` : ipIdentifier;
 
-    const globalResult = await this.rateLimit.check({
+    const globalResult = await this.rateLimitService.check({
       identifier: GLOBAL_RATE_LIMIT.scope === "user" ? userIdentifier : ipIdentifier,
     });
     this.assertAllowed({ result: globalResult, response });
 
     if (!policy) return;
 
-    const result = await this.rateLimit.check({
+    const result = await this.rateLimitService.check({
       identifier: policy.scope === "ip" ? ipIdentifier : userIdentifier,
       endpoint,
       policy,

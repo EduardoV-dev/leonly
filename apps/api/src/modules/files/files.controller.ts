@@ -8,7 +8,7 @@ import { FilesService, type UploadIssuanceResult } from "./services/files.servic
 @ApiTags("Files")
 @ApiCookieAuth("session")
 export class FilesController {
-  constructor(private readonly files: FilesService) {}
+  constructor(private readonly filesService: FilesService) {}
 
   @Post("uploads")
   @ApiOperation({ summary: "Issue private staging upload capabilities" })
@@ -83,6 +83,6 @@ export class FilesController {
     @Req() request: AuthenticatedRequest,
     @Body() body: unknown,
   ): Promise<UploadIssuanceResult> {
-    return this.files.issue(request.authUser.id, body);
+    return this.filesService.issue({ userId: request.authUser.id, body });
   }
 }

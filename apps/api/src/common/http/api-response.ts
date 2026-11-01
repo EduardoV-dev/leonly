@@ -1,12 +1,6 @@
-export type ApiError = {
-  code: string;
-  message: string;
-  field?: string;
-};
+import type { ApiError } from "@leonly/utils/contracts";
 
-export type ApiResponse<T> =
-  | { ok: true; data: T | null; error: []; message: string }
-  | { ok: false; data: T | null; error: ApiError[]; message: string };
+export type { ApiError, ApiResponse } from "@leonly/utils/contracts";
 
 export const API_SUCCESS_MESSAGE = "Request completed successfully";
 
@@ -23,6 +17,7 @@ const API_ERROR_MESSAGES: Readonly<Record<number, string>> = {
 
 export function createApiError(status: number): ApiError {
   const isInternalError = status >= 500 && status !== 503;
+
   return {
     code: isInternalError ? "INTERNAL_ERROR" : `HTTP_${status}`,
     message: API_ERROR_MESSAGES[isInternalError ? 500 : status] ?? "Request failed.",

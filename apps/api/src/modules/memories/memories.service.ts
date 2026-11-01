@@ -20,6 +20,8 @@ export type CreationResult = { id: string; visibility: "timeline" | "vault" };
 type CreationScope = { userId: string; spaceId: string; memberId: string };
 type FindExistingCreationParams = { scope: CreationScope; input: CreationInput; hash: string };
 type CommitParams = FindExistingCreationParams & { uploads: FinalizedUpload[] };
+type CreateParams = { userId: string; body: unknown };
+type CommitReturn = { result: CreationResult; eventIds: string[] };
 
 @Injectable()
 export class MemoriesService {
@@ -30,7 +32,7 @@ export class MemoriesService {
     private readonly outboxPublisher: OutboxPublisher,
   ) {}
 
-  async create({ userId, body }: { userId: string; body: unknown }): Promise<CreationResult> {
+  async create({ userId, body }: CreateParams): Promise<CreationResult> {
     const input = normalizeCreation(body);
     const hash = hashCreation(input);
     const membership = await this.prismaService.spaceMember.findFirst({
@@ -126,12 +128,7 @@ export class MemoriesService {
     return { id: existing.id, visibility: existing.visibility };
   }
 
-  private async commit({
-    scope,
-    input,
-    hash,
-    uploads,
-  }: CommitParams): Promise<{ result: CreationResult; eventIds: string[] }> {
+  private async commit({ scope, input, hash, uploads }: CommitParams): Promise<CommitReturn> {
     return this.prismaService.$transaction(async (transaction) => {
       const members = await transaction.$queryRaw<{ id: string }[]>`
         SELECT c.id FROM space_members c JOIN spaces s ON s.id = c.space_id

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsString, Length, ValidateBy, ValidateIf } from "class-validator";
-import { startDateError, validateTimezone } from "../utils/start-date-validation";
+import { getStartDateError, validateTimezone } from "../utils/start-date-validation";
 
 export class CreateSpaceDto {
   @ApiProperty({
@@ -40,10 +40,15 @@ export class CreateSpaceDto {
     name: "validStartDate",
     validator: {
       validate: (value: unknown, args) =>
-        startDateError(value, (args?.object as CreateSpaceDto | undefined)?.timezone) === null,
+        getStartDateError({
+          value,
+          timezone: (args?.object as CreateSpaceDto | undefined)?.timezone,
+        }) === null,
       defaultMessage: (args) =>
-        startDateError(args?.value, (args?.object as CreateSpaceDto | undefined)?.timezone) ??
-        "Enter a valid start date.",
+        getStartDateError({
+          value: args?.value,
+          timezone: (args?.object as CreateSpaceDto | undefined)?.timezone,
+        }) ?? "Enter a valid start date.",
     },
   })
   start_date!: string;

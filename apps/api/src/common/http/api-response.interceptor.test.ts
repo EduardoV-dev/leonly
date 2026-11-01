@@ -5,7 +5,7 @@ import { ApiResponseInterceptor } from "./api-response.interceptor";
 
 describe("ApiResponseInterceptor", () => {
   it.each([200, 400, 409, 500, 503])(
-    "preserves handler response data for HTTP %s",
+    "preserves success data and discards failure data for HTTP %s",
     async (statusCode) => {
       const context = {
         switchToHttp: () => ({ getResponse: () => ({ statusCode }) }),
@@ -16,7 +16,10 @@ describe("ApiResponseInterceptor", () => {
         interceptor.intercept(context, { handle: () => of({ name: "Current name" }) }),
       );
 
-      expect(response).toMatchObject({ ok: statusCode < 400, data: { name: "Current name" } });
+      expect(response).toMatchObject({
+        ok: statusCode < 400,
+        data: statusCode < 400 ? { name: "Current name" } : null,
+      });
     },
   );
 

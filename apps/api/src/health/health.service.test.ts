@@ -1,23 +1,44 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PrismaService } from "../common/prisma/prisma.service";
-import type { RedisService } from "../common/redis/redis.service";
+import { Module } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
+import { PrismaService } from "../common/prisma/prisma.service";
+import { RedisService } from "../common/redis/redis.service";
 import { HEALTH_CHECK_TIMEOUT_MS, HealthService } from "./health.service";
 
 afterEach(() => vi.useRealTimers());
 
-function createHealthService() {
-  const query = vi.fn().mockResolvedValue([{ "?column?": 1 }]);
-  const ping = vi.fn().mockResolvedValue(true);
-  const health = new HealthService(
-    { $queryRaw: query } as unknown as PrismaService,
-    { ping } as unknown as RedisService,
+@Module({})
+class HealthFixtureModule {}
+
+type CreateHealthServiceReturn = {
+  health: HealthService;
+  query: Mock<() => Promise<unknown>>;
+  ping: Mock<RedisService["ping"]>;
+};
+
+async function createHealthService(): Promise<CreateHealthServiceReturn> {
+  const query = vi.fn<() => Promise<unknown>>().mockResolvedValue([{ "?column?": 1 }]);
+  const ping = vi.fn<RedisService["ping"]>().mockResolvedValue(true);
+  const app = await NestFactory.createApplicationContext(
+    {
+      module: HealthFixtureModule,
+      providers: [
+        { provide: PrismaService, useValue: { $queryRaw: query } },
+        { provide: RedisService, useValue: { ping } satisfies Pick<RedisService, "ping"> },
+        HealthService,
+      ],
+    },
+    { logger: false },
   );
+  const health = app.get(HealthService);
+  await app.close();
+
   return { health, query, ping };
 }
 
 describe("HealthService", () => {
   it("checks both dependencies", async () => {
-    const { health, query, ping } = createHealthService();
+    const { health, query, ping } = await createHealthService();
     await expect(health.check()).resolves.toEqual({ database: true, redis: true });
     expect(query).toHaveBeenCalledOnce();
     expect(ping).toHaveBeenCalledOnce();
@@ -26,7 +47,7 @@ describe("HealthService", () => {
   it.each(["database", "redis", "both"])(
     "reports %s failures independently",
     async (dependency) => {
-      const { health, query, ping } = createHealthService();
+      const { health, query, ping } = await createHealthService();
       if (dependency !== "redis") query.mockRejectedValue(new Error("Database unavailable"));
       if (dependency !== "database") ping.mockRejectedValue(new Error("Redis unavailable"));
       await expect(health.check()).resolves.toEqual({
@@ -37,14 +58,14 @@ describe("HealthService", () => {
   );
 
   it("reports an unexpected Redis ping response as unhealthy", async () => {
-    const { health, ping } = createHealthService();
+    const { health, ping } = await createHealthService();
     ping.mockResolvedValue(false);
     await expect(health.check()).resolves.toEqual({ database: true, redis: false });
   });
 
   it("bounds concurrent probes and clears their timers", async () => {
     vi.useFakeTimers();
-    const { health, query, ping } = createHealthService();
+    const { health, query, ping } = await createHealthService();
     query.mockReturnValue(new Promise(() => {}));
     ping.mockReturnValue(new Promise(() => {}));
     const result = health.check();

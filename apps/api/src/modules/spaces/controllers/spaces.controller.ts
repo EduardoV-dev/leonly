@@ -7,18 +7,18 @@ import {
   apiResponseSchema,
 } from "../../../common/http/api-response.docs";
 import { EditResponse } from "../../../common/http/edit-response.docs";
-import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
-import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
+import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/constants/rate-limit.constants";
+import { RateLimit } from "../../../common/rate-limit/decorators/rate-limit.decorator";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
 import { INVITE_SCHEMA } from "../docs/edit-space-response.docs";
 import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../docs/space-response.docs";
-import { CreateSpaceDto } from "../dtos/create-space.dto";
-import { EditStartDateDto, RenameSpaceDto } from "../dtos/edit-space.dto";
-import { ValidateSpaceInviteDto } from "../dtos/join-space.dto";
+import { CreateSpaceDto } from "../dto/create-space.dto";
+import { EditStartDateDto, RenameSpaceDto } from "../dto/edit-space.dto";
+import { ValidateSpaceInviteDto } from "../dto/join-space.dto";
 import { InviteRegenerationService } from "../services/invite-regeneration.service";
 import { MembershipsService } from "../services/memberships.service";
 import { SpacesService } from "../services/spaces.service";
-import type { SpaceEditResult } from "../types/spaces.types";
+import type { RegenerateReturn, SpaceEditResult } from "../types/spaces.types";
 import { throwJoinError } from "../utils/throw-join-error";
 
 @Controller("spaces")
@@ -139,9 +139,7 @@ export class SpacesController {
     data: INVITE_SCHEMA,
     example: { invite_code: "lny7kmp2", invite_code_expires_at: "2026-07-23T12:00:00.000Z" },
   })
-  async regenerate(
-    @Req() request: AuthenticatedRequest,
-  ): Promise<{ invite_code: string; invite_code_expires_at: string }> {
+  async regenerate(@Req() request: AuthenticatedRequest): Promise<RegenerateReturn> {
     return this.invitesService.regenerate(request.authUser.id);
   }
 

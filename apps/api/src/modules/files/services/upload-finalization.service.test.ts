@@ -8,12 +8,12 @@ import {
 } from "../../memories/tests/creation-fixtures";
 
 describe("first-write-wins original finalization", () => {
-  let fixtures: ReturnType<typeof createCreationFixtures>;
+  let fixtures: Awaited<ReturnType<typeof createCreationFixtures>>;
   let bytes: Buffer;
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-11T00:00:00Z"));
-    fixtures = createCreationFixtures();
+    fixtures = await createCreationFixtures();
     bytes = await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } })
       .png()
       .toBuffer();
@@ -23,7 +23,10 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("retains an accepted final original after staging replacement, even with an expired signing URL", async () => {
-    const upload = fixtures.addUpload(bytes, { uploadUrlExpiresAt: new Date(Date.now() - 1) });
+    const upload = fixtures.addUpload({
+      bytes,
+      overrides: { uploadUrlExpiresAt: new Date(Date.now() - 1) },
+    });
     fixtures.storageObjects.set(upload.intendedFinalKey, bytes);
     fixtures.storageObjects.set(upload.stagingKey, Buffer.from("invalid replacement"));
     await fixtures.memories.create({ userId: "user-a", body: creationRequest([upload.id]) });
@@ -33,7 +36,7 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("validates the actual destination when another writer wins during promotion", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     fixtures.storage.putObjectIfAbsent.mockImplementationOnce(async ({ key }) => {
       fixtures.storageObjects.set(key, Buffer.from("invalid first accepted final"));
       return "exists";
@@ -54,7 +57,7 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("recovers a crash after copy without staging and without writing final again", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     const update = fixtures.prisma.fileUpload.updateMany.getMockImplementation();
     if (!update) throw new Error("Missing update fixture");
     let interrupted = false;
@@ -76,10 +79,13 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("reclaims expired claims and rejects active claims", async () => {
-    const upload = fixtures.addUpload(bytes, {
-      status: "finalizing",
-      leaseToken: randomUUID(),
-      leaseExpiresAt: new Date(Date.now() + 120_000),
+    const upload = fixtures.addUpload({
+      bytes,
+      overrides: {
+        status: "finalizing",
+        leaseToken: randomUUID(),
+        leaseExpiresAt: new Date(Date.now() + 120_000),
+      },
     });
     await expect(
       fixtures.memories.create({ userId: "user-a", body: creationRequest([upload.id]) }),
@@ -90,7 +96,7 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("fences a stale finalizer after another request reclaims its lease", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     const replacementToken = randomUUID();
     fixtures.storage.putObjectIfAbsent.mockImplementationOnce(async ({ key, bytes }) => {
       fixtures.storageObjects.set(key, bytes);
@@ -111,7 +117,7 @@ describe("first-write-wins original finalization", () => {
   });
 
   it("releases earlier image claims if a later upload is unavailable", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     await expect(
       fixtures.memories.create({
         userId: "user-a",

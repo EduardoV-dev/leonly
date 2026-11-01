@@ -95,7 +95,7 @@ describe("API application", () => {
         expect(schema.properties.ok.enum).toEqual([isSuccess]);
         expect(schema.example).toEqual({
           ok: isSuccess,
-          data: isSuccess || (path === "/api/health" && status === 503) ? expect.any(Object) : null,
+          data: isSuccess ? expect.any(Object) : null,
           error: isSuccess ? [] : expect.any(Array),
           message: expect.any(String),
         });

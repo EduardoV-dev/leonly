@@ -1,17 +1,65 @@
 import { HttpException } from "@nestjs/common";
-import { describe, expect, it, vi } from "vitest";
+import { HttpAdapterHost } from "@nestjs/core";
+import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host";
+import { ExpressAdapter } from "@nestjs/platform-express";
+import { PinoLogger } from "nestjs-pino";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiExceptionFilter } from "./api-exception.filter";
+import { ApiServiceUnavailableError } from "./errors/api-service-unavailable.error";
+
+class FilterFixture {
+  readonly adapter = new ExpressAdapter();
+  readonly adapterHost = new HttpAdapterHost();
+  readonly logger = new PinoLogger({ pinoHttp: { level: "silent" } });
+  readonly reply = vi.spyOn(this.adapter, "reply").mockImplementation(() => {});
+  readonly error = vi.spyOn(this.logger, "error").mockImplementation(() => {});
+  readonly host = new ExecutionContextHost([{}, {}]);
+  readonly filter: ApiExceptionFilter;
+
+  constructor() {
+    this.adapterHost.httpAdapter = this.adapter;
+    this.filter = new ApiExceptionFilter(this.adapterHost, this.logger);
+  }
+}
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("ApiExceptionFilter", () => {
+  it("preserves explicitly public service diagnostics without response data", () => {
+    const { filter, host, reply, error: logError } = new FilterFixture();
+    const errors = [{ code: "HTTP_503", field: "database", message: "Try again later." }];
+
+    filter.catch(new ApiServiceUnavailableError(errors), host);
+
+    expect(reply).toHaveBeenCalledWith(
+      {},
+      { ok: false, data: null, error: errors, message: "Try again later." },
+      503,
+    );
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it.each([500, 503])("redacts arbitrary structured diagnostics on HTTP %s", (status) => {
+    const { filter, host, reply } = new FilterFixture();
+    const exception = new HttpException(
+      { errors: [{ code: "PRIVATE", message: "Provider secret" }] },
+      status,
+    );
+
+    filter.catch(exception, host);
+
+    expect(reply).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ ok: false, data: null }),
+      status,
+    );
+    expect(JSON.stringify(reply.mock.calls)).not.toContain("Provider secret");
+  });
+
   it.each([400, 401, 403, 404, 409, 429, 500, 503])(
     "provides a complete error body for HTTP %s without leaking server details",
     (status) => {
-      const reply = vi.fn();
-      const filter = new ApiExceptionFilter(
-        { httpAdapter: { reply } } as never,
-        { error: vi.fn() } as never,
-      );
-      const host = { switchToHttp: () => ({ getResponse: () => ({}) }) } as never;
+      const { filter, host, reply } = new FilterFixture();
       const exception = new HttpException(
         status >= 500 ? { error: "private database detail" } : {},
         status,
@@ -35,17 +83,12 @@ describe("ApiExceptionFilter", () => {
   );
 
   it("logs the original unhandled error and returns a generic response", () => {
-    const reply = vi.fn();
-    const logger = { error: vi.fn() };
-    const filter = new ApiExceptionFilter({ httpAdapter: { reply } } as never, logger as never);
+    const { filter, host, reply, error: logError } = new FilterFixture();
     const error = new Error("private database detail");
-    const host = {
-      switchToHttp: () => ({ getResponse: () => ({}) }),
-    } as never;
 
     filter.catch(error, host);
 
-    expect(logger.error).toHaveBeenCalledWith({ err: error }, "Unhandled API error");
+    expect(logError).toHaveBeenCalledWith({ err: error }, "Unhandled API error");
     expect(reply).toHaveBeenCalledWith(
       {},
       expect.objectContaining({
@@ -57,12 +100,7 @@ describe("ApiExceptionFilter", () => {
   });
 
   it.each([400, 409, 500])("discards exception response data for HTTP %s", (status) => {
-    const reply = vi.fn();
-    const filter = new ApiExceptionFilter(
-      { httpAdapter: { reply } } as never,
-      { error: vi.fn() } as never,
-    );
-    const host = { switchToHttp: () => ({ getResponse: () => ({}) }) } as never;
+    const { filter, host, reply } = new FilterFixture();
     const currentValue = {
       displayName: "Current name",
       status: "conflict",

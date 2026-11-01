@@ -8,18 +8,19 @@ export type DependencyHealth = Readonly<{ database: boolean; redis: boolean }>;
 @Injectable()
 export class HealthService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
+    private readonly prismaService: PrismaService,
+    private readonly redisService: RedisService,
   ) {}
 
   async check(): Promise<DependencyHealth> {
     const [database, redis] = await Promise.all([
       this.checkDependency(async () => {
-        await this.prisma.$queryRaw`SELECT 1`;
+        await this.prismaService.$queryRaw`SELECT 1`;
         return true;
       }),
-      this.checkDependency(() => this.redis.ping()),
+      this.checkDependency(() => this.redisService.ping()),
     ]);
+
     return { database, redis };
   }
 

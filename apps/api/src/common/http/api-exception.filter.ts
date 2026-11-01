@@ -9,35 +9,47 @@ import {
 import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
 import { type ApiError, type ApiResponse, createApiError } from "./api-response";
+import { ApiServiceUnavailableError } from "./errors/api-service-unavailable.error";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function clientErrors(response: unknown, status: number): ApiError[] {
-  if (isRecord(response) && Array.isArray(response.errors)) {
-    const errors = response.errors.filter(
-      (error): error is ApiError =>
-        isRecord(error) &&
-        typeof error.code === "string" &&
-        typeof error.message === "string" &&
-        (error.field === undefined || typeof error.field === "string"),
-    );
+type GetClientErrorsParams = { response: unknown; status: number };
+
+function isApiError(value: unknown): value is ApiError {
+  if (!isRecord(value)) return false;
+
+  const hasCode = typeof value.code === "string";
+  const hasMessage = typeof value.message === "string";
+  const hasValidField = value.field === undefined || typeof value.field === "string";
+
+  return hasCode && hasMessage && hasValidField;
+}
+
+function getClientErrors({ response, status }: GetClientErrorsParams): ApiError[] {
+  const responseErrors = isRecord(response) ? response.errors : undefined;
+
+  if (Array.isArray(responseErrors)) {
+    const errors = responseErrors.filter(isApiError);
     if (errors.length > 0) return errors;
   }
 
   const field =
     isRecord(response) && typeof response.field === "string" ? response.field : undefined;
-  const message = clientErrorMessage(response, status);
+  const message = getClientErrorMessage({ response, status });
+
   return [{ code: `HTTP_${status}`, message, ...(field ? { field } : {}) }];
 }
 
-function clientErrorMessage(response: unknown, status: number): string {
+function getClientErrorMessage({ response, status }: GetClientErrorsParams): string {
   if (typeof response === "string") return response;
   if (!isRecord(response)) return createApiError(status).message;
+
   const errorMessage = response.error;
   const hasErrorMessage = typeof errorMessage === "string";
   if (hasErrorMessage) return errorMessage;
+
   return createApiError(status).message;
 }
 
@@ -52,13 +64,21 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const isServerError = status >= 500;
-    if (isServerError) this.logger.error({ err: exception }, "Unhandled API error");
+    const isPublicServiceFailure = exception instanceof ApiServiceUnavailableError;
+    const shouldLogServerError = isServerError && !isPublicServiceFailure;
+
+    if (shouldLogServerError) this.logger.error({ err: exception }, "Unhandled API error");
 
     const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : null;
-    const error =
-      exception instanceof HttpException && !isServerError
-        ? clientErrors(exceptionResponse, status)
-        : [createApiError(status)];
+    const isClientError = exception instanceof HttpException && !isServerError;
+    let error = [createApiError(status)];
+
+    if (isPublicServiceFailure) {
+      error = exception.errors;
+    } else if (isClientError) {
+      error = getClientErrors({ response: exceptionResponse, status });
+    }
+
     const response: ApiResponse<null> = {
       ok: false,
       data: null,

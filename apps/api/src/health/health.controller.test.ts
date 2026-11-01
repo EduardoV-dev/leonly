@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
+import { LoggerModule } from "nestjs-pino";
 import request from "supertest";
 import { afterAll, beforeAll, describe, it, vi } from "vitest";
+import { ApiExceptionFilter } from "../common/http/api-exception.filter";
 import { ApiResponseInterceptor } from "../common/http/api-response.interceptor";
 import { HealthController } from "./health.controller";
 import { HealthService } from "./health.service";
@@ -10,8 +12,9 @@ import { HealthService } from "./health.service";
 const check = vi.fn();
 
 @Module({
+  imports: [LoggerModule.forRoot({ pinoHttp: { level: "silent" } })],
   controllers: [HealthController],
-  providers: [{ provide: HealthService, useValue: { check } }],
+  providers: [ApiExceptionFilter, { provide: HealthService, useValue: { check } }],
 })
 class HealthTestModule {}
 
@@ -22,6 +25,7 @@ describe("GET /api/health", () => {
     app = await NestFactory.create<NestExpressApplication>(HealthTestModule, { logger: false });
     app.setGlobalPrefix("api");
     app.useGlobalInterceptors(new ApiResponseInterceptor());
+    app.useGlobalFilters(app.get(ApiExceptionFilter));
     await app.init();
   });
 
@@ -42,16 +46,17 @@ describe("GET /api/health", () => {
       .expect("Cache-Control", "no-store")
       .expect({
         ok: status === 200,
-        data: health,
+        data: status === 200 ? health : null,
         error:
           status === 200
             ? []
-            : [
-                {
+            : Object.entries(health)
+                .filter(([, isHealthy]) => !isHealthy)
+                .map(([field]) => ({
                   code: "HTTP_503",
                   message: "Service is temporarily unavailable. Please try again later.",
-                },
-              ],
+                  field,
+                })),
         message:
           status === 200
             ? "Request completed successfully"

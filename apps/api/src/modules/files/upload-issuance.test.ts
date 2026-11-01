@@ -46,7 +46,7 @@ vi.mock("../../common/prisma/prisma.service", () => ({
     }
   },
 }));
-vi.mock("../../common/rate-limit/rate-limit.guard", () => ({
+vi.mock("../../common/rate-limit/guards/rate-limit.guard", () => ({
   RateLimitGuard: class {
     canActivate() {
       return true;

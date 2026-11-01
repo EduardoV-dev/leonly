@@ -2,6 +2,7 @@ import { parseSqsQueuesUrls } from "@leonly/utils/queue";
 
 export const ENVIRONMENT_VARIABLES = Object.freeze({
   NODE_ENV: process.env.NODE_ENV || "",
+  PORT: process.env.PORT ?? "3001",
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || "",
   BETTER_AUTH_COOKIE_DOMAIN: process.env.BETTER_AUTH_COOKIE_DOMAIN || "",
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",

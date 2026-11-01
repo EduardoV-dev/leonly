@@ -106,7 +106,7 @@ describe("settings API", () => {
       inviteCode: "lny7kmp2",
       inviteCodeExpiresAt: new Date("2099-01-02T00:00:00.000Z"),
     });
-    withLock.mockImplementation(async (_key: string, operation: () => Promise<unknown>) =>
+    withLock.mockImplementation(async ({ operation }: { operation: () => Promise<unknown> }) =>
       operation(),
     );
   });

@@ -1,7 +1,3 @@
-import { SetMetadata } from "@nestjs/common";
-
-export const RATE_LIMIT_KEY = "rate-limit";
-
 export type RateLimitOptions = Readonly<{
   limit: number;
   window: `${number} s` | `${number} m` | `${number} h`;
@@ -11,4 +7,4 @@ export type RateLimitOptions = Readonly<{
   message?: string;
 }>;
 
-export const RateLimit = (options: RateLimitOptions) => SetMetadata(RATE_LIMIT_KEY, options);
+export type CheckReturn = { success: boolean; reset: number };

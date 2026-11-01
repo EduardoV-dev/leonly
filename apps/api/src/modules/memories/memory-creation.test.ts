@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCreationFixtures, creationRequest } from "./tests/creation-fixtures";
 
 describe("atomic memory creation and recovery", () => {
-  let fixtures: ReturnType<typeof createCreationFixtures>;
+  let fixtures: Awaited<ReturnType<typeof createCreationFixtures>>;
   let bytes: Buffer;
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-11T00:00:00Z"));
-    fixtures = createCreationFixtures();
+    fixtures = await createCreationFixtures();
     bytes = await sharp({ create: { width: 2, height: 2, channels: 3, background: "red" } })
       .png()
       .toBuffer();
@@ -19,8 +19,8 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("commits normalized details, ordered assets, same-memory cover, original metadata and one event per image", async () => {
-    const first = fixtures.addUpload(bytes);
-    const second = fixtures.addUpload(bytes);
+    const first = fixtures.addUpload({ bytes });
+    const second = fixtures.addUpload({ bytes });
     const result = await fixtures.memories.create({
       userId: "user-a",
       body: {
@@ -80,7 +80,7 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("resolves a lost-response retry before rejecting consumed uploads and does no more storage work", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     const request = creationRequest([upload.id]);
     const first = await fixtures.memories.create({ userId: "user-a", body: request });
     const reads = fixtures.storage.getObject.mock.calls.length;
@@ -102,8 +102,8 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("rejects changed input, order, or cover under an already committed key", async () => {
-    const first = fixtures.addUpload(bytes);
-    const second = fixtures.addUpload(bytes);
+    const first = fixtures.addUpload({ bytes });
+    const second = fixtures.addUpload({ bytes });
     const request = creationRequest([first.id, second.id]);
     await fixtures.memories.create({ userId: "user-a", body: request });
     for (const change of [
@@ -133,7 +133,7 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("permits at most one concurrent image attachment and returns a retryable outcome to contenders", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     const results = await Promise.allSettled([
       fixtures.memories.create({ userId: "user-a", body: creationRequest([upload.id]) }),
       fixtures.memories.create({
@@ -153,7 +153,7 @@ describe("atomic memory creation and recovery", () => {
   it.each(["foreign-user", "foreign-space", "expired", "consumed", "failed", "missing"])(
     "rejects %s uploads without exposing metadata",
     async (scenario) => {
-      const upload = fixtures.addUpload(bytes);
+      const upload = fixtures.addUpload({ bytes });
       if (scenario === "foreign-user") upload.uploaderUserId = "user-b";
       if (scenario === "foreign-space") upload.spaceId = randomUUID();
       if (scenario === "expired") upload.attachmentDeadline = new Date(Date.now() - 1);
@@ -169,8 +169,8 @@ describe("atomic memory creation and recovery", () => {
   );
 
   it("rolls back memory, cover, assets, objects, consumption and events if an outbox insertion fails", async () => {
-    const first = fixtures.addUpload(bytes);
-    const second = fixtures.addUpload(bytes);
+    const first = fixtures.addUpload({ bytes });
+    const second = fixtures.addUpload({ bytes });
     fixtures.prisma.outboxEvent.create.mockImplementationOnce(async ({ data }) => {
       fixtures.state.events.push(data);
       return data;
@@ -196,7 +196,7 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("preserves the creation failure and releases claims when the recovery lookup fails", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     const creationError = new Error("outbox unavailable");
     fixtures.prisma.outboxEvent.create.mockRejectedValueOnce(creationError);
     fixtures.prisma.memory.findUnique
@@ -235,7 +235,7 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("rechecks active membership inside the consuming transaction", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     fixtures.prisma.$queryRaw.mockResolvedValueOnce([]);
     await expect(
       fixtures.memories.create({ userId: "user-a", body: creationRequest([upload.id]) }),
@@ -245,7 +245,7 @@ describe("atomic memory creation and recovery", () => {
   });
 
   it("rolls back when a finalized lease is superseded before consumption", async () => {
-    const upload = fixtures.addUpload(bytes);
+    const upload = fixtures.addUpload({ bytes });
     fixtures.prisma.$queryRaw.mockImplementationOnce(async () => {
       const current = fixtures.state.uploads.get(upload.id);
       if (current) current.leaseToken = randomUUID();

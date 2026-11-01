@@ -10,7 +10,9 @@ export function validateTimezone(value: unknown): value is string {
   }
 }
 
-export function startDateError(value: unknown, timezone: unknown): string | null {
+type GetStartDateErrorParams = { value: unknown; timezone: unknown };
+
+export function getStartDateError({ value, timezone }: GetStartDateErrorParams): string | null {
   const isDateString = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
   if (!isDateString) {
     return "Enter a valid start date.";

@@ -1,4 +1,6 @@
-import type { RateLimitOptions } from "./rate-limit.decorator";
+import type { RateLimitOptions } from "../types/rate-limit.types";
+
+export const RATE_LIMIT_KEY = "rate-limit";
 
 export const RATE_LIMIT_PREFIX = "leonly-api";
 export const RATE_LIMIT_TIMEOUT_MS = 1000;

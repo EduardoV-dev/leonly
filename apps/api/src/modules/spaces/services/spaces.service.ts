@@ -3,8 +3,6 @@ import { retry } from "@leonly/utils";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
-import { normalizeDisplayName } from "../../../common/utils/display-name";
-import { generateInviteCode, getUniqueIndex } from "../../../common/utils/invite-code";
 import { ACTIVE_SPACE_MEMBER_INDEX } from "../constants/memberships.constants";
 import {
   ACTIVE_INVITE_CODE_INDEX,
@@ -13,12 +11,18 @@ import {
   MAX_INVITE_ATTEMPTS,
 } from "../constants/spaces.constants";
 import type { SpaceEditOptions, SpaceEditResult } from "../types/spaces.types";
+import { normalizeDisplayName } from "../utils/display-name";
+import { generateInviteCode, getUniqueIndex } from "../utils/invite-code";
 
 type CreateParams = {
   userId: string;
   accountName: string | undefined;
   details: { spaceName: string; displayName: string; startDate: Date };
 };
+
+type UpdateNameParams = SpaceEditOptions & { name: string };
+type UpdateStartDateParams = SpaceEditOptions & { startDate: string };
+type UpdateSpaceParams = SpaceEditOptions & { field: "name" | "startDate"; value: string };
 
 type ActiveSpace = {
   active_members: { avatar_url: string | null; display_name: string }[];
@@ -45,14 +49,18 @@ const getColumnConfigs = (value: string) =>
 
 @Injectable()
 export class SpacesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  updateName(options: SpaceEditOptions & { name: string }): Promise<SpaceEditResult> {
-    return this.updateSpace({ ...options, field: "name", value: options.name });
+  updateName({ userId, expectedUpdatedAt, name }: UpdateNameParams): Promise<SpaceEditResult> {
+    return this.updateSpace({ userId, expectedUpdatedAt, field: "name", value: name });
   }
 
-  updateStartDate(options: SpaceEditOptions & { startDate: string }): Promise<SpaceEditResult> {
-    return this.updateSpace({ ...options, field: "startDate", value: options.startDate });
+  updateStartDate({
+    userId,
+    expectedUpdatedAt,
+    startDate,
+  }: UpdateStartDateParams): Promise<SpaceEditResult> {
+    return this.updateSpace({ userId, expectedUpdatedAt, field: "startDate", value: startDate });
   }
 
   private async updateSpace({
@@ -60,8 +68,8 @@ export class SpacesService {
     field,
     value,
     expectedUpdatedAt,
-  }: SpaceEditOptions & { field: "name" | "startDate"; value: string }): Promise<SpaceEditResult> {
-    return this.prisma.$transaction(async (transaction) => {
+  }: UpdateSpaceParams): Promise<SpaceEditResult> {
+    return this.prismaService.$transaction(async (transaction) => {
       const rows = await transaction.$queryRaw<Array<{ spaceId: string }>>`
         SELECT s.id AS "spaceId"
         FROM space_members c JOIN spaces s ON s.id = c.space_id
@@ -89,7 +97,7 @@ export class SpacesService {
   }
 
   async getActiveSpace(userId: string): Promise<ActiveSpace | null> {
-    const membership = await this.prisma.spaceMember.findFirst({
+    const membership = await this.prismaService.spaceMember.findFirst({
       where: { userId, deletedAt: null, space: { deletedAt: null } },
       select: {
         onboardingCompletedAt: true,
@@ -135,7 +143,7 @@ export class SpacesService {
   }
 
   async create({ userId, accountName, details }: CreateParams): Promise<{ space_id: string }> {
-    const member = await this.prisma.spaceMember.findFirst({
+    const member = await this.prismaService.spaceMember.findFirst({
       where: { userId, deletedAt: null },
       select: { id: true },
     });
@@ -144,12 +152,12 @@ export class SpacesService {
       throw new ConflictException({ error: ACTIVE_SPACE_CONFLICT_MESSAGE });
     }
 
-    const name = normalizeDisplayName(details.displayName, accountName) ?? "Leonly User";
+    const name = normalizeDisplayName({ value: details.displayName, accountName }) ?? "Leonly User";
 
     try {
       const space = await retry(
         () =>
-          this.prisma.space.create({
+          this.prismaService.space.create({
             data: {
               name: details.spaceName,
               startDate: details.startDate,

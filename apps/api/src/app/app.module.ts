@@ -7,7 +7,7 @@ import { ApiResponseInterceptor } from "../common/http/api-response.interceptor"
 import { apiValidationPipe } from "../common/http/api-validation.pipe";
 import { ApiLoggerModule } from "../common/logger/logger.module";
 import { PrismaModule } from "../common/prisma/prisma.module";
-import { RateLimitGuard } from "../common/rate-limit/rate-limit.guard";
+import { RateLimitGuard } from "../common/rate-limit/guards/rate-limit.guard";
 import { RateLimitModule } from "../common/rate-limit/rate-limit.module";
 import { HealthModule } from "../health/health.module";
 import { FilesModule } from "../modules/files/files.module";

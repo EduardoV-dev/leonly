@@ -4,13 +4,13 @@ import { INVITE_ALPHABET, INVITE_CODE_LENGTH, INVITE_PREFIXES } from "@leonly/ut
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,
-} from "../../modules/spaces/constants/memberships.constants";
+} from "../constants/memberships.constants";
 import {
   ACTIVE_INVITE_CODE_INDEX,
   INVITE_CODE_COLUMN,
   PRISMA_UNIQUE_CONSTRAINT_ERROR,
   USER_ID_COLUMN,
-} from "../../modules/spaces/constants/spaces.constants";
+} from "../constants/spaces.constants";
 
 export function generateInviteCode(): string {
   const prefix = INVITE_PREFIXES[randomInt(INVITE_PREFIXES.length)];

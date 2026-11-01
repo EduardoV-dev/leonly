@@ -13,11 +13,11 @@ type SettingsRow = SettingsMember & {
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getSettings(userId: string): Promise<SettingsReadModel | null> {
     const [members, account] = await Promise.all([
-      this.prisma.$queryRaw<SettingsRow[]>`
+      this.prismaService.$queryRaw<SettingsRow[]>`
         SELECT m.id, m.display_name AS "displayName", m.role,
           u.image AS "avatarUrl", m.id = c.id AS "isCurrentMember",
           to_char(m.created_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "joinedAt",
@@ -32,21 +32,25 @@ export class SettingsService {
         WHERE c.user_id = ${userId} AND c.deleted_at IS NULL
         ORDER BY m.role, m.created_at
       `,
-      this.prisma.user.findUnique({
+      this.prismaService.user.findUnique({
         where: { id: userId },
         select: { email: true, accounts: { select: { providerId: true } } },
       }),
     ]);
+
     const space = members[0];
     if (!space) return null;
+
     const currentMembers = members.filter((member) => member.isCurrentMember);
     const hasInvalidSettingsContext = members.length > 2 || currentMembers.length !== 1 || !account;
     if (hasInvalidSettingsContext) {
       throw new Error("Settings requires one active space and a current account.");
     }
+
     const isSingleMember = members.length === 1;
     const code = isSingleMember ? space.inviteCode : null;
     const expiresAt = isSingleMember ? (space.inviteExpiresAt?.toISOString() ?? null) : null;
+
     return {
       account: {
         email: account.email,

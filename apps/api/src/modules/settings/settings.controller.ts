@@ -2,7 +2,7 @@ import { Controller, Get, HttpStatus, Req } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
-import { SETTINGS_EXAMPLE, SETTINGS_SCHEMA } from "./dtos/settings-response.docs";
+import { SETTINGS_EXAMPLE, SETTINGS_SCHEMA } from "./docs/settings-response.docs";
 import { SettingsService } from "./settings.service";
 import type { SettingsReadModel } from "./types/settings.types";
 
@@ -11,7 +11,7 @@ import type { SettingsReadModel } from "./types/settings.types";
 @ApiCookieAuth("session")
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 export class SettingsController {
-  constructor(private readonly settings: SettingsService) {}
+  constructor(private readonly settingsService: SettingsService) {}
 
   @Get("users/me/settings")
   @ApiOperation({ summary: "Read current user's settings" })
@@ -21,6 +21,6 @@ export class SettingsController {
     example: SETTINGS_EXAMPLE,
   })
   getSettings(@Req() request: AuthenticatedRequest): Promise<SettingsReadModel | null> {
-    return this.settings.getSettings(request.authUser.id);
+    return this.settingsService.getSettings(request.authUser.id);
   }
 }

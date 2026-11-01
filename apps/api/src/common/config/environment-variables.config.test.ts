@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ENVIRONMENT_VARIABLE_NAMES = [
   "NODE_ENV",
+  "PORT",
   "BETTER_AUTH_SECRET",
   "BETTER_AUTH_COOKIE_DOMAIN",
   "GOOGLE_CLIENT_ID",
@@ -36,6 +37,7 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
     expect(ENVIRONMENT_VARIABLES).toEqual({
       NODE_ENV: "",
+      PORT: "",
       BETTER_AUTH_SECRET: "",
       BETTER_AUTH_COOKIE_DOMAIN: "",
       GOOGLE_CLIENT_ID: "",
@@ -63,6 +65,14 @@ describe("ENVIRONMENT_VARIABLES", () => {
     expect(ENVIRONMENT_VARIABLES.NODE_ENV).toBe("production");
     vi.stubEnv("NODE_ENV", "development");
     expect(ENVIRONMENT_VARIABLES.NODE_ENV).toBe("production");
+  });
+
+  it("uses the existing port default when PORT is unset", async () => {
+    vi.stubEnv("PORT", undefined);
+
+    const { ENVIRONMENT_VARIABLES } = await import("./environment-variables.config");
+
+    expect(ENVIRONMENT_VARIABLES.PORT).toBe("3001");
   });
 
   it("trims the configured web app origin", async () => {

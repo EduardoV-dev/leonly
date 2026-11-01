@@ -15,6 +15,8 @@ end
 return 0
 `;
 
+type WithLockParams<T> = { key: string; operation: () => Promise<T> };
+
 @Injectable()
 export class RedisService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
@@ -23,7 +25,7 @@ export class RedisService {
     return (await this.redis.ping()) === "PONG";
   }
 
-  async withLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
+  async withLock<T>({ key, operation }: WithLockParams<T>): Promise<T> {
     const lockToken = randomUUID();
     const deadline = Date.now() + LOCK_WAIT_MS;
 

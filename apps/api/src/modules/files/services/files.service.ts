@@ -14,16 +14,18 @@ export type UploadIssuanceResult = {
   }[];
 };
 
+type IssueParams = { userId: string; body: unknown };
+
 @Injectable()
 export class FilesService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
   ) {}
 
-  async issue(userId: string, body: unknown): Promise<UploadIssuanceResult> {
+  async issue({ userId, body }: IssueParams): Promise<UploadIssuanceResult> {
     const descriptors = validateUploadRequest(body);
-    const membership = await this.prisma.spaceMember.findFirst({
+    const membership = await this.prismaService.spaceMember.findFirst({
       where: { userId, deletedAt: null, space: { deletedAt: null } },
       select: { spaceId: true },
     });
@@ -34,6 +36,7 @@ export class FilesService {
     const attachmentDeadline = new Date(issuedAt.getTime() + ATTACHMENT_SECONDS * 1000);
     const records = descriptors.map((descriptor) => {
       const id = uuidv7();
+
       return {
         id,
         uploaderUserId: userId,
@@ -49,7 +52,8 @@ export class FilesService {
         attachmentDeadline,
       };
     });
-    await this.prisma.fileUpload.createMany({ data: records });
+
+    await this.prismaService.fileUpload.createMany({ data: records });
 
     const uploads: UploadIssuanceResult["uploads"] = [];
     for (const record of records) {
@@ -58,6 +62,7 @@ export class FilesService {
         contentType: record.declaredMimeType,
         issuedAt,
       });
+
       uploads.push({
         id: record.id,
         putUrl,
@@ -66,6 +71,7 @@ export class FilesService {
         attachmentDeadline: attachmentDeadline.toISOString(),
       });
     }
+
     return { uploads };
   }
 }

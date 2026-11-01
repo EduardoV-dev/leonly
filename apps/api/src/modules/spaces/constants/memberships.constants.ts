@@ -10,4 +10,4 @@ export const JOIN_RATE_LIMIT = {
   message: JOIN_LOCK_MESSAGE,
 } satisfies RateLimitOptions;
 
-import type { RateLimitOptions } from "../../../common/rate-limit/rate-limit.decorator";
+import type { RateLimitOptions } from "../../../common/rate-limit/types/rate-limit.types";

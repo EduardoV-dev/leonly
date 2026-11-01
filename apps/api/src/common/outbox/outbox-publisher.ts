@@ -38,6 +38,8 @@ export type OutboxConfiguration = {
   endpoint?: string;
 };
 
+type PublishParams = { ids?: string[]; limit: number };
+
 @Injectable()
 export class OutboxPublisher implements OnModuleDestroy {
   private readonly logger = new Logger(OutboxPublisher.name);
@@ -48,7 +50,10 @@ export class OutboxPublisher implements OnModuleDestroy {
     @Inject(OUTBOX_CONFIGURATION) private readonly config: OutboxConfiguration,
   ) {
     const routes = Object.values(config.routes);
-    if (!config.region || routes.length === 0 || routes.some(({ queueUrl }) => !queueUrl)) {
+    const hasInvalidConfiguration =
+      !config.region || routes.length === 0 || routes.some(({ queueUrl }) => !queueUrl);
+
+    if (hasInvalidConfiguration) {
       throw new Error("Outbox queue routes and AWS region are required");
     }
 
@@ -59,19 +64,23 @@ export class OutboxPublisher implements OnModuleDestroy {
     });
   }
 
-  async publish(options: { ids?: string[]; limit: number }): Promise<PublicationOutcome[]> {
-    if (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > MAX_REPLAY_EVENTS)
+  async publish({ ids, limit }: PublishParams): Promise<PublicationOutcome[]> {
+    const hasInvalidLimit = !Number.isInteger(limit) || limit < 1 || limit > MAX_REPLAY_EVENTS;
+    const hasInvalidSelection =
+      ids !== undefined && (ids.length === 0 || ids.length > MAX_REPLAY_EVENTS);
+
+    if (hasInvalidLimit)
       throw new Error(`Publication limit must be between 1 and ${MAX_REPLAY_EVENTS}`);
 
-    if (options.ids && (options.ids.length === 0 || options.ids.length > MAX_REPLAY_EVENTS))
+    if (hasInvalidSelection)
       throw new Error("Publication IDs must be a bounded nonempty selection");
 
     const abortSignal = AbortSignal.timeout(PUBLICATION_BUDGET_MS);
     const events = await this.runBookkeeping((transaction) =>
       transaction.outboxEvent.findMany({
-        where: { publishedAt: null, ...(options.ids ? { id: { in: options.ids } } : {}) },
+        where: { publishedAt: null, ...(ids ? { id: { in: ids } } : {}) },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: options.limit,
+        take: limit,
       }),
     );
 

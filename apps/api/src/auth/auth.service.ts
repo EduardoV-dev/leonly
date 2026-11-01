@@ -11,7 +11,7 @@ export type SessionRequest = Request & {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
   private instance?: ReturnType<typeof createAuth>;
 
   async getRequestUser(request: SessionRequest): Promise<SessionRequest["authUser"]> {
@@ -27,7 +27,7 @@ export class AuthService {
   }
 
   get auth(): ReturnType<typeof createAuth> {
-    if (!this.instance) this.instance = createAuth(this.prisma);
+    if (!this.instance) this.instance = createAuth(this.prismaService);
     return this.instance;
   }
 }

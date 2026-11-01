@@ -1,17 +1,30 @@
 import { randomUUID } from "node:crypto";
 import { type FileUpload, type Memory, Prisma } from "@leonly/database/client";
-import { ObjectSizeError, type ObjectStorage } from "@leonly/utils/storage";
+import { ObjectSizeError, ObjectStorage } from "@leonly/utils/storage";
+import { Module } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
 import { vi } from "vitest";
-import type { OutboxPublisher, PublicationOutcome } from "../../../common/outbox/outbox-publisher";
-import type { PrismaService } from "../../../common/prisma/prisma.service";
+import { OutboxPublisher, type PublicationOutcome } from "../../../common/outbox/outbox-publisher";
+import { PrismaService } from "../../../common/prisma/prisma.service";
 import { UploadFinalizationService } from "../../files/services/upload-finalization.service";
 import { MemoriesService } from "../memories.service";
+import type { CreationInput } from "../utils/creation-validation.util";
+
+@Module({})
+class CreationFixtureModule {}
+
+type CreationRequest = Pick<
+  CreationInput,
+  "title" | "memoryDate" | "timezone" | "visibility" | "uploadIds" | "idempotencyKey"
+>;
+type MatchesUploadParams = { upload: FileUpload; where: Record<string, unknown> };
+type AddUploadParams = { bytes: Buffer; overrides?: Partial<FileUpload> };
 
 export const SPACE_ID = "01900000-0000-7000-8000-000000000005";
 export const MEMBER_ID = "01900000-0000-7000-8000-000000000006";
 export const CREATION_ID = "01900000-0000-7000-8000-000000000004";
 
-export function creationRequest(uploadIds: string[] = []) {
+export function creationRequest(uploadIds: string[] = []): CreationRequest {
   return {
     title: "A day together",
     memoryDate: "2026-10-10",
@@ -22,10 +35,10 @@ export function creationRequest(uploadIds: string[] = []) {
   };
 }
 
-function matchesUpload(upload: FileUpload, where: Record<string, unknown>): boolean {
+function matchesUpload({ upload, where }: MatchesUploadParams): boolean {
   return Object.entries(where).every(([field, expected]) => {
     if (field === "OR" && Array.isArray(expected)) {
-      return expected.some((condition) => matchesUpload(upload, condition));
+      return expected.some((condition) => matchesUpload({ upload, where: condition }));
     }
     const actual = upload[field as keyof FileUpload];
     if (typeof expected === "object" && expected !== null && !(expected instanceof Date)) {
@@ -37,8 +50,8 @@ function matchesUpload(upload: FileUpload, where: Record<string, unknown>): bool
   });
 }
 
-export function createCreationFixtures() {
-  const state = {
+class CreationFixtures {
+  readonly state = {
     uploads: new Map<string, FileUpload>(),
     memories: [] as Memory[],
     assets: [] as Record<string, unknown>[],
@@ -48,24 +61,25 @@ export function createCreationFixtures() {
     inTransaction: false,
     rollbacks: 0,
   };
-  const storageObjects = new Map<string, Buffer>();
-  const prisma = {
+  readonly storageObjects = new Map<string, Buffer>();
+  readonly prisma = {
     spaceMember: {
       findFirst: vi.fn(async () =>
-        state.activeMembership ? { id: MEMBER_ID, spaceId: SPACE_ID } : null,
+        this.state.activeMembership ? { id: MEMBER_ID, spaceId: SPACE_ID } : null,
       ),
     },
     fileUpload: {
       findFirst: vi.fn(
         async ({ where }: { where: Record<string, unknown> }) =>
-          [...state.uploads.values()].find((upload) => matchesUpload(upload, where)) ?? null,
+          [...this.state.uploads.values()].find((upload) => matchesUpload({ upload, where })) ??
+          null,
       ),
       updateMany: vi.fn(
         async ({ where, data }: { where: Record<string, unknown>; data: Partial<FileUpload> }) => {
-          const uploads = [...state.uploads.values()].filter((upload) =>
-            matchesUpload(upload, where),
+          const uploads = [...this.state.uploads.values()].filter((upload) =>
+            matchesUpload({ upload, where }),
           );
-          for (const upload of uploads) state.uploads.set(upload.id, { ...upload, ...data });
+          for (const upload of uploads) this.state.uploads.set(upload.id, { ...upload, ...data });
           return { count: uploads.length };
         },
       ),
@@ -85,7 +99,7 @@ export function createCreationFixtures() {
         }) => {
           const scope = where.spaceId_createdByUserId_idempotencyKey;
           return (
-            state.memories.find(
+            this.state.memories.find(
               (memory) =>
                 memory.spaceId === scope.spaceId &&
                 memory.createdByUserId === scope.createdByUserId &&
@@ -100,13 +114,13 @@ export function createCreationFixtures() {
         }: {
           data: Omit<Memory, "id" | "coverAssetId" | "deletedAt" | "createdAt" | "updatedAt">;
         }) => {
-          const existing = state.memories.some(
+          const hasExistingMemory = this.state.memories.some(
             (memory) =>
               memory.spaceId === data.spaceId &&
               memory.createdByUserId === data.createdByUserId &&
               memory.idempotencyKey === data.idempotencyKey,
           );
-          if (existing)
+          if (hasExistingMemory)
             throw new Prisma.PrismaClientKnownRequestError("duplicate key", {
               code: "P2002",
               clientVersion: "7",
@@ -119,13 +133,13 @@ export function createCreationFixtures() {
             createdAt: new Date(),
             updatedAt: new Date(),
           };
-          state.memories.push(memory);
+          this.state.memories.push(memory);
           return { id: memory.id, visibility: memory.visibility };
         },
       ),
       update: vi.fn(
         async ({ where, data }: { where: { id: string }; data: { coverAssetId: string } }) => {
-          const memory = state.memories.find((memory) => memory.id === where.id);
+          const memory = this.state.memories.find((memory) => memory.id === where.id);
           if (!memory) throw new Error("Missing memory");
           Object.assign(memory, data);
           return memory;
@@ -134,13 +148,13 @@ export function createCreationFixtures() {
     },
     memoryAsset: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-        state.assets.push(data);
+        this.state.assets.push(data);
         return data;
       }),
     },
     memoryAssetObject: {
       createMany: vi.fn(async ({ data }: { data: Record<string, unknown>[] }) => {
-        state.objects.push(...data);
+        this.state.objects.push(...data);
         return { count: data.length };
       }),
     },
@@ -155,12 +169,12 @@ export function createCreationFixtures() {
             publicationAttempts: 0,
             lastPublicationError: null,
           };
-          state.events.push(event);
+          this.state.events.push(event);
           return event;
         },
       ),
       findMany: vi.fn(async ({ where, take }: { where: { id?: { in: string[] } }; take: number }) =>
-        state.events
+        this.state.events
           .filter(
             (event) =>
               event.publishedAt === null && (!where.id || where.id.in.includes(event.id as string)),
@@ -179,7 +193,7 @@ export function createCreationFixtures() {
             lastPublicationError: string | null;
           };
         }) => {
-          const event = state.events.find(
+          const event = this.state.events.find(
             (event) => event.id === where.id && event.publishedAt === null,
           );
           if (!event) return { count: 0 };
@@ -191,73 +205,96 @@ export function createCreationFixtures() {
         },
       ),
     },
-    $queryRaw: vi.fn(async () => (state.activeMembership ? [{ id: MEMBER_ID }] : [])),
+    $queryRaw: vi.fn(async () => (this.state.activeMembership ? [{ id: MEMBER_ID }] : [])),
     $executeRaw: vi.fn(async () => 0),
     $transaction: vi.fn(async (operation: (transaction: unknown) => Promise<unknown>) =>
-      runTransaction(operation),
+      this.runTransaction(operation),
     ),
   };
 
-  let transactionTail = Promise.resolve();
-  async function runTransaction(operation: (transaction: unknown) => Promise<unknown>) {
-    const previous = transactionTail;
+  private transactionTail = Promise.resolve();
+  private async runTransaction(
+    operation: (transaction: unknown) => Promise<unknown>,
+  ): Promise<unknown> {
+    const previous = this.transactionTail;
     let release = () => {};
-    transactionTail = new Promise<void>((resolve) => {
+    this.transactionTail = new Promise<void>((resolve) => {
       release = resolve;
     });
     await previous;
     const snapshot = structuredClone({
-      uploads: state.uploads,
-      memories: state.memories,
-      assets: state.assets,
-      objects: state.objects,
-      events: state.events,
+      uploads: this.state.uploads,
+      memories: this.state.memories,
+      assets: this.state.assets,
+      objects: this.state.objects,
+      events: this.state.events,
     });
-    state.inTransaction = true;
+    this.state.inTransaction = true;
     try {
-      return await operation(prisma);
+      return await operation(this.prisma);
     } catch (error) {
-      Object.assign(state, snapshot);
-      state.rollbacks++;
+      Object.assign(this.state, snapshot);
+      this.state.rollbacks++;
       throw error;
     } finally {
-      state.inTransaction = false;
+      this.state.inTransaction = false;
       release();
     }
   }
 
-  const storage = {
+  readonly storage = {
     getObject: vi.fn(async (key: string, maxBytes: number) => {
-      if (state.inTransaction) throw new Error("Storage must not run inside a transaction");
-      const bytes = storageObjects.get(key);
+      if (this.state.inTransaction) throw new Error("Storage must not run inside a transaction");
+      const bytes = this.storageObjects.get(key);
       if (bytes && bytes.length > maxBytes) throw new ObjectSizeError("Too large");
       return bytes ?? null;
     }),
     putObjectIfAbsent: vi.fn(
       async ({ key, bytes }: { key: string; bytes: Buffer; contentType: string }) => {
-        if (state.inTransaction) throw new Error("Storage must not run inside a transaction");
-        if (storageObjects.has(key)) return "exists" as const;
-        storageObjects.set(key, bytes);
+        if (this.state.inTransaction) throw new Error("Storage must not run inside a transaction");
+        if (this.storageObjects.has(key)) return "exists" as const;
+        this.storageObjects.set(key, bytes);
         return "created" as const;
       },
     ),
   };
-  const finalization = new UploadFinalizationService(
-    prisma as unknown as PrismaService,
-    storage as unknown as ObjectStorage,
-  );
-  const publisher = {
+  readonly publisher = {
     publish: vi.fn(
       async (_options: { ids?: string[]; limit: number }): Promise<PublicationOutcome[]> => [],
     ),
   };
-  const memories = new MemoriesService(
-    prisma as unknown as PrismaService,
-    finalization,
-    publisher as unknown as OutboxPublisher,
-  );
+  prismaService!: PrismaService;
+  finalization!: UploadFinalizationService;
+  memories!: MemoriesService;
 
-  function addUpload(bytes: Buffer, overrides: Partial<FileUpload> = {}): FileUpload {
+  async initialize(): Promise<void> {
+    const app = await NestFactory.createApplicationContext(
+      {
+        module: CreationFixtureModule,
+        providers: [
+          { provide: PrismaService, useValue: this.prisma },
+          {
+            provide: ObjectStorage,
+            useValue: this.storage satisfies Pick<ObjectStorage, "getObject" | "putObjectIfAbsent">,
+          },
+          {
+            provide: OutboxPublisher,
+            useValue: this.publisher satisfies Pick<OutboxPublisher, "publish">,
+          },
+          UploadFinalizationService,
+          MemoriesService,
+        ],
+      },
+      { logger: false },
+    );
+
+    this.prismaService = app.get(PrismaService);
+    this.finalization = app.get(UploadFinalizationService);
+    this.memories = app.get(MemoriesService);
+    await app.close();
+  }
+
+  addUpload({ bytes, overrides = {} }: AddUploadParams): FileUpload {
     const id = randomUUID();
     const upload: FileUpload = {
       id,
@@ -283,9 +320,15 @@ export function createCreationFixtures() {
       updatedAt: new Date(),
       ...overrides,
     };
-    state.uploads.set(upload.id, upload);
-    storageObjects.set(upload.stagingKey, bytes);
+    this.state.uploads.set(upload.id, upload);
+    this.storageObjects.set(upload.stagingKey, bytes);
     return upload;
   }
-  return { state, prisma, storage, storageObjects, finalization, memories, addUpload, publisher };
+}
+
+export async function createCreationFixtures(): Promise<CreationFixtures> {
+  const fixtures = new CreationFixtures();
+  await fixtures.initialize();
+
+  return fixtures;
 }

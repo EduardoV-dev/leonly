@@ -8,7 +8,7 @@ import { type CreationResult, MemoriesService } from "./memories.service";
 @ApiTags("Memories")
 @ApiCookieAuth("session")
 export class MemoriesController {
-  constructor(private readonly memories: MemoriesService) {}
+  constructor(private readonly memoriesService: MemoriesService) {}
 
   @Post()
   @ApiOperation({ summary: "Create a memory from immutable finalized originals" })
@@ -57,6 +57,6 @@ export class MemoriesController {
     @Req() request: AuthenticatedRequest,
     @Body() body: unknown,
   ): Promise<CreationResult> {
-    return this.memories.create({ userId: request.authUser.id, body });
+    return this.memoriesService.create({ userId: request.authUser.id, body });
   }
 }

@@ -1,11 +1,12 @@
-import { HttpException } from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
+import { HttpException, Module } from "@nestjs/common";
+import { NestFactory, Reflector } from "@nestjs/core";
 import type { Response } from "express";
-import { describe, expect, it, vi } from "vitest";
-import { AuthService, type SessionRequest } from "../../auth/auth.service";
-import { RateLimit, type RateLimitOptions } from "./rate-limit.decorator";
+import { describe, expect, it, type Mock, vi } from "vitest";
+import { AuthService, type SessionRequest } from "../../../auth/auth.service";
+import { RateLimit } from "../decorators/rate-limit.decorator";
+import { RateLimitService } from "../rate-limit.service";
+import type { RateLimitOptions } from "../types/rate-limit.types";
 import { RateLimitGuard } from "./rate-limit.guard";
-import { RateLimitService } from "./rate-limit.service";
 
 const POLICY = {
   limit: 5,
@@ -14,23 +15,52 @@ const POLICY = {
   scope: "user",
 } satisfies RateLimitOptions;
 
-function fixture() {
-  const check = vi.fn().mockResolvedValue({ success: true, reset: 0 });
-  const getRequestUser = vi.fn().mockResolvedValue({ id: "one" });
-  const guard = new RateLimitGuard(
-    new Reflector(),
-    { check } as unknown as RateLimitService,
-    { getRequestUser } as unknown as AuthService,
+@Module({})
+class RateLimitFixtureModule {}
+
+type CreateGuardFixtureReturn = {
+  guard: RateLimitGuard;
+  check: Mock<RateLimitService["check"]>;
+  getRequestUser: Mock<AuthService["getRequestUser"]>;
+  request: SessionRequest;
+  response: Pick<Response, "setHeader">;
+  setHeader: Mock<Response["setHeader"]>;
+};
+
+async function createGuardFixture(): Promise<CreateGuardFixtureReturn> {
+  const check = vi.fn<RateLimitService["check"]>().mockResolvedValue({ success: true, reset: 0 });
+  const getRequestUser = vi.fn<AuthService["getRequestUser"]>().mockResolvedValue({ id: "one" });
+  const app = await NestFactory.createApplicationContext(
+    {
+      module: RateLimitFixtureModule,
+      providers: [
+        Reflector,
+        {
+          provide: RateLimitService,
+          useValue: { check } satisfies Pick<RateLimitService, "check">,
+        },
+        {
+          provide: AuthService,
+          useValue: { getRequestUser } satisfies Pick<AuthService, "getRequestUser">,
+        },
+        RateLimitGuard,
+      ],
+    },
+    { logger: false },
   );
+  const guard = app.get(RateLimitGuard);
+  await app.close();
+
   const request = { socket: { remoteAddress: "127.0.0.1" } } as SessionRequest;
-  const setHeader = vi.fn();
-  const response = { setHeader } as unknown as Response;
+  const setHeader = vi.fn<Response["setHeader"]>();
+  const response = { setHeader };
+
   return { guard, check, getRequestUser, request, response, setHeader };
 }
 
 describe("RateLimitGuard", () => {
   it("uses verified user identity globally while enforcing an IP-scoped endpoint policy", async () => {
-    const { guard, check, request, response } = fixture();
+    const { guard, check, request, response } = await createGuardFixture();
     await guard.enforce({
       request,
       response,
@@ -44,7 +74,7 @@ describe("RateLimitGuard", () => {
   });
 
   it("isolates verified users and falls back to IP for anonymous requests", async () => {
-    const { guard, check, getRequestUser, request, response } = fixture();
+    const { guard, check, getRequestUser, request, response } = await createGuardFixture();
     getRequestUser
       .mockResolvedValueOnce({ id: "one" })
       .mockResolvedValueOnce({ id: "two" })
@@ -59,7 +89,7 @@ describe("RateLimitGuard", () => {
   });
 
   it("short-circuits endpoint checks when the global quota is exhausted", async () => {
-    const { guard, check, request, response, setHeader } = fixture();
+    const { guard, check, request, response, setHeader } = await createGuardFixture();
     check.mockResolvedValue({ success: false, reset: Date.now() - 1 });
     await expect(
       guard.enforce({ request, response, endpoint: "join", policy: POLICY }),
@@ -75,7 +105,7 @@ describe("RateLimitGuard", () => {
       write() {}
       read() {}
     }
-    const { guard, check, request, response } = fixture();
+    const { guard, check, request, response } = await createGuardFixture();
     const context = (handler: () => void) => ({
       getClass: () => Controller,
       getHandler: () => handler,

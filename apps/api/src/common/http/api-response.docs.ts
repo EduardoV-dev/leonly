@@ -15,37 +15,46 @@ const ERROR_SCHEMA: SchemaObject = {
   },
 };
 
-export function apiResponseSchema(options: {
+type ApiResponseSchemaParams = {
   data: SchemaObject;
   ok: boolean;
   example: unknown;
-}): SchemaObject {
-  return {
-    type: "object",
-    required: ["ok", "data", "error", "message"],
-    properties: {
-      ok: { type: "boolean", enum: [options.ok] },
-      data: options.data,
-      error: { ...ERROR_SCHEMA, ...(options.ok ? { maxItems: 0 } : { minItems: 1 }) },
-      message: { type: "string" },
-    },
-    example: options.example,
-  };
-}
+};
 
-export function ApiSuccessResponse(options: {
+type ApiSuccessResponseParams = {
   status?: number;
   description: string;
   data: SchemaObject;
   example: unknown;
-}): MethodDecorator & ClassDecorator {
+};
+
+export function apiResponseSchema({ data, ok, example }: ApiResponseSchemaParams): SchemaObject {
+  return {
+    type: "object",
+    required: ["ok", "data", "error", "message"],
+    properties: {
+      ok: { type: "boolean", enum: [ok] },
+      data,
+      error: { ...ERROR_SCHEMA, ...(ok ? { maxItems: 0 } : { minItems: 1 }) },
+      message: { type: "string" },
+    },
+    example,
+  };
+}
+
+export function ApiSuccessResponse({
+  status = HttpStatus.OK,
+  description,
+  data,
+  example,
+}: ApiSuccessResponseParams): MethodDecorator & ClassDecorator {
   return ApiResponse({
-    status: options.status ?? HttpStatus.OK,
-    description: options.description,
+    status,
+    description,
     schema: apiResponseSchema({
-      data: options.data,
+      data,
       ok: true,
-      example: { ok: true, data: options.example, error: [], message: API_SUCCESS_MESSAGE },
+      example: { ok: true, data: example, error: [], message: API_SUCCESS_MESSAGE },
     }),
   });
 }
@@ -54,6 +63,7 @@ export function ApiErrorResponses(...statuses: number[]): MethodDecorator & Clas
   return applyDecorators(
     ...statuses.map((status) => {
       const error = createApiError(status);
+
       return ApiResponse({
         status,
         description: error.message,

@@ -7,12 +7,12 @@ import {
   apiResponseSchema,
 } from "../../../common/http/api-response.docs";
 import { EditResponse } from "../../../common/http/edit-response.docs";
-import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/rate-limit.constants";
-import { RateLimit } from "../../../common/rate-limit/rate-limit.decorator";
+import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/constants/rate-limit.constants";
+import { RateLimit } from "../../../common/rate-limit/decorators/rate-limit.decorator";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
 import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../docs/space-response.docs";
-import { EditDisplayNameDto } from "../dtos/edit-display-name.dto";
-import { JoinSpaceDto } from "../dtos/join-space.dto";
+import { EditDisplayNameDto } from "../dto/edit-display-name.dto";
+import { JoinSpaceDto } from "../dto/join-space.dto";
 import { MembershipsService } from "../services/memberships.service";
 import type { DisplayNameEditResult } from "../types/memberships.types";
 import { throwJoinError } from "../utils/throw-join-error";
@@ -22,7 +22,7 @@ import { throwJoinError } from "../utils/throw-join-error";
 @ApiCookieAuth("session")
 @ApiErrorResponses(HttpStatus.UNAUTHORIZED, HttpStatus.INTERNAL_SERVER_ERROR)
 export class MembershipsController {
-  constructor(private readonly memberships: MembershipsService) {}
+  constructor(private readonly membershipsService: MembershipsService) {}
 
   @Patch("display-name")
   @RateLimit(SETTINGS_WRITE_RATE_LIMIT)
@@ -37,7 +37,7 @@ export class MembershipsController {
     @Req() request: AuthenticatedRequest,
     @Body() body: EditDisplayNameDto,
   ): Promise<DisplayNameEditResult> {
-    return this.memberships.updateDisplayName({
+    return this.membershipsService.updateDisplayName({
       userId: request.authUser.id,
       displayName: body.displayName,
       expectedUpdatedAt: body.expectedUpdatedAt,
@@ -75,7 +75,7 @@ export class MembershipsController {
     }),
   })
   async completeSetup(@Req() request: AuthenticatedRequest): Promise<{ completed: true }> {
-    return this.memberships.completeSetup(request.authUser.id);
+    return this.membershipsService.completeSetup(request.authUser.id);
   }
 
   @Post()
@@ -103,7 +103,7 @@ export class MembershipsController {
     @Req() request: AuthenticatedRequest,
     @Body() body: JoinSpaceDto,
   ): Promise<{ space_id: string }> {
-    const result = await this.memberships.join({
+    const result = await this.membershipsService.join({
       userId: request.authUser.id,
       accountName: request.authUser.name,
       inviteCode: body.invite_code,

@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import { IsString, Length, ValidateBy } from "class-validator";
-import { OptimisticLockDto } from "../../../common/dtos/optimistic-lock.dto";
-import { startDateError, validateTimezone } from "../utils/start-date-validation";
+import { OptimisticLockDto } from "../../../common/dto/optimistic-lock.dto";
+import { getStartDateError, validateTimezone } from "../utils/start-date-validation";
 
 export class RenameSpaceDto extends OptimisticLockDto {
   @ApiProperty({ type: String, minLength: 2, maxLength: 100, example: "Our Space" })
@@ -18,10 +18,15 @@ export class EditStartDateDto extends OptimisticLockDto {
     name: "validStartDate",
     validator: {
       validate: (value: unknown, args) =>
-        startDateError(value, (args?.object as EditStartDateDto | undefined)?.timezone) === null,
+        getStartDateError({
+          value,
+          timezone: (args?.object as EditStartDateDto | undefined)?.timezone,
+        }) === null,
       defaultMessage: (args) =>
-        startDateError(args?.value, (args?.object as EditStartDateDto | undefined)?.timezone) ??
-        "Enter a valid start date.",
+        getStartDateError({
+          value: args?.value,
+          timezone: (args?.object as EditStartDateDto | undefined)?.timezone,
+        }) ?? "Enter a valid start date.",
     },
   })
   startDate!: string;

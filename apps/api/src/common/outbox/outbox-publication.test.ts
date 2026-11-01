@@ -7,18 +7,17 @@ import {
   createCreationFixtures,
   creationRequest,
 } from "../../modules/memories/tests/creation-fixtures";
-import type { PrismaService } from "../prisma/prisma.service";
 import { OutboxPublisher } from "./outbox-publisher";
 
 describe("committed creation publication and operator replay", () => {
-  let fixtures: ReturnType<typeof createCreationFixtures>;
+  let fixtures: Awaited<ReturnType<typeof createCreationFixtures>>;
   let publisher: OutboxPublisher;
   let bytes: Buffer;
   const send = vi.spyOn(SQSClient.prototype, "send");
   beforeEach(async () => {
     send.mockReset();
-    fixtures = createCreationFixtures();
-    publisher = new OutboxPublisher(fixtures.prisma as unknown as PrismaService, {
+    fixtures = await createCreationFixtures();
+    publisher = new OutboxPublisher(fixtures.prismaService, {
       routes: {
         ImageVariantsRequested: {
           queueUrl: "http://localhost:4566/000000000000/images",
@@ -46,7 +45,7 @@ describe("committed creation publication and operator replay", () => {
   afterEach(() => publisher.onModuleDestroy());
 
   async function create(count = 1) {
-    const uploads = Array.from({ length: count }, () => fixtures.addUpload(bytes));
+    const uploads = Array.from({ length: count }, () => fixtures.addUpload({ bytes }));
     return fixtures.memories.create({
       userId: "user-a",
       body: creationRequest(uploads.map(({ id }) => id)),

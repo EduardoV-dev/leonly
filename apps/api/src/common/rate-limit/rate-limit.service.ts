@@ -6,8 +6,8 @@ import {
   GLOBAL_RATE_LIMIT,
   RATE_LIMIT_PREFIX,
   RATE_LIMIT_TIMEOUT_MS,
-} from "./rate-limit.constants";
-import type { RateLimitOptions } from "./rate-limit.decorator";
+} from "./constants/rate-limit.constants";
+import type { CheckReturn, RateLimitOptions } from "./types/rate-limit.types";
 
 type CheckParams = Readonly<{
   identifier: string;
@@ -25,7 +25,7 @@ export class RateLimitService {
     identifier,
     endpoint,
     policy = GLOBAL_RATE_LIMIT,
-  }: CheckParams): Promise<{ success: boolean; reset: number }> {
+  }: CheckParams): Promise<CheckReturn> {
     const namespace = endpoint ? `endpoint:${policy.key ?? endpoint}` : "global";
     const key: string = JSON.stringify([
       namespace,

@@ -3,8 +3,6 @@ import { isValidInviteCode, normalizeInviteCode } from "@leonly/utils/invite-cod
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
-import { normalizeDisplayName } from "../../../common/utils/display-name";
-import { getUniqueIndex } from "../../../common/utils/invite-code";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
   ACTIVE_SPACE_ROLE_INDEX,
@@ -15,21 +13,21 @@ import type {
   JoinResult,
   ValidateInviteParams,
 } from "../types/memberships.types";
+import { normalizeDisplayName } from "../utils/display-name";
+import { getUniqueIndex } from "../utils/invite-code";
+
+type UpdateDisplayNameParams = { userId: string; displayName: string; expectedUpdatedAt: string };
 
 @Injectable()
 export class MembershipsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async updateDisplayName({
     userId,
     displayName,
     expectedUpdatedAt,
-  }: {
-    userId: string;
-    displayName: string;
-    expectedUpdatedAt: string;
-  }): Promise<DisplayNameEditResult> {
-    return this.prisma.$transaction(async (transaction) => {
+  }: UpdateDisplayNameParams): Promise<DisplayNameEditResult> {
+    return this.prismaService.$transaction(async (transaction) => {
       const rows = await transaction.$queryRaw<Array<{ memberId: string }>>`
         SELECT c.id AS "memberId"
         FROM space_members c JOIN spaces s ON s.id = c.space_id
@@ -54,7 +52,7 @@ export class MembershipsService {
   }
 
   async completeSetup(userId: string): Promise<{ completed: true }> {
-    const result = await this.prisma.spaceMember.updateMany({
+    const result = await this.prismaService.spaceMember.updateMany({
       where: { userId, deletedAt: null, space: { deletedAt: null } },
       data: { onboardingCompletedAt: new Date() },
     });
@@ -71,7 +69,7 @@ export class MembershipsService {
   }: ValidateInviteParams): Promise<
     Exclude<JoinResult, { status: "joined" }> | { status: "valid" }
   > {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.prismaService.$transaction(async (transaction) => {
       const isCodeValid = isValidInviteCode(inviteCode);
       if (!isCodeValid) return { status: "malformed" } as const;
       const normalizedCode = normalizeInviteCode(inviteCode);
@@ -110,8 +108,8 @@ export class MembershipsService {
 
   async join({ userId, accountName, inviteCode, displayName }: JoinParams): Promise<JoinResult> {
     try {
-      return await this.prisma.$transaction<JoinResult>(async (transaction) => {
-        const normalizedName = normalizeDisplayName(displayName, accountName);
+      return await this.prismaService.$transaction<JoinResult>(async (transaction) => {
+        const normalizedName = normalizeDisplayName({ value: displayName, accountName });
         if (!normalizedName) return { status: "invalid_name" };
 
         const isCodeValid = isValidInviteCode(inviteCode);

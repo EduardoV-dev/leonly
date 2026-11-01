@@ -34,8 +34,8 @@ Successful Nest operations return HTTP 200 or their documented HTTP 201 creation
 ### Error responses
 
 Errors use the same envelope with `ok: false`, a nonempty `error` array, and a readable
-`message`. Each error has a `code`, `message`, and optional `field`. Ordinary errors have
-`data: null`; health failures preserve dependency diagnostics. Documented examples are generic;
+`message` and `data: null`. Each error has a `code`, `message`, and optional `field`.
+Health errors identify each unhealthy dependency by `field`. Documented examples are generic;
 validation and domain failures can provide more specific messages.
 
 | Status | Meaning | Error code |
@@ -63,14 +63,15 @@ validation and domain failures can provide more specific messages.
 ### Health checks
 
 `GET /api/health` is public and returns `Cache-Control: no-store`. A failed PostgreSQL or Redis
-probe returns HTTP 503 while preserving both results:
+probe returns HTTP 503 with an error for each unhealthy dependency. Dependencies absent from the
+error array passed their probes. For example, a failed database probe with healthy Redis returns:
 
 ```json
 {
   "ok": false,
-  "data": { "database": false, "redis": true },
+  "data": null,
   "error": [
-    { "code": "HTTP_503", "message": "Service is temporarily unavailable. Please try again later." }
+    { "code": "HTTP_503", "field": "database", "message": "Service is temporarily unavailable. Please try again later." }
   ],
   "message": "Service is temporarily unavailable. Please try again later."
 }

@@ -20,33 +20,34 @@ export type FinalizedUpload = FileUpload & {
   verifiedByteSize: number;
 };
 
+type FinalizeParams = { id: string; userId: string; spaceId: string };
+
 @Injectable()
 export class UploadFinalizationService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
   ) {}
 
-  async finalize(options: {
-    id: string;
-    userId: string;
-    spaceId: string;
-  }): Promise<FinalizedUpload> {
+  async finalize({ id, userId, spaceId }: FinalizeParams): Promise<FinalizedUpload> {
     const now = new Date();
     const ownership = {
-      id: options.id,
-      uploaderUserId: options.userId,
-      spaceId: options.spaceId,
+      id,
+      uploaderUserId: userId,
+      spaceId,
       category: "image" as const,
       purpose: "memory_image" as const,
       attachmentDeadline: { gt: now },
     };
-    const upload = await this.prisma.fileUpload.findFirst({ where: ownership });
-    if (!upload || upload.status === "consumed" || upload.status === "failed")
-      throwUnavailableUploadError();
+    const upload = await this.prismaService.fileUpload.findFirst({ where: ownership });
+    const isUploadUnavailable =
+      !upload || upload.status === "consumed" || upload.status === "failed";
+
+    if (isUploadUnavailable) throwUnavailableUploadError();
+
     const leaseToken = randomUUID();
     const leaseExpiresAt = new Date(now.getTime() + FINALIZATION_LEASE_SECONDS * 1000);
-    const claimed = await this.prisma.fileUpload.updateMany({
+    const claimed = await this.prismaService.fileUpload.updateMany({
       where: {
         ...ownership,
         status: { in: ["issued", "finalizing", "finalized"] },
@@ -74,7 +75,7 @@ export class UploadFinalizationService {
         declaredMimeType: upload.declaredMimeType,
         declaredByteSize: upload.declaredByteSize,
       });
-      const finalized = await this.prisma.fileUpload.updateMany({
+      const finalized = await this.prismaService.fileUpload.updateMany({
         where: {
           ...ownership,
           status: "finalizing",
@@ -89,6 +90,7 @@ export class UploadFinalizationService {
         },
       });
       if (finalized.count !== 1) throwCreationInProgressError();
+
       return {
         ...upload,
         status: "finalized",
@@ -98,8 +100,10 @@ export class UploadFinalizationService {
         verifiedByteSize: metadata.byteSize,
       };
     } catch (error) {
-      if (error instanceof InvalidImageError || error instanceof ObjectSizeError) {
-        await this.prisma.fileUpload.updateMany({
+      const isInvalidImage = error instanceof InvalidImageError || error instanceof ObjectSizeError;
+
+      if (isInvalidImage) {
+        await this.prismaService.fileUpload.updateMany({
           where: {
             id: upload.id,
             leaseToken,
@@ -115,7 +119,7 @@ export class UploadFinalizationService {
         });
         throwUnavailableUploadError();
       }
-      await this.prisma.fileUpload.updateMany({
+      await this.prismaService.fileUpload.updateMany({
         where: { id: upload.id, leaseToken, status: "finalizing" },
         data: { leaseToken: null, leaseExpiresAt: null },
       });
@@ -125,7 +129,7 @@ export class UploadFinalizationService {
 
   async release(uploads: FinalizedUpload[]): Promise<void> {
     for (const upload of uploads) {
-      await this.prisma.fileUpload.updateMany({
+      await this.prismaService.fileUpload.updateMany({
         where: { id: upload.id, leaseToken: upload.leaseToken, status: "finalized" },
         data: { leaseToken: null, leaseExpiresAt: null },
       });

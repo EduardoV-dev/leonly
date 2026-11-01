@@ -1,8 +1,6 @@
 import { toNodeHandler } from "better-auth/node";
 import type { NextFunction, Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import type { RateLimitGuard } from "../../common/rate-limit/rate-limit.guard";
-import type { AuthService } from "../auth.service";
 
 const { auth, nodeHandler } = vi.hoisted(() => ({
   auth: { handler: vi.fn() },
@@ -14,10 +12,10 @@ vi.mock("better-auth/node", () => ({ toNodeHandler: vi.fn(() => nodeHandler) }))
 describe("auth handler seam", () => {
   it("adapts the configured auth instance for Node HTTP", async () => {
     const { createAuthHandler } = await import("./handler");
-    const authService = { auth } as unknown as AuthService;
+    const authService = { auth };
 
     const enforce = vi.fn();
-    const authHandler = createAuthHandler(authService, { enforce } as unknown as RateLimitGuard);
+    const authHandler = createAuthHandler({ authService, rateLimitGuard: { enforce } });
     const request = { method: "POST", path: "/api/auth/sign-in/social" } as Request;
     const response = {} as Response;
     await authHandler(request, response, vi.fn());
@@ -37,10 +35,10 @@ describe("auth handler seam", () => {
     nodeHandler.mockClear();
     const error = new Error("Rate limited");
     const next = vi.fn();
-    const handler = createAuthHandler(
-      { auth } as unknown as AuthService,
-      { enforce: vi.fn().mockRejectedValue(error) } as unknown as RateLimitGuard,
-    );
+    const handler = createAuthHandler({
+      authService: { auth },
+      rateLimitGuard: { enforce: vi.fn().mockRejectedValue(error) },
+    });
     await handler(
       { method: "GET", path: "/api/auth/get-session" } as Request,
       {} as Response,

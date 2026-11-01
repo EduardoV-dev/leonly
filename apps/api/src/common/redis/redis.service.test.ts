@@ -24,7 +24,7 @@ describe("RedisService", () => {
     const { evalScript, redis, service } = createService();
     const operation = vi.fn(async () => "complete");
 
-    await expect(service.withLock("user:1:lock", operation)).resolves.toBe("complete");
+    await expect(service.withLock({ key: "user:1:lock", operation })).resolves.toBe("complete");
 
     expect(redis.set).toHaveBeenCalledWith("user:1:lock", expect.any(String), {
       nx: true,
@@ -38,7 +38,10 @@ describe("RedisService", () => {
     const { evalScript, service } = createService();
 
     await expect(
-      service.withLock("user:1:lock", async () => Promise.reject(new Error("failed"))),
+      service.withLock({
+        key: "user:1:lock",
+        operation: async () => Promise.reject(new Error("failed")),
+      }),
     ).rejects.toThrow("failed");
 
     expect(evalScript).toHaveBeenCalledOnce();
