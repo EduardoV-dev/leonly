@@ -12,7 +12,8 @@ metadata:
 ## Activation Contract
 
 For implementation, reuse the applicable rules through `ev-coding-standards` before code edits;
-review execution and coverage artifacts apply when reviewing, including the completion review.
+review execution and internal coverage artifacts apply when reviewing, including the completion review.
+The detailed chat report applies to explicit review/check/fix requests, not routine code generation.
 Review explicit scope; otherwise staged, unstaged, and untracked non-ignored working-tree changes.
 The core works without technology companions.
 
@@ -78,11 +79,17 @@ The core works without technology companions.
 
 ## Output Contract
 
-State scope/baseline, selected check groups, applied rules, and that review ran in one agent thread.
-Order findings:
-critical, high, medium, low. Include `path:line`, rule section/wording, evidence/impact, and smallest
-fix; distinguish style from behavioral defects. Finish with each planned check's status and evidence,
-deterministic-check results, and coverage/verification gaps. State when no violations were found.
+For explicit review/check/fix requests, display every finding directly in chat, ordered critical,
+high, medium, low. Never truncate to five, a top-N selection, or a brevity budget; group long reports
+with headings without omitting issues or deferring them to a file or follow-up request.
+Include each finding's stable ID, severity, `path:line` and affected sites, rule section/wording,
+evidence, impact, and smallest fix; distinguish style from behavioral defects. When fixes are requested,
+state fixed/remaining status and verification evidence for each finding.
+State scope/baseline, selected groups/rules, and single-thread execution. Finish with each planned
+check's status/evidence, deterministic results, and coverage/verification gaps; state when none were found.
+During code generation, perform the completion review and checks internally without a separate
+review report, findings inventory, or standards summary. Fix in-scope issues before handoff; surface
+unresolved blockers, required decisions, and material verification gaps. Honor explicit report requests.
 
 ## References
 

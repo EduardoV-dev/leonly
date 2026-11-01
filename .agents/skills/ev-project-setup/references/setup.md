@@ -29,10 +29,14 @@ exist: installers may expose only selected skills or use different directories f
 ## Write And Verify
 
 Run `python3 <setup-skill>/assets/setup_project.py "<project-root>"`, then repeat with `--check`.
-The helper writes only `<project-root>/AGENTS.md`; it does not install skills or verify their runtime
-availability. It preserves content outside `ev-project-skills` markers and refuses symlinked files,
+The helper maintains `<project-root>/AGENTS.md` and ensures `<project-root>/.gitignore` contains
+`__pycache__/` and `*.py[cod]`, since Python skill tooling can generate these files. It creates the
+ignore file if missing, appends only missing exact entries, and preserves existing content. It does
+not delete generated caches or untrack already tracked files; ignores only affect untracked files.
+It does not install skills or verify their runtime availability.
+It preserves content outside `ev-project-skills` markers and refuses symlinked setup files,
 unpaired/duplicate/reversed markers, and missing target directories. `--check` returns 0 for current
-wiring and 1 for missing/outdated wiring or errors, without writing.
+wiring and ignore entries, and 1 for missing/outdated setup or errors, without writing either file.
 
 Inspect the resulting diff and confirm the block matches the bundled template. Existing unrelated
 instructions must remain intact. Flag conflicting older loaders for resolution; do not remove them
@@ -56,6 +60,8 @@ checks; do not change real application behavior just to test activation.
 | Add a skill with a new task trigger, restart, and request that task | New skill activates without rewriting the managed block. |
 | Remove required core guidance or a required reference | Agent reports the exact gap before affected code edits. |
 | Work crosses into a new technology/domain | Agent reselects and loads newly applicable rules before affected edits. |
+| Explicit review discovers more than five distinct findings | Every finding appears in chat with severity, location, rule, evidence, impact, and minimal fix. |
+| Generate code without requesting a review report | Standards and completion checks run internally; no separate standards summary is emitted. |
 
 Separate helper/metadata test results from these agent traces. If no fresh session was exercised,
 report behavior as unverified. Instructions establish obligations; they are not a runtime tool gate.

@@ -43,8 +43,36 @@ export type BidirectionalCursorPage<T> = {
 
 Use `ApiResponse<OffsetPage<Item>>`, `ApiResponse<CursorPage<Item>>`, or the explicitly requested
 `ApiResponse<BidirectionalCursorPage<Item>>`. The outer `data` holds the page; its `data` holds items.
-Success always includes `error: []`; failure always includes `data: null` and an `ApiError[]`.
+For ordinary endpoints, success includes `error: []`; failure includes `data: null` and an `ApiError[]`.
 Both branches include a string `message`. Keep client errors free of internal details.
+
+## Health-Check Exception
+
+Export and reuse this shared type for health-check endpoints, including liveness and readiness:
+
+```ts
+export type HealthResponse = {
+  status: "ok" | "degraded" | "down";
+  checks: Record<string, "up" | "down">;
+};
+```
+
+Return this body directly, without `ok`, `data`, `error`, or `message`. Do not wrap it in `ApiResponse<T>`
+or weaken that ordinary union. Check names identify the dependencies actually checked, such as
+`database` and `redis`; do not require unused dependencies or report an unchecked dependency as up.
+
+| Actual check results | `status` | HTTP status |
+| --- | --- | --- |
+| All up | `ok` | 200 |
+| At least one up and at least one down | `degraded` | 503 |
+| All down | `down` | 503 |
+
+Evaluate the configured checks and derive the aggregate from their results. Handle check failures and
+timeouts as `down` and retain other check results. If no checks are configured, resolve the intended
+health signal before implementation rather than treating an empty set as proof of dependency health.
+Expose only safe dependency names and states, never credentials, connection strings, or raw errors.
+Ensure response middleware, interceptors, and exception filters preserve this direct contract and
+HTTP mapping, including non-2xx responses.
 
 ## Pagination Semantics
 

@@ -1,6 +1,6 @@
 ---
 name: ev-api-contracts
-description: "Trigger: API response design, API implementation, pagination, cursor handling. Standardize response envelopes and guide pagination choices."
+description: "Trigger: API response design, API implementation, health checks, pagination, cursor handling. Standardize response and health contracts and guide pagination choices."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -11,7 +11,8 @@ metadata:
 
 ## Activation Contract
 
-Use when designing or implementing first-party JSON API responses, their consumers, or pagination.
+Use when designing or implementing first-party JSON API responses, health checks, their consumers,
+or pagination.
 For review-only work, report contract violations without starting an implementation or decision workflow.
 
 ## Hard Rules
@@ -20,6 +21,9 @@ For review-only work, report contract violations without starting an implementat
   in TypeScript. Reuse shared exports across producers and consumers; do not recreate endpoint-local types.
 - Wrap success, failure, and pagination payloads in `ApiResponse<T>`. Keep appropriate HTTP status codes.
   Protocol-defined redirects, streams, file downloads, and bodyless responses retain their required format.
+  Health-check endpoints (including liveness/readiness) must instead return the shared `HealthResponse`
+  directly: `{ status: "ok" | "degraded" | "down", checks: Record<string, "up" | "down"> }`. All checks
+  up means `ok`/200; mixed means `degraded`/503; all down means `down`/503. Preserve the ordinary union.
 - Before implementing pagination, recommend offset or cursor based on the use case, ask the user which
   to use, and STOP until they answer. Honor an explicit choice already provided for the current task.
 - Require all offset metadata fields, using `totalItems` for the authorized, filtered dataset count,
@@ -38,6 +42,7 @@ For review-only work, report contract violations without starting an implementat
 
 | Use case | Recommendation |
 | --- | --- |
+| Health endpoint | Return direct `HealthResponse`; aggregate actual checks and use HTTP 200 or 503. |
 | Numbered pages, random page access, exact totals | Offset; note count/deep-offset costs and shifting rows. |
 | Sequential feeds, large or frequently changing datasets | Cursor; note lack of arbitrary page jumps. |
 | Use case unclear | Ask which navigation behavior is needed before recommending a strategy. |
@@ -48,13 +53,14 @@ For review-only work, report contract violations without starting an implementat
    Read the [paired examples and exceptions](references/examples.md).
 2. Resolve the pagination choice before pagination implementation; apply the contract template.
 3. Implement validated cursor utilities when needed; extend the base schema for the selected ordering.
-4. Verify success/error envelopes, empty and final pages, and applicable offset boundaries or cursor
-   round trips, malformed cursors, timestamp ties, client/internal failure attribution, and requested
+4. Verify success/error envelopes, health aggregation and 200/503 responses, empty and final pages,
+   applicable offset boundaries or cursor round trips, malformed cursors, timestamp ties, client/internal failure attribution, and requested
    backward traversal (query direction, lookahead trimming, restored order, anchors, and boundaries).
 
 ## Output Contract
 
-Return the chosen strategy, changed contracts/producers/consumers, checks, and remaining gaps.
+For explicit reviews, follow the coordinator's exhaustive chat report contract. During generation,
+apply and verify these rules internally without a separate standards report or summary; surface blockers.
 At the pagination decision gate, return only the recommendation and one question; wait for the answer.
 
 ## References

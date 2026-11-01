@@ -5,31 +5,31 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-api-contracts/SKILL.md",
-      "computedHash": "aff72e57c9456e286ce2204d23449923de170e5307ded223307932352ec8b8df"
+      "computedHash": "4c7b9a18f1b9300a2cdec5f109ce180696d5fe8a0629ccb2dad4024c26b6db34"
     },
     "ev-code-review": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "7ff0910be4a528027cdd1012f05d3b9ac1206f3e77a48319c87bfefb2e431b31"
+      "computedHash": "82594259f20e40795241292a3663f3effc56c3d2ff7e5dc5bbe18f8e9cf0d93c"
     },
     "ev-coding-standards": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-coding-standards/SKILL.md",
-      "computedHash": "871092ece343f553f1436cef00d3ffd4585bac4e33e1a5fcd9848441f36a1326"
+      "computedHash": "5883fd288a570439144fad1989f9d1b57b0b55a59f0b0b46671318168ff44d97"
     },
     "ev-project-setup": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-project-setup/SKILL.md",
-      "computedHash": "74acca8fd7ddec987f5d10d0b17537c201358580dc6c4ee3f37737847bca1c8a"
+      "computedHash": "6136bf15062ec771bf6cb65bc9ca52dfc320a265f940878538534dd85ec0cca7"
     },
     "ev-review-nestjs": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-nestjs/SKILL.md",
-      "computedHash": "64cf399f43e1dae1b8ff3e90d218facf4e03471b8bc48355b4c565f8ef6f2992"
+      "computedHash": "bf5b9cbea2b6ccb1e260d2672b70131044b16eada894c428401a1d3d51897f28"
     },
     "ev-review-nextjs": {
       "source": "EduardoV-dev/my-skills",
@@ -47,7 +47,7 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-typescript/SKILL.md",
-      "computedHash": "02c8b55d1c9e954884b840306f99fcbabf46a2cd818440444f910ee1460ae58b"
+      "computedHash": "a08dfa3d9cb117a95c9d1809711e2b4a64960a114645e223c5b886670f73f656"
     },
     "grill-me": {
       "source": "mattpocock/skills",

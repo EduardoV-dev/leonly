@@ -47,7 +47,11 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 
 ## Output Contract
 
-State scope, source revision (including dirty state), loaded rule paths, results, and verification gaps.
+For explicit check/fix requests, follow the review coordinator's exhaustive chat report: show every
+finding with severity, evidence, impact, minimal fix, and fixed/remaining status when applicable.
+Include scope, source revision/dirty state, loaded paths, results, and verification gaps.
+During generation, record rule selection and completion checks internally; do not emit a separate
+standards report or summary. Surface blockers, required decisions, and material verification gaps.
 For maintenance, report changed revision/links or the contribution worktree and publication state.
 
 ## References

@@ -23,6 +23,10 @@ Record results using `coverage.md`.
   `error: []`, and a string `message`; failure has `ok: false`, `data: null`, an `error` array, and a
   string `message`. Each error has string `code` and `message`, and optional string `field`.
   Keep appropriate HTTP statuses. Preserve protocol-defined redirects, streams, downloads, and bodyless responses.
+- Health-check endpoints, including liveness/readiness, return the shared
+  [HealthResponse](../../ev-api-contracts/assets/contracts.md#health-check-exception) directly, without
+  an envelope: `{ status, checks }`, with per-dependency `up`/`down`. All up = `ok`/200, mixed =
+  `degraded`/503, all down = `down`/503. Preserve safe diagnostics and do not weaken ordinary contracts.
 - Wrap the entire pagination payload in that envelope: `data` contains `{ data: items, meta }`.
   Offset metadata requires boolean `hasNextPage`/`hasPreviousPage` and numeric `totalItems`/`page`/`pageSize`.
   Require positive bounded pagination inputs, one-based pages, totals over authorized filtered rows,

@@ -19,19 +19,23 @@ class ProjectSetupTests(unittest.TestCase):
         self.project = Path(self.temporary.name) / "project with spaces"
         self.project.mkdir()
         self.instructions = self.project / "AGENTS.md"
+        self.ignore = self.project / ".gitignore"
 
     def run_setup(self, **arguments):
         with contextlib.redirect_stdout(io.StringIO()):
             return setup_project(self.project, **arguments)
 
-    def test_creates_only_instructions_and_is_repeatable(self):
+    def test_creates_instructions_and_ignores_and_is_repeatable(self):
         self.assertTrue(self.run_setup())
         original = self.instructions.read_bytes()
         modified = self.instructions.stat().st_mtime_ns
+        ignore_modified = self.ignore.stat().st_mtime_ns
         self.assertTrue(self.run_setup())
         self.assertEqual(self.instructions.read_bytes(), original)
         self.assertEqual(self.instructions.stat().st_mtime_ns, modified)
-        self.assertEqual(list(self.project.iterdir()), [self.instructions])
+        self.assertEqual(set(self.project.iterdir()), {self.instructions, self.ignore})
+        self.assertEqual(self.ignore.read_text(), "__pycache__/\n*.py[cod]\n")
+        self.assertEqual(self.ignore.stat().st_mtime_ns, ignore_modified)
         self.assertEqual(original.count(START.encode()), 1)
         self.assertEqual(original.count(END.encode()), 1)
         self.assertNotIn(str(self.project).encode(), original)
@@ -58,10 +62,57 @@ class ProjectSetupTests(unittest.TestCase):
     def test_check_detects_missing_and_outdated_wiring_without_writes(self):
         self.assertFalse(self.run_setup(check=True))
         self.assertFalse(self.instructions.exists())
+        self.assertFalse(self.ignore.exists())
         outdated = f"Before\n{START}\nOld block\n{END}\nAfter"
         self.instructions.write_text(outdated)
         self.assertFalse(self.run_setup(check=True))
         self.assertEqual(self.instructions.read_text(), outdated)
+        self.assertFalse(self.ignore.exists())
+
+    def test_ignore_updates_preserve_bytes_and_add_only_missing_entries(self):
+        for original in (b"# Team\r\n.env\r\n", b"No final newline", b"__pycache__/\n"):
+            with self.subTest(original=original):
+                self.ignore.write_bytes(original)
+                self.assertTrue(self.run_setup())
+                updated = self.ignore.read_bytes()
+                self.assertTrue(updated.startswith(original))
+                self.assertEqual(updated.splitlines().count(b"__pycache__/"), 1)
+                self.assertEqual(updated.splitlines().count(b"*.py[cod]"), 1)
+
+    def test_check_detects_ignore_drift_with_current_instructions(self):
+        self.run_setup()
+        original = self.instructions.read_bytes()
+        self.ignore.write_text("__pycache__/\n")
+        self.assertFalse(self.run_setup(check=True))
+        self.assertEqual(self.ignore.read_text(), "__pycache__/\n")
+        self.assertEqual(self.instructions.read_bytes(), original)
+        self.assertTrue(self.run_setup())
+        self.assertTrue(self.run_setup(check=True))
+
+    def test_symlinked_ignore_is_rejected_before_instructions_change(self):
+        target = self.project.parent / "shared.gitignore"
+        for exists in (False, True):
+            with self.subTest(exists=exists):
+                if exists:
+                    target.write_text(".env\n")
+                self.ignore.symlink_to(target)
+                with self.assertRaisesRegex(ValueError, "symlinked"):
+                    self.run_setup()
+                self.assertFalse(self.instructions.exists())
+                self.ignore.unlink()
+                if exists:
+                    self.assertEqual(target.read_text(), ".env\n")
+
+    def test_patterns_ignore_nested_python_artifacts(self):
+        self.run_setup()
+        subprocess.run(["git", "init", "--quiet", str(self.project)], check=True)
+        result = subprocess.run(
+            ["git", "-C", str(self.project), "check-ignore", "--stdin"],
+            input="nested/__pycache__/module.pyc\nnested/module.pyc\nnested/module.pyo\nnested/module.pyd\n",
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(result.stdout.splitlines()), 4)
 
     def test_malformed_markers_preserve_existing_file(self):
         for markers in (START, END, END + START, START + START + END, START + END + START + END):

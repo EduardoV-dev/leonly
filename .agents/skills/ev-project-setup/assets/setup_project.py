@@ -1,4 +1,4 @@
-"""Maintain a portable skill-activation block in a project's AGENTS.md."""
+"""Maintain project skill instructions and Python cache ignores."""
 
 import argparse
 import sys
@@ -7,6 +7,7 @@ from pathlib import Path
 
 START = "<!-- ev-project-skills:start -->"
 END = "<!-- ev-project-skills:end -->"
+PYTHON_IGNORES = ("__pycache__/", "*.py[cod]")
 
 
 def build_instructions(existing):
@@ -29,19 +30,37 @@ def setup_project(project, *, check=False):
     if not project.is_dir():
         raise ValueError(f"Expected an existing project directory: {project}")
     instructions = project / "AGENTS.md"
-    if instructions.is_symlink():
-        raise ValueError(f"Refusing symlinked instructions: {instructions}")
+    ignore = project / ".gitignore"
+    for path in (instructions, ignore):
+        if path.is_symlink():
+            raise ValueError(f"Refusing symlinked setup file: {path}")
+
     existing = instructions.read_bytes().decode("utf-8") if instructions.exists() else ""
     updated = build_instructions(existing)
-    if existing == updated:
-        print(f"Current skill activation block: {instructions}")
-        return True
-    if check:
-        print(f"Missing or outdated skill activation block: {instructions}")
-        return False
-    instructions.write_bytes(updated.encode("utf-8"))
-    print(f"Updated skill activation block: {instructions}")
-    return True
+    existing_ignore = ignore.read_bytes().decode("utf-8") if ignore.exists() else ""
+    missing = [pattern for pattern in PYTHON_IGNORES if pattern not in existing_ignore.splitlines()]
+    updated_ignore = existing_ignore
+    if missing:
+        separator = "\n" if existing_ignore and not existing_ignore.endswith("\n") else ""
+        updated_ignore += separator + "\n".join(missing) + "\n"
+
+    is_current = True
+    for path, original, replacement in (
+        (instructions, existing, updated),
+        (ignore, existing_ignore, updated_ignore),
+    ):
+        if original == replacement:
+            print(f"Current setup file: {path}")
+            continue
+        if check:
+            print(f"Missing or outdated setup file: {path}")
+            is_current = False
+            continue
+
+        path.write_bytes(replacement.encode("utf-8"))
+        print(f"Updated setup file: {path}")
+
+    return is_current
 
 
 def main():

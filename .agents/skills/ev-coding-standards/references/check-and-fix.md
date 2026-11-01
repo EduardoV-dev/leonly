@@ -9,6 +9,8 @@
   inspect scripts/CI and apply the core's general read-only verification policy before running checks.
   Redirect artifacts/caches or isolate execution only when permitted; report unavailable checks as gaps.
 - Use the existing coverage validator when practical; its success validates completeness, not truth.
+- Display every finding directly in chat using the coordinator's severity, location, rule, evidence,
+  impact, and minimal-fix fields. Never truncate to five or another top-N subset.
 
 ## Fix
 
@@ -21,5 +23,7 @@
 3. Run relevant checks. Formatter write modes are allowed only for requested fix scope; otherwise
    preserve the review's verification policy and respect runtime restrictions. Recheck the resulting
    diff against the original baseline.
-4. Return fixed and remaining findings, checks/evidence, and gaps. Do not claim compliance when a
-   check could not run. Do not stage, commit, discard, or publish application changes.
+4. Return every fixed and remaining finding in chat with its severity, location, rule, evidence,
+   impact, correction or recommended fix, and verification status, plus checks and gaps.
+   Do not claim compliance when a check could not run. Do not stage, commit, discard, or publish
+   application changes.

@@ -17,7 +17,11 @@ Before generating or changing code, load `ev-coding-standards`. Follow its pre-c
 read complete general, applicable frontend/backend, technology, and implementation rules. Reuse
 `ev-code-review` rules while generating code; do not defer standards until an explicit review.
 Run relevant checks and the workflow's scoped completion review before declaring implementation
-complete. Report selected rule paths, source revision/dirty state, results, and verification gaps.
+complete. Record selected rule paths, source revision/dirty state, and check results internally during
+generation; do not emit a separate review report or standards summary. Surface unresolved blockers,
+required decisions, and material verification gaps. For explicit review/check/fix requests, display
+every finding in chat with severity, location, rule, evidence, impact, minimal fix, and fixed/remaining
+status when applicable. Never truncate findings to five or another top-N subset.
 
 Use the skill tool when available; otherwise read the resolved local `SKILL.md` directly and follow
 its references. If a required core skill or required reference is missing, name the exact gap and

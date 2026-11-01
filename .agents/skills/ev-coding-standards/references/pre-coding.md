@@ -21,10 +21,10 @@
    | --- | --- |
    | TypeScript source/declarations/configuration | `ev-review-typescript` |
    | React components/hooks/JSX; Next.js framework boundaries | `ev-review-react`; `ev-review-nextjs` as applicable |
-   | NestJS providers/modules/tests | `ev-review-nestjs` |
+   | NestJS providers/modules/endpoints/bootstrap/tests | `ev-review-nestjs` |
    | First-party JSON API producers/consumers or pagination implementation | `ev-api-contracts` plus applicable backend/TypeScript rules |
 
-5. State scope, selected rule paths, and the active source revision (`git rev-parse HEAD` and
+5. Record internally the scope, selected rule paths, and active source revision (`git rev-parse HEAD` and
    `git status --short` in the source checkout). Record alternate revisions when project-local copies
    come from another source. Reuse rules during implementation without starting a review, spawning
    reviewers, or requiring review coverage artifacts. Reselect before editing a new domain.
@@ -36,3 +36,6 @@ companion remains a reported coverage gap; apply available core rules without in
 
 Before completing implementation, run relevant project checks and a scoped `ev-code-review` using
 the requested baseline. A pre-existing defect outside the task is not permission to expand the change.
+Keep this completion review internal during generation; no separate findings report or standards
+summary is required. Surface unresolved blockers, required decisions, and material verification gaps.
+Explicit review/check/fix requests instead require the complete chat report with every finding.

@@ -31,9 +31,41 @@ Resolve the required pagination decision before implementation; these examples d
 ```
 
 The outer `data` contains the page; the inner `data` contains its items. An empty collection is a
-successful page with an empty items array, not automatically a `404` or failure. Success includes
+successful page with an empty items array, not automatically a `404` or failure. Ordinary success includes
 `error: []`; failure includes `data: null` and the shared error array. Preserve appropriate HTTP statuses,
 safe actionable error messages, and protocol-defined bodyless/stream/download/redirect responses.
+
+## Health Checks Return Status And Dependency Checks Directly
+
+Use the shared `HealthResponse` type, without the ordinary response envelope:
+
+```ts
+// HTTP 200: all checks pass.
+const healthyResponse: HealthResponse = {
+  status: "ok",
+  checks: { database: "up", redis: "up" },
+};
+
+// HTTP 503: a mix of passing and failing checks.
+const degradedResponse: HealthResponse = {
+  status: "degraded",
+  checks: { database: "up", redis: "down" },
+};
+
+// HTTP 503: all checks fail.
+const unavailableResponse: HealthResponse = {
+  status: "down",
+  checks: { database: "down", redis: "down" },
+};
+```
+
+Do not emit `status: "ok"` with a failed check, return HTTP 200 for degraded/down states, or wrap health
+payloads in `{ ok, data, error, message }`. A single checked dependency yields only `ok` or `down`;
+`degraded` requires both up and down results. Failed/timed-out probes count as down without losing
+other results. Include only dependencies the endpoint actually checks, not a fixed database/Redis list.
+For zero configured checks, resolve the intended health signal rather than inventing a healthy result.
+Keep diagnostics safe and preserve the direct payload through filters/interceptors on HTTP 503.
+Ordinary business endpoints still require `ApiResponse<T>`.
 
 ## Offset Counts Describe The Matching Dataset
 

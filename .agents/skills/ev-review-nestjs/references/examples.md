@@ -77,7 +77,7 @@ user/
 ```text
 # Prefer: group supporting files even with one production file per category.
 user/
-  dto/
+  dtos/
     create-user.dto.ts
     create-user.dto.test.ts
   utils/
@@ -89,7 +89,7 @@ user/
     user.types.ts
   docs/
     user.docs.ts
-  config/
+  configs/
     user-openapi.config.ts
   user.controller.ts
   user.controller.test.ts
@@ -99,9 +99,9 @@ user/
   user.module.test.ts
 ```
 
-Use singular `dto/`, not `dtos/`. Apply the same responsibility-based grouping to other supporting
-categories such as guards, decorators, and entities. Create folders only for files that exist; the
-example does not require new DTOs, tests, configuration, or empty directories.
+Use plural grouping folders: `dtos/`, not `dto/`, and `configs/`, not `config/`. Apply the same rule to
+other supporting categories such as `guards/`, `decorators/`, and `entities/`. Create folders only for
+files that exist; the example does not require new DTOs, tests, configuration, or empty directories.
 
 ## Group Controllers And Services Independently
 
@@ -143,7 +143,7 @@ files do not contribute to the parent module's counts.
 ```text
 # Avoid: separated unit tests and an extra fixtures subfolder.
 user/
-  dto/
+  dtos/
     create-user.dto.ts
     __tests__/
       create-user.dto.test.ts
@@ -157,7 +157,7 @@ user/
 ```text
 # Prefer: colocated tests and root-level module-owned fixtures.
 user/
-  dto/
+  dtos/
     create-user.dto.ts
     create-user.dto.test.ts
   controllers/

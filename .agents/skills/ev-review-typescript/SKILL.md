@@ -37,6 +37,9 @@ an independent review or delegate. Review output/check assignments apply only du
   `ApiResponse<T> = { ok: true; data: T; error: []; message: string } | { ok: false; data: null; error: ApiError[]; message: string }`.
   Use these types across first-party JSON API producers/consumers, including paginated payloads;
   do not redefine endpoint-local envelopes. Preserve protocol-defined non-JSON/bodyless responses.
+  Health-check endpoints instead use the shared
+  [HealthResponse](../ev-api-contracts/assets/contracts.md#health-check-exception) directly, without
+  an envelope: all checks up = `ok`/200, mixed = `degraded`/503, all down = `down`/503.
 - Check offset/cursor page types against backend metadata rules. Infer cursor types from extendable
   Zod object schemas; require schema-aware shared encode/decode methods without unchecked assertions.
 - Avoid `any`. Preserve established TypeScript contracts throughout the call chain: accept and use

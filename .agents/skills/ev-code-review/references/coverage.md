@@ -17,7 +17,7 @@ Keep each ID tied to its meaning rather than its position; use the same slug in 
 | `typescript` | `typescript-exported-api-contracts`; `typescript-trust-narrowing-state-types`; `typescript-function-signatures-object-types`; `typescript-imports-configuration-environment` |
 | `react` | `react-component-ownership-props`; `react-hooks-state-derived-values`; `react-safe-rendering-accessibility-testing` |
 | `nextjs` | `nextjs-routes-rendering-client-boundaries`; `nextjs-server-only-imports-environment`; `nextjs-server-entry-validation-authorization` |
-| `nestjs` | `nestjs-injected-provider-naming`; `nestjs-module-layout`; `nestjs-colocated-tests-module-fixtures` |
+| `nestjs` | `nestjs-injected-provider-naming`; `nestjs-module-layout`; `nestjs-colocated-tests-module-fixtures`; `nestjs-body-dto-validation`; `nestjs-global-validation-pipe`; `nestjs-api-openapi-scalar`; `nestjs-health-checks` |
 
 Select `core` for every review, plus applicable domain and installed technology companions. Select the
 relevant check IDs within those groups; justify exclusions during planning rather than omitting a
@@ -44,6 +44,10 @@ not additional agents. Preserve this format for validator compatibility; do not 
 Each logical check group records its ID and files reviewed, plus one result for every planned check ID.
 Each finding has a unique ID, severity, file/line, evidence, impact, and minimal fix. Consolidation may
 deduplicate findings, but must preserve all related check IDs and affected sites.
+For explicit review/check/fix requests, render every consolidated finding in chat with its severity,
+location, rule, evidence, impact, minimal fix, and fixed/remaining status when fixes are requested.
+Never apply a five-finding or other top-N cap. Internal completion reviews during generation retain
+coverage evidence without requiring a user-facing review report or standards summary.
 
 ## Validator files
 

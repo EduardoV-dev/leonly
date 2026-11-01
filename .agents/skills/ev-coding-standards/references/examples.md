@@ -128,6 +128,15 @@ use external output locations or isolation only when permitted, and obey stricte
 These narrative verification labels do not replace the review coverage contract: map missing evidence
 to `UNVERIFIED` for an assigned check and explain its cause. Never claim a check passed if it did not run.
 
+## Match Reporting To The Requested Workflow
+
+| Request | Expected behavior |
+| --- | --- |
+| Review finds eight distinct issues | Display all eight in chat, with severity, location, rule, evidence, impact, and minimal fix. Group by severity; never stop at five. |
+| Fix those eight issues | Display all eight with fixed/remaining status and verification evidence; do not silently drop resolved findings. |
+| Generate code with standards active | Apply rules and run completion checks internally. Do not append a separate standards report or summary; surface unresolved blockers and material gaps. |
+| Generate code and explicitly report the review | Honor the requested exhaustive chat report. |
+
 ## Separate Application Work, Contributions, And Activation
 
 ```text
