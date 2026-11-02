@@ -2,8 +2,8 @@ import { NestFactory } from "@nestjs/core";
 import { ExpressAdapter, type NestExpressApplication } from "@nestjs/platform-express";
 import { Logger } from "nestjs-pino";
 import { AuthService } from "../../auth/auth.service";
-import { createAuthHandler } from "../../auth/handler/handler";
-import { getWebAppOrigin } from "../../common/config/environment-variables.config";
+import { createAuthHandler } from "../../auth/handlers/handler";
+import { getWebAppOrigin } from "../../common/configs/environment-variables.config";
 import { RateLimitGuard } from "../../common/rate-limit/guards/rate-limit.guard";
 import { AppModule } from "../app.module";
 

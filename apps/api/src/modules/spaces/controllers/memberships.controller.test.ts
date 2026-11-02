@@ -4,7 +4,7 @@ import { ExpressAdapter } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../../../app/app.module";
-import { rateLimitStorage } from "../../../common/rate-limit/test-setup";
+import { rateLimitStorage } from "../../../app/tests/rate-limit-setup";
 
 const { session, member, space, queryRaw, transaction } = vi.hoisted(() => ({
   session: vi.fn(),
@@ -13,6 +13,8 @@ const { session, member, space, queryRaw, transaction } = vi.hoisted(() => ({
   queryRaw: vi.fn(),
   transaction: vi.fn(),
 }));
+
+type PostParams = { path: string; body?: Record<string, unknown> };
 
 vi.mock("../../../common/prisma/prisma.service", () => ({
   PrismaService: class {
@@ -23,11 +25,11 @@ vi.mock("../../../common/prisma/prisma.service", () => ({
   },
 }));
 
-vi.mock("../../../auth/config/auth.config", () => ({
+vi.mock("../../../auth/configs/auth.config", () => ({
   createAuth: () => ({ api: { getSession: session } }),
 }));
 
-vi.mock("../../../common/config/environment-variables.config", () => ({
+vi.mock("../../../common/configs/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     UPSTASH_REDIS_REST_URL: "https://redis.example.com",
     UPSTASH_REDIS_REST_TOKEN: "test-redis-token",
@@ -74,7 +76,7 @@ describe("memberships API", () => {
     );
   });
 
-  const post = (path: string, body: Record<string, unknown> = {}) =>
+  const post = ({ path, body = {} }: PostParams) =>
     request(app.getHttpServer())
       .post(path)
       .set("Cookie", "better-auth.session_token=secret")
@@ -86,7 +88,10 @@ describe("memberships API", () => {
     "/api/spaces/memberships/onboarding",
   ])("requires Better Auth for %s", async (path) => {
     session.mockResolvedValue(null);
-    const response = await post(path, { invite_code: "bad-code", user_id: "forged-user" });
+    const response = await post({
+      path,
+      body: { invite_code: "bad-code", user_id: "forged-user" },
+    });
     expect(response.status).toBe(401);
     expect(response.body).toMatchObject({ ok: false, data: null });
     expect(member.create).not.toHaveBeenCalled();
@@ -95,14 +100,17 @@ describe("memberships API", () => {
   });
 
   it("rejects non-string invite codes before service lookup", async () => {
-    const response = await post("/api/spaces/invites/validations", { invite_code: 42 });
+    const response = await post({
+      path: "/api/spaces/invites/validations",
+      body: { invite_code: 42 },
+    });
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({ ok: false, data: null, error: expect.any(Array) });
     expect(transaction).not.toHaveBeenCalled();
   });
 
   it("completes setup for the authenticated membership", async () => {
-    const response = await post("/api/spaces/memberships/onboarding");
+    const response = await post({ path: "/api/spaces/memberships/onboarding" });
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ ok: true, data: { completed: true } });
     expect(member.updateMany).toHaveBeenCalledWith({
@@ -113,20 +121,26 @@ describe("memberships API", () => {
 
   it("rejects setup completion without an active membership", async () => {
     member.updateMany.mockResolvedValue({ count: 0 });
-    expect((await post("/api/spaces/memberships/onboarding")).status).toBe(409);
+    expect((await post({ path: "/api/spaces/memberships/onboarding" })).status).toBe(409);
     expect(member.updateMany).toHaveBeenCalledOnce();
   });
 
   it("validates an invite without creating a membership", async () => {
-    const response = await post("/api/spaces/invites/validations", { invite_code: "LNY-7KMP2" });
+    const response = await post({
+      path: "/api/spaces/invites/validations",
+      body: { invite_code: "LNY-7KMP2" },
+    });
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ ok: true, data: { valid: true } });
     expect(member.create).not.toHaveBeenCalled();
   });
 
   it("joins through the memberships route using the authenticated identity", async () => {
-    const response = await post("/api/spaces/memberships", {
-      invite_code: "LNY-7KMP2",
+    const response = await post({
+      path: "/api/spaces/memberships",
+      body: {
+        invite_code: "LNY-7KMP2",
+      },
     });
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({ ok: true, data: { space_id: "space-id" } });
@@ -136,9 +150,12 @@ describe("memberships API", () => {
   });
 
   it("rejects a forged user field before joining", async () => {
-    const response = await post("/api/spaces/memberships", {
-      invite_code: "LNY-7KMP2",
-      user_id: "forged-user",
+    const response = await post({
+      path: "/api/spaces/memberships",
+      body: {
+        invite_code: "LNY-7KMP2",
+        user_id: "forged-user",
+      },
     });
 
     expect(response.status).toBe(400);
@@ -157,7 +174,7 @@ describe("memberships API", () => {
           ? { success: false, reset: Date.now() + 600_000, pending: Promise.resolve() }
           : undefined,
       );
-      const response = await post(path, { invite_code: "LNY-7KMP2" });
+      const response = await post({ path, body: { invite_code: "LNY-7KMP2" } });
       expect(response.status).toBe(429);
       expect(Number(response.headers["retry-after"])).toBeGreaterThanOrEqual(599);
       expect(response.body).toMatchObject({ ok: false, data: null });
@@ -173,16 +190,22 @@ describe("memberships API", () => {
       return { success: ++requests <= 5, reset: Date.now() + 600_000, pending: Promise.resolve() };
     });
     for (let index = 0; index < 4; index += 1) {
-      await post("/api/spaces/invites/validations", { invite_code: "LNY-7KMP2" }).expect(200);
+      await post({
+        path: "/api/spaces/invites/validations",
+        body: { invite_code: "LNY-7KMP2" },
+      }).expect(200);
     }
-    await post("/api/spaces/memberships", { invite_code: "LNY-7KMP2" }).expect(201);
-    await post("/api/spaces/invites/validations", { invite_code: "LNY-7KMP2" }).expect(429);
+    await post({ path: "/api/spaces/memberships", body: { invite_code: "LNY-7KMP2" } }).expect(201);
+    await post({
+      path: "/api/spaces/invites/validations",
+      body: { invite_code: "LNY-7KMP2" },
+    }).expect(429);
     expect(transaction).toHaveBeenCalledTimes(5);
     expect(session).toHaveBeenCalledTimes(6);
   });
 
   it("counts DTO validation failures before database work", async () => {
-    await post("/api/spaces/memberships", { invite_code: 42 }).expect(400);
+    await post({ path: "/api/spaces/memberships", body: { invite_code: 42 } }).expect(400);
     expect(rateLimitStorage.limit).toHaveBeenCalledWith(
       "user:better-auth-user",
       expect.objectContaining({ prefix: expect.stringContaining("endpoint:join-attempts") }),

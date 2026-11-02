@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { fromNodeHeaders } from "better-auth/node";
 import type { Request } from "express";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { createAuth } from "./config/auth.config";
+import { createAuth } from "./configs/auth.config";
 
 export type SessionRequest = Request & {
   authUser?: { id: string; name?: string };

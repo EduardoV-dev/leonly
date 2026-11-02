@@ -35,14 +35,18 @@ export class MembershipsService {
         FOR UPDATE OF s, c
       `;
       const current = rows[0];
+
       if (!current) throw new NotFoundException({ error: "This shared space is unavailable." });
+
       const updated = await transaction.$queryRaw<Array<{ updatedAt: string }>>`
         UPDATE space_members SET display_name = ${displayName}, updated_at = clock_timestamp()
         WHERE id = ${current.memberId}::uuid AND updated_at = ${expectedUpdatedAt}::timestamptz
         RETURNING to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
       const revision = updated[0]?.updatedAt;
+
       if (!revision) throw new ConflictException();
+
       return {
         displayName,
         status: "updated",
@@ -60,6 +64,7 @@ export class MembershipsService {
     if (result.count === 0) {
       throw new ConflictException({ error: "You do not belong to an active space." });
     }
+
     return { completed: true };
   }
 

@@ -1,7 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import { RedisService } from "./redis.service";
 
-function createService() {
+type CreateServiceReturn = {
+  evalScript: Mock<() => Promise<number>>;
+  redis: {
+    ping: Mock<() => Promise<string>>;
+    set: Mock<() => Promise<string>>;
+    createScript: Mock<() => { eval: Mock<() => Promise<number>> }>;
+  };
+  service: RedisService;
+};
+
+function createService(): CreateServiceReturn {
   const evalScript = vi.fn(async () => 1);
   const redis = {
     ping: vi.fn(async () => "PONG"),

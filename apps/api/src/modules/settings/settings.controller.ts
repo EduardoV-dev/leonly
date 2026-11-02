@@ -1,7 +1,7 @@
 import { Controller, Get, HttpStatus, Req } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
-import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
+import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/docs/api-response.docs";
 import { SETTINGS_EXAMPLE, SETTINGS_SCHEMA } from "./docs/settings-response.docs";
 import { SettingsService } from "./settings.service";
 import type { SettingsReadModel } from "./types/settings.types";

@@ -2,7 +2,11 @@ import { retry } from "@leonly/utils";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { RedisService } from "../../../common/redis/redis.service";
-import { ACTIVE_INVITE_CODE_INDEX, INVITE_CODE_TTL_MS } from "../constants/spaces.constants";
+import {
+  ACTIVE_INVITE_CODE_INDEX,
+  INVITE_CODE_TTL_MS,
+  MAX_SPACE_MEMBERS,
+} from "../constants/spaces.constants";
 import type { RegenerateReturn } from "../types/spaces.types";
 import { generateInviteCode, getUniqueIndex } from "../utils/invite-code";
 
@@ -42,7 +46,7 @@ export class InviteRegenerationService {
               const memberCount = await transaction.spaceMember.count({
                 where: { spaceId: space.id, deletedAt: null },
               });
-              if (memberCount === 2) {
+              if (memberCount === MAX_SPACE_MEMBERS) {
                 throw new ConflictException({
                   errors: [
                     { code: "joined", message: "Your partner has already joined this space." },

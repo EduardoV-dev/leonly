@@ -1,0 +1,336 @@
+import { randomUUID } from "node:crypto";
+import { type FileUpload, type Memory, Prisma } from "@leonly/database/client";
+import { ObjectSizeError, ObjectStorage, UPLOAD_URL_SECONDS } from "@leonly/utils/storage";
+import { Module } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { vi } from "vitest";
+import { OutboxPublisher, type PublicationOutcome } from "../../common/outbox/outbox-publisher";
+import { PrismaService } from "../../common/prisma/prisma.service";
+import { ATTACHMENT_SECONDS } from "../../modules/files/constants/uploads.constants";
+import { MemoriesService } from "../../modules/memories/services/memories.service";
+import { UploadFinalizationService } from "../../modules/memories/services/upload-finalization.service";
+import type { CreationInput } from "../../modules/memories/utils/memory-creation.util";
+
+@Module({})
+class CreationFixtureModule {}
+
+type CreationRequest = Pick<
+  CreationInput,
+  "title" | "memoryDate" | "timezone" | "visibility" | "uploadIds" | "idempotencyKey"
+>;
+type MatchesUploadParams = { upload: FileUpload; where: Record<string, unknown> };
+type AddUploadParams = { bytes: Buffer; overrides?: Partial<FileUpload> };
+
+export const SPACE_ID = "01900000-0000-7000-8000-000000000005";
+export const MEMBER_ID = "01900000-0000-7000-8000-000000000006";
+export const CREATION_ID = "01900000-0000-7000-8000-000000000004";
+
+export function createMemoryRequest(uploadIds: string[] = []): CreationRequest {
+  return {
+    title: "A day together",
+    memoryDate: "2026-10-10",
+    timezone: "UTC",
+    visibility: "timeline",
+    uploadIds,
+    idempotencyKey: CREATION_ID,
+  };
+}
+
+function matchesUpload({ upload, where }: MatchesUploadParams): boolean {
+  return Object.entries(where).every(([field, expected]) => {
+    if (field === "OR" && Array.isArray(expected)) {
+      return expected.some((condition) => matchesUpload({ upload, where: condition }));
+    }
+    const actual = upload[field as keyof FileUpload];
+    if (typeof expected === "object" && expected !== null && !(expected instanceof Date)) {
+      if ("in" in expected && Array.isArray(expected.in)) return expected.in.includes(actual);
+      if ("gt" in expected) return actual instanceof Date && actual > (expected.gt as Date);
+      if ("lte" in expected) return actual instanceof Date && actual <= (expected.lte as Date);
+    }
+    return actual === expected;
+  });
+}
+
+class CreationFixtures {
+  readonly state = {
+    uploads: new Map<string, FileUpload>(),
+    memories: [] as Memory[],
+    assets: [] as Record<string, unknown>[],
+    objects: [] as Record<string, unknown>[],
+    events: [] as Record<string, unknown>[],
+    hasActiveMembership: true,
+    isInTransaction: false,
+    rollbacks: 0,
+  };
+  readonly storageObjects = new Map<string, Buffer>();
+  readonly prisma = {
+    spaceMember: {
+      findFirst: vi.fn(async () =>
+        this.state.hasActiveMembership ? { id: MEMBER_ID, spaceId: SPACE_ID } : null,
+      ),
+    },
+    fileUpload: {
+      findFirst: vi.fn(
+        async ({ where }: { where: Record<string, unknown> }) =>
+          [...this.state.uploads.values()].find((upload) => matchesUpload({ upload, where })) ??
+          null,
+      ),
+      updateMany: vi.fn(
+        async ({ where, data }: { where: Record<string, unknown>; data: Partial<FileUpload> }) => {
+          const uploads = [...this.state.uploads.values()].filter((upload) =>
+            matchesUpload({ upload, where }),
+          );
+          for (const upload of uploads) this.state.uploads.set(upload.id, { ...upload, ...data });
+          return { count: uploads.length };
+        },
+      ),
+    },
+    memory: {
+      findUnique: vi.fn(
+        async ({
+          where,
+        }: {
+          where: {
+            spaceId_createdByUserId_idempotencyKey: {
+              spaceId: string;
+              createdByUserId: string;
+              idempotencyKey: string;
+            };
+          };
+        }) => {
+          const scope = where.spaceId_createdByUserId_idempotencyKey;
+          return (
+            this.state.memories.find(
+              (memory) =>
+                memory.spaceId === scope.spaceId &&
+                memory.createdByUserId === scope.createdByUserId &&
+                memory.idempotencyKey === scope.idempotencyKey,
+            ) ?? null
+          );
+        },
+      ),
+      create: vi.fn(
+        async ({
+          data,
+        }: {
+          data: Omit<Memory, "id" | "coverAssetId" | "deletedAt" | "createdAt" | "updatedAt">;
+        }) => {
+          const hasExistingMemory = this.state.memories.some(
+            (memory) =>
+              memory.spaceId === data.spaceId &&
+              memory.createdByUserId === data.createdByUserId &&
+              memory.idempotencyKey === data.idempotencyKey,
+          );
+          if (hasExistingMemory)
+            throw new Prisma.PrismaClientKnownRequestError("duplicate key", {
+              code: "P2002",
+              clientVersion: "7",
+            });
+          const memory = {
+            ...data,
+            id: randomUUID(),
+            coverAssetId: null,
+            deletedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          this.state.memories.push(memory);
+          return { id: memory.id, visibility: memory.visibility };
+        },
+      ),
+      update: vi.fn(
+        async ({ where, data }: { where: { id: string }; data: { coverAssetId: string } }) => {
+          const memory = this.state.memories.find((memory) => memory.id === where.id);
+          if (!memory) throw new Error("Missing memory");
+          Object.assign(memory, data);
+          return memory;
+        },
+      ),
+    },
+    memoryAsset: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        this.state.assets.push(data);
+        return data;
+      }),
+    },
+    memoryAssetObject: {
+      createMany: vi.fn(async ({ data }: { data: Record<string, unknown>[] }) => {
+        this.state.objects.push(...data);
+        return { count: data.length };
+      }),
+    },
+    outboxEvent: {
+      create: vi.fn(
+        async ({ data }: { data: Record<string, unknown> }): Promise<Record<string, unknown>> => {
+          const event = {
+            ...data,
+            id: randomUUID(),
+            createdAt: new Date(),
+            publishedAt: null,
+            publicationAttempts: 0,
+            lastPublicationError: null,
+          };
+          this.state.events.push(event);
+          return event;
+        },
+      ),
+      findMany: vi.fn(async ({ where, take }: { where: { id?: { in: string[] } }; take: number }) =>
+        this.state.events
+          .filter(
+            (event) =>
+              event.publishedAt === null && (!where.id || where.id.in.includes(event.id as string)),
+          )
+          .slice(0, take),
+      ),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string };
+          data: {
+            publicationAttempts: { increment: number };
+            publishedAt?: Date;
+            lastPublicationError: string | null;
+          };
+        }) => {
+          const event = this.state.events.find(
+            (event) => event.id === where.id && event.publishedAt === null,
+          );
+          if (!event) return { count: 0 };
+          event.publicationAttempts =
+            (event.publicationAttempts as number) + data.publicationAttempts.increment;
+          event.lastPublicationError = data.lastPublicationError;
+          if (data.publishedAt) event.publishedAt = data.publishedAt;
+          return { count: 1 };
+        },
+      ),
+    },
+    $queryRaw: vi.fn(async () => (this.state.hasActiveMembership ? [{ id: MEMBER_ID }] : [])),
+    $executeRaw: vi.fn(async () => 0),
+    $transaction: vi.fn(async (operation: (transaction: unknown) => Promise<unknown>) =>
+      this.runTransaction(operation),
+    ),
+  };
+
+  private transactionTail = Promise.resolve();
+  private async runTransaction(
+    operation: (transaction: unknown) => Promise<unknown>,
+  ): Promise<unknown> {
+    const previous = this.transactionTail;
+    let release = () => {};
+    this.transactionTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    const snapshot = structuredClone({
+      uploads: this.state.uploads,
+      memories: this.state.memories,
+      assets: this.state.assets,
+      objects: this.state.objects,
+      events: this.state.events,
+    });
+    this.state.isInTransaction = true;
+    try {
+      return await operation(this.prisma);
+    } catch (error) {
+      Object.assign(this.state, snapshot);
+      this.state.rollbacks++;
+      throw error;
+    } finally {
+      this.state.isInTransaction = false;
+      release();
+    }
+  }
+
+  readonly storage = {
+    getObject: vi.fn(async (key: string, maxBytes: number) => {
+      if (this.state.isInTransaction) throw new Error("Storage must not run inside a transaction");
+      const bytes = this.storageObjects.get(key);
+      if (bytes && bytes.length > maxBytes) throw new ObjectSizeError("Too large");
+      return bytes ?? null;
+    }),
+    putObjectIfAbsent: vi.fn(
+      async ({ key, bytes }: { key: string; bytes: Buffer; contentType: string }) => {
+        if (this.state.isInTransaction)
+          throw new Error("Storage must not run inside a transaction");
+        if (this.storageObjects.has(key)) return "exists" as const;
+        this.storageObjects.set(key, bytes);
+        return "created" as const;
+      },
+    ),
+  };
+  readonly publisher = {
+    publish: vi.fn(
+      async (_options: { ids?: string[]; limit: number }): Promise<PublicationOutcome[]> => [],
+    ),
+  };
+  prismaService!: PrismaService;
+  finalization!: UploadFinalizationService;
+  memories!: MemoriesService;
+
+  async initialize(): Promise<void> {
+    const app = await NestFactory.createApplicationContext(
+      {
+        module: CreationFixtureModule,
+        providers: [
+          { provide: PrismaService, useValue: this.prisma },
+          {
+            provide: ObjectStorage,
+            useValue: this.storage satisfies Pick<ObjectStorage, "getObject" | "putObjectIfAbsent">,
+          },
+          {
+            provide: OutboxPublisher,
+            useValue: this.publisher satisfies Pick<OutboxPublisher, "publish">,
+          },
+          UploadFinalizationService,
+          MemoriesService,
+        ],
+      },
+      { logger: false },
+    );
+
+    this.prismaService = app.get(PrismaService);
+    this.finalization = app.get(UploadFinalizationService);
+    this.memories = app.get(MemoriesService);
+    await app.close();
+  }
+
+  addUpload({ bytes, overrides = {} }: AddUploadParams): FileUpload {
+    const id = randomUUID();
+    const upload: FileUpload = {
+      id,
+      uploaderUserId: "user-a",
+      spaceId: SPACE_ID,
+      category: "image",
+      purpose: "memory_image",
+      originalFilename: "photo.png",
+      declaredMimeType: "image/png",
+      declaredByteSize: bytes.length,
+      verifiedMimeType: null,
+      verifiedByteSize: null,
+      stagingKey: `staging/memories/${SPACE_ID}/${id}/original`,
+      intendedFinalKey: `memories/${SPACE_ID}/${id}/original`,
+      status: "issued",
+      uploadUrlExpiresAt: new Date(Date.now() + UPLOAD_URL_SECONDS * 1000),
+      attachmentDeadline: new Date(Date.now() + ATTACHMENT_SECONDS * 1000),
+      leaseToken: null,
+      leaseExpiresAt: null,
+      consumedAt: null,
+      failureCode: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    };
+    this.state.uploads.set(upload.id, upload);
+    this.storageObjects.set(upload.stagingKey, bytes);
+    return upload;
+  }
+}
+
+export async function createCreationFixtures(): Promise<CreationFixtures> {
+  const fixtures = new CreationFixtures();
+  await fixtures.initialize();
+
+  return fixtures;
+}

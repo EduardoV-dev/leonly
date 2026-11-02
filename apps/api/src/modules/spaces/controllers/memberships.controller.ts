@@ -5,14 +5,14 @@ import {
   ApiErrorResponses,
   ApiSuccessResponse,
   apiResponseSchema,
-} from "../../../common/http/api-response.docs";
-import { EditResponse } from "../../../common/http/edit-response.docs";
+} from "../../../common/http/docs/api-response.docs";
+import { EditResponse } from "../../../common/http/docs/edit-response.docs";
 import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/constants/rate-limit.constants";
 import { RateLimit } from "../../../common/rate-limit/decorators/rate-limit.decorator";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
 import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../docs/space-response.docs";
-import { EditDisplayNameDto } from "../dto/edit-display-name.dto";
-import { JoinSpaceDto } from "../dto/join-space.dto";
+import { EditDisplayNameDto } from "../dtos/edit-display-name.dto";
+import { JoinSpaceDto } from "../dtos/join-space.dto";
 import { MembershipsService } from "../services/memberships.service";
 import type { DisplayNameEditResult } from "../types/memberships.types";
 import { throwJoinError } from "../utils/throw-join-error";
@@ -33,7 +33,7 @@ export class MembershipsController {
   })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
   @EditResponse("displayName")
-  async displayName(
+  async updateDisplayName(
     @Req() request: AuthenticatedRequest,
     @Body() body: EditDisplayNameDto,
   ): Promise<DisplayNameEditResult> {

@@ -5,16 +5,20 @@ import {
   ApiErrorResponses,
   ApiSuccessResponse,
   apiResponseSchema,
-} from "../../../common/http/api-response.docs";
-import { EditResponse } from "../../../common/http/edit-response.docs";
+} from "../../../common/http/docs/api-response.docs";
+import { EditResponse } from "../../../common/http/docs/edit-response.docs";
 import { SETTINGS_WRITE_RATE_LIMIT } from "../../../common/rate-limit/constants/rate-limit.constants";
 import { RateLimit } from "../../../common/rate-limit/decorators/rate-limit.decorator";
 import { JOIN_RATE_LIMIT } from "../constants/memberships.constants";
+import {
+  INVITE_REGENERATION_RATE_LIMIT,
+  SPACE_CREATION_RATE_LIMIT,
+} from "../constants/spaces.constants";
 import { INVITE_SCHEMA } from "../docs/edit-space-response.docs";
 import { SPACE_ID_EXAMPLE, SPACE_ID_SCHEMA } from "../docs/space-response.docs";
-import { CreateSpaceDto } from "../dto/create-space.dto";
-import { EditStartDateDto, RenameSpaceDto } from "../dto/edit-space.dto";
-import { ValidateSpaceInviteDto } from "../dto/join-space.dto";
+import { CreateSpaceDto } from "../dtos/create-space.dto";
+import { EditStartDateDto, RenameSpaceDto } from "../dtos/edit-space.dto";
+import { ValidateSpaceInviteDto } from "../dtos/join-space.dto";
 import { InviteRegenerationService } from "../services/invite-regeneration.service";
 import { MembershipsService } from "../services/memberships.service";
 import { SpacesService } from "../services/spaces.service";
@@ -61,7 +65,7 @@ export class SpacesController {
   })
   @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.TOO_MANY_REQUESTS)
   @EditResponse("startDate")
-  async startDate(
+  async updateStartDate(
     @Req() request: AuthenticatedRequest,
     @Body() body: EditStartDateDto,
   ): Promise<SpaceEditResult> {
@@ -104,14 +108,7 @@ export class SpacesController {
   }
 
   @Post("invites/regenerations")
-  @RateLimit({
-    limit: 5,
-    window: "10 m",
-    strategy: "fixed-window",
-    scope: "user",
-    key: "invite-regeneration",
-    message: "Too many invite requests. Try again in 10 minutes.",
-  })
+  @RateLimit(INVITE_REGENERATION_RATE_LIMIT)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Regenerate an unavailable partner invite",
@@ -144,7 +141,7 @@ export class SpacesController {
   }
 
   @Post()
-  @RateLimit({ limit: 5, window: "10 m", strategy: "fixed-window", scope: "user" })
+  @RateLimit(SPACE_CREATION_RATE_LIMIT)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Create a space",

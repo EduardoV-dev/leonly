@@ -1,6 +1,6 @@
 import { Prisma } from "@leonly/database/client";
 import { ConflictException } from "@nestjs/common";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { MembershipsService } from "./memberships.service";
 
 const invite = {
@@ -10,31 +10,59 @@ const invite = {
   members: [{ id: "owner-membership" }],
 };
 
-function createService() {
-  const state = {
-    invite: { ...invite, members: [...invite.members] },
-    inviteAvailable: true,
-    joined: false,
+type CreateServiceReturn = {
+  service: MembershipsService;
+  state: {
+    invite: typeof invite;
+    isInviteAvailable: boolean;
+    hasJoined: boolean;
   };
-  const tx = {
+  tx: CreateTransactionFixtureReturn;
+};
+
+type CreateTransactionFixtureReturn = {
+  space: {
+    findFirst: Mock<() => Promise<typeof invite | null>>;
+    findUnique: Mock<() => Promise<typeof invite | null>>;
+    update: Mock<() => Promise<void>>;
+  };
+  spaceMember: {
+    findFirst: Mock<() => Promise<{ id: string } | null>>;
+    updateMany: Mock<() => Promise<{ count: number }>>;
+    create: Mock<() => Promise<void>>;
+  };
+  $queryRaw: Mock<() => Promise<{ id: string }[]>>;
+};
+
+function createTransactionFixture(
+  state: CreateServiceReturn["state"],
+): CreateTransactionFixtureReturn {
+  return {
     space: {
-      findFirst: vi.fn(async () => (state.inviteAvailable ? state.invite : null)),
-      findUnique: vi.fn(async () => (state.inviteAvailable ? state.invite : null)),
+      findFirst: vi.fn(async () => (state.isInviteAvailable ? state.invite : null)),
+      findUnique: vi.fn(async () => (state.isInviteAvailable ? state.invite : null)),
       update: vi.fn(async () => {
-        state.inviteAvailable = false;
+        state.isInviteAvailable = false;
       }),
     },
     spaceMember: {
-      findFirst: vi.fn(async () => (state.joined ? { id: "partner-membership" } : null)),
+      findFirst: vi.fn(async () => (state.hasJoined ? { id: "partner-membership" } : null)),
       updateMany: vi.fn(async () => ({ count: 1 })),
       create: vi.fn(async () => {
-        state.joined = true;
+        state.hasJoined = true;
       }),
     },
-    $queryRaw: vi.fn(async () => {
-      return state.inviteAvailable ? [{ id: "space-id" }] : [];
-    }),
+    $queryRaw: vi.fn(async () => (state.isInviteAvailable ? [{ id: "space-id" }] : [])),
   };
+}
+
+function createService(): CreateServiceReturn {
+  const state = {
+    invite: { ...invite, members: [...invite.members] },
+    isInviteAvailable: true,
+    hasJoined: false,
+  };
+  const tx = createTransactionFixture(state);
   let transactionQueue = Promise.resolve();
   const prisma = {
     ...tx,
@@ -102,13 +130,13 @@ describe("MembershipsService invite flow", () => {
   );
 
   it("rejects unavailable and expired invites", async () => {
-    fixture.state.inviteAvailable = false;
+    fixture.state.isInviteAvailable = false;
     expect(
       await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
     ).toEqual({
       status: "unavailable",
     });
-    fixture.state.inviteAvailable = true;
+    fixture.state.isInviteAvailable = true;
     fixture.state.invite.inviteCodeExpiresAt = new Date(Date.now() - 1);
     expect(
       await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
@@ -148,13 +176,13 @@ describe("MembershipsService invite flow", () => {
       status: "unavailable",
     });
     fixture.state.invite.createdByUserId = "owner";
-    fixture.state.joined = true;
+    fixture.state.hasJoined = true;
     expect(
       await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),
     ).toEqual({
       status: "unavailable",
     });
-    fixture.state.joined = false;
+    fixture.state.hasJoined = false;
     fixture.state.invite.members.push({ id: "partner-membership" });
     expect(
       await fixture.service.validateInvite({ userId: "partner-user", inviteCode: "LNY-7KMP2" }),

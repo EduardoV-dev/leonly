@@ -20,11 +20,11 @@ vi.mock("../../../common/prisma/prisma.service", () => ({
   },
 }));
 
-vi.mock("../../../auth/config/auth.config", () => ({
+vi.mock("../../../auth/configs/auth.config", () => ({
   createAuth: () => ({ api: { getSession: session } }),
 }));
 
-vi.mock("../../../common/config/environment-variables.config", () => ({
+vi.mock("../../../common/configs/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     UPSTASH_REDIS_REST_URL: "https://redis.example.com",
     UPSTASH_REDIS_REST_TOKEN: "test-redis-token",
@@ -46,7 +46,9 @@ const validBody = {
   timezone: "America/Los_Angeles",
 };
 
-function collision(index: string | string[]): Prisma.PrismaClientKnownRequestError {
+function createUniqueConstraintError(
+  index: string | string[],
+): Prisma.PrismaClientKnownRequestError {
   return new Prisma.PrismaClientKnownRequestError("private constraint", {
     code: "P2002",
     clientVersion: "7.10.0",
@@ -268,7 +270,7 @@ describe("spaces API", () => {
   );
 
   it("maps a concurrent active membership conflict to 409", async () => {
-    create.mockRejectedValue(collision(["user_id"]));
+    create.mockRejectedValue(createUniqueConstraintError(["user_id"]));
     const response = await post();
     expect(response.status).toBe(409);
     expect(response.body).toEqual({
@@ -281,7 +283,7 @@ describe("spaces API", () => {
   });
 
   it("retries only invite-code collisions", async () => {
-    create.mockRejectedValueOnce(collision(["invite_code"]));
+    create.mockRejectedValueOnce(createUniqueConstraintError(["invite_code"]));
     const response = await post();
     expect(response.status).toBe(201);
     expect(create).toHaveBeenCalledTimes(2);
@@ -304,7 +306,7 @@ describe("spaces API", () => {
     });
     expect(create).toHaveBeenCalledTimes(1);
 
-    create.mockRejectedValue(collision("spaces_active_invite_code_unique"));
+    create.mockRejectedValue(createUniqueConstraintError("spaces_active_invite_code_unique"));
     expect((await post()).status).toBe(500);
     expect(create).toHaveBeenCalledTimes(6);
   });

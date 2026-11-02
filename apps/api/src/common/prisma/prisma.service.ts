@@ -1,7 +1,7 @@
 import { PrismaConnection } from "@leonly/database";
 import { type Prisma, PrismaClient } from "@leonly/database/client";
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
-import { ENVIRONMENT_VARIABLES } from "../config/environment-variables.config";
+import { ENVIRONMENT_VARIABLES } from "../configs/environment-variables.config";
 
 @Injectable()
 export class PrismaService

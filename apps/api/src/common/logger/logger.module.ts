@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createLoggerOptions } from "@leonly/utils/logger";
 import { Module } from "@nestjs/common";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
-import { ENVIRONMENT_VARIABLES } from "../config/environment-variables.config";
+import { ENVIRONMENT_VARIABLES } from "../configs/environment-variables.config";
 
 const loggerOptions = createLoggerOptions(ENVIRONMENT_VARIABLES.NODE_ENV);
 

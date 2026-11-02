@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 async function getRedisFactory(): Promise<() => Redis> {
   const [{ RedisModule }, { REDIS_CLIENT }] = await Promise.all([
     import("./redis.module"),
-    import("./redis.tokens"),
+    import("./constants/redis.tokens"),
   ]);
   const providers = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, RedisModule) as Array<{
     provide?: symbol;

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Redis } from "@upstash/redis";
-import { REDIS_CLIENT } from "./redis.tokens";
+import { REDIS_CLIENT } from "./constants/redis.tokens";
 
 const LOCK_TTL_MS = 60 * 1000;
 const LOCK_WAIT_MS = 10 * 1000;

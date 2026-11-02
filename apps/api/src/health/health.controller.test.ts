@@ -4,8 +4,8 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { LoggerModule } from "nestjs-pino";
 import request from "supertest";
 import { afterAll, beforeAll, describe, it, vi } from "vitest";
-import { ApiExceptionFilter } from "../common/http/api-exception.filter";
-import { ApiResponseInterceptor } from "../common/http/api-response.interceptor";
+import { ApiExceptionFilter } from "../common/http/filters/api-exception.filter";
+import { ApiResponseInterceptor } from "../common/http/interceptors/api-response.interceptor";
 import { HealthController } from "./health.controller";
 import { HealthService } from "./health.service";
 

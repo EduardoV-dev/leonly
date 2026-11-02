@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../common/constants/timestamp.constants";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { MAX_SPACE_MEMBERS } from "../spaces/constants/spaces.constants";
 import type { SettingsMember, SettingsReadModel } from "./types/settings.types";
 
 type SettingsRow = SettingsMember & {
@@ -42,7 +43,8 @@ export class SettingsService {
     if (!space) return null;
 
     const currentMembers = members.filter((member) => member.isCurrentMember);
-    const hasInvalidSettingsContext = members.length > 2 || currentMembers.length !== 1 || !account;
+    const hasInvalidSettingsContext =
+      members.length > MAX_SPACE_MEMBERS || currentMembers.length !== 1 || !account;
     if (hasInvalidSettingsContext) {
       throw new Error("Settings requires one active space and a current account.");
     }

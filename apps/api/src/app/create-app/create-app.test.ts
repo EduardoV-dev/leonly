@@ -2,11 +2,11 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { type AuthenticatedRequest, AuthGuard } from "../../auth/guards/auth.guard";
-import { rateLimitStorage } from "../../common/rate-limit/test-setup";
 import { mountApiDocs } from "../api-docs/api-docs";
+import { rateLimitStorage } from "../tests/rate-limit-setup";
 import { createApiApp } from "./create-app";
 
-vi.mock("../../common/config/environment-variables.config", () => ({
+vi.mock("../../common/configs/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     BETTER_AUTH_SECRET: "test-secret-with-at-least-32-characters",
     GOOGLE_CLIENT_ID: "test-google-client-id",

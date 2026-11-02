@@ -2,7 +2,7 @@ import { Controller, Get, HttpStatus, Res } from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiServiceUnavailableResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { Public } from "../auth/decorators/public.decorator";
-import { ApiErrorResponses } from "../common/http/api-response.docs";
+import { ApiErrorResponses } from "../common/http/docs/api-response.docs";
 import { SkipRateLimit } from "../common/rate-limit/decorators/skip-rate-limit.decorator";
 import { HealthService } from "./health.service";
 

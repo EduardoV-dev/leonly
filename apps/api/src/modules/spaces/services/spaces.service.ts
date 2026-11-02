@@ -7,8 +7,10 @@ import { ACTIVE_SPACE_MEMBER_INDEX } from "../constants/memberships.constants";
 import {
   ACTIVE_INVITE_CODE_INDEX,
   ACTIVE_SPACE_CONFLICT_MESSAGE,
+  DEFAULT_DISPLAY_NAME,
   INVITE_CODE_TTL_MS,
   MAX_INVITE_ATTEMPTS,
+  MAX_SPACE_MEMBERS,
 } from "../constants/spaces.constants";
 import type { SpaceEditOptions, SpaceEditResult } from "../types/spaces.types";
 import { normalizeDisplayName } from "../utils/display-name";
@@ -109,7 +111,7 @@ export class SpacesService {
             members: {
               where: { deletedAt: null },
               orderBy: { createdAt: "asc" },
-              take: 2,
+              take: MAX_SPACE_MEMBERS,
               select: {
                 displayName: true,
                 user: { select: { image: true } },
@@ -152,7 +154,8 @@ export class SpacesService {
       throw new ConflictException({ error: ACTIVE_SPACE_CONFLICT_MESSAGE });
     }
 
-    const name = normalizeDisplayName({ value: details.displayName, accountName }) ?? "Leonly User";
+    const name =
+      normalizeDisplayName({ value: details.displayName, accountName }) ?? DEFAULT_DISPLAY_NAME;
 
     try {
       const space = await retry(

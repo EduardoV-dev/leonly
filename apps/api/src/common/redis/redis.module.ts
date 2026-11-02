@@ -1,8 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 import { Redis } from "@upstash/redis";
-import { ENVIRONMENT_VARIABLES } from "../config/environment-variables.config";
+import { ENVIRONMENT_VARIABLES } from "../configs/environment-variables.config";
+import { REDIS_CLIENT } from "./constants/redis.tokens";
 import { RedisService } from "./redis.service";
-import { REDIS_CLIENT } from "./redis.tokens";
 
 @Global()
 @Module({

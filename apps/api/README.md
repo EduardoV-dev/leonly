@@ -7,6 +7,9 @@ Run the API locally, then open `http://localhost:3001/docs` for the Scalar refer
 prefix. Protected endpoints require the Better Auth session cookie; browser clients must send
 credentials. State-changing browser requests must come from the configured `WEB_APP_ORIGIN`.
 
+Both the local server and Lambda serve `/docs` and `/openapi.json` outside the `/api` prefix.
+Upload and memory request schemas come from runtime DTO classes and use the global validation pipe.
+
 | Method | Endpoint | Successful `data` | Endpoint-specific failures |
 | --- | --- | --- | --- |
 | GET | `/api/health` | Direct `{ "status": "ok", "checks": { "database": "up", "redis": "up" } }`, without an envelope | 503 for `degraded` or `down` |
@@ -216,7 +219,7 @@ Every request that reaches a policy consumes an attempt, including successful re
 DTOs, and requests whose database operation fails. A successful join does not clear the quota.
 Fixed windows use Upstash's clock-aligned boundaries; rejected requests do not extend the window.
 
-Configure the global policy in `src/common/rate-limit/rate-limit.constants.ts`. Configure endpoint
+Configure the global policy in `src/common/rate-limit/constants/rate-limit.constants.ts`. Configure endpoint
 policies with `@RateLimit` on a controller or handler; handler metadata overrides controller metadata:
 
 ```ts

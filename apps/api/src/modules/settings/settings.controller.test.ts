@@ -5,7 +5,15 @@ import { SwaggerModule } from "@nestjs/swagger";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppModule } from "../../app/app.module";
-import { rateLimitStorage } from "../../common/rate-limit/test-setup";
+import { rateLimitStorage } from "../../app/tests/rate-limit-setup";
+import {
+  edits,
+  lockedSettings,
+  member,
+  NEXT_REVISION,
+  REVISION,
+  SPACE_ID,
+} from "./tests/settings-fixtures";
 
 const { session, queryRaw, findUser, findMember, countMembers, updateSpace, withLock } = vi.hoisted(
   () => ({
@@ -30,7 +38,7 @@ vi.mock("../../common/prisma/prisma.service", () => ({
     }
   },
 }));
-vi.mock("../../auth/config/auth.config", () => ({
+vi.mock("../../auth/configs/auth.config", () => ({
   createAuth: () => ({ api: { getSession: session } }),
 }));
 vi.mock("../../common/redis/redis.service", () => ({
@@ -38,7 +46,7 @@ vi.mock("../../common/redis/redis.service", () => ({
     withLock = withLock;
   },
 }));
-vi.mock("../../common/config/environment-variables.config", () => ({
+vi.mock("../../common/configs/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
     UPSTASH_REDIS_REST_URL: "https://redis.example.com",
     UPSTASH_REDIS_REST_TOKEN: "test-token",
@@ -53,37 +61,7 @@ vi.mock("../../common/config/environment-variables.config", () => ({
   getWebAppOrigin: () => "http://localhost:3000",
 }));
 
-const REVISION = "2026-09-05T16:00:00.123456Z";
-const NEXT_REVISION = "2026-09-05T16:00:00.123457Z";
-const SPACE_ID = "0199a9aa-1234-7000-8000-111111111111";
-const member = {
-  id: "0199a9aa-1234-7000-8000-222222222222",
-  displayName: "Leo",
-  role: "owner",
-  avatarUrl: null,
-  isCurrentMember: true,
-  joinedAt: REVISION,
-  updatedAt: REVISION,
-  spaceName: "Our Space",
-  startDate: "2025-04-27",
-  spaceUpdatedAt: REVISION,
-  inviteCode: "twofw3k3",
-  inviteExpiresAt: new Date("2099-01-01T00:00:00.000Z"),
-};
-const lockedSettings = {
-  spaceId: SPACE_ID,
-  memberId: member.id,
-  name: "Our Space",
-  startDate: "2025-04-27",
-  displayName: "Leo",
-  spaceUpdatedAt: REVISION,
-  memberUpdatedAt: REVISION,
-};
-const edits = [
-  { path: "/api/spaces/name", field: "name", value: "New Space" },
-  { path: "/api/spaces/start-date", field: "startDate", value: "2025-04-28", timezone: "UTC" },
-  { path: "/api/spaces/memberships/display-name", field: "displayName", value: "Leo Hart" },
-];
+type PatchParams = { path: string; body: Record<string, unknown> };
 
 describe("settings API", () => {
   let app: INestApplication;
@@ -115,7 +93,7 @@ describe("settings API", () => {
     request(app.getHttpServer())
       .get("/api/users/me/settings")
       .set("Cookie", "better-auth.session_token=test");
-  const patch = (path: string, body: Record<string, unknown>) =>
+  const patch = ({ path, body }: PatchParams) =>
     request(app.getHttpServer())
       .patch(path)
       .set("Cookie", "better-auth.session_token=test")
@@ -181,7 +159,7 @@ describe("settings API", () => {
   it("requires a Better Auth session for every endpoint", async () => {
     session.mockResolvedValue(null);
     await get().expect(401);
-    for (const edit of edits) await patch(edit.path, {}).expect(401);
+    for (const edit of edits) await patch({ path: edit.path, body: {} }).expect(401);
     await regenerate().expect(401);
     expect(queryRaw).not.toHaveBeenCalled();
     expect(updateSpace).not.toHaveBeenCalled();
@@ -193,10 +171,13 @@ describe("settings API", () => {
       queryRaw
         .mockResolvedValueOnce([lockedSettings])
         .mockResolvedValueOnce([{ updatedAt: NEXT_REVISION }]);
-      const { body } = await patch(path, {
-        [field]: value,
-        expectedUpdatedAt: REVISION,
-        ...extra,
+      const { body } = await patch({
+        path,
+        body: {
+          [field]: value,
+          expectedUpdatedAt: REVISION,
+          ...extra,
+        },
       }).expect(200);
       expect(body).toMatchObject({
         ok: true,
@@ -212,10 +193,13 @@ describe("settings API", () => {
     "returns null data on a stale $field edit",
     async ({ path, field, value, ...extra }) => {
       queryRaw.mockResolvedValueOnce([lockedSettings]).mockResolvedValueOnce([]);
-      const { body } = await patch(path, {
-        [field]: value,
-        expectedUpdatedAt: NEXT_REVISION,
-        ...extra,
+      const { body } = await patch({
+        path,
+        body: {
+          [field]: value,
+          expectedUpdatedAt: NEXT_REVISION,
+          ...extra,
+        },
       }).expect(409);
       expect(body).toMatchObject({
         ok: false,
@@ -228,7 +212,9 @@ describe("settings API", () => {
     "returns 404 for $field without a live membership",
     async ({ path, field, value, ...extra }) => {
       queryRaw.mockResolvedValueOnce([]);
-      await patch(path, { [field]: value, expectedUpdatedAt: REVISION, ...extra }).expect(404);
+      await patch({ path, body: { [field]: value, expectedUpdatedAt: REVISION, ...extra } }).expect(
+        404,
+      );
       expect(queryRaw).toHaveBeenCalledOnce();
     },
   );
@@ -238,15 +224,18 @@ describe("settings API", () => {
     async (field) => {
       const path = field === "name" ? "/api/spaces/name" : "/api/spaces/memberships/display-name";
       for (const value of ["x", " ", "😀".repeat(101), 42]) {
-        await patch(path, { [field]: value, expectedUpdatedAt: REVISION }).expect(400);
+        await patch({ path, body: { [field]: value, expectedUpdatedAt: REVISION } }).expect(400);
       }
       expect(queryRaw).not.toHaveBeenCalled();
       queryRaw
         .mockResolvedValueOnce([lockedSettings])
         .mockResolvedValueOnce([{ updatedAt: NEXT_REVISION }]);
-      const { body } = await patch(path, {
-        [field]: ` ${"😀".repeat(100)} `,
-        expectedUpdatedAt: REVISION,
+      const { body } = await patch({
+        path,
+        body: {
+          [field]: ` ${"😀".repeat(100)} `,
+          expectedUpdatedAt: REVISION,
+        },
       }).expect(200);
       expect(body.data[field]).toBe("😀".repeat(100));
       if (field === "displayName") expect(queryRaw.mock.calls[1]?.slice(1)).toContain(member.id);
@@ -259,22 +248,34 @@ describe("settings API", () => {
     { startDate: "2025-04-27", timezone: "Invalid/Zone" },
     { startDate: "2025-04-27", timezone: 42 },
   ])("rejects invalid calendar dates and timezones", async (body) => {
-    await patch("/api/spaces/start-date", { ...body, expectedUpdatedAt: REVISION }).expect(400);
+    await patch({
+      path: "/api/spaces/start-date",
+      body: { ...body, expectedUpdatedAt: REVISION },
+    }).expect(400);
     expect(queryRaw).not.toHaveBeenCalled();
   });
 
   it("rejects malformed revisions and forged scope fields", async () => {
-    await patch("/api/spaces/name", { name: "Valid", expectedUpdatedAt: "not-a-date" }).expect(400);
-    expect(queryRaw).not.toHaveBeenCalled();
-    await patch("/api/spaces/name", {
-      name: "Valid",
-      expectedUpdatedAt: REVISION,
-      userId: "other-user",
+    await patch({
+      path: "/api/spaces/name",
+      body: { name: "Valid", expectedUpdatedAt: "not-a-date" },
     }).expect(400);
-    await patch("/api/spaces/memberships/display-name", {
-      displayName: "Valid",
-      expectedUpdatedAt: REVISION,
-      membershipId: "other-member",
+    expect(queryRaw).not.toHaveBeenCalled();
+    await patch({
+      path: "/api/spaces/name",
+      body: {
+        name: "Valid",
+        expectedUpdatedAt: REVISION,
+        userId: "other-user",
+      },
+    }).expect(400);
+    await patch({
+      path: "/api/spaces/memberships/display-name",
+      body: {
+        displayName: "Valid",
+        expectedUpdatedAt: REVISION,
+        membershipId: "other-member",
+      },
     }).expect(400);
     expect(queryRaw).not.toHaveBeenCalled();
 
@@ -283,13 +284,19 @@ describe("settings API", () => {
       .mockResolvedValueOnce([{ updatedAt: NEXT_REVISION }])
       .mockResolvedValueOnce([lockedSettings])
       .mockResolvedValueOnce([{ updatedAt: NEXT_REVISION }]);
-    await patch("/api/spaces/name", {
-      name: "Valid",
-      expectedUpdatedAt: REVISION,
+    await patch({
+      path: "/api/spaces/name",
+      body: {
+        name: "Valid",
+        expectedUpdatedAt: REVISION,
+      },
     }).expect(200);
-    await patch("/api/spaces/memberships/display-name", {
-      displayName: "Valid",
-      expectedUpdatedAt: REVISION,
+    await patch({
+      path: "/api/spaces/memberships/display-name",
+      body: {
+        displayName: "Valid",
+        expectedUpdatedAt: REVISION,
+      },
     }).expect(200);
     expect(queryRaw.mock.calls[0]?.slice(1)).toContain("current-user");
     expect(queryRaw.mock.calls[2]?.slice(1)).toContain("current-user");

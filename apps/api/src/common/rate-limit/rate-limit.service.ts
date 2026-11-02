@@ -1,7 +1,7 @@
 import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { REDIS_CLIENT } from "../redis/redis.tokens";
+import { REDIS_CLIENT } from "../redis/constants/redis.tokens";
 import {
   GLOBAL_RATE_LIMIT,
   RATE_LIMIT_PREFIX,
@@ -70,7 +70,9 @@ export class RateLimitService {
     const isStrategyValid = ["fixed-window", "sliding-window"].includes(policy.strategy);
     const isScopeValid = ["ip", "user"].includes(policy.scope);
 
-    if (!isLimitValid || !isWindowValid || !isStrategyValid || !isScopeValid) {
+    const isPolicyInvalid = !isLimitValid || !isWindowValid || !isStrategyValid || !isScopeValid;
+
+    if (isPolicyInvalid) {
       throw new Error("Invalid rate limit policy.");
     }
   }

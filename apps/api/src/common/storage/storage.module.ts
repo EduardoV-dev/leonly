@@ -1,6 +1,6 @@
 import { ObjectStorage } from "@leonly/utils/storage";
 import { Module } from "@nestjs/common";
-import { ENVIRONMENT_VARIABLES } from "../config/environment-variables.config";
+import { ENVIRONMENT_VARIABLES } from "../configs/environment-variables.config";
 
 @Module({
   providers: [

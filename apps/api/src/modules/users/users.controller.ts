@@ -1,7 +1,7 @@
 import { Controller, Get, HttpStatus, Req } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
-import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
+import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/docs/api-response.docs";
 import { ACTIVE_SPACE_EXAMPLE, ACTIVE_SPACE_SCHEMA } from "../spaces/docs/space-response.docs";
 import { SpacesService } from "../spaces/services/spaces.service";
 
@@ -23,7 +23,9 @@ export class UsersController {
     data: ACTIVE_SPACE_SCHEMA,
     example: ACTIVE_SPACE_EXAMPLE,
   })
-  async getCurrentUserSpace(@Req() request: AuthenticatedRequest) {
+  async getCurrentUserSpace(
+    @Req() request: AuthenticatedRequest,
+  ): ReturnType<SpacesService["getActiveSpace"]> {
     return this.spacesService.getActiveSpace(request.authUser.id);
   }
 }

@@ -1,8 +1,10 @@
 import { Body, Controller, HttpStatus, Post, Req } from "@nestjs/common";
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
-import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/api-response.docs";
-import { FilesService, type UploadIssuanceResult } from "./services/files.service";
+import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/docs/api-response.docs";
+import { MAX_IMAGE_COUNT } from "./constants/uploads.constants";
+import { IssueUploadsDto } from "./dtos/issue-uploads.dto";
+import { FilesService, type UploadIssuanceResult } from "./files.service";
 
 @Controller("files")
 @ApiTags("Files")
@@ -12,31 +14,7 @@ export class FilesController {
 
   @Post("uploads")
   @ApiOperation({ summary: "Issue private staging upload capabilities" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["purpose", "files"],
-      properties: {
-        purpose: { type: "string", enum: ["memory_image"] },
-        files: {
-          type: "array",
-          minItems: 1,
-          maxItems: 10,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["filename", "contentType", "byteSize"],
-            properties: {
-              filename: { type: "string", example: "photo.jpg" },
-              contentType: { type: "string", enum: ["image/jpeg", "image/png", "image/webp"] },
-              byteSize: { type: "integer", minimum: 1, maximum: 5_242_880 },
-            },
-          },
-        },
-      },
-    },
-  })
+  @ApiBody({ type: IssueUploadsDto })
   @ApiErrorResponses(400, 401, 403, 404, 500)
   @ApiSuccessResponse({
     status: HttpStatus.CREATED,
@@ -48,7 +26,7 @@ export class FilesController {
         uploads: {
           type: "array",
           minItems: 1,
-          maxItems: 10,
+          maxItems: MAX_IMAGE_COUNT,
           items: {
             type: "object",
             required: ["id", "putUrl", "requiredHeaders", "expiresAt", "attachmentDeadline"],
@@ -81,7 +59,7 @@ export class FilesController {
   })
   async issue(
     @Req() request: AuthenticatedRequest,
-    @Body() body: unknown,
+    @Body() body: IssueUploadsDto,
   ): Promise<UploadIssuanceResult> {
     return this.filesService.issue({ userId: request.authUser.id, body });
   }
