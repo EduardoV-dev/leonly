@@ -17,6 +17,9 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 ## Hard Rules
 
 - Read [pre-coding](references/pre-coding.md) before the first code edit and whenever scope expands.
+- Reuse full guidance already loaded in the active context; reload only missing/changed guidance.
+  Use the selected core's incremental generation workflow for unit review and completion; explicit
+  review/check/fix requests retain formal coverage and exhaustive reporting.
 - Read full applicable rules, including exceptions. Do not copy rules into project instructions or
   infer requirements from names alone. Preserve correctness, security, accessibility, and data integrity.
 - Work in the current agent thread only. Never spawn subagents or parallel reviewers; perform coding,

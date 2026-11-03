@@ -1,5 +1,8 @@
 # Load Standards Before Coding
 
+Read complete guidance once per active context; reuse already-loaded, unchanged rules. Before affected
+work, reload missing/changed guidance and load newly applicable rules, not the entire selection again.
+
 1. Read the target project's applicable instructions. Inspect the intended files, their owning
    package/configuration, relevant callers/contracts/tests, and actual runtime/technology usage.
    Inspect the owning project's formatter/linter, installed versions, inherited configuration,
@@ -28,14 +31,18 @@
    `git status --short` in the source checkout). Record alternate revisions when project-local copies
    come from another source. Reuse rules during implementation without starting a review, spawning
    reviewers, or requiring review coverage artifacts. Reselect before editing a new domain.
+   Read the resolved core's `references/generation-review.md` for work-unit review, evidence reuse,
+   invalidation, final integration, and compaction recovery. Follow it throughout implementation.
 
 Repository rules take priority over existing patterns only where the applicable standards explicitly
 say so; preserve their exceptions and the harness's instruction hierarchy. Surface genuine conflicts
 with project instructions instead of silently choosing a policy. Technology without a maintained
 companion remains a reported coverage gap; apply available core rules without inventing technology rules.
 
-Before completing implementation, run relevant project checks and a scoped `ev-code-review` using
-the requested baseline. A pre-existing defect outside the task is not permission to expand the change.
-Keep this completion review internal during generation; no separate findings report or standards
-summary is required. Surface unresolved blockers, required decisions, and material verification gaps.
-Explicit review/check/fix requests instead require the complete chat report with every finding.
+Before completing implementation, reconcile incremental unit reviews against the final task diff and
+verify integration using the requested baseline. Reuse current evidence; review uncovered/invalidated
+changes and run checks whose results no longer cover the final relevant state. A pre-existing defect
+outside the task is not permission to expand the change. Keep completion verification internal; no
+formal plan/results JSON, coverage-validator run, findings report, or standards summary is required.
+Surface unresolved blockers, decisions, and material gaps. Explicit review/check/fix requests use the
+complete formal workflow and chat report with every finding over the entire requested scope.

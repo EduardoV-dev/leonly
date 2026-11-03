@@ -11,9 +11,10 @@ metadata:
 
 ## Activation Contract
 
-For implementation, reuse the applicable rules through `ev-coding-standards` before code edits;
-review execution and internal coverage artifacts apply when reviewing, including the completion review.
-The detailed chat report applies to explicit review/check/fix requests, not routine code generation.
+For implementation, reuse full applicable rules through `ev-coding-standards` before code edits and
+follow [incremental generation verification](references/generation-review.md). Reuse loaded unchanged
+guidance; reload missing/changed rules. Formal execution/artifacts apply to explicit review/check/fix
+requests, including a requested formal review report during generation, not ordinary completion.
 Review explicit scope; otherwise staged, unstaged, and untracked non-ignored working-tree changes.
 The core works without technology companions.
 
@@ -38,6 +39,8 @@ The core works without technology companions.
 | Situation | Action |
 | --- | --- |
 | Explicit files, commits, branch diff, or PR | Use that scope; state its baseline. |
+| Ordinary implementation/completion | Follow generation verification; no formal plan/results JSON or validator required. |
+| Explicit review/check/fix or formal report | Load and execute the formal workflow over the entire requested scope. |
 | Default scope; clean working tree | Report no changes; do not switch to the latest commit. |
 | No Git repository and no explicit scope | Ask for scope before reviewing. |
 | UI/browser, server/data, shared, or mixed code | Load general plus frontend, backend, neither, or both respectively. |
@@ -45,37 +48,12 @@ The core works without technology companions.
 
 ## Execution Steps
 
-1. Resolve Git scope with `git rev-parse --show-toplevel`. For default scope, run from the root:
-   `git status --short`, `git diff --cached --no-ext-diff --no-textconv --`,
-   `git diff --no-ext-diff --no-textconv --`, and `git ls-files --others --exclude-standard -z`.
-   Read untracked files; include deletions/renames, handle filenames safely, and deduplicate diff layers.
-2. Read guidance, manifests, configuration, scoped code, and relevant callers/contracts/tests. Assign
-   file domains/technologies. Server rendering alone is frontend; server operations require backend too.
-3. Read core references. Discover companions from harness skill lists/registries, otherwise known
-   project/user locations (`.agents/skills`, `.opencode/skills`, `~/.agents/skills`,
-   `~/.config/opencode/skills`, `~/.claude/skills`). Resolve
-   exact paths; never assume sibling installation.
-   Match `ev-review-typescript`, `ev-review-react`, `ev-review-nextjs`, and `ev-review-nestjs` to scoped
-   usage; read their applicability conditions. Report detected technologies lacking installed coverage,
-   including unknown ones; continue with core rules.
-4. Create an internal review plan before analysis: list each applicable domain/technology check ID from
-   [Coverage](references/coverage.md). Unselected technologies need no placeholder results; every planned
-   check needs a result, including `NOT_APPLICABLE` if later found inapplicable. Include shared-only changes. Keep
-   the plan and all analysis in this agent thread; do not create subagents or delegate assignments.
-   Run shared checks once, then domain and technology checks sequentially, applying general/security
-   rules throughout. Read contextual files as needed within the requested scope.
-5. Evaluate each planned check directly and record one result using the coverage contract; findings
-   include stable IDs and evidence. Do not treat omitted checks as passes.
-6. Verify behavior/exceptions; deduplicate defects while retaining affected sites. Recommend minimal
-   fixes without speculative abstractions. Check physical line counts/ownership. Run documented
-   checks permitted by the general read-only verification policy; record failures, unavailable checks,
-   incomplete check groups, and unverified behavior. Challenge high-risk findings and `UNVERIFIED` checks
-   in this agent by checking callers, exceptions, and counterexamples. Do not spawn another reviewer or
-   describe this self-check as independent review; state that independent review was not performed.
-7. Validate the plan against reviewer results with `python <path-to-ev-code-review>/assets/validate_coverage.py
-   --plan <plan.json> --results <results.json>` when files and Python are available. Do not create or
-   modify repository files for review artifacts. If unavailable, manually compare every planned ID and
-   report that deterministic validation was unavailable.
+1. Select the generation or formal workflow from the decision gates; load only that execution reference.
+2. Resolve guidance, scope/baseline, code ownership, relevant context, and applicable full rules.
+   Reuse unchanged full guidance already in the active context; load missing/new/changed references.
+3. Execute the selected workflow in this thread. Generation uses compact evidence and final integration;
+   explicit reviews require the [formal steps](references/formal-review.md) and coverage contract.
+4. Apply the output contract below; distinguish performed checks, failures, and unavailable evidence.
 
 ## Output Contract
 
@@ -87,13 +65,15 @@ evidence, impact, and smallest fix; distinguish style from behavioral defects. W
 state fixed/remaining status and verification evidence for each finding.
 State scope/baseline, selected groups/rules, and single-thread execution. Finish with each planned
 check's status/evidence, deterministic results, and coverage/verification gaps; state when none were found.
-During code generation, perform the completion review and checks internally without a separate
-review report, findings inventory, or standards summary. Fix in-scope issues before handoff; surface
-unresolved blockers, required decisions, and material verification gaps. Honor explicit report requests.
+During code generation, keep incremental review/check evidence internal without a separate report or
+standards summary. Fix in-scope issues before handoff; surface blockers, decisions, and material gaps.
 
 ## References
 
+- [Formal review](references/formal-review.md): load for explicit review/check/fix requests, not ordinary generation.
+- [Generation verification](references/generation-review.md): reuse, invalidation, integration, and compaction recovery.
+- [Generation workflow checks](references/generation-verification.md): behavioral regressions and paired cost/quality trials; load when verifying workflow changes.
 - [General](references/general.md): always apply; shared code, security, and completion checks.
 - [Frontend](references/frontend.md): UI/browser behavior, security, accessibility, and performance.
 - [Backend](references/backend.md): server validation, access, data, and operational security.
-- [Coverage](references/coverage.md): stable check IDs, evidence statuses, and validator input contract.
+- [Coverage](references/coverage.md): formal review check IDs, statuses, and validator contract; not required for generation.

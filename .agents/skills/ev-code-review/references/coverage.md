@@ -1,5 +1,10 @@
 # Review Coverage Contract
 
+This formal plan/results contract applies to explicit review/check/fix requests, including a formal
+review report requested during generation. Ordinary implementation uses
+[incremental generation verification](generation-review.md) with compact internal evidence instead;
+it does not require JSON artifacts or the validator. Both workflows apply the same substantive rules.
+
 Build the plan before analysis. Select checks relevant to the requested scope; technologies outside
 scope need no placeholder groups or results. Every planned check must receive exactly one result.
 If a planned check is later found inapplicable, retain it with `NOT_APPLICABLE` and a reason rather
@@ -46,8 +51,8 @@ Each finding has a unique ID, severity, file/line, evidence, impact, and minimal
 deduplicate findings, but must preserve all related check IDs and affected sites.
 For explicit review/check/fix requests, render every consolidated finding in chat with its severity,
 location, rule, evidence, impact, minimal fix, and fixed/remaining status when fixes are requested.
-Never apply a five-finding or other top-N cap. Internal completion reviews during generation retain
-coverage evidence without requiring a user-facing review report or standards summary.
+Never apply a five-finding or other top-N cap. Generation records may reuse these check IDs and statuses
+without adopting the formal artifact schema; never substitute them for a requested formal review.
 
 ## Validator files
 

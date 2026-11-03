@@ -6,7 +6,8 @@ relative to the owning application/package in monorepos; examples do not require
 
 Coverage IDs: `general-ownership-structure`; `general-correctness-naming-boundaries`;
 `general-configuration-async-side-effects`; `general-errors-trust-boundaries-security`;
-`general-tests-verification`. Record results using `references/coverage.md`.
+`general-tests-verification`. For explicit reviews, record results using `references/coverage.md`;
+for ordinary implementation, use `references/generation-review.md`. Substantive rules apply to both.
 
 ## Priorities
 
