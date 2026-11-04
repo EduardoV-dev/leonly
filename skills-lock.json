@@ -11,19 +11,19 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "760097a3b6b4393ff3c699b65e41590850a886bbad8faac530b897c2d355879d"
+      "computedHash": "76a79d24688da8a5236e7fd17d1c146b4a67208967c02364aead338d639edc4a"
     },
     "ev-coding-standards": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-coding-standards/SKILL.md",
-      "computedHash": "3006e88478eb3f6333ced6b37a696dfede228c9293411bb8bccbc7a36068c0ae"
+      "computedHash": "c531a26c165ed5e9e042df1a8c5f0426a91e408ec824fdb4ec9d2528b48bca42"
     },
     "ev-project-setup": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-project-setup/SKILL.md",
-      "computedHash": "648c28eca7b3354dd0097e5d04f707b2ad107dd226d974c84c319ad9eae237b2"
+      "computedHash": "57406ee3ec84c705e1cf24dd293a4081def7ff5a1ac2f03ccef03d83329a9315"
     },
     "ev-review-nestjs": {
       "source": "EduardoV-dev/my-skills",

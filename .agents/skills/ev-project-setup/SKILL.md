@@ -31,7 +31,7 @@ Use when asked to wire installed skills into a project or refresh its skill-load
 | Required core skills unavailable | Report exact missing names and installation step; stop wiring. |
 | Applicable technology companion unavailable | Report coverage gap; do not claim that coverage. |
 | Conflicting project policy or malformed managed block | Preserve files; resolve the conflict before writing. |
-| Existing valid block | Preserve it; ensure both ignore entries exist. Repeated setup makes no further changes. |
+| Existing well-formed block | Refresh the managed block from the current template, preserve content outside its markers, and ensure both ignore entries exist. Repeated setup is idempotent. |
 
 ## Execution Steps
 

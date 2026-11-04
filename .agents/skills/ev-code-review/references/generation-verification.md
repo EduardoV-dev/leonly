@@ -1,70 +1,43 @@
-# Verify Generation Quality And Cost
+# Verify Implementation And Review Activation
 
-Use disposable task fixtures and fresh agent sessions to verify the generation workflow. Static link,
-metadata, and helper tests cannot prove compliance or preserved defect detection. Do not run these
-behavioral scenarios on a user's application as a side effect of ordinary implementation.
+Use disposable task fixtures and fresh agent sessions to verify this workflow. Static link, metadata,
+and helper tests cannot prove agent behavior or defect detection. Do not change a user's application
+as a side effect of testing these scenarios.
+
+Record fixture revision, task prompt, loaded source revision/dirty state, agent/model/configuration,
+and trace location. Keep expected behavior separately from the implementing agent's prompt.
 
 ## Behavioral Regression Matrix
 
-Record the fixture revision, task prompt, loaded source revision/dirty state, agent/model/configuration,
-and trace location. Keep expected defects separately from the implementing agent's prompt. A reviewer
-of the resulting trace must distinguish actual inspection/checks from unsupported compliance claims.
-
-### Activation And Scope
-
 | Scenario | Required trace evidence |
 | --- | --- |
-| Change several files in one behavior unit | Full applicable rules load before edits, remain available, and are reused; one integrated unit review follows readiness, not each edit. |
-| Cross into a new domain/technology or nested instruction scope | Newly applicable full guidance loads before affected edits; unrelated loaded guidance is reused. |
-| Required reference is missing, or project/global sources conflict | Exact gap/conflict is surfaced before affected edits; no inferred rules or silent version mixing. |
-| Applicable rule changes without changing source HEAD | Changed rule content is detected at the next boundary; affected full guidance reloads and dependent evidence is invalidated. |
+| Implement several files without requesting review | Full applicable rules load before edits and guide implementation; relevant project checks run. No unit-review pass, exhaustive per-rule assessment, evidence ledger, coverage JSON/validator, or final review-coverage reconciliation. |
+| Cross into a new technology/domain or nested instruction scope | Newly applicable full guidance loads before affected edits; unchanged guidance is reused. |
+| Required reference is missing or sources conflict | Exact gap/conflict is surfaced before affected edits; no invented rules or silent version mixing. |
+| Applicable rule source changes, including dirty edits without a new HEAD | Affected full guidance reloads before further affected work; no assumption that unchanged HEAD means unchanged rules. |
+| Add/delete/rename files or change a shared contract | Implementation updates affected usages, consumers, tests, and links as appropriate; relevant integration is checked without a review-coverage ledger. |
+| User requests concrete fixes affecting 30 files after their own review of a 100-file implementation | Implementation continues; affected behavior/dependencies are checked without automatic delta or full-feature review. |
+| A successful check's covered code/configuration changes | Affected checks rerun; unrelated results are reused only while still valid. |
+| Tests pass locally but affected integration fails | Failure is fixed in scope or surfaced as a blocker; local test success is not claimed as integration success. |
+| Known in-scope correctness/security/accessibility issue is encountered | Issue is addressed or surfaced as blocked; deferring comprehensive review does not permit knowingly broken implementation. |
+| Tests/build unavailable, or style defects are not covered by tools | Material gaps are reported; automated success is not described as full standards compliance. No exhaustive manual style review is automatically substituted. |
+| Explicit review/check/fix, or corrections to formal-review findings | Full formal workflow covers the requested scope; every finding is reported, including more than five, with fixed/remaining status for fixes. |
+| User requests review before accepting the implementation | Requested review runs immediately; acceptance is not an extra prerequisite. |
+| User requests "review these corrections", then "review the whole feature" | First review uses the identifiable follow-up delta/dependencies; second uses the full feature scope. Clarify an unavailable explicit baseline rather than substituting the full dirty tree. |
+| Compact context, with or without external edits | Task/check context and source identities are retained; current state is verified, missing full rules reload, and stale/unverifiable check results are not reused. No unit-review records are required. |
 
-### Coverage And Invalidation
+## Cost And Quality Comparison
 
-| Scenario | Required trace evidence |
-| --- | --- |
-| Add, delete, and rename files across units | Final reconciliation accounts for every changed file and affected callers; no file sampling or unrelated cleanup. |
-| Fix one reviewed local function while another unit is unchanged | Affected review/tests rerun; unrelated current evidence is reused rather than restarted. |
-| Change an exported type/schema/API after reviewing its consumers | Unchanged dependent consumers and integration checks are revisited; unchanged consumer paths do not imply valid evidence. |
-| Change authorization/shared config/build inputs/environment | All affected units/checks are reconsidered, with broader verification where necessary. |
-| Prior evidence is missing, or dependency impact is uncertain | Evidence is recovered or checks expand/rerun; uncertainty is not recorded as PASS. |
+1. Use representative small, multi-file/shared-contract, and follow-up fixtures. Compare the previous
+   and candidate workflows with the same baseline, prompt, model/settings, tools, and environment in
+   isolated working copies and fresh contexts. Include an explicit review request after implementation.
+2. Capture elapsed time, tokens/cached tokens when available, rule-read counts, automatic review passes,
+   repeated checks, and final behavioral results. Distinguish implementation from requested-review cost.
+3. Compare requested behavior, relevant check execution, known defects, false positives, and stale
+   results reused. Assess exhaustive review coverage only in the explicitly requested review phase;
+   do not require generation-time defect-detection parity with a comprehensive review.
+4. Report each paired run and trace location; repeat when variability prevents useful comparison.
+   Without executed trials, savings and fresh-session behavior remain UNVERIFIED. Do not invent speedup
+   or quality claims from shorter instructions or passing helper tests.
 
-### Completion And Reporting
-
-| Scenario | Required trace evidence |
-| --- | --- |
-| Generate code with observable behavioral and style defects | Applicable rules catch the seeded defects, verify fixes, and preserve exceptions; ordinary completion has compact evidence, no mandatory formal JSON/validator or separate report. |
-| Unit checks pass but a cross-unit contract is broken | Final integration detects the mismatch; unit success alone cannot complete the task. |
-| Check succeeded, then its covered code/configuration changed | Stale results are not reused; final evidence covers the relevant completed state. |
-| Tests/build are unavailable | Concrete missing evidence is surfaced; no claimed compliance or invented successful checks. |
-| Explicit review/check/fix, including a review report requested during generation | Full formal plan/results/validator workflow covers the entire requested scope, not checkpoints alone; every finding is reported, including more than five, with fixed/remaining status for fixes. |
-
-### Compaction Recovery
-
-| Scenario | Required trace evidence |
-| --- | --- |
-| Compact after one completed unit; change nothing externally | Continuation includes baseline, sources, recoverable evidence, findings, and pending checks; missing full rules reload and valid recovered evidence is reused. |
-| Edit code/rules externally during compaction | Current sources/diff are compared with retained identities; affected guidance reloads and dependent evidence is invalidated. |
-| Resume with only a summary/hash and no recoverable review evidence | Summary is not treated as rule text or proof; missing evidence is reinspected without blindly restarting unrelated verified units. |
-
-## Paired Cost And Quality Comparison
-
-1. Choose representative fixtures: a small single-unit task and a multi-unit task with shared contracts,
-   plus the compaction scenario above. Record known defects/expected behavior and supported exceptions
-   before running. Use the same task baseline/prompt, tool access, model/settings, and check environment
-   for both the previous workflow and the candidate; isolate their working copies and agent contexts.
-2. Capture each run's elapsed time, input/output tokens and cached tokens when available, rule-read
-   count, repeated review/check count, compactions, and final verification results. Distinguish tool/check
-   latency from model time when traces permit; mark unavailable metrics rather than estimating them.
-3. Compare detected/missed expected defects, false positives on approved exceptions, final behavior,
-   unreviewed files/checks, and stale evidence reused. Include contract/security/accessibility cases
-   when applicable. Use existing test outcomes and trace inspection, not the coverage validator alone.
-4. Report each paired run, not only an aggregate. Repeat pairs with alternating run order if variability
-   prevents a useful comparison. Retain trace locations and conditions so differences are attributable;
-   do not claim statistical certainty or extrapolate one fixture to every repository.
-5. Accept the workflow only with no known fixture-detection regression, complete current coverage, and
-   observed reduction in redundant work/cost. Investigate misses or stale-evidence reuse before rollout.
-   No executed comparison means savings and quality parity remain UNVERIFIED; report that explicitly.
-
-Use existing permitted task/session storage for traces and results. Do not add a benchmark framework,
-install dependencies, or invent numerical speedup/quality claims to satisfy this protocol.
+Use permitted session/task storage for traces. Do not add a benchmark framework or install dependencies.

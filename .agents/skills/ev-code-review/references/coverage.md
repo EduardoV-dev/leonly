@@ -2,8 +2,8 @@
 
 This formal plan/results contract applies to explicit review/check/fix requests, including a formal
 review report requested during generation. Ordinary implementation uses
-[incremental generation verification](generation-review.md) with compact internal evidence instead;
-it does not require JSON artifacts or the validator. Both workflows apply the same substantive rules.
+[coding guidance and relevant project checks](generation-review.md) instead; it does not require review
+coverage records, JSON artifacts, or the validator. Both workflows use the same substantive rules.
 
 Build the plan before analysis. Select checks relevant to the requested scope; technologies outside
 scope need no placeholder groups or results. Every planned check must receive exactly one result.

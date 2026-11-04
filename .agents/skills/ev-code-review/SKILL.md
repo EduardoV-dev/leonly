@@ -1,6 +1,6 @@
 ---
 name: ev-code-review
-description: "Trigger: code review, code generation standards, code-style compliance. Supply pre-coding rules and run scoped reviews sequentially."
+description: "Trigger: requested code review or standards check/fix. Run complete scoped reviews; expose coding rules to ev-coding-standards without automatic reviews."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -12,10 +12,12 @@ metadata:
 ## Activation Contract
 
 For implementation, reuse full applicable rules through `ev-coding-standards` before code edits and
-follow [incremental generation verification](references/generation-review.md). Reuse loaded unchanged
-guidance; reload missing/changed rules. Formal execution/artifacts apply to explicit review/check/fix
-requests, including a requested formal review report during generation, not ordinary completion.
-Review explicit scope; otherwise staged, unstaged, and untracked non-ignored working-tree changes.
+follow [implementation checks](references/generation-review.md) without automatic review. Reuse loaded unchanged
+guidance; reload missing/changed rules. Concrete follow-up edits remain implementation, even when called
+fixes or supplied after the user's own review. Formal execution/artifacts apply to requested reviews,
+standards checks/fixes, or corrections to findings from a formal review, not ordinary completion.
+For formal reviews, honor explicit scope/baseline; otherwise use staged, unstaged, and untracked
+non-ignored working-tree changes.
 The core works without technology companions.
 
 ## Hard Rules
@@ -39,8 +41,9 @@ The core works without technology companions.
 | Situation | Action |
 | --- | --- |
 | Explicit files, commits, branch diff, or PR | Use that scope; state its baseline. |
-| Ordinary implementation/completion | Follow generation verification; no formal plan/results JSON or validator required. |
-| Explicit review/check/fix or formal report | Load and execute the formal workflow over the entire requested scope. |
+| Ordinary implementation/completion | Apply coding guidance and relevant project checks; no automatic review or coverage bookkeeping. |
+| Concrete follow-up edits, such as removing a field or renaming a table | Continue implementation and check affected behavior/dependencies. |
+| Requested review, standards check/fix, correction of formal-review findings, or formal report | Load and execute the formal workflow over the entire requested scope. |
 | Default scope; clean working tree | Report no changes; do not switch to the latest commit. |
 | No Git repository and no explicit scope | Ask for scope before reviewing. |
 | UI/browser, server/data, shared, or mixed code | Load general plus frontend, backend, neither, or both respectively. |
@@ -48,11 +51,11 @@ The core works without technology companions.
 
 ## Execution Steps
 
-1. Select the generation or formal workflow from the decision gates; load only that execution reference.
+1. Use the formal workflow for requested review/check/fix work; implementation uses guidance and relevant checks only.
 2. Resolve guidance, scope/baseline, code ownership, relevant context, and applicable full rules.
    Reuse unchanged full guidance already in the active context; load missing/new/changed references.
-3. Execute the selected workflow in this thread. Generation uses compact evidence and final integration;
-   explicit reviews require the [formal steps](references/formal-review.md) and coverage contract.
+3. Execute in this thread. Explicit reviews require the [formal steps](references/formal-review.md)
+   and coverage contract; implementation does not initiate these steps.
 4. Apply the output contract below; distinguish performed checks, failures, and unavailable evidence.
 
 ## Output Contract
@@ -65,13 +68,13 @@ evidence, impact, and smallest fix; distinguish style from behavioral defects. W
 state fixed/remaining status and verification evidence for each finding.
 State scope/baseline, selected groups/rules, and single-thread execution. Finish with each planned
 check's status/evidence, deterministic results, and coverage/verification gaps; state when none were found.
-During code generation, keep incremental review/check evidence internal without a separate report or
-standards summary. Fix in-scope issues before handoff; surface blockers, decisions, and material gaps.
+During code generation, report relevant check results without a separate standards report or full
+compliance claim. Fix known in-scope issues before handoff; surface blockers, decisions, and material gaps.
 
 ## References
 
 - [Formal review](references/formal-review.md): load for explicit review/check/fix requests, not ordinary generation.
-- [Generation verification](references/generation-review.md): reuse, invalidation, integration, and compaction recovery.
+- [Implementation checks](references/generation-review.md): coding guidance, relevant checks, follow-ups, and context recovery.
 - [Generation workflow checks](references/generation-verification.md): behavioral regressions and paired cost/quality trials; load when verifying workflow changes.
 - [General](references/general.md): always apply; shared code, security, and completion checks.
 - [Frontend](references/frontend.md): UI/browser behavior, security, accessibility, and performance.

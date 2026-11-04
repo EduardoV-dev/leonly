@@ -18,8 +18,8 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 
 - Read [pre-coding](references/pre-coding.md) before the first code edit and whenever scope expands.
 - Reuse full guidance already loaded in the active context; reload only missing/changed guidance.
-  Use the selected core's incremental generation workflow for unit review and completion; explicit
-  review/check/fix requests retain formal coverage and exhaustive reporting.
+  Apply rules as implementation guidance and run relevant project checks; do not automatically review
+  work units or track review coverage. Explicit review/check/fix requests use the full formal workflow.
 - Read full applicable rules, including exceptions. Do not copy rules into project instructions or
   infer requirements from names alone. Preserve correctness, security, accessibility, and data integrity.
 - Work in the current agent thread only. Never spawn subagents or parallel reviewers; perform coding,
@@ -36,6 +36,7 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 | Request | Action |
 | --- | --- |
 | Implement/change code | Follow pre-coding, then implement the requested scope. |
+| Concrete follow-up edits after implementation or the user's own review | Continue implementation and check affected behavior; do not automatically start a review. |
 | Check/fix standards | Follow [check and fix](references/check-and-fix.md). |
 | Update installed standards | Follow [update](references/update.md). |
 | Add/change a standard | Follow [rule contributions](references/add-rule.md). |

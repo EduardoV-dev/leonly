@@ -1,5 +1,9 @@
 # Check And Fix
 
+Use this workflow for requested standards checks/fixes and corrections to formal-review findings.
+Concrete implementation instructions, even called fixes or supplied after the user's own review,
+follow pre-coding guidance and relevant implementation checks instead; do not automatically start a review.
+
 ## Check
 
 - Load `ev-code-review` and use its complete scope, selection, evidence, and coverage contracts.

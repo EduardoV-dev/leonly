@@ -31,18 +31,21 @@ work, reload missing/changed guidance and load newly applicable rules, not the e
    `git status --short` in the source checkout). Record alternate revisions when project-local copies
    come from another source. Reuse rules during implementation without starting a review, spawning
    reviewers, or requiring review coverage artifacts. Reselect before editing a new domain.
-   Read the resolved core's `references/generation-review.md` for work-unit review, evidence reuse,
-   invalidation, final integration, and compaction recovery. Follow it throughout implementation.
+   Read the resolved core's `references/generation-review.md` for implementation checks, follow-ups,
+   and context recovery. Applying standards does not initiate a code review.
 
 Repository rules take priority over existing patterns only where the applicable standards explicitly
 say so; preserve their exceptions and the harness's instruction hierarchy. Surface genuine conflicts
 with project instructions instead of silently choosing a policy. Technology without a maintained
 companion remains a reported coverage gap; apply available core rules without inventing technology rules.
 
-Before completing implementation, reconcile incremental unit reviews against the final task diff and
-verify integration using the requested baseline. Reuse current evidence; review uncovered/invalidated
-changes and run checks whose results no longer cover the final relevant state. A pre-existing defect
-outside the task is not permission to expand the change. Keep completion verification internal; no
-formal plan/results JSON, coverage-validator run, findings report, or standards summary is required.
-Surface unresolved blockers, decisions, and material gaps. Explicit review/check/fix requests use the
+Concrete follow-up edits remain implementation, even when called fixes or supplied after the user's
+own review. Check changed behavior and affected dependencies; a requested review,
+standards check/fix, or correction of formal-review findings uses the formal workflow instead.
+
+Before completing implementation, run relevant documented project checks and verify affected integration.
+Reuse successful results only while they cover the completed state. Do not require review checkpoints,
+per-rule evidence records, or final review-coverage reconciliation. A pre-existing defect outside the
+task is not permission to expand the change. Report what works and material verification gaps without
+a separate standards report or claims of full compliance. Explicit review/check/fix requests use the
 complete formal workflow and chat report with every finding over the entire requested scope.

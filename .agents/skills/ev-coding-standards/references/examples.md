@@ -137,20 +137,22 @@ to `UNVERIFIED` for an assigned check and explain its cause. Never claim a check
 | Generate code with standards active | Apply rules and run completion checks internally. Do not append a separate standards report or summary; surface unresolved blockers and material gaps. |
 | Generate code and explicitly report the review | Honor the requested exhaustive chat report. |
 
-## Reuse Generation Evidence Without Weakening Review
+## Separate Implementation Checks From Requested Review
 
 | Situation | Required behavior |
 | --- | --- |
-| Implement multiple files with the same loaded rules | Reuse full guidance; review the coherent unit when ready, not after each edit. |
-| Fix one unit after checks passed | Recheck that change and affected dependencies/checks; preserve unrelated valid evidence. |
-| Change a shared API/schema after reviewing callers | Invalidate dependent caller/integration evidence, including unchanged files. |
-| Complete a multi-unit task | Reconcile all changes against current unit evidence and verify integration; no automatic full restart or formal coverage JSON. |
-| Compact the context | Retain recoverable evidence and source identities; verify current changes and reload missing full rules before resuming. A summary never replaces either. |
-| Request an explicit review after generation | Run the complete formal workflow over the requested baseline/scope; checkpoints alone do not satisfy it. |
+| Implement multiple files with the same loaded rules | Reuse full coding guidance and run relevant project checks; no automatic unit review or per-rule assessment. |
+| Fix behavior after checks passed | Rerun affected checks; reuse unrelated results only while still valid. |
+| User requests concrete edits after their own review of a 100-file implementation | Continue implementation and check changed behavior and dependent consumers; do not review the delta or restart a review of all 100 files. The word "fix" alone does not select formal review. |
+| User requests "review these corrections" | Formally review the follow-up delta and relevant dependencies, not the entire original dirty diff. |
+| Change a shared API/schema after checks passed | Check affected consumers/integration, including unchanged files; stale command results are not reused. |
+| Complete a multi-unit task | Verify affected integration and report relevant checks/gaps; no review-evidence ledger or final review-coverage reconciliation. |
+| Compact the context | Retain task/check context and source identities; verify current changes and reload missing full rules before resuming. A summary does not prove a check passed. |
+| Request an explicit review after generation | Run the complete formal workflow over the requested baseline/scope; implementation checks alone do not satisfy it. |
 
 The selected review core's `references/generation-review.md` owns this workflow. Its
 `references/generation-verification.md` defines behavioral regressions and paired cost/quality trials;
-static metadata checks do not establish quality parity or speed gains.
+static metadata checks do not establish agent behavior, quality parity, or speed gains.
 
 ## Separate Application Work, Contributions, And Activation
 

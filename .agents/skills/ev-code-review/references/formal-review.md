@@ -1,8 +1,11 @@
 # Execute An Explicit Review
 
-Load for explicit review/check/fix requests, including a formal review report requested during code
-generation. Preserve the coordinator's scope, constraints, and exhaustive output contract. Generation
-checkpoints do not replace this workflow over the entire requested scope.
+Load for requested reviews, standards checks/fixes, or corrections to findings from a formal review,
+including a formal review report requested during code generation. Concrete follow-up implementation
+edits alone use coding guidance and relevant implementation checks. Preserve the coordinator's scope,
+constraints, and exhaustive output contract. Implementation checks do not replace this workflow over
+the entire requested scope.
+Honor an explicit follow-up delta baseline; do not replace it with the full dirty working tree.
 
 1. Resolve Git scope with `git rev-parse --show-toplevel`. For default scope, run from the root:
    `git status --short`, `git diff --cached --no-ext-diff --no-textconv --`,

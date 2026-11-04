@@ -55,15 +55,15 @@ checks; do not change real application behavior just to test activation.
 
 | Scenario | Required evidence |
 | --- | --- |
-| Request a small code change without mentioning skills | Full standards and applicable review rules load before edits; incremental unit review and final integration follow. |
+| Request a small code change without mentioning skills | Full applicable rules load as coding guidance before edits; relevant project checks run without automatic review. |
 | Request a non-coding task matching an installed skill | Matching skill loads before work; unrelated coding rule bodies stay unloaded. |
 | Add a skill with a new task trigger, restart, and request that task | New skill activates without rewriting the managed block. |
 | Remove required core guidance or a required reference | Agent reports the exact gap before affected code edits. |
 | Work crosses into a new technology/domain | Agent reselects and loads newly applicable rules before affected edits. |
 | Explicit review discovers more than five distinct findings | Every finding appears in chat with severity, location, rule, evidence, impact, and minimal fix. |
-| Generate code without requesting a review report | Standards and completion checks run internally; no separate standards summary is emitted. |
-| Edit multiple files under unchanged guidance | Loaded full guidance is reused; no per-edit formal review/JSON ceremony occurs. |
-| Change a reviewed shared contract or resume after compaction | Dependent evidence is invalidated; missing full rules and underlying evidence are recovered before reuse. |
+| Generate code without requesting a review | No unit-review passes, per-rule evidence ledgers, or final coverage reconciliation; check results and material gaps are reported without a compliance claim. |
+| Edit multiple files under unchanged guidance | Loaded full coding guidance is reused; no automatic review workflow starts. |
+| Change a shared contract or resume after compaction | Affected checks are reconsidered; missing full rules reload and retained results are verified against current state before reuse. |
 
 Separate helper/metadata test results from these agent traces. If no fresh session was exercised,
 report behavior as unverified. Instructions establish obligations; they are not a runtime tool gate.
