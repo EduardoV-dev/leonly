@@ -39,10 +39,12 @@ function createUploadResponse() {
       data: {
         uploads: UPLOAD_IDS.map((id, index) => ({
           id,
-          putUrl: `https://storage.example.com/staging/${id}`,
-          requiredHeaders: { "Content-Type": index === 0 ? "image/png" : "image/webp" },
+          putUrl: `https://storage.example.com/memory/${id}`,
+          requiredHeaders: {
+            "Content-Type": index === 0 ? "image/png" : "image/webp",
+            "If-None-Match": "*",
+          },
           expiresAt: "2030-01-01T00:10:00Z",
-          attachmentDeadline: "2030-01-01T01:10:00Z",
         })),
       },
     },
@@ -107,11 +109,11 @@ describe("JSON memory creation", () => {
     });
     expect(fetch).toHaveBeenNthCalledWith(
       1,
-      `https://storage.example.com/staging/${UPLOAD_IDS[0]}`,
+      `https://storage.example.com/memory/${UPLOAD_IDS[0]}`,
       expect.objectContaining({
         method: "PUT",
         body: request.photos[0].kind === "new" ? request.photos[0].file : undefined,
-        headers: { "Content-Type": "image/png" },
+        headers: { "Content-Type": "image/png", "If-None-Match": "*" },
         credentials: "omit",
       }),
     );
@@ -141,10 +143,30 @@ describe("JSON memory creation", () => {
     expect(postMock).toHaveBeenCalledTimes(2);
     expect(fetch).toHaveBeenCalledTimes(3);
     expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
-      `https://storage.example.com/staging/${UPLOAD_IDS[0]}`,
-      `https://storage.example.com/staging/${UPLOAD_IDS[1]}`,
-      `https://storage.example.com/staging/${UPLOAD_IDS[1]}`,
+      `https://storage.example.com/memory/${UPLOAD_IDS[0]}`,
+      `https://storage.example.com/memory/${UPLOAD_IDS[1]}`,
+      `https://storage.example.com/memory/${UPLOAD_IDS[1]}`,
     ]);
+  });
+
+  it("continues to server verification when a retry finds the immutable upload already exists", async () => {
+    const request = createRequest();
+    postMock
+      .mockResolvedValueOnce(createUploadResponse())
+      .mockResolvedValueOnce(createSuccessResponse());
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new Error("Response lost after upload"))
+      .mockResolvedValueOnce(new Response(null, { status: 412 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await expect(submitMemoryCreation(request)).rejects.toThrow("Response lost after upload");
+    const preparedUpload = request.onPrepared.mock.calls.at(-1)?.[0] ?? null;
+
+    await expect(submitMemoryCreation({ ...request, preparedUpload })).resolves.toMatchObject({
+      id: "memory-id",
+    });
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(postMock.mock.calls.map(([path]) => path)).toEqual(["/files/uploads", "/memories"]);
   });
 
   it("retries an uncertain creation response with the exact same key and uploads", async () => {

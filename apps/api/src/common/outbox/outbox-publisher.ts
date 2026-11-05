@@ -19,10 +19,9 @@ export type PublicationOutcome = {
 
 export type OutboxEnvelope = {
   id: string;
-  aggregateType: string;
-  aggregateId: string;
+  entityType: string;
+  entityId: string;
   eventType: string;
-  schemaVersion: number;
   createdAt: string;
   payload: Prisma.JsonValue;
 };
@@ -103,10 +102,9 @@ export class OutboxPublisher implements OnModuleDestroy {
         const route = this.config.routes[event.eventType];
         const envelope: OutboxEnvelope = {
           id: event.id,
-          aggregateType: event.aggregateType,
-          aggregateId: event.aggregateId,
+          entityType: event.entityType,
+          entityId: event.entityId,
           eventType: event.eventType,
-          schemaVersion: event.schemaVersion,
           createdAt: event.createdAt.toISOString(),
           payload: event.payload,
         };
@@ -130,8 +128,8 @@ export class OutboxPublisher implements OnModuleDestroy {
             where: { id: event.id, publishedAt: null },
             data: {
               publishedAt: new Date(),
-              publicationAttempts: { increment: 1 },
-              lastPublicationError: null,
+              publishAttemptCount: { increment: 1 },
+              lastPublishErrorCode: null,
             },
           }),
         );
@@ -144,7 +142,7 @@ export class OutboxPublisher implements OnModuleDestroy {
           await this.runBookkeeping((transaction) =>
             transaction.outboxEvent.updateMany({
               where: { id: event.id, publishedAt: null },
-              data: { publicationAttempts: { increment: 1 }, lastPublicationError: code },
+              data: { publishAttemptCount: { increment: 1 }, lastPublishErrorCode: code },
             }),
           );
         } catch {

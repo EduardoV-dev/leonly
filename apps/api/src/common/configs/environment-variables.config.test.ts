@@ -85,12 +85,12 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
   it("passes configured values through unchanged", async () => {
     const configuredValues = Object.fromEntries(
-      ENVIRONMENT_VARIABLE_NAMES.map((name) => [
-        name,
-        name === "SQS_QUEUES_URLS"
-          ? '{"memories":"https://sqs.example.com/memories"}'
-          : `configured-${name}`,
-      ]),
+      ENVIRONMENT_VARIABLE_NAMES.map((name) => {
+        if (name === "SQS_QUEUES_URLS")
+          return [name, '{"memories":"https://sqs.example.com/memories"}'];
+
+        return [name, `configured-${name}`];
+      }),
     ) as Record<(typeof ENVIRONMENT_VARIABLE_NAMES)[number], string>;
 
     for (const [name, value] of Object.entries(configuredValues)) {

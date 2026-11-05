@@ -1,3 +1,11 @@
+locals {
+  worker_image_uri = var.image_worker_local_image_uri != null ? var.image_worker_local_image_uri : (
+    var.image_worker_image_digest != null
+    ? "${aws_ecr_repository.image_worker.repository_url}@${var.image_worker_image_digest}"
+    : ""
+  )
+}
+
 resource "aws_ecr_repository" "image_worker" {
   name = "leonly-image-worker-local"
 }
@@ -45,7 +53,7 @@ resource "aws_lambda_function" "image_worker" {
   function_name                  = "leonly-image-worker-local"
   role                           = aws_iam_role.image_worker.arn
   package_type                   = "Image"
-  image_uri                      = var.image_worker_local_image_uri != null ? var.image_worker_local_image_uri : "${aws_ecr_repository.image_worker.repository_url}@${var.image_worker_image_digest}"
+  image_uri                      = local.worker_image_uri
   architectures                  = ["x86_64"]
   memory_size                    = 1024
   timeout                        = 120

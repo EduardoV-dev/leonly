@@ -1,14 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { type FileUpload, type Memory, Prisma } from "@leonly/database/client";
-import { ObjectSizeError, ObjectStorage, UPLOAD_URL_SECONDS } from "@leonly/utils/storage";
+import { type File, type Memory, Prisma } from "@leonly/database/client";
+import { ObjectSizeError, ObjectStorage } from "@leonly/utils/storage";
 import { Module } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { vi } from "vitest";
 import { OutboxPublisher, type PublicationOutcome } from "../../common/outbox/outbox-publisher";
 import { PrismaService } from "../../common/prisma/prisma.service";
-import { ATTACHMENT_SECONDS } from "../../modules/files/constants/uploads.constants";
+import { FilesService } from "../../modules/files/files.service";
 import { MemoriesService } from "../../modules/memories/services/memories.service";
-import { UploadFinalizationService } from "../../modules/memories/services/upload-finalization.service";
 import type { CreationInput } from "../../modules/memories/utils/memory-creation.util";
 
 @Module({})
@@ -18,8 +17,8 @@ type CreationRequest = Pick<
   CreationInput,
   "title" | "memoryDate" | "timezone" | "visibility" | "uploadIds" | "idempotencyKey"
 >;
-type MatchesUploadParams = { upload: FileUpload; where: Record<string, unknown> };
-type AddUploadParams = { bytes: Buffer; overrides?: Partial<FileUpload> };
+type MatchesUploadParams = { upload: File; where: Record<string, unknown> };
+type AddUploadParams = { bytes: Buffer; overrides?: Partial<File> };
 
 export const SPACE_ID = "01900000-0000-7000-8000-000000000005";
 export const MEMBER_ID = "01900000-0000-7000-8000-000000000006";
@@ -41,7 +40,7 @@ function matchesUpload({ upload, where }: MatchesUploadParams): boolean {
     if (field === "OR" && Array.isArray(expected)) {
       return expected.some((condition) => matchesUpload({ upload, where: condition }));
     }
-    const actual = upload[field as keyof FileUpload];
+    const actual = upload[field as keyof File];
     if (typeof expected === "object" && expected !== null && !(expected instanceof Date)) {
       if ("in" in expected && Array.isArray(expected.in)) return expected.in.includes(actual);
       if ("gt" in expected) return actual instanceof Date && actual > (expected.gt as Date);
@@ -53,10 +52,9 @@ function matchesUpload({ upload, where }: MatchesUploadParams): boolean {
 
 class CreationFixtures {
   readonly state = {
-    uploads: new Map<string, FileUpload>(),
+    uploads: new Map<string, File>(),
     memories: [] as Memory[],
-    assets: [] as Record<string, unknown>[],
-    objects: [] as Record<string, unknown>[],
+    memoryFiles: [] as Record<string, unknown>[],
     events: [] as Record<string, unknown>[],
     hasActiveMembership: true,
     isInTransaction: false,
@@ -69,14 +67,14 @@ class CreationFixtures {
         this.state.hasActiveMembership ? { id: MEMBER_ID, spaceId: SPACE_ID } : null,
       ),
     },
-    fileUpload: {
+    file: {
       findFirst: vi.fn(
         async ({ where }: { where: Record<string, unknown> }) =>
           [...this.state.uploads.values()].find((upload) => matchesUpload({ upload, where })) ??
           null,
       ),
       updateMany: vi.fn(
-        async ({ where, data }: { where: Record<string, unknown>; data: Partial<FileUpload> }) => {
+        async ({ where, data }: { where: Record<string, unknown>; data: Partial<File> }) => {
           const uploads = [...this.state.uploads.values()].filter((upload) =>
             matchesUpload({ upload, where }),
           );
@@ -113,7 +111,7 @@ class CreationFixtures {
         async ({
           data,
         }: {
-          data: Omit<Memory, "id" | "coverAssetId" | "deletedAt" | "createdAt" | "updatedAt">;
+          data: Omit<Memory, "id" | "coverFileId" | "deletedAt" | "createdAt" | "updatedAt">;
         }) => {
           const hasExistingMemory = this.state.memories.some(
             (memory) =>
@@ -129,7 +127,7 @@ class CreationFixtures {
           const memory = {
             ...data,
             id: randomUUID(),
-            coverAssetId: null,
+            coverFileId: null,
             deletedAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -139,7 +137,7 @@ class CreationFixtures {
         },
       ),
       update: vi.fn(
-        async ({ where, data }: { where: { id: string }; data: { coverAssetId: string } }) => {
+        async ({ where, data }: { where: { id: string }; data: { coverFileId: string } }) => {
           const memory = this.state.memories.find((memory) => memory.id === where.id);
           if (!memory) throw new Error("Missing memory");
           Object.assign(memory, data);
@@ -147,16 +145,10 @@ class CreationFixtures {
         },
       ),
     },
-    memoryAsset: {
+    memoryFile: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-        this.state.assets.push(data);
+        this.state.memoryFiles.push(data);
         return data;
-      }),
-    },
-    memoryAssetObject: {
-      createMany: vi.fn(async ({ data }: { data: Record<string, unknown>[] }) => {
-        this.state.objects.push(...data);
-        return { count: data.length };
       }),
     },
     outboxEvent: {
@@ -167,8 +159,8 @@ class CreationFixtures {
             id: randomUUID(),
             createdAt: new Date(),
             publishedAt: null,
-            publicationAttempts: 0,
-            lastPublicationError: null,
+            publishAttemptCount: 0,
+            lastPublishErrorCode: null,
           };
           this.state.events.push(event);
           return event;
@@ -180,6 +172,12 @@ class CreationFixtures {
             (event) =>
               event.publishedAt === null && (!where.id || where.id.in.includes(event.id as string)),
           )
+          .sort((first, second) => {
+            const createdAtOrder =
+              (first.createdAt as Date).getTime() - (second.createdAt as Date).getTime();
+
+            return createdAtOrder || String(first.id).localeCompare(String(second.id));
+          })
           .slice(0, take),
       ),
       updateMany: vi.fn(
@@ -189,18 +187,18 @@ class CreationFixtures {
         }: {
           where: { id: string };
           data: {
-            publicationAttempts: { increment: number };
+            publishAttemptCount: { increment: number };
             publishedAt?: Date;
-            lastPublicationError: string | null;
+            lastPublishErrorCode: string | null;
           };
         }) => {
           const event = this.state.events.find(
             (event) => event.id === where.id && event.publishedAt === null,
           );
           if (!event) return { count: 0 };
-          event.publicationAttempts =
-            (event.publicationAttempts as number) + data.publicationAttempts.increment;
-          event.lastPublicationError = data.lastPublicationError;
+          event.publishAttemptCount =
+            (event.publishAttemptCount as number) + data.publishAttemptCount.increment;
+          event.lastPublishErrorCode = data.lastPublishErrorCode;
           if (data.publishedAt) event.publishedAt = data.publishedAt;
           return { count: 1 };
         },
@@ -226,8 +224,7 @@ class CreationFixtures {
     const snapshot = structuredClone({
       uploads: this.state.uploads,
       memories: this.state.memories,
-      assets: this.state.assets,
-      objects: this.state.objects,
+      memoryFiles: this.state.memoryFiles,
       events: this.state.events,
     });
     this.state.isInTransaction = true;
@@ -244,7 +241,12 @@ class CreationFixtures {
   }
 
   readonly storage = {
-    getObject: vi.fn(async (key: string, maxBytes: number) => {
+    headObject: vi.fn(async (key: string) => {
+      if (this.state.isInTransaction) throw new Error("Storage must not run inside a transaction");
+      const bytes = this.storageObjects.get(key);
+      return bytes ? { byteSize: bytes.length, contentType: "image/png" } : null;
+    }),
+    getObject: vi.fn(async ({ key, maxBytes }: { key: string; maxBytes: number }) => {
       if (this.state.isInTransaction) throw new Error("Storage must not run inside a transaction");
       const bytes = this.storageObjects.get(key);
       if (bytes && bytes.length > maxBytes) throw new ObjectSizeError("Too large");
@@ -266,7 +268,7 @@ class CreationFixtures {
     ),
   };
   prismaService!: PrismaService;
-  finalization!: UploadFinalizationService;
+  finalization!: FilesService;
   memories!: MemoriesService;
 
   async initialize(): Promise<void> {
@@ -277,13 +279,16 @@ class CreationFixtures {
           { provide: PrismaService, useValue: this.prisma },
           {
             provide: ObjectStorage,
-            useValue: this.storage satisfies Pick<ObjectStorage, "getObject" | "putObjectIfAbsent">,
+            useValue: this.storage satisfies Pick<
+              ObjectStorage,
+              "headObject" | "getObject" | "putObjectIfAbsent"
+            >,
           },
           {
             provide: OutboxPublisher,
             useValue: this.publisher satisfies Pick<OutboxPublisher, "publish">,
           },
-          UploadFinalizationService,
+          FilesService,
           MemoriesService,
         ],
       },
@@ -291,39 +296,34 @@ class CreationFixtures {
     );
 
     this.prismaService = app.get(PrismaService);
-    this.finalization = app.get(UploadFinalizationService);
+    this.finalization = app.get(FilesService);
     this.memories = app.get(MemoriesService);
     await app.close();
   }
 
-  addUpload({ bytes, overrides = {} }: AddUploadParams): FileUpload {
+  addUpload({ bytes, overrides = {} }: AddUploadParams): File {
     const id = randomUUID();
-    const upload: FileUpload = {
+    const upload: File = {
       id,
-      uploaderUserId: "user-a",
+      uploadedByUserId: "user-a",
       spaceId: SPACE_ID,
-      category: "image",
-      purpose: "memory_image",
+      objectKey: `memories/${SPACE_ID}/${id}/original`,
+      originalFileId: null,
+      variantName: null,
+      mimeType: "image/png",
+      sizeBytes: BigInt(bytes.length),
       originalFilename: "photo.png",
-      declaredMimeType: "image/png",
-      declaredByteSize: bytes.length,
-      verifiedMimeType: null,
-      verifiedByteSize: null,
-      stagingKey: `staging/memories/${SPACE_ID}/${id}/original`,
-      intendedFinalKey: `memories/${SPACE_ID}/${id}/original`,
-      status: "issued",
-      uploadUrlExpiresAt: new Date(Date.now() + UPLOAD_URL_SECONDS * 1000),
-      attachmentDeadline: new Date(Date.now() + ATTACHMENT_SECONDS * 1000),
-      leaseToken: null,
-      leaseExpiresAt: null,
-      consumedAt: null,
-      failureCode: null,
+      purpose: "memory_image",
+      status: "pending",
+      operationLockToken: null,
+      operationLockExpiresAt: null,
+      lastErrorCode: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
     };
     this.state.uploads.set(upload.id, upload);
-    this.storageObjects.set(upload.stagingKey, bytes);
+    this.storageObjects.set(upload.objectKey, bytes);
     return upload;
   }
 }

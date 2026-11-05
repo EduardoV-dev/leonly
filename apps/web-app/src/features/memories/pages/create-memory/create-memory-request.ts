@@ -13,9 +13,8 @@ const PHOTO_CONTENT_TYPES: Readonly<Record<string, string>> = {
 type UploadCapability = {
   id: string;
   putUrl: string;
-  requiredHeaders: { "Content-Type": string };
+  requiredHeaders: { "Content-Type": string; "If-None-Match": "*" };
   expiresAt: string;
-  attachmentDeadline: string;
 };
 
 export type PreparedCreationUpload = {
@@ -95,7 +94,9 @@ export async function submitMemoryCreation({
       credentials: "omit",
       signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
     });
-    if (!response.ok) throw new Error("A photo could not be uploaded");
+    if (!response.ok && response.status !== 412) throw new Error("A photo could not be uploaded");
+
+    // Memory creation verifies the immutable object after a retry reports it already exists.
     upload.isUploaded = true;
     onPrepared(prepared);
   }

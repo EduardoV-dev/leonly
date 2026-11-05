@@ -63,7 +63,8 @@
     "@aws-sdk/client-sqs": "^3.1149.0",
     "@aws-sdk/s3-request-presigner": "^3.1149.0",
     "cockatiel": "^3.2.1",
-    "pino": "^10.1.0"
+    "pino": "^10.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",

@@ -17,6 +17,6 @@ resource "aws_s3_bucket_cors_configuration" "memory_uploads" {
     id              = "memory-image-upload"
     allowed_methods = ["PUT"]
     allowed_origins = var.frontend_origins
-    allowed_headers = ["content-type"]
+    allowed_headers = ["content-type", "if-none-match"]
   }
 }

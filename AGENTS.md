@@ -113,7 +113,12 @@ Run backend gates one at a time. Shared client generation writes one directory, 
 gates and root Turbo build/test/typecheck commands serialize application preparation.
 Queue, storage, and contracts modules in `packages/utils` are framework-agnostic. Keep upload authorization, outbox
 bookkeeping, image processing, and cleanup decisions in their owning applications. Worker entry
-points live under `src/functions/<function-name>`; image-generation services live under `src/services/image`.
+points live at `src/functions/<function-name>/handler.ts`. All other function-owned code is private
+to that folder, grouped into `events/` for trigger handling, `services/` for business operations,
+`repositories/` for persistence, and `tests/` for worker-level tests and fixtures. Keep unit tests
+beside their subjects and create only the groups a function needs. Functions must not import another
+function's private modules. Worker-wide configured integrations live in `src/lib/`; environment
+variables remain in `src/constants/environment-variables.ts`. Keep Terraform in the root `infra/`.
 Keep test fixtures local to the owning application; do not import another application's test helpers.
 
 `packages/utils/src` contains only `index.ts` and module folders with collocated tests.
@@ -241,15 +246,26 @@ or incompatible sources; do not silently mix versions.
 
 Before each task, match its intent, target files, and actual technology usage to available skill
 activation descriptions. Load the complete matching `SKILL.md` files and their required references
-before acting. Apply this to implementation, debugging, review, documentation, setup, and other
+before acting; reuse unchanged full guidance already available in the active context rather than
+reloading it per file or edit. Reload missing/changed guidance and load newly applicable rules.
+Apply this to implementation, debugging, review, documentation, setup, and other
 workflows, including newly installed skills. Reevaluate when task scope changes. Discovery alone
 does not load rules; do not load unrelated skill bodies or limit selection to a fixed skill list.
 
 Before generating or changing code, load `ev-coding-standards`. Follow its pre-coding workflow to
 read complete general, applicable frontend/backend, technology, and implementation rules. Reuse
 `ev-code-review` rules while generating code; do not defer standards until an explicit review.
-Run relevant checks and the workflow's scoped completion review before declaring implementation
-complete. Report selected rule paths, source revision/dirty state, results, and verification gaps.
+Apply standards as coding guidance and run relevant project checks, including affected integration.
+Do not automatically review work units, assess every rule after implementation, keep review-evidence
+ledgers, or reconcile review coverage at handoff. Reuse check results only while they cover the completed
+state. Before compaction retain task/check context; afterward verify current changes and reload missing
+full rules. Record selected rule paths, source revision/dirty state, and performed checks internally;
+do not emit a separate review report or standards summary. Surface unresolved blockers,
+required decisions, and material verification gaps. For explicit review/check/fix requests, display
+every finding in chat with severity, location, rule, evidence, impact, minimal fix, and fixed/remaining
+status when applicable. Run a complete review only when explicitly requested, using the full formal
+workflow over the entire requested scope. Implementation checks do not replace it. Never truncate
+findings to five or another top-N subset.
 
 Use the skill tool when available; otherwise read the resolved local `SKILL.md` directly and follow
 its references. If a required core skill or required reference is missing, name the exact gap and

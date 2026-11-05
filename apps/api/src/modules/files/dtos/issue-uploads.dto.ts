@@ -1,10 +1,11 @@
+import { FilePurpose } from "@leonly/database/client";
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,
   ArrayMinSize,
-  Equals,
   IsArray,
+  IsEnum,
   IsObject,
   ValidateNested,
 } from "class-validator";
@@ -12,9 +13,9 @@ import { MAX_IMAGE_COUNT } from "../constants/uploads.constants";
 import { UploadFileDto } from "./upload-file.dto";
 
 export class IssueUploadsDto {
-  @ApiProperty({ type: String, enum: ["memory_image"] })
-  @Equals("memory_image", { message: "Choose a supported upload purpose." })
-  purpose!: "memory_image";
+  @ApiProperty({ type: String, enum: FilePurpose })
+  @IsEnum(FilePurpose, { message: "Choose a supported upload purpose." })
+  purpose!: FilePurpose;
 
   @ApiProperty({ type: [UploadFileDto], minItems: 1, maxItems: MAX_IMAGE_COUNT })
   @IsArray()

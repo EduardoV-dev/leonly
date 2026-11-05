@@ -6,7 +6,7 @@ import { createMemoryRequest } from "./creation-fixtures";
 
 const fixtures = vi.hoisted(() => ({
   member: { findFirst: vi.fn() },
-  uploads: { createMany: vi.fn() },
+  files: { createMany: vi.fn() },
   memory: { findUnique: vi.fn(), create: vi.fn() },
   transactionMembership: vi.fn(),
   isAuthenticated: true,
@@ -38,7 +38,7 @@ vi.mock("../../auth/auth.service", () => ({
 vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
     spaceMember = fixtures.member;
-    fileUpload = fixtures.uploads;
+    file = fixtures.files;
     memory = fixtures.memory;
     $queryRaw = fixtures.transactionMembership;
     async $transaction(operation: (transaction: unknown) => Promise<unknown>) {
@@ -73,7 +73,7 @@ describe("authenticated upload issuance", () => {
     fixtures.member.findFirst.mockResolvedValue({
       spaceId: "01900000-0000-7000-8000-000000000005",
     });
-    fixtures.uploads.createMany.mockReset().mockResolvedValue({ count: 1 });
+    fixtures.files.createMany.mockReset().mockResolvedValue({ count: 1 });
     fixtures.memory.findUnique.mockReset().mockResolvedValue(null);
     fixtures.memory.create
       .mockReset()
@@ -89,7 +89,7 @@ describe("authenticated upload issuance", () => {
     });
   }
 
-  it("persists ordered ownership and both keys before returning exact signed staging capabilities", async () => {
+  it("persists immutable file identities before returning creation-derived capabilities", async () => {
     const response = await issue({
       purpose: "memory_image",
       files: [descriptor, { ...descriptor, filename: "second.jpg" }],
@@ -100,14 +100,14 @@ describe("authenticated upload issuance", () => {
       data: { uploads },
     } = await response.json();
     expect(ok).toBe(true);
-    const records = fixtures.uploads.createMany.mock.calls[0][0].data;
+    const records = fixtures.files.createMany.mock.calls[0][0].data;
     expect(records).toHaveLength(2);
     for (let index = 0; index < uploads.length; index++) {
       const upload = uploads[index];
       const record = records[index];
       const url = new URL(upload.putUrl);
       expect(url.origin).toBe("http://localhost:4566");
-      expect(url.pathname).toBe(`/private-photos/${record.stagingKey}`);
+      expect(url.pathname).toBe(`/private-photos/${record.objectKey}`);
       expect(url.searchParams.get("X-Amz-Expires")).toBe("600");
       const signingDate = url.searchParams
         .get("X-Amz-Date")
@@ -117,19 +117,27 @@ describe("authenticated upload issuance", () => {
       );
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-type");
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-length");
+      expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("if-none-match");
       expect(url.searchParams.has("x-amz-checksum-crc32")).toBe(false);
-      expect(upload.requiredHeaders).toEqual({ "Content-Type": "image/jpeg" });
+      expect(upload.requiredHeaders).toEqual({
+        "Content-Type": "image/jpeg",
+        "If-None-Match": "*",
+      });
       expect(record).toMatchObject({
         id: upload.id,
-        uploaderUserId: "user-a",
+        uploadedByUserId: "user-a",
+        objectKey: `memories/${record.spaceId}/${record.id}/original`,
+        originalFilename: expect.any(String),
+        mimeType: "image/jpeg",
+        sizeBytes: 1024n,
         purpose: "memory_image",
-        category: "image",
+        status: "pending",
       });
-      expect(record.intendedFinalKey).toBe(`memories/${record.spaceId}/${record.id}/original`);
-      expect(
-        new Date(upload.attachmentDeadline).getTime() - new Date(upload.expiresAt).getTime(),
-      ).toBe(3_600_000);
-      expect(record.uploadUrlExpiresAt.toISOString()).toBe(upload.expiresAt);
+      expect(record.createdAt.getTime()).toBe(new Date(signingDate ?? "").getTime());
+      expect(record).not.toHaveProperty("bucket");
+      expect(record.updatedAt).toEqual(record.createdAt);
+      expect(new Date(upload.expiresAt).getTime() - record.createdAt.getTime()).toBe(600_000);
+      expect(upload).not.toHaveProperty("attachmentDeadline");
     }
     expect(records.map((record: { originalFilename: string }) => record.originalFilename)).toEqual([
       "photo.jpg",
@@ -138,7 +146,7 @@ describe("authenticated upload issuance", () => {
   });
 
   it("does not sign or issue capabilities when persistence fails", async () => {
-    fixtures.uploads.createMany.mockRejectedValueOnce(new Error("private database error"));
+    fixtures.files.createMany.mockRejectedValueOnce(new Error("private database error"));
     const signer = vi.spyOn(app.get(ObjectStorage), "signUpload");
     try {
       const response = await issue({ purpose: "memory_image", files: [descriptor] });
@@ -186,7 +194,7 @@ describe("authenticated upload issuance", () => {
     fixtures.isAuthenticated = true;
     fixtures.member.findFirst.mockResolvedValueOnce(null);
     expect((await issue({ purpose: "memory_image", files: [descriptor] })).status).toBe(404);
-    expect(fixtures.uploads.createMany).not.toHaveBeenCalled();
+    expect(fixtures.files.createMany).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -208,12 +216,12 @@ describe("authenticated upload issuance", () => {
     })),
     { purpose: "memory_image", spaceId: "foreign", files: [descriptor] },
     { purpose: "memory_image", uploaderUserId: "foreign", files: [descriptor] },
-    { purpose: "memory_image", files: [{ ...descriptor, stagingKey: "forged" }] },
-    { purpose: "memory_image", files: [{ ...descriptor, intendedFinalKey: "forged" }] },
+    { purpose: "memory_image", files: [{ ...descriptor, bucket: "forged" }] },
+    { purpose: "memory_image", files: [{ ...descriptor, objectKey: "forged" }] },
   ])("rejects invalid or client-controlled descriptors: %j", async (body) => {
     const response = await issue(body);
     expect(response.status).toBe(400);
-    expect(fixtures.uploads.createMany).not.toHaveBeenCalled();
+    expect(fixtures.files.createMany).not.toHaveBeenCalled();
   });
 
   it("accepts maximum count/size and all allowed extensions without decoding descriptors", async () => {
@@ -231,7 +239,7 @@ describe("authenticated upload issuance", () => {
       const response = await issue({ purpose: "memory_image", files: [descriptor] });
 
       expect(response.status).toBe(400);
-      expect(fixtures.uploads.createMany).not.toHaveBeenCalled();
+      expect(fixtures.files.createMany).not.toHaveBeenCalled();
     },
   );
 

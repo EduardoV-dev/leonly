@@ -18,7 +18,7 @@ resource "cloudflare_r2_bucket_cors" "memory_uploads" {
     allowed = {
       methods = ["PUT"]
       origins = var.frontend_origins
-      headers = ["content-type"]
+      headers = ["content-type", "if-none-match"]
     }
   }]
 }

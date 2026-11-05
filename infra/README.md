@@ -2,8 +2,11 @@
 
 Terraform configures a private staging R2 bucket and a local Floci S3 bucket.
 Both allow browser PUT requests from explicitly supplied frontend origins with
-the `Content-Type` header required by upload issuance. Neither configures object
+the `Content-Type` and `If-None-Match: *` headers required by upload issuance. Neither configures object
 expiration, lifecycle rules, public domains, or cleanup.
+
+Image processing is the only worker. The file-cleanup Lambda, schedule, and related
+permissions are deferred; abandoned uploads and superseded sources remain stored.
 
 ## Staging R2
 
@@ -33,10 +36,11 @@ state and its backups and keep tfvars out of source control.
 The worker role can consume only the image queue and write only its own log
 group. The existing API execution role receives `sqs:SendMessage` only for that
 queue. ECR image retrieval is restricted to the named Lambda. Give the worker
-database credential SELECT access to memories/spaces/uploads/assets/objects and
-UPDATE access to asset leases and variant metadata; it does not require creation
-or authentication administration privileges. R2 credentials must be scoped to
-the selected private bucket.
+database credential SELECT access to `files`, `memory_files`, `memories`, and
+`spaces`; INSERT access to `files`; and UPDATE access to `files` for operation
+leases and processing metadata. It does not require schema-creation or
+authentication-administration privileges. R2 credentials must be scoped to the
+selected private bucket.
 
 ### Container deployment order
 

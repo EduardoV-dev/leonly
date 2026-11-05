@@ -1,4 +1,9 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ObjectStorage } from "./objects";
 
@@ -14,25 +19,48 @@ const configuration = {
 afterEach(() => vi.restoreAllMocks());
 
 describe("shared object storage", () => {
+  it("reads metadata with HEAD and distinguishes missing objects from storage failures", async () => {
+    const send = vi.spyOn(S3Client.prototype, "send");
+    send.mockResolvedValueOnce({ ContentLength: 123, ContentType: "image/png" } as never);
+    send.mockRejectedValueOnce({ name: "NotFound", $metadata: { httpStatusCode: 404 } });
+    send.mockRejectedValueOnce(new Error("Access denied"));
+    const storage = new ObjectStorage(configuration);
+    try {
+      await expect(storage.headObject("original")).resolves.toEqual({
+        byteSize: 123,
+        contentType: "image/png",
+      });
+      expect(send.mock.calls[0][0]).toBeInstanceOf(HeadObjectCommand);
+      expect((send.mock.calls[0][0] as HeadObjectCommand).input).toEqual({
+        Bucket: "photos",
+        Key: "original",
+      });
+      await expect(storage.headObject("missing")).resolves.toBeNull();
+      await expect(storage.headObject("protected")).rejects.toThrow("Access denied");
+    } finally {
+      storage.destroy();
+    }
+  });
   it("signs browser uploads against the public endpoint with the required content type", async () => {
     const storage = new ObjectStorage(configuration);
     try {
       const url = new URL(
         await storage.signUpload({
-          key: "staging/photo.png",
+          key: "memories/photo.png",
           contentType: "image/png",
           byteSize: 1024,
           issuedAt: new Date("2026-10-11T00:00:00Z"),
         }),
       );
       expect(url.origin).toBe(configuration.signingEndpoint);
-      expect(url.pathname).toBe("/photos/staging/photo.png");
+      expect(url.pathname).toBe("/photos/memories/photo.png");
       expect(url.searchParams.get("X-Amz-Expires")).toBe("600");
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-type");
       expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("content-length");
+      expect(url.searchParams.get("X-Amz-SignedHeaders")).toContain("if-none-match");
       const differentSizeUrl = new URL(
         await storage.signUpload({
-          key: "staging/photo.png",
+          key: "memories/photo.png",
           contentType: "image/png",
           byteSize: 1025,
           issuedAt: new Date("2026-10-11T00:00:00Z"),
@@ -55,7 +83,7 @@ describe("shared object storage", () => {
       try {
         await expect(
           storage.signUpload({
-            key: "staging/photo.png",
+            key: "memories/photo.png",
             contentType: "image/png",
             byteSize,
             issuedAt: new Date("2026-10-11T00:00:00Z"),
@@ -81,7 +109,9 @@ describe("shared object storage", () => {
     send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 412 } });
     const storage = new ObjectStorage(configuration);
     try {
-      expect(await storage.getObject("original", 5)).toEqual(Buffer.from("photo"));
+      expect(await storage.getObject({ key: "original", maxBytes: 5 })).toEqual(
+        Buffer.from("photo"),
+      );
       expect(destroyBody).toHaveBeenCalledOnce();
       expect(send.mock.calls[0][0]).toBeInstanceOf(GetObjectCommand);
       const outcome = await storage.putObjectIfAbsent({
@@ -96,6 +126,61 @@ describe("shared object storage", () => {
         Key: "cover.webp",
         IfNoneMatch: "*",
       });
+    } finally {
+      storage.destroy();
+    }
+  });
+
+  it("uses the configured bucket for reads and writes", async () => {
+    const send = vi.spyOn(S3Client.prototype, "send");
+    send.mockRejectedValueOnce({ name: "NoSuchKey", $metadata: { httpStatusCode: 404 } });
+    send.mockResolvedValue({} as never);
+    const storage = new ObjectStorage(configuration);
+
+    try {
+      await storage.getObject({ key: "same-key", maxBytes: 5 });
+      await storage.putObjectIfAbsent({
+        key: "same-key",
+        bytes: Buffer.from("photo"),
+        contentType: "image/png",
+      });
+      expect((send.mock.calls[0][0] as GetObjectCommand).input).toEqual({
+        Bucket: "photos",
+        Key: "same-key",
+      });
+      expect((send.mock.calls[1][0] as PutObjectCommand).input).toMatchObject({
+        Bucket: "photos",
+        Key: "same-key",
+        IfNoneMatch: "*",
+      });
+    } finally {
+      storage.destroy();
+    }
+  });
+
+  it("treats missing keys as absent and propagates other read failures", async () => {
+    const send = vi.spyOn(S3Client.prototype, "send");
+    send
+      .mockRejectedValueOnce({ name: "NoSuchKey", $metadata: { httpStatusCode: 404 } })
+      .mockRejectedValueOnce(new Error("Access denied"))
+      .mockRejectedValueOnce({ name: "NoSuchBucket", $metadata: { httpStatusCode: 404 } });
+    const storage = new ObjectStorage(configuration);
+
+    try {
+      await expect(storage.getObject({ key: "missing", maxBytes: 5 })).resolves.toBeNull();
+      await expect(storage.getObject({ key: "protected", maxBytes: 5 })).rejects.toThrow(
+        "Access denied",
+      );
+      await expect(storage.getObject({ key: "missing-bucket", maxBytes: 5 })).rejects.toMatchObject(
+        {
+          name: "NoSuchBucket",
+        },
+      );
+      expect(send.mock.calls.map(([command]) => (command as GetObjectCommand).input)).toEqual([
+        { Bucket: "photos", Key: "missing" },
+        { Bucket: "photos", Key: "protected" },
+        { Bucket: "photos", Key: "missing-bucket" },
+      ]);
     } finally {
       storage.destroy();
     }

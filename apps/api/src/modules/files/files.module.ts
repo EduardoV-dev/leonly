@@ -3,5 +3,10 @@ import { StorageModule } from "../../common/storage/storage.module";
 import { FilesController } from "./files.controller";
 import { FilesService } from "./files.service";
 
-@Module({ imports: [StorageModule], controllers: [FilesController], providers: [FilesService] })
+@Module({
+  imports: [StorageModule],
+  controllers: [FilesController],
+  providers: [FilesService],
+  exports: [FilesService],
+})
 export class FilesModule {}

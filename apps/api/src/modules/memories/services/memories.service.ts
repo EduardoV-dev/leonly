@@ -1,25 +1,21 @@
-import { Prisma } from "@leonly/database/client";
+import { FilePurpose, FileStatus, Prisma } from "@leonly/database/client";
+import { IMAGE_VARIANT_NAMES } from "@leonly/utils/contracts";
 import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { OutboxPublisher } from "../../../common/outbox/outbox-publisher";
 import { PrismaService } from "../../../common/prisma/prisma.service";
-import {
-  GENERATION_RECIPE_VERSION,
-  IMAGE_AGGREGATE_TYPE,
-  IMAGE_EVENT_SCHEMA_VERSION,
-  IMAGE_EVENT_TYPE,
-} from "../constants/memories.constants";
+import { type ClaimedFile, FilesService } from "../../files/files.service";
+import { IMAGE_ENTITY_TYPE, IMAGE_EVENT_TYPE } from "../constants/memories.constants";
 import type { CreateMemoryDto } from "../dtos/create-memory.dto";
 import {
   throwConflictingCreationError,
   throwCreationInProgressError,
 } from "../utils/creation-errors.util";
 import { type CreationInput, hashCreation, normalizeCreation } from "../utils/memory-creation.util";
-import { type FinalizedUpload, UploadFinalizationService } from "./upload-finalization.service";
 
 export type CreationResult = { id: string; visibility: "timeline" | "vault" };
 type CreationScope = { userId: string; spaceId: string; memberId: string };
 type FindExistingCreationParams = { scope: CreationScope; input: CreationInput; hash: string };
-type CommitParams = FindExistingCreationParams & { uploads: FinalizedUpload[] };
+type CommitParams = FindExistingCreationParams & { uploads: ClaimedFile[] };
 type CreateParams = { userId: string; body: CreateMemoryDto };
 type CommitReturn = { result: CreationResult; eventIds: string[] };
 
@@ -28,7 +24,7 @@ export class MemoriesService {
   private readonly logger = new Logger(MemoriesService.name);
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly uploadFinalizationService: UploadFinalizationService,
+    private readonly filesService: FilesService,
     private readonly outboxPublisherService: OutboxPublisher,
   ) {}
 
@@ -47,15 +43,35 @@ export class MemoriesService {
 
     if (existing) return existing;
 
-    const uploads: FinalizedUpload[] = [];
+    const uploads: ClaimedFile[] = [];
     let hasCommittedResult = false;
 
     try {
-      for (const id of input.uploadIds) {
-        uploads.push(
-          await this.uploadFinalizationService.finalize({ id, userId, spaceId: scope.spaceId }),
-        );
-      }
+      const confirmations = await Promise.all(
+        input.uploadIds.map(async (id) => {
+          try {
+            return {
+              status: "fulfilled" as const,
+              upload: await this.filesService.confirmUploaded({
+                id,
+                userId,
+                spaceId: scope.spaceId,
+                purpose: FilePurpose.memory_image,
+              }),
+            };
+          } catch (error) {
+            return { status: "rejected" as const, error };
+          }
+        }),
+      );
+      uploads.push(
+        ...confirmations.flatMap((confirmation) =>
+          confirmation.status === "fulfilled" ? [confirmation.upload] : [],
+        ),
+      );
+
+      const failedConfirmation = confirmations.find(({ status }) => status === "rejected");
+      if (failedConfirmation?.status === "rejected") throw failedConfirmation.error;
 
       const { result, eventIds } = await this.commit({ scope, input, hash, uploads });
       hasCommittedResult = true;
@@ -95,7 +111,7 @@ export class MemoriesService {
     } finally {
       if (!hasCommittedResult) {
         try {
-          await this.uploadFinalizationService.release(uploads);
+          await this.filesService.release(uploads);
         } catch {
           this.logger.warn({
             event: "upload_claim_release_failed",
@@ -160,76 +176,39 @@ export class MemoriesService {
 
       for (const [position, upload] of uploads.entries()) {
         const now = new Date();
-        const consumed = await transaction.fileUpload.updateMany({
+        const attached = await transaction.file.updateMany({
           where: {
             id: upload.id,
-            uploaderUserId: scope.userId,
+            uploadedByUserId: scope.userId,
             spaceId: scope.spaceId,
-            category: "image",
-            purpose: "memory_image",
-            status: "finalized",
-            leaseToken: upload.leaseToken,
-            leaseExpiresAt: { gt: now },
-            attachmentDeadline: { gt: now },
-            verifiedMimeType: upload.verifiedMimeType,
-            verifiedByteSize: upload.verifiedByteSize,
+            purpose: FilePurpose.memory_image,
+            originalFileId: null,
+            status: { in: [FileStatus.uploaded, FileStatus.ready] },
+            operationLockToken: upload.operationLockToken,
+            operationLockExpiresAt: { gt: now },
           },
-          data: { status: "consumed", consumedAt: now, leaseToken: null, leaseExpiresAt: null },
+          data: { operationLockToken: null, operationLockExpiresAt: null },
         });
 
-        if (consumed.count !== 1) throwCreationInProgressError();
+        if (attached.count !== 1) throwCreationInProgressError();
 
-        await transaction.memoryAsset.create({
+        await transaction.memoryFile.create({
           data: {
-            id: upload.id,
             memoryId: memory.id,
+            fileId: upload.id,
             spaceId: scope.spaceId,
-            uploadId: upload.id,
             position,
-            generationRecipeVersion: GENERATION_RECIPE_VERSION,
           },
-        });
-
-        // Remove the "original" suffix to build sibling variant keys.
-        const baseKey = upload.intendedFinalKey.slice(0, -"original".length);
-
-        await transaction.memoryAssetObject.createMany({
-          data: [
-            {
-              assetId: upload.id,
-              variantType: "original",
-              objectPath: upload.intendedFinalKey,
-              status: "ready",
-              mimeType: upload.verifiedMimeType,
-              byteSize: upload.verifiedByteSize,
-              readyAt: now,
-            },
-            {
-              assetId: upload.id,
-              variantType: "cover",
-              objectPath: `${baseKey}cover.webp`,
-              status: "pending",
-            },
-            {
-              assetId: upload.id,
-              variantType: "detail",
-              objectPath: `${baseKey}detail.webp`,
-              status: "pending",
-            },
-          ],
         });
         const event = await transaction.outboxEvent.create({
           data: {
-            aggregateType: IMAGE_AGGREGATE_TYPE,
-            aggregateId: upload.id,
+            entityType: IMAGE_ENTITY_TYPE,
+            entityId: upload.id,
             eventType: IMAGE_EVENT_TYPE,
-            schemaVersion: IMAGE_EVENT_SCHEMA_VERSION,
             payload: {
               memoryId: memory.id,
               spaceId: scope.spaceId,
-              assetId: upload.id,
-              originalKey: upload.intendedFinalKey,
-              generationRecipeVersion: GENERATION_RECIPE_VERSION,
+              variantNames: [...IMAGE_VARIANT_NAMES],
             },
           },
         });
@@ -239,7 +218,7 @@ export class MemoriesService {
       if (input.coverUploadId !== null) {
         await transaction.memory.update({
           where: { id: memory.id },
-          data: { coverAssetId: input.coverUploadId },
+          data: { coverFileId: input.coverUploadId },
         });
       }
 

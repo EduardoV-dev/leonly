@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCreationFixtures, createMemoryRequest } from "../../../app/tests/creation-fixtures";
+import {
+  createCreationFixtures,
+  createMemoryRequest,
+  SPACE_ID,
+} from "../../../app/tests/creation-fixtures";
 
 describe("atomic memory creation and recovery", () => {
   let fixtures: Awaited<ReturnType<typeof createCreationFixtures>>;
@@ -18,7 +22,7 @@ describe("atomic memory creation and recovery", () => {
     vi.useRealTimers();
   });
 
-  it("commits normalized details, ordered assets, same-memory cover, original metadata and one event per image", async () => {
+  it("commits normalized details, ordered file associations, same-memory cover and one event per image", async () => {
     const first = fixtures.addUpload({ bytes });
     const second = fixtures.addUpload({ bytes });
     const result = await fixtures.memories.create({
@@ -37,49 +41,84 @@ describe("atomic memory creation and recovery", () => {
       title: "A\nday",
       description: null,
       location: null,
-      coverAssetId: first.id,
+      coverFileId: first.id,
     });
     expect(
-      fixtures.state.assets.map(({ id, position, memoryId }) => ({ id, position, memoryId })),
+      fixtures.state.memoryFiles.map(({ fileId, position, memoryId }) => ({
+        fileId,
+        position,
+        memoryId,
+      })),
     ).toEqual([
-      { id: second.id, position: 0, memoryId: result.id },
-      { id: first.id, position: 1, memoryId: result.id },
+      { fileId: second.id, position: 0, memoryId: result.id },
+      { fileId: first.id, position: 1, memoryId: result.id },
     ]);
-    expect(fixtures.state.objects).toHaveLength(6);
-    expect(fixtures.state.objects.filter(({ status }) => status === "ready")).toEqual([
-      expect.objectContaining({
-        assetId: second.id,
-        variantType: "original",
-        mimeType: "image/png",
-        byteSize: bytes.length,
-      }),
-      expect.objectContaining({
-        assetId: first.id,
-        variantType: "original",
-        mimeType: "image/png",
-        byteSize: bytes.length,
-      }),
+    expect(
+      [...fixtures.state.uploads.values()].map(({ id, status, operationLockToken }) => ({
+        id,
+        status,
+        operationLockToken,
+      })),
+    ).toEqual([
+      { id: first.id, status: "uploaded", operationLockToken: null },
+      { id: second.id, status: "uploaded", operationLockToken: null },
     ]);
-    expect(fixtures.state.objects.filter(({ status }) => status === "pending")).toHaveLength(4);
     expect(fixtures.state.events).toHaveLength(2);
     expect(fixtures.state.events[0]).toMatchObject({
-      aggregateId: second.id,
+      entityType: "file",
+      entityId: second.id,
       eventType: "ImageVariantsRequested",
-      schemaVersion: 1,
       payload: {
         memoryId: result.id,
-        originalKey: second.intendedFinalKey,
-        generationRecipeVersion: 1,
+        spaceId: SPACE_ID,
+        variantNames: ["cover", "detail"],
       },
     });
-    expect(
-      [...fixtures.state.uploads.values()].every(
-        ({ status, consumedAt }) => status === "consumed" && consumedAt !== null,
-      ),
-    ).toBe(true);
   });
 
-  it("resolves a lost-response retry before rejecting consumed uploads and does no more storage work", async () => {
+  it("confirms uploads concurrently and releases successful claims when another confirmation fails", async () => {
+    const first = fixtures.addUpload({ bytes });
+    const second = fixtures.addUpload({ bytes });
+    const confirmationIds: string[] = [];
+    let releaseFirstConfirmation!: () => void;
+    let markFirstConfirmationStarted!: () => void;
+    const firstConfirmationGate = new Promise<void>((resolve) => {
+      releaseFirstConfirmation = resolve;
+    });
+    const firstConfirmationStarted = new Promise<void>((resolve) => {
+      markFirstConfirmationStarted = resolve;
+    });
+    const confirmUploaded = fixtures.finalization.confirmUploaded.bind(fixtures.finalization);
+    vi.spyOn(fixtures.finalization, "confirmUploaded").mockImplementation(async (params) => {
+      confirmationIds.push(params.id);
+      if (params.id === first.id) {
+        markFirstConfirmationStarted();
+        await firstConfirmationGate;
+        return confirmUploaded(params);
+      }
+      if (params.id === second.id) throw new Error("Upload confirmation failed");
+
+      throw new Error("Unexpected upload confirmation");
+    });
+
+    const creation = fixtures.memories.create({
+      userId: "user-a",
+      body: createMemoryRequest([first.id, second.id]),
+    });
+    await firstConfirmationStarted;
+    const wasConcurrent = confirmationIds.length === 2;
+    releaseFirstConfirmation();
+
+    await expect(creation).rejects.toThrow("Upload confirmation failed");
+    expect(wasConcurrent).toBe(true);
+    expect(fixtures.state.uploads.get(first.id)).toMatchObject({
+      status: "uploaded",
+      operationLockToken: null,
+      operationLockExpiresAt: null,
+    });
+  });
+
+  it("resolves a lost-response retry before re-verifying ready files", async () => {
     const upload = fixtures.addUpload({ bytes });
     const request = createMemoryRequest([upload.id]);
     const first = await fixtures.memories.create({ userId: "user-a", body: request });
@@ -127,7 +166,7 @@ describe("atomic memory creation and recovery", () => {
     expect(new Set(results.map(({ id }) => id)).size).toBe(1);
     expect(fixtures.state.memories).toHaveLength(1);
     expect(fixtures.state.rollbacks).toBeGreaterThan(0);
-    expect(fixtures.state.assets).toHaveLength(0);
+    expect(fixtures.state.memoryFiles).toHaveLength(0);
     expect(fixtures.state.events).toHaveLength(0);
     expect(fixtures.storage.getObject).not.toHaveBeenCalled();
   });
@@ -147,18 +186,21 @@ describe("atomic memory creation and recovery", () => {
     expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     const loser = results.find(({ status }) => status === "rejected");
     expect(loser).toMatchObject({ reason: { status: 409 } });
-    expect(fixtures.state.assets).toHaveLength(1);
+    expect(fixtures.state.memoryFiles).toHaveLength(1);
   });
 
-  it.each(["foreign-user", "foreign-space", "expired", "consumed", "failed", "missing"])(
+  it.each(["foreign-user", "foreign-space", "failed", "deleting", "derivative", "missing"])(
     "rejects %s uploads without exposing metadata",
     async (scenario) => {
       const upload = fixtures.addUpload({ bytes });
-      if (scenario === "foreign-user") upload.uploaderUserId = "user-b";
+      if (scenario === "foreign-user") upload.uploadedByUserId = "user-b";
       if (scenario === "foreign-space") upload.spaceId = randomUUID();
-      if (scenario === "expired") upload.attachmentDeadline = new Date(Date.now() - 1);
-      if (scenario === "consumed") upload.status = "consumed";
       if (scenario === "failed") upload.status = "failed";
+      if (scenario === "deleting") upload.status = "deleting";
+      if (scenario === "derivative") {
+        upload.originalFileId = randomUUID();
+        upload.variantName = "cover";
+      }
       if (scenario === "missing") fixtures.state.uploads.delete(upload.id);
       await expect(
         fixtures.memories.create({ userId: "user-a", body: createMemoryRequest([upload.id]) }),
@@ -181,15 +223,14 @@ describe("atomic memory creation and recovery", () => {
       "outbox unavailable",
     );
     expect(fixtures.state.memories).toHaveLength(0);
-    expect(fixtures.state.assets).toHaveLength(0);
-    expect(fixtures.state.objects).toHaveLength(0);
+    expect(fixtures.state.memoryFiles).toHaveLength(0);
     expect(fixtures.state.events).toHaveLength(0);
     expect(
       [...fixtures.state.uploads.values()].every(
-        ({ status, leaseToken }) => status === "finalized" && leaseToken === null,
+        ({ status, operationLockToken }) => status === "uploaded" && operationLockToken === null,
       ),
     ).toBe(true);
-    expect(fixtures.storageObjects.has(first.intendedFinalKey)).toBe(true);
+    expect(fixtures.storageObjects.has(first.objectKey)).toBe(true);
     await fixtures.memories.create({ userId: "user-a", body: request });
     expect(fixtures.state.memories).toHaveLength(1);
     expect(fixtures.state.events).toHaveLength(2);
@@ -209,9 +250,9 @@ describe("atomic memory creation and recovery", () => {
 
     expect(fixtures.state.memories).toHaveLength(0);
     expect(fixtures.state.uploads.get(upload.id)).toMatchObject({
-      status: "finalized",
-      leaseToken: null,
-      leaseExpiresAt: null,
+      status: "uploaded",
+      operationLockToken: null,
+      operationLockExpiresAt: null,
     });
   });
 
@@ -241,14 +282,17 @@ describe("atomic memory creation and recovery", () => {
       fixtures.memories.create({ userId: "user-a", body: createMemoryRequest([upload.id]) }),
     ).rejects.toMatchObject({ status: 404 });
     expect(fixtures.state.memories).toHaveLength(0);
-    expect(fixtures.state.uploads.get(upload.id)?.status).toBe("finalized");
+    expect(fixtures.state.uploads.get(upload.id)?.status).toBe("uploaded");
   });
 
-  it("rolls back when a finalized lease is superseded before consumption", async () => {
+  it("rolls back when file operation ownership is superseded before attachment", async () => {
     const upload = fixtures.addUpload({ bytes });
     fixtures.prisma.$queryRaw.mockImplementationOnce(async () => {
       const current = fixtures.state.uploads.get(upload.id);
-      if (current) current.leaseToken = randomUUID();
+      if (current) {
+        current.operationLockToken = randomUUID();
+        current.operationLockExpiresAt = new Date(Date.now() + 120_000);
+      }
       return [{ id: "member" }];
     });
     await expect(
@@ -256,6 +300,6 @@ describe("atomic memory creation and recovery", () => {
     ).rejects.toMatchObject({ status: 409 });
     expect(fixtures.state.memories).toHaveLength(0);
     expect(fixtures.state.events).toHaveLength(0);
-    expect(fixtures.state.uploads.get(upload.id)?.status).toBe("finalized");
+    expect(fixtures.state.uploads.get(upload.id)?.status).toBe("uploaded");
   });
 });

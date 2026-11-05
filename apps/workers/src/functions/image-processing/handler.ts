@@ -1,7 +1,9 @@
 import type { SQSBatchResponse, SQSEvent } from "aws-lambda";
 import sharp from "sharp";
-import { logger, prisma, storage } from "../../app";
-import { processImageBatch } from "./sqs-handler";
+import { logger } from "../../lib/logger";
+import { prisma } from "../../lib/prisma";
+import { storage } from "../../lib/storage";
+import { processImageBatch } from "./events/sqs-handler";
 
 sharp.concurrency(1);
 sharp.cache(false);

@@ -19,7 +19,7 @@ vi.mock("sharp", () => ({ default: { concurrency, cache } }));
 
 describe("image Lambda initialization", () => {
   it("reuses initialized clients and Sharp settings across warm invocations", async () => {
-    const { handler } = await import("./handler");
+    const { handler } = await import("../handler");
     const event = { Records: [] } as SQSEvent;
 
     await expect(handler(event)).resolves.toEqual({ batchItemFailures: [] });

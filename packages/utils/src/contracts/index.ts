@@ -1,2 +1,9 @@
 export type { ApiError, ApiResponse, HealthResponse } from "./api-response";
-export { type ImageEvent, ImageEventError, parseImageEvent } from "./events/image-processing.event";
+export {
+  IMAGE_VARIANT_NAMES,
+  type ImageEvent,
+  ImageEventError,
+  type ImageVariantName,
+  imageProcessingEventSchema,
+  parseImageEvent,
+} from "./events/image-processing.event";

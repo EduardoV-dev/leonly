@@ -23,7 +23,7 @@ describe("committed creation publication and operator replay", () => {
         NotificationRequested: {
           queueUrl: "http://localhost:4566/000000000000/notifications",
           validate: (envelope) => {
-            if (envelope.aggregateType !== "notification") throw new Error("Invalid notification");
+            if (envelope.entityType !== "notification") throw new Error("Invalid notification");
           },
         },
       },
@@ -55,17 +55,16 @@ describe("committed creation publication and operator replay", () => {
     );
     expect(body.id).toBe(fixtures.state.events[0].id);
     expect(Object.keys(body).sort()).toEqual([
-      "aggregateId",
-      "aggregateType",
       "createdAt",
+      "entityId",
+      "entityType",
       "eventType",
       "id",
       "payload",
-      "schemaVersion",
     ]);
     expect(fixtures.state.events[0].publishedAt).toBeInstanceOf(Date);
-    expect(fixtures.state.events[0].publicationAttempts).toBe(1);
-    expect(fixtures.state.objects.filter(({ status }) => status === "pending")).toHaveLength(2);
+    expect(fixtures.state.events[0].publishAttemptCount).toBe(1);
+    expect([...fixtures.state.uploads.values()].map(({ status }) => status)).toEqual(["uploaded"]);
   });
   it("never sends rolled-back events", async () => {
     fixtures.prisma.outboxEvent.create.mockRejectedValueOnce(new Error("database unavailable"));
@@ -79,8 +78,8 @@ describe("committed creation publication and operator replay", () => {
     expect(result.id).toBe(fixtures.state.memories[0].id);
     expect(fixtures.state.events[0]).toMatchObject({
       publishedAt: null,
-      publicationAttempts: 1,
-      lastPublicationError: "PUBLICATION_SEND_FAILED",
+      publishAttemptCount: 1,
+      lastPublishErrorCode: "PUBLICATION_SEND_FAILED",
     });
     const id = fixtures.state.events[0].id as string;
     await publisher.publish({ ids: [id], limit: 1 });
@@ -93,10 +92,13 @@ describe("committed creation publication and operator replay", () => {
   it("tracks mixed per-image outcomes and replays only unpublished selections", async () => {
     send.mockRejectedValueOnce(new Error("queue unavailable"));
     await create(2);
-    expect(fixtures.state.events.map(({ publishedAt }) => publishedAt !== null)).toEqual([
-      false,
-      true,
-    ]);
+    const orderedEvents = [...fixtures.state.events].sort((first, second) => {
+      const createdAtOrder =
+        (first.createdAt as Date).getTime() - (second.createdAt as Date).getTime();
+
+      return createdAtOrder || String(first.id).localeCompare(String(second.id));
+    });
+    expect(orderedEvents.map(({ publishedAt }) => publishedAt !== null)).toEqual([false, true]);
     await publisher.publish({ limit: 1 });
     expect(send).toHaveBeenCalledTimes(3);
     expect(fixtures.state.events.every(({ publishedAt }) => publishedAt !== null)).toBe(true);
@@ -106,7 +108,7 @@ describe("committed creation publication and operator replay", () => {
     await create();
     expect(fixtures.state.events[0]).toMatchObject({
       publishedAt: null,
-      lastPublicationError: "PUBLICATION_BOOKKEEPING_FAILED",
+      lastPublishErrorCode: "PUBLICATION_BOOKKEEPING_FAILED",
     });
     await publisher.publish({ limit: 1 });
     expect((send.mock.calls[0][0] as SendMessageCommand).input.MessageBody).toBe(
@@ -122,13 +124,48 @@ describe("committed creation publication and operator replay", () => {
     await expect(publisher.publish({ limit: 101 })).rejects.toThrow("limit");
     expect(fixtures.prisma.outboxEvent.findMany).not.toHaveBeenCalled();
   });
+
+  it("selects pending events by creation time and ID within the requested bound", async () => {
+    send.mockRejectedValue(new Error("queue unavailable"));
+    await create(3);
+    const [third, second, first] = fixtures.state.events;
+    if (!third || !second || !first) throw new Error("Missing event fixtures");
+    Object.assign(third, {
+      id: "00000000-0000-7000-8000-000000000003",
+      createdAt: new Date("2026-01-02"),
+    });
+    Object.assign(second, {
+      id: "00000000-0000-7000-8000-000000000002",
+      createdAt: new Date("2026-01-01"),
+    });
+    Object.assign(first, {
+      id: "00000000-0000-7000-8000-000000000001",
+      createdAt: new Date("2026-01-01"),
+    });
+    const priorSendCount = send.mock.calls.length;
+
+    await publisher.publish({ limit: 2 });
+
+    const publishedIds = send.mock.calls
+      .slice(priorSendCount)
+      .map(
+        ([command]) => JSON.parse((command as SendMessageCommand).input.MessageBody as string).id,
+      );
+    expect(publishedIds).toEqual([
+      "00000000-0000-7000-8000-000000000001",
+      "00000000-0000-7000-8000-000000000002",
+    ]);
+    expect(send).toHaveBeenCalledTimes(priorSendCount + 2);
+  });
+
   it("routes a different event type to its own queue without requiring an image payload", async () => {
     send.mockRejectedValueOnce(new Error("queue unavailable"));
     await create();
     const event = fixtures.state.events[0];
     Object.assign(event, {
       eventType: "NotificationRequested",
-      aggregateType: "notification",
+      entityType: "notification",
+      entityId: "notification-1",
       payload: { message: "A new notification" },
     });
     await publisher.publish({ limit: 1 });
@@ -153,19 +190,31 @@ describe("committed creation publication and operator replay", () => {
       expect(send).toHaveBeenCalledOnce();
       expect(fixtures.state.events[0]).toMatchObject({
         publishedAt: null,
-        lastPublicationError: "PUBLICATION_ROUTE_MISSING",
+        lastPublishErrorCode: "PUBLICATION_ROUTE_MISSING",
       });
     },
   );
-  it("validates image events before sending them", async () => {
+  it.each([
+    { originalKey: "foreign/original" },
+    {
+      memoryId: "0199ceb0-0000-7000-8000-000000000004",
+      spaceId: "0199ceb0-0000-7000-8000-000000000002",
+      variantNames: ["cover", "cover"],
+    },
+    {
+      memoryId: "0199ceb0-0000-7000-8000-000000000004",
+      spaceId: "0199ceb0-0000-7000-8000-000000000002",
+      variantNames: [],
+    },
+  ])("validates image payload %j before sending it", async (payload) => {
     send.mockRejectedValueOnce(new Error("queue unavailable"));
     await create();
-    fixtures.state.events[0].schemaVersion = 2;
+    fixtures.state.events[0].payload = payload;
     await publisher.publish({ limit: 1 });
     expect(send).toHaveBeenCalledOnce();
     expect(fixtures.state.events[0]).toMatchObject({
       publishedAt: null,
-      lastPublicationError: "PUBLICATION_VALIDATION_FAILED",
+      lastPublishErrorCode: "PUBLICATION_VALIDATION_FAILED",
     });
   });
   it("reports bookkeeping failures through the logger without leaking provider errors", async () => {
@@ -195,12 +244,16 @@ describe("committed creation publication and operator replay", () => {
     try {
       await create(2);
       expect(send).toHaveBeenCalledOnce();
-      expect(fixtures.state.events.map(({ publicationAttempts }) => publicationAttempts)).toEqual([
-        1, 0,
-      ]);
+      const orderedEvents = [...fixtures.state.events].sort((first, second) => {
+        const createdAtOrder =
+          (first.createdAt as Date).getTime() - (second.createdAt as Date).getTime();
+
+        return createdAtOrder || String(first.id).localeCompare(String(second.id));
+      });
+      expect(orderedEvents.map(({ publishAttemptCount }) => publishAttemptCount)).toEqual([1, 0]);
       await expect(fixtures.publisher.publish.mock.results[0].value).resolves.toEqual([
-        { id: fixtures.state.events[0].id, status: "published" },
-        { id: fixtures.state.events[1].id, status: "deferred" },
+        { id: orderedEvents[0].id, status: "published" },
+        { id: orderedEvents[1].id, status: "deferred" },
       ]);
     } finally {
       timeout.mockRestore();

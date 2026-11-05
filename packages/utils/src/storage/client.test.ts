@@ -18,4 +18,13 @@ describe("storage credential resolution", () => {
       validateStorageConfiguration({ region: "us-east-1", bucket: "photos", accessKeyId: "local" }),
     ).toThrow("Storage secretAccessKey is required");
   });
+
+  it("rejects an empty configured bucket", () => {
+    expect(() =>
+      validateStorageConfiguration({
+        region: "us-east-1",
+        bucket: " ",
+      }),
+    ).toThrow("Storage bucket is required");
+  });
 });

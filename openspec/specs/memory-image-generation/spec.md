@@ -1,58 +1,89 @@
 # memory-image-generation Specification
 
 ## Purpose
-Generate memory image variants independently of creation through duplicate-safe queued processing, with explicit readiness, failure evidence, and recoverable execution.
+Generate memory image files asynchronously through duplicate-safe queued processing, with per-file readiness, failure evidence, and recoverable execution.
 
 ## Requirements
 
-### Requirement: Asynchronous versioned image generation
-
-An SQS-triggered AWS Lambda SHALL process `ImageVariantsRequested` events using immutable final originals and an explicit supported payload schema and generation recipe version. It MUST check authoritative asset metadata before accessing the event's storage reference. No variant generation SHALL run in the memory-creation request.
-
-#### Scenario: Image event is valid
-- **WHEN** an event identifies an eligible attached image and a supported contract
-- **THEN** the worker generates its cover/detail variants from the final original rather than staging
-
-#### Scenario: Event is malformed or unsupported
-- **WHEN** an event has invalid fields, an unsupported version, or a mismatched original reference
-- **THEN** the worker does not process arbitrary objects and records a diagnosable failure
-
-#### Scenario: Asset is no longer eligible
-- **WHEN** a valid event's asset or memory is missing or unavailable
-- **THEN** the worker safely acknowledges a no-op without generating orphan variants for that event
-
 ### Requirement: Existing variant recipe and readiness
 
-The initial worker SHALL preserve auto-orientation, a 40-million-pixel decoding bound, aspect-preserving resize without enlargement, WebP quality 85, and cover/detail maximum dimensions of 1024/1600. It MUST record ready references and verified output metadata only after corresponding objects exist. Generation SHALL be complete only when both required variants are ready for the requested recipe.
+The worker SHALL validate uploaded originals and generate requested derivatives with the maintained
+recipe. It MUST preserve per-file readiness and verified outputs; original readiness MUST NOT wait
+for unrelated derivatives.
+
+#### Scenario: Original is prepared
+- **WHEN** an uploaded original passes binary and image-decoding checks
+- **THEN** the worker respects the 40-million-pixel decoding bound, writes full-resolution auto-oriented WebP at quality 90 under a different key, and swaps the reference without changing the file ID or associations
+
+#### Scenario: Requested derivatives are generated
+- **WHEN** an event requests cover or detail output
+- **THEN** the worker uses the validated source buffer, preserves aspect ratio without enlargement, applies quality 85 and the 1024/1600 dimension bounds, and verifies each object and its metadata before marking that file ready; each output is at most 10 MiB
 
 #### Scenario: Both output uploads succeed
-- **WHEN** cover and detail are generated and persisted successfully
-- **THEN** both object records are ready with content type, byte size, final key, and readiness timestamp
+- **WHEN** requested cover and detail outputs are generated and verified
+- **THEN** their file rows are ready with object key, MIME type, and byte size without a bucket, readiness timestamp, or recipe-version column
 
 #### Scenario: Only one variant is persisted
-- **WHEN** processing fails after one successful output
-- **THEN** the image is not considered complete and a later attempt can resume incomplete work
+- **WHEN** processing fails after one requested output becomes ready
+- **THEN** the ready output remains usable and a retry resumes only incomplete requested work
+
+#### Scenario: Only a subset is requested
+- **WHEN** an authorized event requests one supported variant and other possible variants do not exist
+- **THEN** completing that requested output does not require creating unrelated variant rows
 
 ### Requirement: Duplicate and interrupted processing is recoverable
 
-Repeated publication or delivery MUST NOT create duplicate variant metadata or replace an accepted original. The worker SHALL coordinate overlapping processing and recover abandoned ownership. Stale processing attempts MUST NOT commit completion for newer ownership or recipe state.
+Repeated delivery SHALL NOT duplicate original/variant pairs or overwrite accepted objects. The worker MUST coordinate per-file execution with expiring operation locks and verify existing objects after interrupted writes. Ready outputs SHALL be skipped. Stale executions MUST NOT commit readiness after ownership changes or after the root/derivative becomes deleting; no processing state is required.
 
 #### Scenario: Completed event is redelivered
-- **WHEN** both required variants are already ready for the same recipe
-- **THEN** the worker acknowledges success without generating duplicate records
+- **WHEN** all requested variants already exist and are ready under the maintained recipe
+- **THEN** redelivery acknowledges success without duplicate records or object replacement
 
 #### Scenario: Worker crashes while processing
-- **WHEN** execution stops while holding processing ownership
-- **THEN** a later delivery can recover after the ownership expires rather than leaving processing permanently stuck
+- **WHEN** an execution stops while holding operation ownership
+- **THEN** a later delivery can recover after expiry without leaving a processing lifecycle state stuck
+
+#### Scenario: Object exists before ready bookkeeping
+- **WHEN** a retry finds a derivative object written by an interrupted attempt
+- **THEN** it verifies the existing object before marking the same derivative row ready
+
+#### Scenario: Another execution owns the derivative
+- **WHEN** a stale attempt writes database completion after its ownership expires or is replaced
+- **THEN** completion is rejected and cannot change deleting or newer-owned records
 
 ### Requirement: Retry isolation and dead-letter evidence
 
-Failed records SHALL be reported individually to the event source while successful records are acknowledged. Transient failures SHALL be retryable; failure codes SHALL distinguish permanent image/contract failures. Repeatedly unsuccessful events MUST reach a dead-letter queue under a bounded receive policy, with event and asset identifiers available for diagnosis.
+Failed queue records SHALL be reported individually while successful records are acknowledged. Transient backend/worker failures MUST remain retryable without prematurely marking files failed. Permanent failures or exhausted retry budgets SHALL produce diagnosable failure state for affected eligible files. Repeatedly unsuccessful messages MUST reach a dead-letter queue with event/file identity.
 
 #### Scenario: Batch contains a failed record
 - **WHEN** one record fails while another succeeds
-- **THEN** only failed records are requested for redelivery
+- **THEN** only failed records are requested for redelivery and successful files retain their state
 
 #### Scenario: Retries are exhausted
-- **WHEN** an event repeatedly fails beyond the configured receive bound
-- **THEN** the message is retained in the dead-letter queue and affected image state does not claim completed generation
+- **WHEN** an event exceeds the bounded receive/retry policy
+- **THEN** it reaches the dead-letter queue and affected eligible unfinished files are marked failed through the bounded failure-handling path
+- **AND** already-ready or deleting files are not downgraded
+
+#### Scenario: Temporary storage failure occurs
+- **WHEN** generation encounters a retryable storage error with retry budget remaining
+- **THEN** the unfinished file stays pending or uploaded with an error code, rather than becoming terminally failed
+
+### Requirement: Asynchronous file-variant generation
+
+A queued worker SHALL validate and replace attached uploaded originals, then generate requested variants using one maintained recipe. It MUST authorize event identity, attachment, space, root eligibility, and source/replacement keys before storage access. Derivatives MUST inherit root attribution and purpose within the same space. Memory creation MUST NOT decode or generate images synchronously.
+
+#### Scenario: Image event is valid
+- **WHEN** an event identifies an eligible attached original and requested supported variants
+- **THEN** the worker resolves its recorded storage location and creates or resumes the corresponding derivative files
+
+#### Scenario: Event is malformed or unsupported
+- **WHEN** an event has invalid identity, unsupported variant names, an unsupported transport contract, or mismatched context
+- **THEN** no arbitrary object is processed and a sanitized diagnosable error is recorded
+
+#### Scenario: Original or memory is no longer eligible
+- **WHEN** a valid event references missing, deleting, detached, or unavailable retained context
+- **THEN** the worker acknowledges an unavailable no-op without creating orphan derivative rows
+
+#### Scenario: Root has deletion intent before derivative creation
+- **WHEN** a generation request encounters an original marked deleting
+- **THEN** root eligibility checks prevent that family from gaining a new derivative

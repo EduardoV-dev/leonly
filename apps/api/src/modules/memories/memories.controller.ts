@@ -12,7 +12,7 @@ export class MemoriesController {
   constructor(private readonly memoriesService: MemoriesService) {}
 
   @Post()
-  @ApiOperation({ summary: "Create a memory from immutable finalized originals" })
+  @ApiOperation({ summary: "Create a memory from uploaded files pending asynchronous validation" })
   @ApiBody({ type: CreateMemoryDto })
   @ApiErrorResponses(400, 401, 403, 404, 409, 500)
   @ApiSuccessResponse({

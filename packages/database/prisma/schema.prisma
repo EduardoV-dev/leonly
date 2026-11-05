@@ -21,7 +21,7 @@ model User {
   createdSpaces Space[]       @relation("SpaceCreator")
   updatedSpaces Space[]       @relation("SpaceUpdater")
   spaceMembers  SpaceMember[]
-  fileUploads   FileUpload[]
+  files         File[]
   memories      Memory[]
 
   @@map("user")
@@ -96,7 +96,7 @@ model Space {
   createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   members             SpaceMember[]
-  fileUploads         FileUpload[]
+  files               File[]
   memories            Memory[]
 
   @@index([createdByUserId], map: "spaces_created_by_user_id")
@@ -124,26 +124,20 @@ model SpaceMember {
   @@map("space_members")
 }
 
-enum FileCategory {
-  image
-
-  @@map("file_category")
-}
-
-enum FileUploadPurpose {
+enum FilePurpose {
   memory_image
 
-  @@map("file_upload_purpose")
+  @@map("file_purpose")
 }
 
-enum FileUploadStatus {
-  issued
-  finalizing
-  finalized
-  consumed
+enum FileStatus {
+  pending
+  uploaded
+  ready
   failed
+  deleting
 
-  @@map("file_upload_status")
+  @@map("file_status")
 }
 
 enum MemoryVisibility {
@@ -153,59 +147,35 @@ enum MemoryVisibility {
   @@map("memory_visibility")
 }
 
-enum MemoryAssetType {
-  image
+model File {
+  id                     String      @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  spaceId                String      @map("space_id") @db.Uuid
+  space                  Space       @relation(fields: [spaceId], references: [id], onDelete: Restrict)
+  uploadedByUserId       String      @map("uploaded_by_user_id")
+  uploadedBy             User        @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  originalFileId         String?     @map("original_file_id") @db.Uuid
+  originalFile           File?       @relation("FileVariants", fields: [originalFileId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
+  variants               File[]      @relation("FileVariants")
+  variantName            String?     @map("variant_name")
+  objectKey              String      @map("object_key")
+  originalFilename       String?     @map("original_filename")
+  mimeType               String      @map("mime_type")
+  sizeBytes              BigInt?     @map("size_bytes")
+  purpose                FilePurpose
+  status                 FileStatus  @default(pending)
+  operationLockToken     String?     @map("operation_lock_token") @db.Uuid
+  operationLockExpiresAt DateTime?   @map("operation_lock_expires_at") @db.Timestamptz(6)
+  lastErrorCode          String?     @map("last_error_code")
+  createdAt              DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  memoryFiles            MemoryFile[]
 
-  @@map("memory_asset_type")
-}
-
-enum MemoryObjectVariant {
-  original
-  cover
-  detail
-
-  @@map("memory_object_variant")
-}
-
-enum MemoryObjectStatus {
-  pending
-  processing
-  ready
-  failed
-
-  @@map("memory_object_status")
-}
-
-model FileUpload {
-  id                 String            @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
-  uploaderUserId     String            @map("uploader_user_id")
-  uploader           User              @relation(fields: [uploaderUserId], references: [id], onDelete: Restrict)
-  spaceId            String?           @map("space_id") @db.Uuid
-  space              Space?            @relation(fields: [spaceId], references: [id], onDelete: Restrict)
-  category           FileCategory
-  purpose            FileUploadPurpose
-  originalFilename   String            @map("original_filename")
-  declaredMimeType   String            @map("declared_mime_type")
-  declaredByteSize   Int               @map("declared_byte_size")
-  verifiedMimeType   String?           @map("verified_mime_type")
-  verifiedByteSize   Int?              @map("verified_byte_size")
-  stagingKey         String            @unique(map: "file_uploads_staging_key_unique") @map("staging_key")
-  intendedFinalKey   String            @unique(map: "file_uploads_final_key_unique") @map("intended_final_key")
-  status             FileUploadStatus  @default(issued)
-  uploadUrlExpiresAt DateTime          @map("upload_url_expires_at") @db.Timestamptz(6)
-  attachmentDeadline DateTime          @map("attachment_deadline") @db.Timestamptz(6)
-  leaseToken         String?           @map("lease_token") @db.Uuid
-  leaseExpiresAt     DateTime?         @map("lease_expires_at") @db.Timestamptz(6)
-  consumedAt         DateTime?         @map("consumed_at") @db.Timestamptz(6)
-  failureCode        String?           @map("failure_code")
-  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  assets             MemoryAsset[]
-
-  @@unique([id, spaceId], map: "file_uploads_id_space_unique")
-  @@index([uploaderUserId, spaceId, status, attachmentDeadline], map: "file_uploads_owner_eligibility")
-  @@index([status, attachmentDeadline], map: "file_uploads_status_deadline")
-  @@map("file_uploads")
+  @@unique([id, spaceId], map: "files_id_space_unique")
+  @@unique([objectKey], map: "files_object_key_unique")
+  @@unique([originalFileId, variantName], map: "files_original_variant_unique")
+  @@index([status, createdAt], map: "files_status_created_at")
+  @@index([spaceId, uploadedByUserId], map: "files_space_uploader")
+  @@map("files")
 }
 
 model Memory {
@@ -216,8 +186,8 @@ model Memory {
   createdByUser       User             @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
   createdByMemberId   String           @map("created_by_member_id") @db.Uuid
   createdByMember     SpaceMember      @relation(fields: [createdByMemberId, createdByUserId, spaceId], references: [id, userId, spaceId], onDelete: Restrict, onUpdate: NoAction)
-  coverAssetId        String?          @map("cover_asset_id") @db.Uuid
-  coverAsset          MemoryAsset?     @relation("MemoryCover", fields: [coverAssetId, id], references: [id, memoryId], onDelete: NoAction, onUpdate: NoAction)
+  coverFileId         String?          @map("cover_file_id") @db.Uuid
+  coverFile           MemoryFile?      @relation("MemoryCover", fields: [id, coverFileId], references: [memoryId, fileId], onDelete: NoAction, onUpdate: NoAction)
   title               String
   description         String?
   location            String?
@@ -228,7 +198,7 @@ model Memory {
   creationRequestHash String           @map("creation_request_hash")
   createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  assets              MemoryAsset[]    @relation("MemoryAssets")
+  memoryFiles         MemoryFile[]     @relation("MemoryFiles")
 
   @@unique([spaceId, createdByUserId, idempotencyKey], map: "memories_creation_key_unique")
   @@unique([id, spaceId], map: "memories_id_space_unique")
@@ -236,57 +206,32 @@ model Memory {
   @@map("memories")
 }
 
-model MemoryAsset {
-  id                       String              @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
-  spaceId                  String              @map("space_id") @db.Uuid
-  memoryId                 String              @map("memory_id") @db.Uuid
-  memory                   Memory              @relation("MemoryAssets", fields: [memoryId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
-  uploadId                 String              @unique(map: "memory_assets_upload_unique") @map("upload_id") @db.Uuid
-  upload                   FileUpload          @relation(fields: [uploadId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
-  assetType                MemoryAssetType     @default(image) @map("asset_type")
-  position                 Int                 @db.SmallInt
-  generationRecipeVersion  Int                 @default(1) @map("generation_recipe_version")
-  processingLeaseToken     String?             @map("processing_lease_token") @db.Uuid
-  processingLeaseExpiresAt DateTime?           @map("processing_lease_expires_at") @db.Timestamptz(6)
-  createdAt                DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  objects                  MemoryAssetObject[]
-  coveredMemories          Memory[]            @relation("MemoryCover")
+model MemoryFile {
+  memoryId String @map("memory_id") @db.Uuid
+  fileId   String @map("file_id") @db.Uuid
+  spaceId  String @map("space_id") @db.Uuid
+  position Int    @db.SmallInt
 
-  @@unique([memoryId, position], map: "memory_assets_memory_position_unique")
-  @@unique([id, memoryId], map: "memory_assets_id_memory_unique")
-  @@map("memory_assets")
-}
+  memory        Memory  @relation("MemoryFiles", fields: [memoryId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
+  file          File    @relation(fields: [fileId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
+  coveredMemories Memory[] @relation("MemoryCover")
 
-model MemoryAssetObject {
-  id          String              @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
-  assetId     String              @map("asset_id") @db.Uuid
-  asset       MemoryAsset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  variantType MemoryObjectVariant @map("variant_type")
-  objectPath  String              @unique(map: "memory_asset_objects_path_unique") @map("object_path")
-  status      MemoryObjectStatus  @default(pending)
-  mimeType    String?             @map("mime_type")
-  byteSize    Int?                @map("byte_size")
-  failureCode String?             @map("failure_code")
-  readyAt     DateTime?           @map("ready_at") @db.Timestamptz(6)
-  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  @@unique([assetId, variantType], map: "memory_asset_objects_asset_variant_unique")
-  @@map("memory_asset_objects")
+  @@id([memoryId, fileId])
+  @@unique([fileId], map: "memory_files_file_unique")
+  @@unique([memoryId, position], map: "memory_files_memory_position_unique")
+  @@map("memory_files")
 }
 
 model OutboxEvent {
-  id                   String    @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
-  aggregateType        String    @map("aggregate_type")
-  aggregateId          String    @map("aggregate_id")
-  eventType            String    @map("event_type")
-  schemaVersion        Int       @default(1) @map("schema_version")
-  payload              Json      @db.JsonB
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  publishedAt          DateTime? @map("published_at") @db.Timestamptz(6)
-  publicationAttempts  Int       @default(0) @map("publication_attempts")
-  lastPublicationError String?   @map("last_publication_error")
+  id                     String    @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  entityType             String    @map("entity_type")
+  entityId               String    @map("entity_id")
+  eventType              String    @map("event_type")
+  payload                Json      @db.JsonB
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt            DateTime? @map("published_at") @db.Timestamptz(6)
+  publishAttemptCount    Int       @default(0) @map("publish_attempt_count")
+  lastPublishErrorCode   String?   @map("last_publish_error_code")
 
   @@map("outbox_event")
 }

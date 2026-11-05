@@ -18,7 +18,7 @@ export async function validateOriginal(
   bytes: Buffer,
   expected: { mimeType: string; byteSize: number },
 ): Promise<void> {
-  if (bytes.length !== expected.byteSize || bytes.length > MAX_ORIGINAL_BYTES)
+  if (bytes.length !== expected.byteSize || bytes.length === 0 || bytes.length > MAX_VARIANT_BYTES)
     throw new ImageProcessingError("ORIGINAL_METADATA_MISMATCH");
 
   try {

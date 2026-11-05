@@ -13,7 +13,11 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post("uploads")
-  @ApiOperation({ summary: "Issue private staging upload capabilities" })
+  @ApiOperation({
+    summary: "Issue immutable private upload capabilities",
+    description:
+      "Returns an immutable file ID, signed PUT URL, required headers, and expiry at file creation plus 600 seconds. The expiry limits upload authorization only; no separate attachment deadline is returned.",
+  })
   @ApiBody({ type: IssueUploadsDto })
   @ApiErrorResponses(400, 401, 403, 404, 500)
   @ApiSuccessResponse({
@@ -29,17 +33,24 @@ export class FilesController {
           maxItems: MAX_IMAGE_COUNT,
           items: {
             type: "object",
-            required: ["id", "putUrl", "requiredHeaders", "expiresAt", "attachmentDeadline"],
+            required: ["id", "putUrl", "requiredHeaders", "expiresAt"],
             properties: {
               id: { type: "string", format: "uuid" },
               putUrl: { type: "string", format: "uri" },
               requiredHeaders: {
                 type: "object",
-                required: ["Content-Type"],
-                properties: { "Content-Type": { type: "string" } },
+                required: ["Content-Type", "If-None-Match"],
+                properties: {
+                  "Content-Type": { type: "string" },
+                  "If-None-Match": { type: "string", enum: ["*"] },
+                },
               },
-              expiresAt: { type: "string", format: "date-time" },
-              attachmentDeadline: { type: "string", format: "date-time" },
+              expiresAt: {
+                type: "string",
+                format: "date-time",
+                description:
+                  "File creation time plus the 600-second upload authorization lifetime.",
+              },
             },
           },
         },
@@ -49,10 +60,9 @@ export class FilesController {
       uploads: [
         {
           id: "01900000-0000-7000-8000-000000000001",
-          putUrl: "https://storage.example.com/signed-staging-object",
-          requiredHeaders: { "Content-Type": "image/jpeg" },
+          putUrl: "https://storage.example.com/signed-immutable-object",
+          requiredHeaders: { "Content-Type": "image/jpeg", "If-None-Match": "*" },
           expiresAt: "2026-10-11T00:10:00.000Z",
-          attachmentDeadline: "2026-10-11T01:10:00.000Z",
         },
       ],
     },
