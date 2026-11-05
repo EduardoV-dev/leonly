@@ -9,6 +9,7 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import { FilesService } from "../../modules/files/files.service";
 import { MemoriesService } from "../../modules/memories/services/memories.service";
 import type { CreationInput } from "../../modules/memories/utils/memory-creation.util";
+import { MembershipsService } from "../../modules/spaces/services/memberships.service";
 
 @Module({})
 class CreationFixtureModule {}
@@ -290,6 +291,7 @@ class CreationFixtures {
           },
           FilesService,
           MemoriesService,
+          MembershipsService,
         ],
       },
       { logger: false },

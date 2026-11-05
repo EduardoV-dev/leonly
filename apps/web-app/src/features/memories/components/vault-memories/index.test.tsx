@@ -1,9 +1,14 @@
+import type { ApiResponse, MemoryListItem, MemoryListPage } from "@leonly/utils/contracts";
 import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { AxiosHeaders, type AxiosResponse } from "axios";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/axios/api";
 import { i18n } from "@/lib/i18n";
 import { VaultMemories } from ".";
+
+vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
 
 const memory = {
   coverPhotoUrl: null,
@@ -15,11 +20,26 @@ const memory = {
   title: "Our hidden picnic",
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+function jsonResponse(body: {
+  cursorReset: boolean;
+  memories: MemoryListItem[];
+  nextCursor: string | null;
+}): AxiosResponse<ApiResponse<MemoryListPage>> {
+  return {
+    data: {
+      ok: true,
+      data: {
+        data: body.memories,
+        meta: { cursorReset: body.cursorReset, nextCursor: body.nextCursor },
+      },
+      error: [],
+      message: "OK",
+    },
+    status: 200,
+    statusText: "OK",
+    headers: {},
+    config: { headers: new AxiosHeaders() },
+  };
 }
 
 function renderVault(
@@ -43,7 +63,7 @@ describe("VaultMemories", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
     vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn());
+    vi.mocked(api.get).mockReset();
     notifyManager.setScheduler((callback) => callback());
   });
 
@@ -54,10 +74,11 @@ describe("VaultMemories", () => {
   });
 
   it("shows slow feedback and a truthful shared empty state with a create path", async () => {
-    let resolveRequest: (response: Response) => void = () => undefined;
-    vi.mocked(fetch).mockImplementation(
+    let resolveRequest: (response: AxiosResponse<ApiResponse<MemoryListPage>>) => void = () =>
+      undefined;
+    vi.mocked(api.get).mockImplementation(
       () =>
-        new Promise<Response>((resolve) => {
+        new Promise<AxiosResponse<ApiResponse<MemoryListPage>>>((resolve) => {
           resolveRequest = resolve;
         }),
     );
@@ -85,7 +106,7 @@ describe("VaultMemories", () => {
   });
 
   it("renders authorized summaries and fallbacks without unshipped actions", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({
         cursorReset: false,
         memories: [
@@ -108,7 +129,9 @@ describe("VaultMemories", () => {
     renderVault();
     await flushRequest();
 
-    expect(fetch).toHaveBeenCalledWith("/api/memories/vault");
+    expect(api.get).toHaveBeenCalledWith("/memories/vault", {
+      params: { cursor: undefined, sort: "newest", limit: undefined },
+    });
     expect(screen.getByRole("img", { name: "Cover for Our hidden picnic" })).toHaveAttribute(
       "src",
       "https://storage.example/vault-cover",
@@ -116,6 +139,9 @@ describe("VaultMemories", () => {
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
     expect(screen.getByText("A quiet afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
+    expect(screen.queryByText(/\d+ comments?/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /react/i })).not.toBeInTheDocument();
+    expect(api.get).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open Our hidden picnic" })).toHaveAttribute(
       "href",
@@ -128,7 +154,7 @@ describe("VaultMemories", () => {
 
   it("renders Spanish month headings for Vault memories", async () => {
     await i18n.changeLanguage("es");
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
@@ -139,7 +165,7 @@ describe("VaultMemories", () => {
   });
 
   it("offers a retry after an initial read failure", async () => {
-    vi.mocked(fetch)
+    vi.mocked(api.get)
       .mockRejectedValueOnce(new Error("network failed"))
       .mockResolvedValueOnce(jsonResponse({ cursorReset: false, memories: [], nextCursor: null }));
 
@@ -158,11 +184,11 @@ describe("VaultMemories", () => {
   });
 
   it("retains cards after load-more failure and replaces them after cursor reset", async () => {
-    vi.mocked(fetch)
+    vi.mocked(api.get)
       .mockResolvedValueOnce(
         jsonResponse({ cursorReset: false, memories: [memory], nextCursor: "next" }),
       )
-      .mockResolvedValueOnce(jsonResponse({ error: "failed" }, 500))
+      .mockRejectedValueOnce(new Error("failed"))
       .mockResolvedValueOnce(
         jsonResponse({
           cursorReset: true,
@@ -183,13 +209,15 @@ describe("VaultMemories", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Try loading more" }));
     await flushRequest();
-    expect(fetch).toHaveBeenLastCalledWith("/api/memories/vault?cursor=next");
+    expect(api.get).toHaveBeenLastCalledWith("/memories/vault", {
+      params: { cursor: "next", sort: "newest", limit: undefined },
+    });
     expect(screen.getByRole("heading", { name: "Fresh Vault page" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Our hidden picnic" })).not.toBeInTheDocument();
   });
 
   it("starts again from the first page after navigation return", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
     const firstRender = renderVault();
@@ -199,18 +227,22 @@ describe("VaultMemories", () => {
     renderVault(<VaultMemories />, firstRender.queryClient);
     await flushRequest();
 
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenNthCalledWith(2, "/api/memories/vault");
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenNthCalledWith(2, "/memories/vault", {
+      params: { cursor: undefined, sort: "newest", limit: undefined },
+    });
   });
 
   it("requests an oldest-first Vault chronology", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
     renderVault(<VaultMemories sort="oldest" />);
     await flushRequest();
 
-    expect(fetch).toHaveBeenCalledWith("/api/memories/vault?sort=oldest");
+    expect(api.get).toHaveBeenCalledWith("/memories/vault", {
+      params: { cursor: undefined, sort: "oldest", limit: undefined },
+    });
   });
 });

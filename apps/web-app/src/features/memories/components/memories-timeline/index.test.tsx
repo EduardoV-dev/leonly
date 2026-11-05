@@ -1,9 +1,14 @@
+import type { ApiResponse, MemoryListItem, MemoryListPage } from "@leonly/utils/contracts";
 import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { AxiosHeaders, type AxiosResponse } from "axios";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/axios/api";
 import { i18n } from "@/lib/i18n";
 import { MemoriesTimeline } from ".";
+
+vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
 
 const memory = {
   coverPhotoUrl: null,
@@ -15,11 +20,26 @@ const memory = {
   title: "Our picnic",
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+function jsonResponse(body: {
+  cursorReset: boolean;
+  memories: MemoryListItem[];
+  nextCursor: string | null;
+}): AxiosResponse<ApiResponse<MemoryListPage>> {
+  return {
+    data: {
+      ok: true,
+      data: {
+        data: body.memories,
+        meta: { cursorReset: body.cursorReset, nextCursor: body.nextCursor },
+      },
+      error: [],
+      message: "OK",
+    },
+    status: 200,
+    statusText: "OK",
+    headers: {},
+    config: { headers: new AxiosHeaders() },
+  };
 }
 
 function renderTimeline(
@@ -36,7 +56,7 @@ describe("MemoriesTimeline", () => {
   beforeEach(async () => {
     await i18n.changeLanguage("en");
     vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn());
+    vi.mocked(api.get).mockReset();
     notifyManager.setScheduler((callback) => callback());
   });
 
@@ -47,10 +67,11 @@ describe("MemoriesTimeline", () => {
   });
 
   it("shows slow feedback, then an empty state when the first page settles", async () => {
-    let resolveRequest: (response: Response) => void = () => undefined;
-    vi.mocked(fetch).mockImplementation(
+    let resolveRequest: (response: AxiosResponse<ApiResponse<MemoryListPage>>) => void = () =>
+      undefined;
+    vi.mocked(api.get).mockImplementation(
       () =>
-        new Promise<Response>((resolve) => {
+        new Promise<AxiosResponse<ApiResponse<MemoryListPage>>>((resolve) => {
           resolveRequest = resolve;
         }),
     );
@@ -76,11 +97,11 @@ describe("MemoriesTimeline", () => {
   });
 
   it("retains cards after a load-more failure and replaces them after a cursor reset", async () => {
-    vi.mocked(fetch)
+    vi.mocked(api.get)
       .mockResolvedValueOnce(
         jsonResponse({ cursorReset: false, memories: [memory], nextCursor: "next" }),
       )
-      .mockResolvedValueOnce(jsonResponse({ error: "failed" }, 500))
+      .mockRejectedValueOnce(new Error("failed"))
       .mockResolvedValueOnce(
         jsonResponse({
           cursorReset: true,
@@ -116,7 +137,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("updates month headings when the language changes", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
@@ -134,7 +155,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("offers a retry after an initial error", async () => {
-    vi.mocked(fetch)
+    vi.mocked(api.get)
       .mockRejectedValueOnce(new Error("network failed"))
       .mockResolvedValueOnce(jsonResponse({ cursorReset: false, memories: [], nextCursor: null }));
 
@@ -158,7 +179,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("renders server-provided cover URLs and summary fields, then falls back when the preview fails", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({
         cursorReset: false,
         memories: [
@@ -183,6 +204,9 @@ describe("MemoriesTimeline", () => {
     expect(cover).toHaveAttribute("src", "https://storage.example/signed-cover");
     expect(screen.getByText("A sunny afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
+    expect(screen.queryByText(/\d+ comments?/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /react/i })).not.toBeInTheDocument();
+    expect(api.get).toHaveBeenCalledTimes(1);
     expect(document.querySelectorAll("[data-extension-region]")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Open Our picnic" })).toHaveAttribute(
       "href",
@@ -196,7 +220,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("renders an accessible fallback when the server omits a cover URL", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
@@ -210,7 +234,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("renders a cover and details panel for every full timeline memory", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({
         cursorReset: false,
         memories: [
@@ -255,7 +279,7 @@ describe("MemoriesTimeline", () => {
   });
 
   it("groups memories into editorial month sections in newest-first order", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({
         cursorReset: false,
         memories: [
@@ -299,7 +323,7 @@ describe("MemoriesTimeline", () => {
       id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
       title: `Recent memory ${index + 1}`,
     }));
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: recentMemories, nextCursor: "next" }),
     );
 
@@ -309,14 +333,28 @@ describe("MemoriesTimeline", () => {
       await Promise.resolve();
     });
 
-    expect(fetch).toHaveBeenCalledWith("/api/memories/timeline?limit=4");
+    expect(api.get).toHaveBeenCalledWith("/memories/timeline", {
+      params: { cursor: undefined, sort: "newest", limit: 4 },
+    });
     expect(screen.getAllByRole("img", { name: /Cover for Recent memory/i })).toHaveLength(4);
     expect(screen.queryByRole("heading", { name: "Recent memory 5" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
   });
 
+  it("shows a retry instead of fabricated recent memories after a failed request", async () => {
+    vi.mocked(api.get).mockRejectedValueOnce(new Error("network failed"));
+    renderTimeline(<MemoriesTimeline variant="recent" />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent("We could not load your memories.");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Our picnic" })).not.toBeInTheDocument();
+  });
+
   it("requests a separate oldest-first chronology", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
@@ -326,11 +364,13 @@ describe("MemoriesTimeline", () => {
       await Promise.resolve();
     });
 
-    expect(fetch).toHaveBeenCalledWith("/api/memories/timeline?sort=oldest");
+    expect(api.get).toHaveBeenCalledWith("/memories/timeline", {
+      params: { cursor: undefined, sort: "oldest", limit: undefined },
+    });
   });
 
   it("reuses cached timeline data when remounted", async () => {
-    vi.mocked(fetch).mockResolvedValue(
+    vi.mocked(api.get).mockResolvedValue(
       jsonResponse({ cursorReset: false, memories: [memory], nextCursor: null }),
     );
 
@@ -346,7 +386,7 @@ describe("MemoriesTimeline", () => {
       await Promise.resolve();
     });
 
-    expect(fetch).toHaveBeenCalledOnce();
+    expect(api.get).toHaveBeenCalledOnce();
     expect(screen.getByRole("heading", { name: "Our picnic" })).toBeInTheDocument();
   });
 });

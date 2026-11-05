@@ -4,6 +4,7 @@ import { ObjectStorage, UPLOAD_URL_SECONDS } from "@leonly/utils/storage";
 import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { v7 as uuidv7 } from "uuid";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { MembershipsService } from "../spaces/services/memberships.service";
 import { FILE_OPERATION_LEASE_SECONDS } from "./constants/uploads.constants";
 import type { IssueUploadsDto } from "./dtos/issue-uploads.dto";
 
@@ -27,6 +28,7 @@ export class FilesService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
+    private readonly membershipsService: MembershipsService,
   ) {}
 
   async confirmUploaded({
@@ -123,11 +125,7 @@ export class FilesService {
 
   async issue({ userId, body }: IssueParams): Promise<UploadIssuanceResult> {
     const descriptors = body.files;
-    const membership = await this.prismaService.spaceMember.findFirst({
-      where: { userId, deletedAt: null, space: { deletedAt: null } },
-      select: { spaceId: true },
-    });
-    if (!membership) throw new NotFoundException({ error: "An active space is required." });
+    const membership = await this.membershipsService.requireActiveMembership(userId);
 
     const issuedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
     const expiresAt = new Date(issuedAt.getTime() + UPLOAD_URL_SECONDS * 1000);

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MemoryListItem } from "@leonly/utils/contracts";
 import { ImageIcon, MapPin, MessageCircle } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
@@ -15,7 +16,7 @@ type MemorySummaryCardProps = {
   count?: ReactNode;
   destination?: "timeline" | "vault";
   entryIndex?: number;
-  memory: TimelineMemory;
+  memory: MemoryListItem | TimelineMemory;
   reactions?: ReactNode;
   variant?: "recent" | "related" | "timeline" | "vault";
 };
@@ -88,8 +89,8 @@ export function MemorySummaryCard({
   variant = "timeline",
 }: Readonly<MemorySummaryCardProps>) {
   const { i18n, t } = useTranslation("memories");
-  const [hasCoverLoadFailed, setHasCoverLoadFailed] = useState(false);
-  const coverPhotoUrl = hasCoverLoadFailed ? null : memory.coverPhotoUrl;
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
+  const coverPhotoUrl = memory.coverPhotoUrl === failedCoverUrl ? null : memory.coverPhotoUrl;
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activeCardVariants = shouldReduceMotion ? reducedMotionVariants : cardVariants;
   const activeSummaryVariants = shouldReduceMotion ? reducedMotionVariants : summaryVariants;
@@ -122,13 +123,13 @@ export function MemorySummaryCard({
         >
           <motion.div className={styles.cover} variants={activeCoverVariants}>
             {coverPhotoUrl ? (
-              // biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly.
+              // biome-ignore lint/performance/noImgElement: Cover URLs must be requested directly.
               <img
                 src={coverPhotoUrl}
                 width={960}
                 height={600}
                 alt={t("card.cover", { title: memory.title })}
-                onError={() => setHasCoverLoadFailed(true)}
+                onError={() => setFailedCoverUrl(coverPhotoUrl)}
               />
             ) : (
               <span role="img" aria-label={t("card.noCover")}>
@@ -159,8 +160,12 @@ export function MemorySummaryCard({
       </motion.div>
       <footer className={styles.footer}>
         <div className={styles.commentCount} data-extension-region="memory-count">
-          <MessageCircle aria-hidden="true" />
-          {t("card.comments", { count: memory.commentCount })}
+          {"commentCount" in memory ? (
+            <>
+              <MessageCircle aria-hidden="true" />
+              {t("card.comments", { count: memory.commentCount })}
+            </>
+          ) : null}
           {count}
         </div>
         {reactions}

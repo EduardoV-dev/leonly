@@ -11,9 +11,3 @@ export type TimelineMemory = {
   reaction?: MemoryReactionSummary;
   title: string;
 };
-
-export type TimelinePage = {
-  cursorReset: boolean;
-  memories: TimelineMemory[];
-  nextCursor: string | null;
-};

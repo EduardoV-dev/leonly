@@ -19,6 +19,36 @@ const configuration = {
 afterEach(() => vi.restoreAllMocks());
 
 describe("shared object storage", () => {
+  it("signs a specific object GET for the configured duration", async () => {
+    const secretAccessKey = "example-secret-key";
+    const storage = new ObjectStorage({ ...configuration, secretAccessKey });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-11T00:00:00Z"));
+    try {
+      const url = new URL(await storage.signObject({ key: "memories/cover.webp", expiresIn: 120 }));
+      const otherUrl = new URL(
+        await storage.signObject({ key: "memories/other.webp", expiresIn: 120 }),
+      );
+      vi.setSystemTime(new Date("2026-10-11T00:01:00Z"));
+      const renewedUrl = new URL(
+        await storage.signObject({ key: "memories/cover.webp", expiresIn: 120 }),
+      );
+      expect(url.origin).toBe(configuration.signingEndpoint);
+      expect(url.pathname).toBe("/photos/memories/cover.webp");
+      expect(url.searchParams.get("X-Amz-Expires")).toBe("120");
+      expect(url.searchParams.get("X-Amz-Date")).toBe("20261011T000000Z");
+      expect(renewedUrl.searchParams.get("X-Amz-Date")).toBe("20261011T000100Z");
+      expect(renewedUrl.searchParams.get("X-Amz-Expires")).toBe("120");
+      expect(url.searchParams.get("X-Amz-Signature")).not.toBe(
+        otherUrl.searchParams.get("X-Amz-Signature"),
+      );
+      expect(url.toString()).not.toContain(secretAccessKey);
+    } finally {
+      vi.useRealTimers();
+      storage.destroy();
+    }
+  });
+
   it("reads metadata with HEAD and distinguishes missing objects from storage failures", async () => {
     const send = vi.spyOn(S3Client.prototype, "send");
     send.mockResolvedValueOnce({ ContentLength: 123, ContentType: "image/png" } as never);

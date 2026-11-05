@@ -9,6 +9,7 @@ import {
 } from "../constants/spaces.constants";
 import type { RegenerateReturn } from "../types/spaces.types";
 import { generateInviteCode, getUniqueIndex } from "../utils/invite-code";
+import { MembershipsService } from "./memberships.service";
 
 const MAX_REGENERATION_ATTEMPTS = 10;
 
@@ -17,17 +18,14 @@ export class InviteRegenerationService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly redisService: RedisService,
+    private readonly membershipsService: MembershipsService,
   ) {}
 
   async regenerate(userId: string): Promise<RegenerateReturn> {
     return this.redisService.withLock({
       key: `invite-regeneration:${userId}:mutex`,
       operation: async () => {
-        const membership = await this.prismaService.spaceMember.findFirst({
-          where: { userId, deletedAt: null, space: { deletedAt: null } },
-          select: { id: true },
-        });
-        if (!membership) throw new NotFoundException();
+        await this.membershipsService.requireActiveMembership(userId);
 
         return retry(
           () =>

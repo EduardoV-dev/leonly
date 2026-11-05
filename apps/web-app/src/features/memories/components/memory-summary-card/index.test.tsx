@@ -70,6 +70,23 @@ describe("MemorySummaryCard", () => {
     expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
   });
 
+  it("shows a refreshed cover after the previous URL fails", () => {
+    const oldUrl = "https://storage.example/old";
+    const newUrl = "https://storage.example/new";
+    const { rerender } = render(
+      <MemorySummaryCard memory={{ ...memory, coverPhotoUrl: oldUrl }} />,
+    );
+
+    fireEvent.error(screen.getByRole("img", { name: "Cover for Our picnic" }));
+    expect(screen.getByRole("img", { name: "No cover photo available" })).toBeInTheDocument();
+
+    rerender(<MemorySummaryCard memory={{ ...memory, coverPhotoUrl: newUrl }} />);
+    expect(screen.getByRole("img", { name: "Cover for Our picnic" })).toHaveAttribute(
+      "src",
+      newUrl,
+    );
+  });
+
   it("updates interface copy and date formatting without changing memory content", async () => {
     render(<MemorySummaryCard memory={memory} />);
 

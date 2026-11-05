@@ -22,6 +22,16 @@ type UpdateDisplayNameParams = { userId: string; displayName: string; expectedUp
 export class MembershipsService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  async requireActiveMembership(userId: string): Promise<{ id: string; spaceId: string }> {
+    const membership = await this.prismaService.spaceMember.findFirst({
+      where: { userId, deletedAt: null, space: { deletedAt: null } },
+      select: { id: true, spaceId: true },
+    });
+
+    if (!membership) throw new NotFoundException({ error: "An active space is required." });
+    return membership;
+  }
+
   async updateDisplayName({
     userId,
     displayName,

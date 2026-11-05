@@ -1,9 +1,8 @@
 "use client";
 
+import type { MemoryListItem } from "@leonly/utils/contracts";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { useTranslation } from "react-i18next";
-import type { TimelineMemory } from "../../types/timeline";
-import { MemoryReactions } from "../memory-reactions";
 import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memory-chronology.module.css";
 
@@ -27,7 +26,7 @@ const reducedMotionVariants: Variants = {
 
 type MemoryMonth = {
   label: string;
-  memories: [TimelineMemory, ...TimelineMemory[]];
+  memories: [MemoryListItem, ...MemoryListItem[]];
 };
 
 type Pagination = {
@@ -44,12 +43,12 @@ type Pagination = {
 
 type MemoryChronologyProps = {
   destination?: "timeline" | "vault";
-  memories: TimelineMemory[];
+  memories: MemoryListItem[];
   pagination?: Pagination;
   variant?: "full" | "recent";
 };
 
-function groupMemoriesByMonth(memories: TimelineMemory[], language: string): MemoryMonth[] {
+function groupMemoriesByMonth(memories: MemoryListItem[], language: string): MemoryMonth[] {
   const monthFormatter = new Intl.DateTimeFormat(language === "es" ? "es-ES" : "en-US", {
     month: "long",
     year: "numeric",
@@ -112,11 +111,6 @@ export function MemoryChronology({
                 entryIndex={index}
                 key={memory.id}
                 memory={memory}
-                reactions={
-                  memory.reaction ? (
-                    <MemoryReactions memoryId={memory.id} reaction={memory.reaction} />
-                  ) : undefined
-                }
                 variant={variant === "recent" ? "recent" : "timeline"}
               />
             ))}

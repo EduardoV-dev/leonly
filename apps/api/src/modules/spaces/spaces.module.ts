@@ -10,6 +10,6 @@ import { SpacesService } from "./services/spaces.service";
   imports: [AuthModule],
   controllers: [SpacesController, MembershipsController],
   providers: [SpacesService, InviteRegenerationService, MembershipsService],
-  exports: [SpacesService],
+  exports: [SpacesService, MembershipsService],
 })
 export class SpacesModule {}

@@ -4,12 +4,13 @@ import {
   PutObjectCommand,
   type S3Client,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createStorageClient, type StorageConfiguration } from "./client";
 import { createUploadUrl } from "./presigned-urls";
 
 const STORAGE_REQUEST_TIMEOUT_MS = 10_000;
 
-export class ObjectSizeError extends Error { }
+export class ObjectSizeError extends Error {}
 
 type SignUploadParams = {
   key: string;
@@ -19,6 +20,7 @@ type SignUploadParams = {
 };
 
 type GetObjectParams = { key: string; maxBytes: number };
+type SignObjectParams = { key: string; expiresIn: number };
 type ObjectMetadata = { byteSize?: number; contentType?: string };
 
 type PutObjectIfAbsentParams = { key: string; bytes: Buffer; contentType: string };
@@ -36,7 +38,7 @@ export async function readBoundedObject({
   maxBytes,
   signal,
 }: ReadBoundedObjectParams): Promise<Buffer> {
-  let abort = () => { };
+  let abort = () => {};
 
   const aborted = new Promise<never>((_, reject) => {
     abort = () => reject(new Error("Storage download timed out"));
@@ -121,6 +123,14 @@ export class ObjectStorage {
       byteSize,
       issuedAt,
     });
+  }
+
+  async signObject({ key, expiresIn }: SignObjectParams): Promise<string> {
+    return getSignedUrl(
+      this.signingClient,
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      { expiresIn },
+    );
   }
 
   async getObject({ key, maxBytes }: GetObjectParams): Promise<Buffer | null> {

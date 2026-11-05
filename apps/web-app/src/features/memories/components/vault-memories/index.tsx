@@ -57,13 +57,13 @@ export function VaultMemories({ sort = DEFAULT_MEMORY_SORT }: VaultMemoriesProps
 
   let resetPageIndex = -1;
   for (let index = pages.length - 1; index >= 0; index -= 1) {
-    if (pages[index].cursorReset) {
+    if (pages[index].meta.cursorReset) {
       resetPageIndex = index;
       break;
     }
   }
   const visiblePages = resetPageIndex === -1 ? pages : pages.slice(resetPageIndex);
-  const memories = visiblePages.flatMap((page) => page.memories);
+  const memories = visiblePages.flatMap((page) => page.data);
 
   if (memories.length === 0) {
     return (

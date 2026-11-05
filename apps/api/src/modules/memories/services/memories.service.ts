@@ -4,6 +4,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from "@nestj
 import { OutboxPublisher } from "../../../common/outbox/outbox-publisher";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { type ClaimedFile, FilesService } from "../../files/files.service";
+import { MembershipsService } from "../../spaces/services/memberships.service";
 import { IMAGE_ENTITY_TYPE, IMAGE_EVENT_TYPE } from "../constants/memories.constants";
 import type { CreateMemoryDto } from "../dtos/create-memory.dto";
 import {
@@ -26,17 +27,13 @@ export class MemoriesService {
     private readonly prismaService: PrismaService,
     private readonly filesService: FilesService,
     private readonly outboxPublisherService: OutboxPublisher,
+    private readonly membershipsService: MembershipsService,
   ) {}
 
   async create({ userId, body }: CreateParams): Promise<CreationResult> {
     const input = normalizeCreation(body);
     const hash = hashCreation(input);
-    const membership = await this.prismaService.spaceMember.findFirst({
-      where: { userId, deletedAt: null, space: { deletedAt: null } },
-      select: { id: true, spaceId: true },
-    });
-
-    if (!membership) throw new NotFoundException({ error: "An active space is required." });
+    const membership = await this.membershipsService.requireActiveMembership(userId);
 
     const scope = { userId, spaceId: membership.spaceId, memberId: membership.id };
     const existing = await this.findExistingCreation({ scope, input, hash });
