@@ -5,25 +5,25 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-api-contracts/SKILL.md",
-      "computedHash": "4c7b9a18f1b9300a2cdec5f109ce180696d5fe8a0629ccb2dad4024c26b6db34"
+      "computedHash": "e78a71baac88a8a6b36a1d9c0feb5f500956ae8c1262d1b8a28c0de047a9b77b"
     },
     "ev-code-review": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "76a79d24688da8a5236e7fd17d1c146b4a67208967c02364aead338d639edc4a"
+      "computedHash": "d58fff76417edeba78cba5d4726b89060d7ed6416957fc66fcebfab94b414e26"
     },
     "ev-coding-standards": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-coding-standards/SKILL.md",
-      "computedHash": "c531a26c165ed5e9e042df1a8c5f0426a91e408ec824fdb4ec9d2528b48bca42"
+      "computedHash": "0eb070f10d07364d66b59921ca18978666fddc072044e0a3612af1b52605db53"
     },
     "ev-project-setup": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-project-setup/SKILL.md",
-      "computedHash": "57406ee3ec84c705e1cf24dd293a4081def7ff5a1ac2f03ccef03d83329a9315"
+      "computedHash": "3d3ebc1a809c6dc54a390766603f1fd5cf2a255dcf3e568f5b6bee27ff90da1d"
     },
     "ev-review-nestjs": {
       "source": "EduardoV-dev/my-skills",
@@ -65,7 +65,7 @@
       "source": "neondatabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/neon-postgres/SKILL.md",
-      "computedHash": "8fe6ed530448e57059a598e4ca807c2aa39bb9358fdc9fca8596b9f3cea65ec7"
+      "computedHash": "55213cb1aa4964d25a739d7864567abd5c1e74694440cb56902a41724b34f41c"
     },
     "nestjs-best-practices": {
       "source": "kadajett/agent-nestjs-skills",

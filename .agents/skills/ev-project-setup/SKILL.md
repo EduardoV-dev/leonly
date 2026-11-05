@@ -46,7 +46,7 @@ Use when asked to wire installed skills into a project or refresh its skill-load
 
 ## Output Contract
 
-Report target/instruction path, changed or unchanged state, resolved skill paths/source revisions,
+Report target/instruction path, changed or unchanged state, installed skill paths/available metadata,
 missing coverage, checks, and fresh-session verification gaps. Require an agent restart to reload
 instructions; for OpenCode, quit and restart it.
 

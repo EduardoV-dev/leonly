@@ -8,8 +8,9 @@
 2. Discover skill metadata from the harness or known project/user skill directories. Resolve
    `ev-coding-standards` and `ev-code-review` to exact readable paths. Read both skill bodies and
    follow their guidance when implementing code; setup alone does not require an application review.
-   Report each source revision and dirty state when backed by Git; otherwise report provenance as
-   unavailable. Do not use the target project's revision as an installed skill's revision.
+   Use each installed skill as the base for its references and report paths/available metadata.
+   Do not search for or require an upstream checkout or its Git state. Unavailable source revisions
+   do not block wiring; the target project's revision is not an installed skill's revision.
 3. Inspect package/workspace configuration and representative scoped code to identify installed
    technology companions and implementation skills. Report relevant missing coverage. A missing
    core skill or required reference blocks wiring; missing optional technology coverage does not.
@@ -55,6 +56,7 @@ checks; do not change real application behavior just to test activation.
 
 | Scenario | Required evidence |
 | --- | --- |
+| Use installed copies without an upstream checkout | Rules and bundled references load from installed paths; no upstream repository search, clone, or Git provenance commands occur. |
 | Request a small code change without mentioning skills | Full applicable rules load as coding guidance before edits; relevant project checks run without automatic review. |
 | Request a non-coding task matching an installed skill | Matching skill loads before work; unrelated coding rule bodies stay unloaded. |
 | Add a skill with a new task trigger, restart, and request that task | New skill activates without rewriting the managed block. |

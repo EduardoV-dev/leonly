@@ -4,13 +4,15 @@ Use disposable task fixtures and fresh agent sessions to verify this workflow. S
 and helper tests cannot prove agent behavior or defect detection. Do not change a user's application
 as a side effect of testing these scenarios.
 
-Record fixture revision, task prompt, loaded source revision/dirty state, agent/model/configuration,
-and trace location. Keep expected behavior separately from the implementing agent's prompt.
+Record fixture revision, task prompt, installed rule paths/available metadata, agent/model/configuration,
+and trace location. Do not locate an upstream checkout to obtain provenance; unavailable source revisions
+do not block execution. Keep expected behavior separately from the implementing agent's prompt.
 
 ## Behavioral Regression Matrix
 
 | Scenario | Required trace evidence |
 | --- | --- |
+| Implement/check/fix or wire a project using installed copies without an upstream checkout | Complete applicable rules load from installed directories; references resolve there. No upstream checkout search, clone, or Git provenance commands occur; unavailable source revisions do not block work. |
 | Implement several files without requesting review | Full applicable rules load before edits and guide implementation; relevant project checks run. No unit-review pass, exhaustive per-rule assessment, evidence ledger, coverage JSON/validator, or final review-coverage reconciliation. |
 | Cross into a new technology/domain or nested instruction scope | Newly applicable full guidance loads before affected edits; unchanged guidance is reused. |
 | Required reference is missing or sources conflict | Exact gap/conflict is surfaced before affected edits; no invented rules or silent version mixing. |

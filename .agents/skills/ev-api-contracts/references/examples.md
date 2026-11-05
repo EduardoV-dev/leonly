@@ -116,6 +116,24 @@ row. Using the lookahead row as the position skips it on the next request. A sep
 is also acceptable. At the end, including empty pages, emit `nextCursor: null`. Omit `prevCursor`
 entirely unless backward traversal was explicitly requested; emit null at its beginning boundary.
 
+## Cursor Reset Invalidates The Pagination Chain
+
+Always include `resetCursor: boolean` in cursor metadata, including bidirectional pages:
+
+```ts
+// Ordinary final or empty page: traversal ended; the existing chain remains valid.
+const finalPageMeta: CursorPage<OrderDto>["meta"] = { nextCursor: null, resetCursor: false };
+
+// Invalidated pagination chain: discard stored cursors and accumulated pages; restart without a cursor.
+const resetPageMeta: CursorPage<OrderDto>["meta"] = { nextCursor: null, resetCursor: true };
+```
+
+Do not append a reset response to accumulated pages or continue using an old cursor. Document the
+endpoint's invalidation conditions and how its reset response is handled. Do not infer a reset from
+an empty page or a null cursor. Preserve validation errors for malformed incoming cursors and internal
+errors for server-generated cursor failures or unexpected utility defects. Verify ordinary continuation,
+empty/final pages with false, and invalidation with true followed by a client restart without a cursor.
+
 ## Cursor Position Matches The Complete Ordering
 
 ```sql

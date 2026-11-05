@@ -5,10 +5,9 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "assets"))
-from manage import END, START, git, install, start_rule, sync_main, validate, verify_source
+from manage import END, START, build_instruction_text, git, install, sync_main, validate, verify_source
 
 
 SOURCE = Path(__file__).resolve().parents[3]
@@ -44,10 +43,46 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(unrelated.read_text(), "Unrelated skill")
         for skill in validate(self.repo):
             self.assertEqual((self.home / ".agents/skills" / skill.name).resolve(), skill)
-        for name in ("ev-check", "ev-fix", "ev-update", "ev-add-rule"):
+        for name in ("ev-check", "ev-fix", "ev-update"):
             command = self.home / f".config/opencode/commands/{name}.md"
             self.assertTrue(command.is_symlink())
             self.assertIn("$ARGUMENTS", command.read_text())
+        commands = self.home / ".config/opencode/commands"
+        self.assertEqual(len(list(commands.glob("*.md"))), 3)
+
+    def test_loader_uses_installed_skills_without_embedding_source_paths(self):
+        self.install()
+        loader = self.instructions.read_text()
+        self.assertNotIn(str(self.repo), loader)
+        self.assertNotIn("{{skill_path}}", loader)
+        self.assertIn("installed project/user skill directories", loader)
+        self.assertIn("Do not search for or require", loader)
+
+        installed = self.root / "installed/ev-coding-standards"
+        shutil.copytree(self.repo / "skills/ev-coding-standards", installed)
+        relocated = build_instruction_text("", installed)
+        original = build_instruction_text("", self.repo / "skills/ev-coding-standards")
+        self.assertEqual(relocated, original)
+        self.assertFalse((installed.parent / ".git").exists())
+
+    def test_retired_owned_commands_are_removed_without_touching_foreign_commands(self):
+        for name in ("commands", "command"):
+            directory = self.home / ".config/opencode" / name
+            directory.mkdir(exist_ok=True)
+            retired = directory / "ev-retired.md"
+            retired.symlink_to(self.repo / "skills/ev-coding-standards/assets/commands/ev-retired.md")
+            foreign = directory / "ev-foreign.md"
+            foreign.symlink_to(self.root / "missing-foreign.md")
+            custom = directory / "ev-custom.md"
+            custom.write_text("User command")
+
+        self.install()
+        self.install()
+        for name in ("commands", "command"):
+            directory = self.home / ".config/opencode" / name
+            self.assertFalse((directory / "ev-retired.md").is_symlink())
+            self.assertTrue((directory / "ev-foreign.md").is_symlink())
+            self.assertEqual((directory / "ev-custom.md").read_text(), "User command")
 
     def test_command_collision_prevents_all_installation_writes(self):
         collision = self.home / ".config/opencode/commands/ev-fix.md"
@@ -183,34 +218,7 @@ class GitWorkflowTests(unittest.TestCase):
             sync_main(self.repo)
         self.assertEqual(git(self.repo, "rev-parse", "HEAD"), before)
 
-    def test_rule_worktree_contains_latest_without_activating_unpublished_edits(self):
-        self.advance_upstream()
-        with contextlib.redirect_stdout(io.StringIO()):
-            worktree = start_rule(self.repo, "new-rule")
-        self.assertEqual(worktree, self.root / "my-skills-worktrees/new-rule")
-        self.assertEqual((worktree / "rule.md").read_text(), "Concurrent rule\n")
-        self.assertEqual(git(worktree, "branch", "--show-current"), "rules/new-rule")
-        (worktree / "rule.md").write_text("Unpublished rule\n")
-        self.assertEqual((self.repo / "rule.md").read_text(), "Concurrent rule\n")
-        self.assertEqual(git(self.repo, "branch", "--show-current"), "main")
-        with self.assertRaisesRegex(RuntimeError, "already exists"):
-            start_rule(self.repo, "new-rule")
-
-    def test_upstream_race_after_worktree_creation_is_pulled_before_edits(self):
-        def race_git(repo, *arguments):
-            result = git(repo, *arguments)
-            if arguments[:2] == ("worktree", "add"):
-                self.advance_upstream("Rule published during creation\n")
-            return result
-
-        with patch("manage.git", side_effect=race_git), contextlib.redirect_stdout(io.StringIO()):
-            worktree = start_rule(self.repo, "racing-rule")
-        self.assertEqual((worktree / "rule.md").read_text(), "Rule published during creation\n")
-        self.assertEqual((self.repo / "rule.md").read_text(), "Original rule\n")
-
-    def test_invalid_slug_and_foreign_origin_are_rejected(self):
-        with self.assertRaisesRegex(RuntimeError, "kebab-case"):
-            start_rule(self.repo, "../escape")
+    def test_foreign_origin_is_rejected(self):
         with self.assertRaisesRegex(RuntimeError, "Expected origin"):
             verify_source(self.repo)
         git(self.repo, "remote", "set-url", "origin", "git@github.com:EduardoV-dev/my-skills.git")

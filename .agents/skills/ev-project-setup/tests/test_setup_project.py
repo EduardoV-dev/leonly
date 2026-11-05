@@ -1,5 +1,6 @@
 import contextlib
 import io
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -155,6 +156,22 @@ class ProjectSetupTests(unittest.TestCase):
         self.assertEqual(malformed.returncode, 1)
         self.assertIn("markers", malformed.stderr)
         self.assertEqual(self.instructions.read_text(), START)
+
+    def test_installed_copy_wires_project_without_a_source_checkout(self):
+        installed = self.project.parent / "installed/ev-project-setup"
+        shutil.copytree(ASSETS.parent, installed)
+        command = [sys.executable, "-B", str(installed / "assets/setup_project.py"), str(self.project)]
+        result = subprocess.run(command, cwd=self.project, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        checked = subprocess.run([*command, "--check"], cwd=self.project, capture_output=True, text=True)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+
+        instructions = self.instructions.read_text()
+        self.assertIn("Normal skill use must not search for", instructions)
+        self.assertNotIn(str(installed), instructions)
+        self.assertNotIn(str(ASSETS), instructions)
+        self.assertFalse((self.project / ".git").exists())
+        self.assertFalse((installed.parent / ".git").exists())
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ export type CursorPage<T> = {
   data: T[];
   meta: {
     nextCursor: string | null;
+    resetCursor: boolean;
   };
 };
 
@@ -86,6 +87,12 @@ HTTP mapping, including non-2xx responses.
   (`page > 1 && totalItems > 0`), not necessarily a nonempty immediately preceding page.
 - Emit `nextCursor: null` at the end, including empty pages. When requested, emit `prevCursor: null`
   at the beginning. Determine whether another page exists; do not infer it from a full page alone.
+- Always emit `resetCursor` in cursor metadata, including bidirectional pages. Set it to true when
+  the current pagination chain is no longer valid: the client must discard stored cursors and
+  accumulated pages and restart from the beginning without a cursor. Otherwise emit false, including
+  ordinary empty/final pages. `nextCursor: null` means traversal ended, not that a reset is required.
+  Document endpoint-specific invalidation conditions and reset-response handling; this flag does not
+  replace the validation/internal-error contracts for malformed cursors or utility failures.
 - Keep filters, authorization, and ordering consistent across page queries. Cursors never grant access.
 
 ## Cursor Utility Contract

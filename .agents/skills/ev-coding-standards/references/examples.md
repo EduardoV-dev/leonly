@@ -154,45 +154,43 @@ The selected review core's `references/generation-review.md` owns this workflow.
 `references/generation-verification.md` defines behavioral regressions and paired cost/quality trials;
 static metadata checks do not establish agent behavior, quality parity, or speed gains.
 
-## Separate Application Work, Contributions, And Activation
+## Use Installed Skills Without An Upstream Checkout
 
 ```text
 Task: Fix an application bug.
-The standards checkout has uncommitted rule changes.
+The standards were installed as copies without a backing Git checkout.
 
 // Avoid:
-Apply the clean-main contribution prerequisite to unrelated application edits.
+Search for a local my-skills checkout or require its Git revision before coding.
 
 // Prefer:
 Read the applicable local rules.
-Report the standards revision and dirty state.
+Resolve references relative to each selected installed skill and record available metadata.
+Treat unavailable source provenance as non-blocking.
 Resolve relevant rule conflicts, then work within the application scope.
 ```
 
 ```text
-Task: Add an example to an EV standard.
+Task: Explicitly update installed standards.
 
 // Avoid:
-Treat the request as permission to commit, push, merge, or activate the rule.
+Search the filesystem for a separate source checkout or clone one automatically.
 
 // Prefer:
-Follow the contribution workflow and its prerequisites.
-Edit and validate the requested rule.
-Report the contribution location and publication/activation state.
-Publish only when authorized.
+Use the repository update helper only if the selected installed skill resolves into its backing checkout.
+For standalone copies, report that limitation and request reinstallation via the original installer/scope.
+Preserve local work and report actual update/activation results.
 ```
 
 ```text
-Situation: The user explicitly authorizes editing the original checkout directly.
+Situation: The user manually edits rules in their source checkout.
 
 // Avoid:
-Discard existing changes to obtain a clean checkout.
-Assume the exception also permits publication.
+Create contribution branches/worktrees or publish changes without being asked.
 
 // Prefer:
-Apply the authorized edit directly.
-Preserve existing work and run the applicable checks.
-Keep the exception limited to the current task.
+Follow the repository's instructions, preserve existing work, and run applicable checks.
+Treat manual rule maintenance separately from installed skill use and explicit updates.
 ```
 
 Editing source files and refreshing already-loaded instructions are different operations. Report the

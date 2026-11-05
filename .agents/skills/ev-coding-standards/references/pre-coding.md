@@ -27,9 +27,10 @@ work, reload missing/changed guidance and load newly applicable rules, not the e
    | NestJS providers/modules/endpoints/bootstrap/tests | `ev-review-nestjs` |
    | First-party JSON API producers/consumers or pagination implementation | `ev-api-contracts` plus applicable backend/TypeScript rules |
 
-5. Record internally the scope, selected rule paths, and active source revision (`git rev-parse HEAD` and
-   `git status --short` in the source checkout). Record alternate revisions when project-local copies
-   come from another source. Reuse rules during implementation without starting a review, spawning
+5. Record internally the scope, selected installed rule paths, and available skill metadata/version.
+   Resolve references relative to each installed skill; do not search for an upstream checkout or run
+   Git provenance checks on it. Missing source revision/dirty-state information is not a blocker, and
+   the target project's Git revision is not an installed skill's revision. Reuse rules without starting a review, spawning
    reviewers, or requiring review coverage artifacts. Reselect before editing a new domain.
    Read the resolved core's `references/generation-review.md` for implementation checks, follow-ups,
    and context recovery. Applying standards does not initiate a code review.

@@ -1,6 +1,6 @@
 ---
 name: ev-coding-standards
-description: "Trigger: coding, implementing, fixing, ev-check, ev-fix, ev-update, ev-add-rule. Load applicable EV standards before edits and manage their global workflows."
+description: "Trigger: coding, implementing, fixing, ev-check, ev-fix, ev-update. Load applicable installed EV standards before edits and manage check/fix/update workflows."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -11,8 +11,8 @@ metadata:
 
 ## Activation Contract
 
-Load before implementing or changing code, and for standards check, fix, update, or add-rule requests.
-Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills expose its local files.
+Load before implementing or changing code, and for standards check, fix, or update requests.
+Use the selected installed skills and their bundled references as the rule source.
 
 ## Hard Rules
 
@@ -26,10 +26,11 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
   checks, and reviews sequentially.
 - Keep check read-only. Fix only requested scope; never stage, commit, discard, or publish application
   changes as a side effect. Plan-mode requests remain read-only.
-- Keep the active source checkout on `main`; use sibling worktrees for rule contributions unless the
-  user explicitly authorizes direct edits for the current task. For the normal contribution workflow,
-  pull latest before rule edits and reconcile upstream again before publication. A direct-edit exception
-  does not authorize discarding work, publication, or global activation.
+- Resolve skills through the harness or installed project/user skill directories, with references
+  relative to each selected skill. Normal implementation, check/fix, and project wiring must not search
+  for, clone, or require the upstream repository or inspect its Git state. Record available installed
+  metadata; unavailable source provenance is not a blocker. Repository access belongs only to explicitly
+  requested repository maintenance; setup/update requirements do not apply to ordinary skill use.
 
 ## Decision Gates
 
@@ -39,12 +40,11 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 | Concrete follow-up edits after implementation or the user's own review | Continue implementation and check affected behavior; do not automatically start a review. |
 | Check/fix standards | Follow [check and fix](references/check-and-fix.md). |
 | Update installed standards | Follow [update](references/update.md). |
-| Add/change a standard | Follow [rule contributions](references/add-rule.md). |
 | Missing/conflicting required guidance | Report exact paths and the gap; resolve before affected edits. |
 
 ## Execution Steps
 
-1. Resolve this skill's real path, the source checkout, task scope, and project guidance.
+1. Resolve this installed skill's directory, task scope, and project guidance; do not locate an upstream checkout.
 2. Read the selected workflow, its applicable rules, and the [workflow examples](references/examples.md)
    before acting. Respect explicit decisions already supplied, and preserve the API pagination decision gate.
 3. Run scoped verification; distinguish successful checks, violations, and unavailable evidence.
@@ -53,16 +53,16 @@ Use `EduardoV-dev/my-skills` as the authoritative rule source; installed skills 
 
 For explicit check/fix requests, follow the review coordinator's exhaustive chat report: show every
 finding with severity, evidence, impact, minimal fix, and fixed/remaining status when applicable.
-Include scope, source revision/dirty state, loaded paths, results, and verification gaps.
+Include scope, installed rule paths/available metadata, results, and verification gaps.
 During generation, record rule selection and completion checks internally; do not emit a separate
 standards report or summary. Surface blockers, required decisions, and material verification gaps.
-For maintenance, report changed revision/links or the contribution worktree and publication state.
+For explicit setup/update, report the actual installation method, changed revision/links when available,
+and restart requirements.
 
 ## References
 
 - [Pre-coding selection](references/pre-coding.md)
 - [Check and fix](references/check-and-fix.md)
 - [Update](references/update.md)
-- [Rule contributions](references/add-rule.md)
 - [Workflow examples and exceptions](references/examples.md)
 - [Management helper](assets/manage.py)

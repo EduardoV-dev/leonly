@@ -9,7 +9,8 @@ follow pre-coding guidance and relevant implementation checks instead; do not au
 - Load `ev-code-review` and use its complete scope, selection, evidence, and coverage contracts.
 - Honor explicit files, repository scope, commits, branch baseline, or PR. Otherwise inspect staged,
   unstaged, and untracked non-ignored changes. A clean tree means no changes, not the latest commit.
-- Record the standards revision/dirty state and exact applied paths. Keep inspection read-only;
+- Record exact installed rule paths and available metadata; do not locate an upstream checkout or
+  require its Git revision/dirty state. Keep inspection read-only;
   inspect scripts/CI and apply the core's general read-only verification policy before running checks.
   Redirect artifacts/caches or isolate execution only when permitted; report unavailable checks as gaps.
 - Use the existing coverage validator when practical; its success validates completeness, not truth.

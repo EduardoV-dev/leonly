@@ -66,7 +66,7 @@ def build_instruction_text(existing, skill):
     if existing.count(START) != existing.count(END) or existing.count(START) > 1:
         raise RuntimeError("Malformed EV instruction markers; preserve and repair AGENTS.md")
     template = (skill / "assets/global-instructions.md").read_text().strip()
-    block = f"{START}\n{template.replace('{{skill_path}}', str(skill))}\n{END}"
+    block = f"{START}\n{template}\n{END}"
     if START not in existing:
         separator = "\n\n" if existing and not existing.endswith("\n\n") else ""
         return existing + separator + block + "\n"
@@ -89,9 +89,11 @@ def install(repo, home):
     skill = repo / "skills/ev-coding-standards"
     config = home / ".config/opencode"
     destinations = [(home / ".agents/skills" / source.name, source) for source in skills]
-    commands = sorted((skill / "assets/commands").glob("ev-*.md"))
-    if len(commands) != 4:
-        raise RuntimeError("Expected all four EV command templates")
+    command_source = skill / "assets/commands"
+    commands = sorted(command_source.glob("ev-*.md"))
+    command_names = {command.name for command in commands}
+    if command_names != {"ev-check.md", "ev-fix.md", "ev-update.md"}:
+        raise RuntimeError("Expected check, fix, and update command templates")
     destinations.extend((config / "commands" / source.name, source) for source in commands)
 
     # Preflight every collision before changing any installation files.
@@ -118,6 +120,17 @@ def install(repo, home):
         if link.is_symlink() and target.parent == repo / "skills" and link.name not in names:
             link.unlink()
             print(f"Removed retired owned link: {link}")
+    for directory in (config / "commands", config / "command"):
+        for link in directory.glob("ev-*.md"):
+            target = link.resolve()
+            is_retired_owned_command = (
+                link.is_symlink() and target.parent == command_source
+                and target.name == link.name and link.name not in command_names
+            )
+            if is_retired_owned_command:
+                link.unlink()
+                print(f"Removed retired owned command: {link}")
+
     if updated != existing:
         config.mkdir(parents=True, exist_ok=True)
         instructions.write_text(updated)
@@ -138,39 +151,13 @@ def sync_main(repo):
     return after
 
 
-def start_rule(repo, slug):
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug):
-        raise RuntimeError("Use a lowercase kebab-case rule slug")
-    destination = repo.parent / f"{repo.name}-worktrees" / slug
-    if destination.exists() or destination.is_symlink():
-        raise RuntimeError(f"Contribution path already exists: {destination}")
-    git(repo, "check-ref-format", "--branch", f"rules/{slug}")
-    result = subprocess.run(
-        ["git", "-C", str(repo), "show-ref", "--verify", "--quiet", f"refs/heads/rules/{slug}"]
-    )
-    if result.returncode != 1:
-        raise RuntimeError(f"Contribution branch exists or could not be checked: rules/{slug}")
-    sync_main(repo)
-    git(repo, "worktree", "add", "-b", f"rules/{slug}", str(destination), "origin/main")
-    git(destination, "pull", "--ff-only", "origin", "main")
-    print(f"Contribution worktree: {destination}")
-    print("Read its current rules before editing; fetch and reconcile again before publication.")
-    return destination
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("setup", "validate", "update", "start-rule"))
-    parser.add_argument("slug", nargs="?")
+    parser.add_argument("action", choices=("setup", "validate", "update"))
     arguments = parser.parse_args()
-    if (arguments.action == "start-rule") != (arguments.slug is not None):
-        parser.error("Only start-rule requires a rule slug")
     repo = Path(__file__).resolve().parents[3]
     try:
         verify_source(repo)
-        if arguments.action == "start-rule":
-            start_rule(repo, arguments.slug)
-            return
         if arguments.action == "update":
             sync_main(repo)
         if arguments.action == "validate":

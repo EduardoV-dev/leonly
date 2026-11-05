@@ -244,6 +244,10 @@ If unavailable or incomplete, inspect `SKILL.md` metadata in the project's `.age
 that its entries still resolve. Prefer project-local copies of the same skill and report shadowing
 or incompatible sources; do not silently mix versions.
 
+Resolve references relative to each selected installed skill. Normal skill use must not search for,
+clone, or require the upstream repository or its Git state. Use installed paths and available skill
+metadata for provenance; unavailable source revisions do not block work.
+
 Before each task, match its intent, target files, and actual technology usage to available skill
 activation descriptions. Load the complete matching `SKILL.md` files and their required references
 before acting; reuse unchanged full guidance already available in the active context rather than
@@ -259,7 +263,7 @@ Apply standards as coding guidance and run relevant project checks, including af
 Do not automatically review work units, assess every rule after implementation, keep review-evidence
 ledgers, or reconcile review coverage at handoff. Reuse check results only while they cover the completed
 state. Before compaction retain task/check context; afterward verify current changes and reload missing
-full rules. Record selected rule paths, source revision/dirty state, and performed checks internally;
+full rules. Record installed rule paths, available skill metadata, and performed checks internally;
 do not emit a separate review report or standards summary. Surface unresolved blockers,
 required decisions, and material verification gaps. For explicit review/check/fix requests, display
 every finding in chat with severity, location, rule, evidence, impact, minimal fix, and fixed/remaining

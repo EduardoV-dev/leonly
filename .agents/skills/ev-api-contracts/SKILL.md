@@ -27,8 +27,10 @@ For review-only work, report contract violations without starting an implementat
 - Before implementing pagination, recommend offset or cursor based on the use case, ask the user which
   to use, and STOP until they answer. Honor an explicit choice already provided for the current task.
 - Require all offset metadata fields, using `totalItems` for the authorized, filtered dataset count,
-  not the current page's length. For cursor pagination, always emit `nextCursor` (nullable);
-  include `prevCursor` only when explicitly requested. Wrap the entire page, not just its items.
+  not the current page's length. For cursor pagination, always emit `nextCursor` (nullable) and
+  `resetCursor: boolean`; true means the current pagination chain is invalid and the client must
+  discard it and restart from the beginning. Otherwise emit false. Include `prevCursor` only when
+  explicitly requested. Wrap the entire page, not just its items.
 - Create or reuse shared cursor encode/decode utilities. Validate cursor payloads with Zod, including
   decoded untrusted input. Recognized malformed incoming encoding, JSON, or payloads are API validation
   errors. Invalid server-generated cursor payloads and unexpected utility defects are internal failures,
@@ -54,7 +56,8 @@ For review-only work, report contract violations without starting an implementat
 2. Resolve the pagination choice before pagination implementation; apply the contract template.
 3. Implement validated cursor utilities when needed; extend the base schema for the selected ordering.
 4. Verify success/error envelopes, health aggregation and 200/503 responses, empty and final pages,
-   applicable offset boundaries or cursor round trips, malformed cursors, timestamp ties, client/internal failure attribution, and requested
+   applicable offset boundaries or cursor round trips, reset signaling/client restart, malformed cursors,
+   timestamp ties, client/internal failure attribution, and requested
    backward traversal (query direction, lookahead trimming, restored order, anchors, and boundaries).
 
 ## Output Contract
