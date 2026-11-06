@@ -7,29 +7,28 @@ preserving authorization, concurrent changes, related records, and an all-or-not
 
 ### Requirement: Authorized detail-only edit access
 
-The system SHALL allow either authenticated available member to edit an active memory belonging to
-that member's active space through `/memories/[memoryId]/edit`. The interface SHALL expose the Edit
-action on the memory's direct Timeline or Vault detail page and MUST NOT expose it on Timeline, Vault,
-dashboard, recent-memory, or related-memory cards or other summary surfaces. Direct navigation to the
-edit route SHALL remain authorized by the server rather than by the presence of the action. The server
-MUST derive the requester, space, current placement, and memory from the authenticated session;
-client-supplied ownership or placement MUST NOT establish access. Malformed, missing, inactive,
-soft-deleted, other-space, and inaccessible memory identifiers MUST produce the same generic not-found
-outcome. The localized action label SHALL be the concise equivalent of `Edit`. On direct detail pages,
-the action SHALL share the preserved-by footer: it appears before the attribution on mobile and on the
-same row as the attribution when the available width supports both.
+The existing editor route `/memories/[memoryId]/edit` SHALL remain server-authorized for its existing
+consumers. Read-only Timeline and Vault detail screens SHALL NOT expose or mount an Edit action or issue
+an edit request. Timeline, Vault, dashboard, recent-memory, and related-memory summary surfaces MUST NOT
+expose Edit. The server MUST derive the requester, space, current placement, and memory from the
+authenticated session; client-supplied ownership or placement MUST NOT establish access. Malformed,
+missing, inactive, soft-deleted, other-space, and inaccessible memory identifiers MUST produce the same
+generic not-found outcome.
+
+#### Scenario: Member views detail
+
+- **WHEN** a member opens either a read-only Timeline or Vault detail page
+- **THEN** no Edit action or edit request is present
 
 #### Scenario: Active member edits from a timeline detail
 
-- **WHEN** either active member activates Edit on an available timeline memory's direct detail page
-- **THEN** the system navigates to `/memories/[memoryId]/edit` and displays the authorized editor with
-  that memory's current editable state
+- **WHEN** an active member opens a read-only Timeline detail
+- **THEN** no Edit action or edit request is present
 
 #### Scenario: Active member edits from a Vault detail
 
-- **WHEN** either active member activates Edit on an available Vault memory's direct detail page
-- **THEN** the system navigates to `/memories/[memoryId]/edit` and displays the authorized editor
-  without making the memory timeline-eligible
+- **WHEN** an active member opens a read-only Vault detail
+- **THEN** no Edit action or edit request is present
 
 #### Scenario: Summary surfaces do not expose Edit
 
@@ -39,9 +38,8 @@ same row as the attribution when the available width supports both.
 
 #### Scenario: Detail action adapts beside attribution
 
-- **WHEN** a member views an editable memory detail across supported widths
-- **THEN** the localized Edit action appears above Preserved by on mobile and beside it on wider
-  screens without changing source-order accessibility
+- **WHEN** a member views Timeline or Vault detail across supported widths
+- **THEN** creator attribution appears without an Edit action
 
 #### Scenario: Member addresses an unavailable edit route
 

@@ -7,10 +7,11 @@ its ordered photos while preserving non-enumerating authorization and recoverabl
 
 ### Requirement: Authorized active-space memory detail
 
-The system SHALL allow an authenticated available member to open an available timeline or shared Private
-Vault memory belonging to that member's active space through its UUID detail route. It MUST derive access
-from the authenticated session and active membership; client-supplied space, creator, or visibility values
-MUST NOT establish authority. Opening a Vault memory directly MUST NOT make it eligible for the timeline.
+The system SHALL allow an authenticated available member to open an undeleted new-backend memory in that
+member's active space through its visibility-specific Timeline or Vault detail route. It MUST derive
+access from the authenticated session and active membership; client-supplied space, creator, or
+visibility values MUST NOT establish authority. Opening a Vault memory directly MUST NOT make it
+eligible for the timeline, and detail reads MUST NOT query Supabase.
 
 #### Scenario: Active member opens a timeline memory
 
@@ -57,13 +58,13 @@ Creator attribution MUST NOT grant or broaden access to the memory.
 
 ### Requirement: Deterministic private photo presentation
 
-The system SHALL present every available photo belonging to the authorized memory. When a selected cover
+The system SHALL present every attached photo belonging to the authorized memory. When a selected cover
 exists, it MUST appear first; all remaining photos MUST follow by persisted position ascending while keeping
-their relative order. Each photo MUST use an opaque same-origin media URL whose every request reauthorizes the
-parent memory before returning bytes. The browser MUST NOT receive or accept an object path, signed Storage
-credential, redirect, or client-supplied identity as authority. Missing photos and unavailable media responses
-MUST use an accessible fallback without exposing Storage metadata or preventing other available photos from
-being viewed.
+their relative order. Ready cover and detail variants SHALL use direct storage GET URLs signed for 300 seconds,
+subject to earlier credential expiry; absent or non-ready variants SHALL be nullable. Storage keys and reusable
+credentials MUST NOT be exposed. An issued URL may remain usable until effective expiry after membership
+revocation or deletion. Missing photos and unavailable variants MUST use an accessible fallback without
+preventing other photos from being viewed.
 
 #### Scenario: Selected cover is not the first persisted photo
 
@@ -106,23 +107,19 @@ render unnecessary navigation controls.
 
 ### Requirement: Detail extension regions respect visibility
 
-The detail composition SHALL provide stable regions for memory actions, comments, and reactions without
-fabricating unavailable controls. The action region MUST receive the current memory visibility so later
-capabilities can offer move-to-Private-Vault for a timeline memory or restore for a Vault memory, while edit
-and delete can remain visibility-independent. Comment and reaction regions MUST remain compatible with both
-timeline and Vault detail views.
+Timeline and Vault detail screens SHALL be read-only. They MUST NOT render or mount edit, delete, move,
+restore, reaction, or comment controls or empty action placeholders, and MUST NOT issue associated requests.
+The screens SHALL preserve gallery navigation, related-memory links, and contextual back navigation.
 
 #### Scenario: Timeline memory detail is composed
 
 - **WHEN** the detail view renders a timeline memory
-- **THEN** its extension composition identifies timeline visibility for later action capabilities and keeps
-  comment and reaction regions available for later population
+- **THEN** unsupported controls and comment sections are absent and no corresponding requests are issued
 
 #### Scenario: Vault memory detail is composed
 
 - **WHEN** the detail view renders a Vault memory
-- **THEN** its extension composition identifies Vault visibility for later action capabilities and keeps
-  comment and reaction regions available for later population
+- **THEN** unsupported controls and comment sections are absent and no corresponding requests are issued
 
 ### Requirement: Detail loading and recoverable failure feedback
 
@@ -149,23 +146,31 @@ required.
   URLs
 
 ### Requirement: Detail reaction summary and controls
-
-The memory-detail reaction extension region SHALL display the authorized member's current reaction and
-authoritative counts for every supported reaction type on an available Timeline or shared Private Vault
-memory. It MUST provide accessible reaction controls, refresh the summary after every completed local action,
-and preserve the detail page's existing unavailable outcome. Realtime partner updates are not required.
+Timeline and Vault detail screens SHALL NOT display or fetch reaction summaries or controls while
+they are read-only.
 
 #### Scenario: Timeline detail shows reactions
-
-- **WHEN** an active member opens an available Timeline memory detail
-- **THEN** the detail reaction region displays current counts and that member's confirmed selection
+- **WHEN** an active member opens Timeline detail
+- **THEN** no reaction UI is rendered and no reaction request is sent
 
 #### Scenario: Vault detail shows reactions
-
-- **WHEN** an active member opens an available shared Private Vault memory detail
-- **THEN** the detail reaction region displays current counts and that member's confirmed selection
+- **WHEN** an active member opens Vault detail
+- **THEN** no reaction UI is rendered and no reaction request is sent
 
 #### Scenario: Member reacts from detail
+- **WHEN** an active member opens either read-only detail screen
+- **THEN** no reaction UI is rendered and no reaction request is sent
 
-- **WHEN** a member completes a local reaction action in a memory detail view
-- **THEN** the detail reaction region refreshes to the authoritative summary without changing memory visibility
+### Requirement: Related memories use the current backend
+Both detail screens SHALL display bounded related summaries from the authorized new-backend detail
+response. Related memories MUST be in the same active space and visibility, exclude the current memory,
+and use their correct contextual detail links. The screen SHALL NOT query Supabase for related content
+or display fabricated social counts.
+
+#### Scenario: Member opens a related memory
+- **WHEN** a member selects a related Timeline or Vault card
+- **THEN** the link opens the corresponding visibility-specific detail route
+
+#### Scenario: No related memories exist
+- **WHEN** there are no eligible related memories
+- **THEN** the screen displays its existing empty state

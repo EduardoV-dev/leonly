@@ -31,24 +31,31 @@ boundary between them.
 
 ### Requirement: Contextual placement action on memory detail
 
-The system SHALL expose exactly one accessible placement action on an authorized direct memory-detail
-page. The action MUST be named "Move to Private Vault" for a Timeline memory and "Move to Timeline" for
-a Vault memory. Timeline and Vault list cards MUST NOT add placement controls under this capability.
+Read-only Timeline and Vault detail screens SHALL NOT expose or mount move-to-Vault or move-to-Timeline
+controls or issue placement requests. Timeline and Vault list cards MUST NOT add placement controls
+under this capability. Existing placement mutations remain governed by the placement API and lifecycle
+requirements.
+
+#### Scenario: Member views detail
+
+- **WHEN** a member opens a read-only Timeline or Vault detail screen
+- **THEN** no placement action or placement request is present
 
 #### Scenario: Timeline detail shows destination action
 
-- **WHEN** an available member opens an authorized Timeline memory detail page
-- **THEN** the page exposes one action named "Move to Private Vault"
+- **WHEN** a member opens a read-only Timeline memory detail page
+- **THEN** no placement action or placement request is present
 
 #### Scenario: Vault detail shows destination action
 
-- **WHEN** an available member opens an authorized Vault memory detail page
-- **THEN** the page exposes one action named "Move to Timeline"
+- **WHEN** a member opens a read-only Vault memory detail page
+- **THEN** no placement action or placement request is present
 
 ### Requirement: Successful placement feedback and destination detail
 
-The system SHALL announce successful placement, refresh affected Timeline and Private Vault data, and
-navigate to the moved memory's authorized detail route in its destination placement.
+When an authorized placement mutation is initiated outside the read-only Timeline and Vault detail
+screens, the system SHALL announce successful placement, refresh affected Timeline and Private Vault
+data, and navigate to the moved memory's authorized detail route in its destination placement.
 
 #### Scenario: Move to Private Vault succeeds
 

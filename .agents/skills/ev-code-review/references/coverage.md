@@ -22,7 +22,7 @@ Keep each ID tied to its meaning rather than its position; use the same slug in 
 | `typescript` | `typescript-exported-api-contracts`; `typescript-trust-narrowing-state-types`; `typescript-function-signatures-object-types`; `typescript-imports-configuration-environment` |
 | `react` | `react-component-ownership-props`; `react-hooks-state-derived-values`; `react-safe-rendering-accessibility-testing` |
 | `nextjs` | `nextjs-routes-rendering-client-boundaries`; `nextjs-server-only-imports-environment`; `nextjs-server-entry-validation-authorization` |
-| `nestjs` | `nestjs-injected-provider-naming`; `nestjs-module-layout`; `nestjs-colocated-tests-module-fixtures`; `nestjs-body-dto-validation`; `nestjs-global-validation-pipe`; `nestjs-api-openapi-scalar`; `nestjs-health-checks` |
+| `nestjs` | `nestjs-injected-provider-naming`; `nestjs-module-layout`; `nestjs-colocated-tests-module-fixtures`; `nestjs-body-dto-validation`; `nestjs-path-parameter-validation`; `nestjs-global-validation-pipe`; `nestjs-api-openapi-scalar`; `nestjs-health-checks` |
 
 Select `core` for every review, plus applicable domain and installed technology companions. Select the
 relevant check IDs within those groups; justify exclusions during planning rather than omitting a

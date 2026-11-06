@@ -7,10 +7,11 @@ active-space authorization, deterministic chronology, and non-enumerating unavai
 
 ### Requirement: Active-space Vault visibility
 
-The system SHALL allow an authenticated available member to view only memories belonging to that
-member's active space where `visibility = 'vault'` and `deleted_at is null`. It MUST exclude timeline
-memories and soft-deleted memories. The interface MUST clearly state that the Private Vault is shared
-by both active members and does not hide memories from either member.
+The system SHALL allow an authenticated available member to view only new-backend memories in that
+member's active space where `visibility = 'vault'` and `deleted_at is null`. It MUST exclude Timeline
+memories, unavailable memberships, and deleted spaces, and MUST NOT read legacy Supabase data. The
+interface MUST clearly state that the Private Vault is shared by both active members and does not hide
+memories from either member.
 
 #### Scenario: Available member views Vault memories
 
@@ -22,6 +23,10 @@ by both active members and does not hide memories from either member.
 - **WHEN** the active space contains timeline memories or soft-deleted memories
 - **THEN** the Private Vault excludes them
 
+#### Scenario: Legacy Vault memories exist
+- **WHEN** Vault memories exist only in Supabase
+- **THEN** those memories do not appear in the migrated Vault and no legacy fallback is attempted
+
 #### Scenario: Either active member opens the Vault
 
 - **WHEN** either available member of a two-member active space opens the Private Vault
@@ -30,11 +35,11 @@ by both active members and does not hide memories from either member.
 
 ### Requirement: Vault memory summaries and extension regions
 
-The system SHALL render each Vault memory as a summary card with its title, memory date, cover-photo
-preview or accessible fallback, and any available description and location previews. Each card MUST
-provide one accessible link to the memory's UUID detail route and stable, independently interactive
-extension regions for later count, edit, restore, and delete capabilities. US-006 MUST NOT fabricate
-controls for capabilities that have not shipped.
+The system SHALL render each Vault memory with its title, memory date, cover-photo preview or
+accessible fallback, and available description and location previews. Each card MUST retain one
+accessible link to its existing UUID detail route and independently interactive extension regions.
+Migrated list cards MUST omit comment counts and reaction data or controls, MUST NOT fabricate social
+counts, and MUST NOT invoke legacy social endpoints or invent unshipped controls.
 
 #### Scenario: Vault memory has complete summary data
 
@@ -55,38 +60,55 @@ controls for capabilities that have not shipped.
 
 ### Requirement: Authorized private cover delivery
 
-The system SHALL resolve an opaque same-origin cover media URL only after establishing that the parent Vault
-memory is available to the requesting active-space member. Every media request MUST reauthorize the parent
-memory before returning bytes. The browser MUST NOT receive or derive a Storage object path, signed Storage
-credential, or redirect to a Storage URL. An absent or unavailable authorized media response MUST produce the
-accessible card fallback and MUST NOT exclude an otherwise available memory.
+Migrated Vault reads SHALL authorize available parent memories and ready cover attachments before
+issuing direct storage GET URLs signed for 300 seconds, subject to earlier credential expiry. Cards
+MUST request those URLs directly without the legacy image route or a new application media endpoint.
+Storage MUST remain private. Missing or unavailable covers MUST produce the accessible fallback without
+excluding an eligible memory. Legacy edit-preview media retains its existing delivery until migrated.
 
 #### Scenario: Authorized Vault cover resolves
 
-- **WHEN** an authorized Vault read includes an eligible memory with a resolvable cover photo
-- **THEN** the card requests its opaque media URL and receives bytes only after current authorization succeeds
+- **WHEN** an authorized Vault read includes an eligible memory with a ready attached cover
+- **THEN** the card requests its five-minute signed URL directly from storage without an application
+  image request
 
 #### Scenario: Vault cover is absent or cannot be delivered
 
-- **WHEN** an eligible Vault memory has no cover photo or its authorized media response is unavailable
-- **THEN** the response exposes no Storage authority and the card displays the accessible fallback
+- **WHEN** an eligible Vault memory has no ready cover or its authorized media response is unavailable
+- **THEN** the card displays the accessible fallback without making the storage object public
+
+#### Scenario: Membership becomes unavailable before the image request
+- **WHEN** the caller loses active membership after receiving a signed cover URL
+- **THEN** new Vault list requests deny access, while the previously issued URL can remain usable until
+  its effective expiry
+
+#### Scenario: Vault cover URL has expired
+- **WHEN** a new storage request uses a cover URL after its effective expiry
+- **THEN** the expired URL does not authorize the download; automatic renewal or removal of already-
+  downloaded image bytes is not required
 
 ### Requirement: Deterministic bounded Vault pagination
 
 The system SHALL define "newest" by memory date and return at most 20 eligible Vault memories per
-page, ordered by memory date descending, creation timestamp descending, and immutable UUID identifier
-descending. A subsequent page MUST contain only memories lexicographically after the prior page's last
-full ordering tuple, so equal memory dates or creation timestamps cannot cause duplicates or skips.
-
-The next-page cursor SHALL be an opaque Base64URL-encoded JSON value with version `1` and exactly the
-last item tuple: `memoryDate` as `YYYY-MM-DD`, `createdAt` as an ISO-8601 timestamp with offset, and
-`id` as an immutable UUID string. The system MUST return no next cursor when no further eligible Vault
-memory exists.
+page, defaulting to newest-first and supporting oldest-first. The default page size SHALL be 10; the
+requested integer limit MUST be between 1 and 20. All ordering fields (`memoryDate`, `createdAt`, `id`)
+MUST use the selected direction. Continuations MUST use the full lexicographic tuple without losing
+stored timestamp precision. Opaque version-1 Base64URL JSON cursors SHALL contain exactly
+`memoryDate`, `createdAt`, `id`, `sort`, and `v`. The terminal next cursor MUST be null.
 
 #### Scenario: Equal-date Vault memories span pages
 
 - **WHEN** more than 20 eligible Vault memories share one or more memory dates or creation timestamps
 - **THEN** successive pages return every eligible memory once in the specified total order
+
+#### Scenario: Oldest-first Vault ordering is selected
+- **WHEN** the member selects oldest-first
+- **THEN** all three ordering fields and continuation comparisons use ascending order
+
+#### Scenario: Vault timestamps differ below millisecond precision
+- **WHEN** eligible records have creation timestamps differing only in PostgreSQL microseconds
+- **THEN** pagination preserves exact tuple order and anchor equality without duplicates, skips, or
+  spurious resets
 
 #### Scenario: Memory moves into the Vault
 
@@ -101,23 +123,26 @@ memory exists.
 
 ### Requirement: Invalid and stale Vault cursor recovery
 
-The system SHALL treat a cursor as invalid when it is malformed, cannot be decoded, has an unsupported
-version, contains extra or missing fields, or contains fields outside the required shapes. It SHALL
-treat a cursor as stale when its full tuple no longer identifies an eligible memory in the requesting
-member's active-space Vault. For either condition, the system MUST return the current first page with a
-`cursorReset` refresh signal, MUST NOT apply the supplied cursor as a query predicate, and MUST NOT
-disclose whether the referenced record exists or why it is unavailable.
+The system SHALL reject malformed, oversized, unsupported-version, extra-field, or invalid-shape
+Vault cursors with HTTP 400 and the standard error envelope. A valid cursor with a changed sort or an
+anchor no longer eligible in the current active-space Vault SHALL return the current first page with
+`cursorReset: true`. Invalid or stale cursors MUST NOT be applied as a query predicate or disclose
+whether the referenced memory exists or why it is unavailable.
 
 #### Scenario: Malformed Vault cursor is supplied
 
 - **WHEN** a member requests a subsequent Vault page with a malformed or unsupported cursor
-- **THEN** the system returns the current first page and signals that the Vault was refreshed
+- **THEN** the API returns HTTP 400 without applying that cursor as a continuation predicate
 
 #### Scenario: Cursor anchor leaves the Vault
 
 - **WHEN** the cursor anchor is restored to the timeline, soft-deleted, changed, or becomes inaccessible
 - **THEN** the system returns the current first page and signals that the Vault was refreshed without
   disclosing the anchor's state
+
+#### Scenario: Vault cursor sort differs from requested sort
+- **WHEN** a well-formed Vault cursor was issued for the opposite sort direction
+- **THEN** the system returns the current sort's first page with `cursorReset: true`
 
 ### Requirement: Vault feedback and refresh behavior
 
@@ -179,21 +204,3 @@ visibility, membership, photo, or storage details.
 - **WHEN** a member addresses a malformed, missing, soft-deleted, inactive, other-space, or unauthorized
   memory identifier
 - **THEN** the system returns the same generic not-found outcome with no memory or media disclosure
-
-### Requirement: Vault card reaction summary and controls
-
-The Vault card reaction extension region SHALL display the authorized member's current reaction and
-authoritative counts for every supported reaction type on each eligible card. Controls MUST be independently
-interactive from the card's detail link, remain available for shared Private Vault memories only, and refresh
-their summary after a completed local reaction action. Realtime partner updates are not required.
-
-#### Scenario: Vault card shows reactions
-
-- **WHEN** an eligible Vault card has reaction data
-- **THEN** the card shows its current counts and the requesting member's confirmed selection without nesting
-  a control in the detail link
-
-#### Scenario: Member reacts from a Vault card
-
-- **WHEN** a member completes a local reaction action on a Vault card
-- **THEN** that card refreshes to the authoritative summary and the Vault remains otherwise usable

@@ -31,6 +31,9 @@ Use before NestJS implementation or with `ev-code-review`. Load general/backend 
 - Require runtime DTO classes for request bodies unless explicitly overridden. Validate on DTOs with
   `class-validator`; use `class-transformer` for needed transformations/nested instances. Prefer these
   alone; separate validation files/additional validators require a concrete need. Static types do not suffice.
+- Validate path parameters at the HTTP boundary using a matching built-in pipe inline in `@Param()`;
+  avoid duplicate manual format checks in controllers or services. Preserve distinct domain validation
+  and use custom pipes when built-ins cannot meet the contract.
 - Require global `ValidationPipe` options `forbidNonWhitelisted: true`, `whitelist: true`, and
   `transform: true`. Custom pipes may extend, not weaken, this baseline.
 - Set the global prefix to `api`; generate OpenAPI with `@nestjs/swagger` and serve Scalar at `/docs`,
@@ -45,6 +48,7 @@ Use before NestJS implementation or with `ev-code-review`. Load general/backend 
 | Ambiguous injected dependency | Trace provider contracts before applying service naming. |
 | Module files/tests | Apply independent category counts, plural grouping, and test ownership. |
 | Body endpoint/bootstrap | Verify DTO metadata, global validation, `/api`, and OpenAPI/Scalar at `/docs`. |
+| Path parameters | Verify format validation uses an appropriate inline built-in pipe when available. |
 | Health endpoint | Verify actual checks, direct payload, aggregation, and 200/503 mapping. |
 
 ## Execution Steps
@@ -59,7 +63,7 @@ Use before NestJS implementation or with `ev-code-review`. Load general/backend 
 During reviews, return severity, `path:line`, rule, evidence, impact, and minimal fix, plus each assigned ID:
 `nestjs-injected-provider-naming`;
 `nestjs-module-layout`; `nestjs-colocated-tests-module-fixtures`; `nestjs-body-dto-validation`;
-`nestjs-global-validation-pipe`; `nestjs-api-openapi-scalar`; `nestjs-health-checks`. Use
+`nestjs-path-parameter-validation`; `nestjs-global-validation-pipe`; `nestjs-api-openapi-scalar`; `nestjs-health-checks`. Use
 `ev-code-review/references/coverage.md`; let the coordinator consolidate.
 
 ## References

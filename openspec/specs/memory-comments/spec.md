@@ -247,6 +247,8 @@ local successful actions MUST refresh the history.
 
 ### Requirement: Accessible responsive comments section
 
+Timeline and Vault detail screens SHALL NOT mount or fetch the comments section while they are
+read-only. Existing comment functionality outside these screens remains available under this capability.
 The comments section SHALL use semantic headings, list structure, form controls, status messaging, and
 keyboard-operable actions. Validation MUST be programmatically associated with the composer, async status
 MUST be announced, focus MUST remain predictable, and color MUST NOT be the only state indicator. The
@@ -268,6 +270,10 @@ with controls meeting a minimum 44-by-44 CSS-pixel target and motion respecting 
 - **WHEN** the detail view is used at mobile, 640 px, 768 px, or 1024 px widths
 - **THEN** comment text wraps, actions remain reachable, source order remains logical, and no horizontal
   document overflow is introduced
+
+#### Scenario: Member views detail at any supported width
+- **WHEN** a member opens a Timeline or Vault detail screen at mobile or desktop widths
+- **THEN** no comment section, composer, controls, validation UI, or comment request is present
 
 ### Requirement: Author-owned versioned comment edits
 

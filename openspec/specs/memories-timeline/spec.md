@@ -6,16 +6,20 @@ memory visibility, lifecycle, and not-found boundaries.
 ## Requirements
 
 ### Requirement: Active-space timeline visibility
-The system SHALL allow an authenticated available member to view only memories belonging to that
-member's active space where `visibility = 'timeline' and deleted_at is null`. It MUST exclude
- memories in the shared Private Vault from the timeline. A missing cover photo, description, or
-location MUST NOT exclude an otherwise eligible memory. A photo preview is available only when its
-parent memory is available and its cover URL resolves under the private-media contract.
+The system SHALL allow an authenticated available member to view only new-backend memories belonging
+to that member's active space where `visibility = 'timeline' and deleted_at is null`. It MUST exclude
+Vault memories, unavailable memberships, and deleted spaces, and MUST NOT read legacy Supabase data.
+A missing cover photo, description, or location MUST NOT exclude an otherwise eligible memory. Photo
+previews MUST follow the private-media contract.
 
 #### Scenario: Available member views eligible memories
 - **WHEN** an available member opens the timeline for an active space with eligible memories
-- **THEN** the system displays only that space's memories with `visibility = 'timeline' and
-  deleted_at is null`
+- **THEN** the system displays only that space's new-backend memories with `visibility = 'timeline'
+  and deleted_at is null`
+
+#### Scenario: Legacy memories exist
+- **WHEN** memories exist only in Supabase
+- **THEN** those memories do not appear in the Timeline and no legacy fallback is attempted
 
 #### Scenario: Memory has optional fields absent
 - **WHEN** an eligible memory has no cover photo, description, or location
@@ -28,14 +32,15 @@ parent memory is available and its cover URL resolves under the private-media co
 
 ### Requirement: Timeline card summaries and extension regions
 The system SHALL render each timeline memory as a card with its title, memory date, cover-photo
-preview or fallback, and any available description and location previews. Each card MUST contain one
-accessible link to that memory's UUID detail route while keeping stable extension regions for later
-memory-count and action capabilities. The detail link MUST NOT interfere with current or later
-interactive controls in those regions.
+preview or fallback, and any available description and location previews. Each card MUST retain one
+accessible link to its UUID detail route and stable extension regions that do not interfere with the
+link. Migrated list cards MUST omit comment counts and reaction data or controls, MUST NOT fabricate
+zero counts, and MUST NOT call legacy social endpoints.
 
 #### Scenario: Memory has complete summary data
 - **WHEN** an eligible memory has a cover photo, description, and location
-- **THEN** its card displays all required and available summary fields
+- **THEN** its card displays all required and available summary fields without comment or reaction
+  metadata
 
 #### Scenario: Authorized cover response is unavailable
 - **WHEN** an eligible memory has a cover photo but its authorized cover response is unavailable
@@ -45,67 +50,88 @@ interactive controls in those regions.
 - **WHEN** a member activates an eligible memory card's detail link
 - **THEN** the interface navigates to that memory's UUID detail route
 
+#### Scenario: Migrated card has no social metadata
+- **WHEN** a new-backend Timeline item is rendered
+- **THEN** the card mounts no reaction control, issues no comment or reaction request, and displays no
+  placeholder social counts
+
 #### Scenario: A capability supplies card content
 - **WHEN** a capability contributes a count or action to a card
 - **THEN** that content is rendered in its designated extension region, remains independently
   interactive, and does not remove the timeline summary or detail link
 
 ### Requirement: Private cover-media delivery
-The system SHALL resolve an opaque same-origin cover media URL only after an authorized Timeline or detail
-read establishes that the parent memory is available to the requesting member. Every media request MUST
-reauthorize the parent memory before returning bytes. The UI MUST NOT receive, derive, construct, expose, or
-otherwise use a Storage object path, signed Storage credential, or redirect to a Storage URL. If a memory has
-no cover photo or authorized media delivery fails, the UI MUST render its existing accessible fallback. This
-delivery contract MUST NOT change pagination, ordering, eligibility, active-space authorization, Vault
-exclusion, or generic not-found behavior.
+Migrated Timeline and detail reads SHALL authorize the parent memory and ready cover attachment before
+issuing a direct storage GET URL signed for 300 seconds, subject to earlier credential expiry. Timeline
+cards and migrated detail views MUST request those URLs directly from private storage, without an
+application media endpoint. Missing or unavailable covers MUST use the accessible fallback without
+changing eligibility or ordering. Previously issued URLs may remain usable until effective expiry after
+access is revoked or the memory is deleted. Legacy editor media routes retain per-request authorization.
 
 #### Scenario: Authorized cover photo is displayed
-- **WHEN** an authorized Timeline or detail read returns an available memory with a resolvable cover photo
-- **THEN** the UI requests its opaque media URL and receives bytes only after current authorization succeeds
+- **WHEN** an authorized Timeline or detail read finds a ready attached cover
+- **THEN** the UI requests its five-minute signed URL directly from storage without the legacy image route
+  or a new proxy
 
 #### Scenario: Cover photo is absent or delivery fails
-- **WHEN** an authorized Timeline or detail read has no cover photo or cannot deliver its authorized media
-- **THEN** the response exposes no Storage authority and the UI renders the existing accessible fallback
+- **WHEN** an authorized read has no ready cover or its signed URL cannot deliver the cover
+- **THEN** the UI renders the existing accessible fallback without making storage public
 
 #### Scenario: Unavailable memory includes a cover photo
-- **WHEN** a Timeline, detail, or media read cannot establish that a memory is currently available
-- **THEN** the server returns no photo bytes or Storage authority and preserves the existing exclusion or
-  generic not-found outcome
+- **WHEN** a Timeline or detail read cannot establish that a memory is currently available
+- **THEN** it issues no fresh cover URL while a previously issued URL may remain usable until expiry
+
+#### Scenario: Signed cover URL expires
+- **WHEN** a new storage request uses a cover URL after its effective expiry
+- **THEN** that URL no longer authorizes the download; already-downloaded bytes need not disappear and
+  automatic renewal is not required
 
 ### Requirement: Deterministic bounded timeline pagination
-The system SHALL return timeline pages containing at most 20 eligible memories, ordered by memory
-date descending, creation timestamp descending, and immutable UUID memory identifier descending. For a
-subsequent page, the system MUST return only memories lexicographically after the prior page's last
-full ordering tuple so equal memory dates cannot cause duplicates or skips.
+The system SHALL return at most 20 eligible memories per page, defaulting to newest-first and
+supporting oldest-first. The default page size SHALL be 10; the requested integer limit MUST be between
+1 and 20. All ordering fields (`memoryDate`, `createdAt`, `id`) MUST use the selected direction.
+Continuations MUST use the full lexicographic tuple without losing stored timestamp precision.
 
-The next-page cursor SHALL be an opaque Base64URL-encoded JSON value with version `1` and exactly
-the last item tuple: `memoryDate` as a `YYYY-MM-DD` string, `createdAt` as an ISO-8601 UTC instant,
-and `id` as the immutable UUID string identifier. The system MUST return no next cursor when no
-further eligible memory exists.
+The next-page cursor SHALL be an opaque version-1 Base64URL-encoded JSON value containing exactly
+`memoryDate`, `createdAt`, `id`, `sort`, and `v`. `memoryDate` SHALL be `YYYY-MM-DD`, `createdAt`
+SHALL preserve its full UTC timestamp precision, and `id` SHALL be the immutable UUID. The terminal
+next cursor MUST be null.
 
 #### Scenario: Equal-date memories span pages
 - **WHEN** more than 20 eligible memories share one or more memory dates
 - **THEN** loading successive pages returns every eligible memory once in the specified total order
+
+#### Scenario: Oldest-first ordering is selected
+- **WHEN** the member selects oldest-first
+- **THEN** all three ordering fields and continuation comparisons use ascending order
+
+#### Scenario: Creation timestamps differ below millisecond precision
+- **WHEN** eligible records have creation timestamps differing only in PostgreSQL microseconds
+- **THEN** pagination preserves their exact tuple order and cursor-anchor equality without duplicates,
+  skips, or spurious resets
 
 #### Scenario: Final page is reached
 - **WHEN** the current page contains the final eligible memory
 - **THEN** the system returns no next cursor and the timeline does not offer another page
 
 ### Requirement: Invalid and stale cursor recovery
-The system SHALL treat a cursor as invalid when it is malformed, cannot be decoded, has an
-unsupported version, lacks any required field, or has fields that do not match the required shapes.
-It SHALL treat a cursor as stale when its tuple no longer identifies an eligible memory in the
-requesting member's active-space timeline. For either condition, the system MUST return the first
-page for the current active space and a `cursorReset` refresh signal; it MUST NOT use the supplied
-cursor as a database predicate or disclose whether its referenced memory existed.
+The system SHALL reject malformed, oversized, unsupported-version, extra-field, or invalid-shape
+cursors with HTTP 400 and the standard error envelope. A valid cursor with a changed sort or an anchor
+no longer eligible in the current active-space Timeline SHALL return the current first page with
+`cursorReset: true`. Invalid or stale cursors MUST NOT be used as continuation predicates or disclose
+whether their referenced memory exists.
 
 #### Scenario: Malformed cursor is supplied
 - **WHEN** a member requests a subsequent page with a malformed or unsupported cursor
-- **THEN** the system returns the first page and signals that the timeline was refreshed
+- **THEN** the system returns HTTP 400 without applying the cursor as a continuation predicate
 
 #### Scenario: Cursor anchor becomes unavailable
 - **WHEN** the cursor's anchor memory is deleted, hidden, moved to the Vault, or becomes inaccessible
 - **THEN** the system returns the first page and signals that the timeline was refreshed
+
+#### Scenario: Cursor sort differs from the requested sort
+- **WHEN** a well-formed cursor was issued for the opposite sort direction
+- **THEN** the system returns the current sort's first page with `cursorReset: true`
 
 ### Requirement: Timeline feedback and refresh behavior
 The system SHALL show an initial loading state while the first timeline page is pending, a clear
@@ -145,21 +171,3 @@ memory URL, but that access MUST NOT make the memory appear in the timeline.
 #### Scenario: Authorized Vault detail route is addressed
 - **WHEN** an available member addresses an authorized shared Private Vault memory URL
 - **THEN** the member can access that memory without it appearing in the timeline
-
-### Requirement: Timeline card reaction summary and controls
-
-The Timeline card reaction extension region SHALL display the authorized member's current reaction and
-authoritative counts for every supported reaction type on each eligible card. Controls MUST be independently
-interactive from the card's detail link, remain available for Timeline memories only, and refresh their
-summary after a completed local reaction action. Realtime partner updates are not required.
-
-#### Scenario: Timeline card shows reactions
-
-- **WHEN** an eligible Timeline card has reaction data
-- **THEN** the card shows its current counts and the requesting member's confirmed selection without nesting
-  a control in the detail link
-
-#### Scenario: Member reacts from a Timeline card
-
-- **WHEN** a member completes a local reaction action on a Timeline card
-- **THEN** that card refreshes to the authoritative summary and the Timeline remains otherwise usable

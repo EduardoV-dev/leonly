@@ -120,3 +120,155 @@ automatically generated Nest endpoints.
 #### Scenario: Documentation is unavailable through Lambda
 - **WHEN** a client requests `/docs` or `/openapi.json` through API Gateway
 - **THEN** neither request is routed to Lambda
+
+### Requirement: Read active-space memory lists
+`GET /api/memories/timeline` and `GET /api/memories/vault` SHALL require a Better Auth session and
+derive the active space from its active membership. They SHALL read only new-backend records, exclude
+deleted memories and spaces, and return only the route's visibility. They MUST NOT query Supabase or
+accept caller-supplied user or space identifiers as authority. Missing membership SHALL produce a
+generic HTTP 404; missing authentication SHALL produce HTTP 401.
+
+#### Scenario: Member reads either list
+- **WHEN** an active member requests the Timeline or Vault endpoint
+- **THEN** HTTP 200 contains only eligible new-backend memories in that member's active space and the
+  requested visibility
+
+#### Scenario: Only legacy records exist
+- **WHEN** Supabase contains memories but the new backend has no eligible memories
+- **THEN** the endpoint returns a successful empty page without reading or importing the legacy records
+
+### Requirement: Validate memory list query parameters
+Both list endpoints SHALL accept optional `cursor` and `sort`, with `sort` limited to `newest` or
+`oldest` and defaulting to `newest`. Both SHALL accept integer `limit` from 1 through 20, defaulting
+to 10. Unsupported parameters, invalid limits or sorts, and malformed cursors SHALL return HTTP 400
+in the standard error envelope.
+
+#### Scenario: Dashboard requests a smaller page
+- **WHEN** an authorized caller requests Timeline with `limit=4`
+- **THEN** the response contains at most four eligible memories and correctly indicates whether
+  another page exists
+
+#### Scenario: Query validation fails
+- **WHEN** a request supplies an invalid sort, an out-of-range or non-integer limit, unsupported
+  parameters, or an invalid cursor encoding or shape
+- **THEN** the API returns HTTP 400 without using the invalid values in a database predicate
+
+### Requirement: Memory list response contract
+Successful lists SHALL return the standard `ApiResponse` envelope whose `data` contains `data` (items)
+and `meta` (`nextCursor`, nullable, and `cursorReset`, boolean). Each item SHALL contain `id`, `title`,
+`memoryDate`, `createdAt`, nullable `description`, nullable `location`, and nullable `coverPhotoUrl`.
+Items MUST omit comment counts and reaction data; terminal and empty pages SHALL emit
+`nextCursor: null`.
+
+#### Scenario: Page contains eligible items
+- **WHEN** a list request succeeds
+- **THEN** the API returns HTTP 200 with `ok: true`, `error: []`, a message, and the documented page
+  and item fields without comments or reactions
+
+#### Scenario: List lookup fails unexpectedly
+- **WHEN** an unexpected database or application failure prevents listing
+- **THEN** the API returns a generic HTTP 500 error envelope rather than an empty success or internal
+  error details
+
+### Requirement: Signed list cover URLs
+Timeline and Vault list responses SHALL issue a direct storage GET URL in `coverPhotoUrl` only after
+authorizing the member, parent memory, selected attachment, and ready cover variant. URLs SHALL be
+signed for 300 seconds from issuance, subject to earlier signing-credential expiry. Missing or
+non-ready covers SHALL produce null. Buckets MUST remain private; responses MUST NOT include reusable
+signing credentials or standalone object-key metadata. Previously issued URLs may remain usable until
+effective expiry after access is revoked.
+
+#### Scenario: Authorized list contains a ready cover
+- **WHEN** an active member requests a list containing an eligible memory with a ready attached cover
+- **THEN** its item contains a five-minute signed GET URL that the browser requests directly from
+  storage without an application image endpoint
+
+#### Scenario: Cover is absent or still processing
+- **WHEN** an eligible memory has no selected cover or no ready cover variant
+- **THEN** the item contains `coverPhotoUrl: null` and remains in the list
+
+#### Scenario: Backend list query runs again
+- **WHEN** a later authorized list request reaches the backend
+- **THEN** the backend signs its ready cover URLs anew with expiration measured from that issuance
+
+### Requirement: Read active-space memory detail
+`GET /api/memories/timeline/:memoryId` and `GET /api/memories/vault/:memoryId` SHALL require a Better
+Auth session and derive the member and active space server-side. Each SHALL return only an undeleted
+new-backend memory with the route's visibility in an undeleted active space. Reads SHALL verify current
+membership and SHALL NOT use Supabase or caller-supplied identity or space as authority.
+
+#### Scenario: Active member reads detail
+- **WHEN** an active member requests a matching Timeline or Vault memory
+- **THEN** HTTP 200 returns the authorized memory in the standard success envelope
+
+#### Scenario: Memory is unavailable
+- **WHEN** membership is absent or the identifier is malformed, missing, deleted, inaccessible, in
+  another space, or has the wrong route visibility
+- **THEN** the same generic HTTP 404 contains no memory, creator, photo, or storage data
+
+#### Scenario: Session is unavailable or a read fails
+- **WHEN** a request has no valid session or the backend encounters an unexpected read failure
+- **THEN** it returns 401 or a safe server error respectively, not a successful or generic-not-found
+  detail
+
+### Requirement: Memory detail response contract
+Successful detail responses SHALL use shared `ApiResponse` and detail types. Data SHALL include id,
+title, date-only memory date, nullable description and location, visibility, creation and update
+timestamps, creator display name, nullable avatar, ordered photos, and bounded related summaries. Photo
+URLs SHALL be nullable. Reaction, comment, mutation-version, and object-key fields SHALL NOT be included.
+
+#### Scenario: Authorized detail has related memories
+- **WHEN** an active member requests a matching memory with eligible neighbors
+- **THEN** the response contains only same-space, same-visibility summaries, excluding the parent and
+  social data, ordered by memory date, creation time, and ID descending and bounded by the existing
+  related-card limit
+
+#### Scenario: Detail has optional or no photo data
+- **WHEN** description, location, avatar, photos, or a photo variant are absent
+- **THEN** the response represents the missing values as null or an empty collection without
+  fabricating content
+
+### Requirement: Issue signed detail photo URLs
+After authorizing the parent and attached file in the active space, the API SHALL sign only ready cover
+and detail variants for 300 seconds from issuance, subject to earlier credential expiry. Missing or
+non-ready variants SHALL be null. The API MUST NOT expose reusable signing credentials or standalone
+storage keys. Related ready cover URLs use the same rules. Each fresh authorized read signs URLs anew.
+
+#### Scenario: Authorized ready variants
+- **WHEN** an authorized memory has ready attached variants
+- **THEN** the response contains direct signed GET URLs for those variants and no raw object keys
+
+#### Scenario: Variant unavailable or signing fails
+- **WHEN** a variant is missing or not ready
+- **THEN** its URL is null and the memory remains readable
+- **WHEN** signing unexpectedly fails
+- **THEN** the request returns a safe error instead of fabricating a URL
+
+#### Scenario: Access changes after issuance
+- **WHEN** membership is revoked or the memory is deleted after a URL is issued
+- **THEN** later detail requests deny access, while that URL may remain usable until effective expiry
+
+### Requirement: Document memory read operations
+The local API reference SHALL document the Timeline and Vault list and detail operations, query
+validation, schemas, authentication, cursor behavior, error envelopes, and signed URL expiry and
+revocation limitations. It MUST NOT advertise a cover-bytes endpoint or new application image proxy.
+
+#### Scenario: Developer inspects memory read endpoints
+- **WHEN** a developer opens the local OpenAPI document or Scalar reference
+- **THEN** both visibility-specific list and detail operations expose matching response and error
+  contracts, including nullable signed cover URLs
+
+### Requirement: Legacy image endpoint boundary
+Migrated Timeline, Vault, and dashboard recent-memory covers MUST NOT use
+`GET /api/memories/:memoryId/photos/:photoId/:variant`. The system SHALL NOT add a replacement NestJS
+image endpoint or Next.js image proxy. Existing editor-preview consumers may continue using the legacy
+route until their separate migration.
+
+#### Scenario: Migrated list or detail renders a cover
+- **WHEN** a Timeline, Vault, dashboard recent-memory, or migrated detail view renders a ready cover
+- **THEN** the browser uses the signed URL from the read response and makes no request to the legacy
+  image route or a new application image proxy
+
+#### Scenario: Existing editor preview renders an image
+- **WHEN** an existing edit preview requests a legacy image
+- **THEN** its current route and authorization behavior remain available without a NestJS replacement

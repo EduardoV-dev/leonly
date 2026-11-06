@@ -50,43 +50,22 @@ hard-deletion policy removes them.
 - **THEN** the system returns the same generic not-found outcome used for every unavailable memory
 
 ### Requirement: Confirmed deletion on direct memory detail
-The interface SHALL expose an accessible Delete action for either active member only on direct Timeline and
-shared Private Vault memory detail views. Timeline, Vault, dashboard, recent-memory, and related-memory cards
-or other summary surfaces MUST NOT expose the action. Deletion MUST require explicit destructive confirmation
-that explains the memory will disappear for both members while retained deletion is not presented as
-permanent erasure. Cancelling or dismissing confirmation MUST send no request and leave the memory unchanged.
+Read-only Timeline and Vault detail screens SHALL NOT expose or mount Delete actions or confirmation
+dialogs. Timeline, Vault, dashboard, recent-memory, and related-memory cards or other summary surfaces
+MUST NOT expose Delete under this capability. Deletion behavior outside these read-only screens remains
+governed by the deletion API and lifecycle requirements.
 
 #### Scenario: Member views a summary surface
 - **WHEN** a member views a memory through a Timeline, Vault, dashboard, recent-memory, or related-memory card
 - **THEN** that surface provides no Delete action
 
 #### Scenario: Member cancels deletion
-- **WHEN** a member opens the deletion confirmation and cancels or dismisses it
-- **THEN** no deletion request is sent, the memory remains in its prior placement, and focus returns to the
-  invoking control
+- **WHEN** a member views a read-only Timeline or Vault detail screen
+- **THEN** no deletion confirmation or request is present
 
 #### Scenario: Member confirms deletion by keyboard
-- **WHEN** a keyboard member opens the confirmation, reviews it, and confirms deletion
-- **THEN** the request can complete without pointer input and pending state and focus remain understandable
-
-### Requirement: Detail deletion success and recoverable failure
-On successful deletion from detail, the interface SHALL navigate to the memory's prior Timeline or shared
-Private Vault collection, reconcile affected projections from their first page, and announce localized success
-without a persistent success query parameter. A recoverable failure MUST keep the member on the current detail,
-leave the memory active in its prior placement, and provide accessible retry guidance without claiming success.
-
-#### Scenario: Detail deletion succeeds
-- **WHEN** deletion succeeds from a direct Timeline or Vault detail view
-- **THEN** the member is taken to the corresponding prior collection and receives accessible success feedback
-
-#### Scenario: Deletion fails recoverably
-- **WHEN** an eligible deletion cannot complete for a recoverable reason
-- **THEN** the memory remains active in its prior placement and the interface reports a retryable failure
-
-#### Scenario: Deletion response is indeterminate
-- **WHEN** a deletion request ends without a reliable server outcome
-- **THEN** the interface reauthorizes the memory before presenting retry, treats generic unavailability as
-  completed deletion, and otherwise keeps the current memory available for retry
+- **WHEN** a keyboard user views a read-only Timeline or Vault detail screen
+- **THEN** no deletion action or confirmation is available
 
 ### Requirement: Single-flight deletion and deterministic mutation conflicts
 Each rendered deletion flow MUST start at most one request while pending and disable its conflicting memory

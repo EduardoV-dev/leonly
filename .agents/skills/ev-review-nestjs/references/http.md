@@ -56,6 +56,55 @@ for nested collections when applicable. Do not introduce coercion decorators whe
 needed. Interfaces, utility types that erase runtime metadata, and scalar `@Body("field")` extraction
 alone do not replace validation of the complete body.
 
+## Validate Path Parameters With Pipes
+
+Prefer a matching built-in pipe directly on `@Param()` rather than manually validating the HTTP
+parameter's format in the controller or service.
+
+```ts
+// Avoid: manual format validation in the controller.
+@Get(":id")
+findOne(@Param("id") id: string) {
+  if (!isUUID(id)) throw new BadRequestException("Invalid user ID");
+  return this.usersService.findOne(id);
+}
+```
+
+```ts
+// Avoid: HTTP parameter format validation in the service.
+@Get(":id")
+findOne(@Param("id") id: string) {
+  return this.usersService.findOne(id);
+}
+
+// Service fragment
+findOne(id: string) {
+  if (!isUUID(id)) throw new BadRequestException("Invalid user ID");
+  return this.usersRepository.findOneBy({ id });
+}
+```
+
+```ts
+// Prefer: reject invalid UUIDs before the controller method runs.
+@Get(":id")
+findOne(@Param("id", new ParseUUIDPipe()) id: string) {
+  return this.usersService.findOne(id);
+}
+```
+
+```ts
+// Prefer: validate and convert integer identifiers.
+@Get(":id")
+findOne(@Param("id", new ParseIntPipe()) id: number) {
+  return this.usersService.findOne(id);
+}
+```
+
+Import pipes from `@nestjs/common` and select the pipe and options matching the identifier contract.
+Format validation does not establish resource existence or authorization. Preserve distinct domain
+validation, including requirements for non-HTTP callers; use a custom pipe when built-ins cannot meet
+the contract. Preserve existing API error contracts.
+
 ## Register One Effective Global Validation Baseline
 
 ```ts
@@ -124,6 +173,8 @@ their shape. Framework health helpers' default output must be adapted to this co
 
 - Body validation rejects invalid fields, unknown fields, and invalid nested objects/arrays, while
   accepting valid input and preserving intended transformation behavior.
+- Path parameters accept valid identifiers and reject invalid formats before the controller method;
+  integer pipes also deliver numbers to the service.
 - API routes use `/api` once; Scalar loads at `/docs` and documents prefixed operation paths and DTOs.
 - Health checks return the exact direct shape and HTTP status for all-up, mixed, and all-down results,
   including failed/timed-out checks through the real application response pipeline.
