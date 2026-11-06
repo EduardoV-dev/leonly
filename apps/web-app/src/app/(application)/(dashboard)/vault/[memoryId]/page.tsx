@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { VaultMemoryDetailPage } from "@/features/memories/pages/vault-memory-detail";
-import { getRelatedVaultMemories } from "@/features/memories/server/get-related-vault-memories";
-import { getVaultMemoryDetail } from "@/features/memories/server/get-vault-memory-detail";
+import { getCurrentMemoryDetail } from "@/features/memories/server/get-current-memory-detail";
 
 type PageProps = { params: Promise<{ memoryId: string }> };
 
 export async function generateMetadata({ params }: Readonly<PageProps>): Promise<Metadata> {
   const { memoryId } = await params;
-  const memory = await getVaultMemoryDetail(memoryId);
+  const memory = await getCurrentMemoryDetail({ memoryId, visibility: "vault" });
 
   if (!memory) {
     return {
@@ -25,13 +24,11 @@ export async function generateMetadata({ params }: Readonly<PageProps>): Promise
 
 export default async function Page({ params }: Readonly<PageProps>) {
   const { memoryId } = await params;
-  const memoryPromise = getVaultMemoryDetail(memoryId);
-  const relatedMemoriesPromise = getRelatedVaultMemories(memoryId);
-  const [memory, relatedMemories] = await Promise.all([memoryPromise, relatedMemoriesPromise]);
+  const memory = await getCurrentMemoryDetail({ memoryId, visibility: "vault" });
 
   if (!memory) {
     notFound();
   }
 
-  return <VaultMemoryDetailPage memory={memory} relatedMemories={relatedMemories} />;
+  return <VaultMemoryDetailPage memory={memory} relatedMemories={memory.relatedMemories} />;
 }

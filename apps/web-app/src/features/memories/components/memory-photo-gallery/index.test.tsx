@@ -92,6 +92,25 @@ describe("MemoryPhotoGallery", () => {
     expect(screen.queryByRole("button", { name: "Next photo" })).not.toBeInTheDocument();
   });
 
+  it("navigates past unavailable variants and uses an available cover", () => {
+    render(
+      <MemoryPhotoGallery
+        {...galleryProps}
+        photos={[
+          { ...photos[0], coverUrl: null, detailUrl: null },
+          { ...photos[1], detailUrl: null },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("img", { name: /photo 1.*unavailable/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next photo" }));
+    expect(screen.getByRole("img", { name: "Photo 2 of 2 from Our picnic" })).toHaveAttribute(
+      "src",
+      photos[1].coverUrl,
+    );
+  });
+
   it("renders ambient decorations behind the selected photo", () => {
     render(<MemoryPhotoGallery {...galleryProps} photos={[photos[0]]} />);
 

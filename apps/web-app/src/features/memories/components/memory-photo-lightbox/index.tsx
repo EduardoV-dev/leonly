@@ -108,7 +108,7 @@ export function MemoryPhotoLightbox({
               onClick={toggleDetails}
               {...swipeHandlers}
             >
-              {/* biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly. */}
+              {/* biome-ignore lint/performance/noImgElement: Signed storage URLs must be requested directly. */}
               <img
                 key={selectedIndex}
                 src={photoUrl}

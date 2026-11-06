@@ -39,7 +39,7 @@ export class MemoryListService {
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
-  ) { }
+  ) {}
 
   async list({
     userId,
@@ -83,7 +83,8 @@ export class MemoryListService {
 
     const position =
       cursor && !cursorReset
-        ? Prisma.sql`AND (m.memory_date, m.created_at, m.id) ${sort === "newest" ? Prisma.sql`<` : Prisma.sql`>`
+        ? Prisma.sql`AND (m.memory_date, m.created_at, m.id) ${
+            sort === "newest" ? Prisma.sql`<` : Prisma.sql`>`
           } (${cursor.memoryDate}::date, ${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)`
         : Prisma.empty;
 
@@ -149,14 +150,14 @@ export class MemoryListService {
     const nextCursor =
       rows.length > limit && last
         ? encodeCursor({
-          schema: memoryCursorSchema,
-          payload: {
-            sort,
-            id: last.id,
-            memoryDate: last.memoryDate,
-            createdAt: last.createdAt,
-          },
-        })
+            schema: memoryCursorSchema,
+            payload: {
+              sort,
+              id: last.id,
+              memoryDate: last.memoryDate,
+              createdAt: last.createdAt,
+            },
+          })
         : null;
 
     return { data: items, meta: { nextCursor, cursorReset } };

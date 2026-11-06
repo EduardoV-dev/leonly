@@ -24,7 +24,10 @@ export class PrismaService
     if (isDevelopment) {
       const logger = new Logger(PrismaService.name);
       this.$on("query", ({ query, duration }) => {
-        logger.debug({ query, durationMs: duration }, "prisma_query");
+        logger.debug(
+          { durationMs: duration },
+          `prisma_query\n--------------------\n${query}\n--------------------`,
+        );
       });
     }
   }

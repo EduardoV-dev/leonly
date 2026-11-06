@@ -1,13 +1,33 @@
-import type { MemoryListPage } from "@leonly/utils/contracts";
-import { Body, Controller, Get, HttpStatus, Post, Query, Req } from "@nestjs/common";
+import type { MemoryDetail, MemoryListPage } from "@leonly/utils/contracts";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/docs/api-response.docs";
+import { MEMORY_DETAIL_EXAMPLE, MEMORY_DETAIL_SCHEMA } from "./docs/memory-detail.docs";
 import { MEMORY_LIST_EXAMPLE, MEMORY_LIST_SCHEMA } from "./docs/memory-list.docs";
 import { CreateMemoryDto } from "./dtos/create-memory.dto";
 import { ListMemoriesDto } from "./dtos/list-memories.dto";
 import { type CreationResult, MemoriesService } from "./services/memories.service";
+import { MemoryDetailService } from "./services/memory-detail.service";
 import { MemoryListService } from "./services/memory-list.service";
+
+const INVALID_MEMORY_ID_MESSAGE = "Memory id is not valid.";
+
+const UUID_PARAM_VALIDATOR = new ParseUUIDPipe({
+  exceptionFactory: () => new BadRequestException({ error: INVALID_MEMORY_ID_MESSAGE }),
+})
 
 @Controller("memories")
 @ApiTags("Memories")
@@ -16,7 +36,8 @@ export class MemoriesController {
   constructor(
     private readonly memoriesService: MemoriesService,
     private readonly memoryListService: MemoryListService,
-  ) {}
+    private readonly memoryDetailService: MemoryDetailService,
+  ) { }
 
   @Get("timeline")
   @ApiOperation({ summary: "List active-space Timeline memories" })
@@ -35,6 +56,54 @@ export class MemoriesController {
       visibility: "timeline",
       query,
       limit: query.limit === undefined ? undefined : Number(query.limit),
+    });
+  }
+
+  @Get("timeline/:memoryId")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({ summary: "Read active-space Timeline memory" })
+  @ApiErrorResponses(400, 401, 404, 429, 500, 503)
+  @ApiSuccessResponse({
+    description: "Memory detail",
+    data: MEMORY_DETAIL_SCHEMA,
+    example: MEMORY_DETAIL_EXAMPLE,
+  })
+  async getTimelineDetail(
+    @Req() request: AuthenticatedRequest,
+    @Param(
+      "memoryId",
+      UUID_PARAM_VALIDATOR,
+    )
+    memoryId: string,
+  ): Promise<MemoryDetail> {
+    return this.memoryDetailService.getDetail({
+      userId: request.authUser.id,
+      memoryId,
+      visibility: "timeline",
+    });
+  }
+
+  @Get("vault/:memoryId")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({ summary: "Read active-space Vault memory" })
+  @ApiErrorResponses(400, 401, 404, 429, 500, 503)
+  @ApiSuccessResponse({
+    description: "Memory detail",
+    data: MEMORY_DETAIL_SCHEMA,
+    example: { ...MEMORY_DETAIL_EXAMPLE, visibility: "vault" },
+  })
+  async getVaultDetail(
+    @Req() request: AuthenticatedRequest,
+    @Param(
+      "memoryId",
+      UUID_PARAM_VALIDATOR,
+    )
+    memoryId: string,
+  ): Promise<MemoryDetail> {
+    return this.memoryDetailService.getDetail({
+      userId: request.authUser.id,
+      memoryId,
+      visibility: "vault",
     });
   }
 

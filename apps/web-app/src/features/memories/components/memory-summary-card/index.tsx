@@ -158,21 +158,25 @@ export function MemorySummaryCard({
           </motion.div>
         </Link>
       </motion.div>
-      <footer className={styles.footer}>
-        <div className={styles.commentCount} data-extension-region="memory-count">
-          {"commentCount" in memory ? (
-            <>
-              <MessageCircle aria-hidden="true" />
-              {t("card.comments", { count: memory.commentCount })}
-            </>
-          ) : null}
-          {count}
+      {variant !== "related" || "commentCount" in memory || count || reactions ? (
+        <footer className={styles.footer}>
+          <div className={styles.commentCount} data-extension-region="memory-count">
+            {"commentCount" in memory ? (
+              <>
+                <MessageCircle aria-hidden="true" />
+                {t("card.comments", { count: memory.commentCount })}
+              </>
+            ) : null}
+            {count}
+          </div>
+          {reactions}
+        </footer>
+      ) : null}
+      {variant !== "related" || actions ? (
+        <div className={styles.extensions} data-extension-region="memory-actions">
+          {actions}
         </div>
-        {reactions}
-      </footer>
-      <div className={styles.extensions} data-extension-region="memory-actions">
-        {actions}
-      </div>
+      ) : null}
     </motion.article>
   );
 }

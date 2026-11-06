@@ -22,6 +22,7 @@ const memory = {
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   location: "The botanical gardens",
   memoryDate: "2026-08-20",
+  relatedMemories: [],
   reaction: {
     counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
     currentReaction: null,
@@ -47,7 +48,6 @@ describe("VaultMemoryDetailPage", () => {
           memory={memory}
           relatedMemories={[
             {
-              commentCount: 0,
               coverPhotoUrl: null,
               createdAt: "2026-08-19T10:00:00.000Z",
               description: "We packed a blanket and stayed all afternoon.",
@@ -67,12 +67,11 @@ describe("VaultMemoryDetailPage", () => {
       "/vault",
     );
     expect(screen.getByRole("heading", { name: "More from the Vault" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute(
-      "href",
-      `/memories/${memory.id}/edit`,
-    );
-    expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Move to Timeline" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Comments")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reactions")).not.toBeInTheDocument();
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(
       "Preserved by Sarah",
     );

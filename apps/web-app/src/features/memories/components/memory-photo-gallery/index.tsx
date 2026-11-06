@@ -1,10 +1,10 @@
 "use client";
 
+import type { MemoryDetailPhoto } from "@leonly/utils/contracts";
 import { ChevronLeft, ChevronRight, Heart, ImageIcon, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useHorizontalSwipe } from "../../hooks/use-horizontal-swipe";
-import type { MemoryDetailPhoto } from "../../types/memory-detail";
 import { MemoryPhotoLightbox } from "../memory-photo-lightbox";
 import styles from "./memory-photo-gallery.module.css";
 import ambientStyles from "./memory-photo-gallery-ambient.module.css";
@@ -74,10 +74,6 @@ export function MemoryPhotoGallery({
     const setFailedPhotoIds = selectedDetailUrl ? setFailedDetailPhotoIds : setFailedCoverPhotoIds;
     setFailedPhotoIds((current) => new Set(current).add(selectedPhoto.id));
   };
-  const markPhotoFailed = (photoId: string) => {
-    setFailedCoverPhotoIds((current) => new Set(current).add(photoId));
-  };
-
   return (
     <section className={styles.gallery} aria-label={t("detail.gallery.label", { title })}>
       <div className={styles.stage}>
@@ -107,7 +103,7 @@ export function MemoryPhotoGallery({
             aria-label={t("detail.lightbox.open", { position: selectedPosition })}
             {...swipeHandlers}
           >
-            {/* biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly. */}
+            {/* biome-ignore lint/performance/noImgElement: Signed storage URLs must be requested directly. */}
             <img
               key={selectedPhoto.id}
               src={selectedUrl}
@@ -174,9 +170,9 @@ export function MemoryPhotoGallery({
         <fieldset className={styles.thumbnails}>
           <legend className={styles.srOnly}>{t("detail.gallery.label", { title })}</legend>
           {photos.map((photo, index) => {
-            const thumbnailUrl = failedCoverPhotoIds.has(photo.id)
-              ? null
-              : (photo.coverUrl ?? photo.detailUrl);
+            const coverUrl = failedCoverPhotoIds.has(photo.id) ? null : photo.coverUrl;
+            const detailUrl = failedDetailPhotoIds.has(photo.id) ? null : photo.detailUrl;
+            const thumbnailUrl = coverUrl ?? detailUrl;
             const position = index + 1;
 
             return (
@@ -192,14 +188,17 @@ export function MemoryPhotoGallery({
                 }}
               >
                 {thumbnailUrl ? (
-                  // biome-ignore lint/performance/noImgElement: The browser must request the reauthorizing route directly.
+                  // biome-ignore lint/performance/noImgElement: Signed storage URLs must be requested directly.
                   <img
                     src={thumbnailUrl}
                     alt=""
                     width={160}
                     height={120}
                     loading="lazy"
-                    onError={() => markPhotoFailed(photo.id)}
+                    onError={() => {
+                      const setFailed = coverUrl ? setFailedCoverPhotoIds : setFailedDetailPhotoIds;
+                      setFailed((current) => new Set(current).add(photo.id));
+                    }}
                   />
                 ) : (
                   <ImageIcon aria-hidden="true" />

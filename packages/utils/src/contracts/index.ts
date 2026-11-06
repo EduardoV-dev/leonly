@@ -14,4 +14,5 @@ export {
   imageProcessingEventSchema,
   parseImageEvent,
 } from "./events/image-processing.event";
+export type { MemoryDetail, MemoryDetailPhoto } from "./memory-detail";
 export type { MemoryListItem, MemoryListPage } from "./memory-list";

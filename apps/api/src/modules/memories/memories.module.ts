@@ -4,11 +4,12 @@ import { FilesModule } from "../files/files.module";
 import { SpacesModule } from "../spaces/spaces.module";
 import { MemoriesController } from "./memories.controller";
 import { MemoriesService } from "./services/memories.service";
+import { MemoryDetailService } from "./services/memory-detail.service";
 import { MemoryListService } from "./services/memory-list.service";
 
 @Module({
   imports: [StorageModule, FilesModule, SpacesModule],
   controllers: [MemoriesController],
-  providers: [MemoriesService, MemoryListService],
+  providers: [MemoriesService, MemoryListService, MemoryDetailService],
 })
 export class MemoriesModule {}

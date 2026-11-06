@@ -1,5 +1,6 @@
 "use client";
 
+import type { MemoryDetail, MemoryListItem } from "@leonly/utils/contracts";
 import { ArrowLeft, CalendarDays, LockKeyhole, MapPin } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import Link from "next/link";
@@ -7,8 +8,6 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/page-header";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import type { MemoryDetail } from "../../types/memory-detail";
-import type { TimelineMemory } from "../../types/timeline";
 import { MemoryPhotoGallery } from "../memory-photo-gallery";
 import { MemorySummaryCard } from "../memory-summary-card";
 import styles from "./memory-detail-view.module.css";
@@ -80,7 +79,7 @@ export type MemoryDetailViewProps = {
   relatedDestination?: "timeline" | "vault";
   relatedEyebrow: string;
   relatedHeading: string;
-  relatedMemories?: TimelineMemory[];
+  relatedMemories?: MemoryListItem[];
   reactions?: ReactNode;
 };
 

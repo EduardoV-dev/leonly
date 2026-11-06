@@ -1,6 +1,6 @@
 import type { SchemaObject } from "@nestjs/swagger";
 
-const itemSchema: SchemaObject = {
+export const MEMORY_LIST_ITEM_SCHEMA: SchemaObject = {
   type: "object",
   required: ["id", "title", "memoryDate", "createdAt", "description", "location", "coverPhotoUrl"],
   properties: {
@@ -23,7 +23,7 @@ export const MEMORY_LIST_SCHEMA: SchemaObject = {
   type: "object",
   required: ["data", "meta"],
   properties: {
-    data: { type: "array", items: itemSchema },
+    data: { type: "array", items: MEMORY_LIST_ITEM_SCHEMA },
     meta: {
       type: "object",
       required: ["nextCursor", "cursorReset"],

@@ -26,6 +26,7 @@ const memory = {
   id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
   location: "The botanical gardens",
   memoryDate: "2026-08-20",
+  relatedMemories: [],
   reaction: {
     counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
     currentReaction: null,
@@ -77,20 +78,11 @@ describe("MemoryDetailPage", () => {
       "href",
       "/timeline",
     );
-    const editLink = screen.getByRole("link", { name: "Edit" });
-    expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
-    const actionRegion = document.querySelector<HTMLElement>(
-      '[data-extension-region="memory-actions"]',
-    );
-    const actionBar = document.querySelector<HTMLElement>(
-      '[data-extension-region="memory-action-bar"]',
-    );
-    const detailFooter = document.querySelector<HTMLElement>('[data-detail-footer="true"]');
-    expect(editLink).toHaveAttribute("href", `/memories/${memory.id}/edit`);
-    expect(actionBar).toContainElement(actionRegion);
-    expect(detailFooter).not.toContainElement(actionRegion);
-    expect(detailFooter).toHaveTextContent("Preserved by Sarah");
+    expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Move to Private Vault" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Comments")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reactions")).not.toBeInTheDocument();
   });
 
   it("renders related memories as accessible detail links", () => {
@@ -99,7 +91,6 @@ describe("MemoryDetailPage", () => {
         memory={memory}
         relatedMemories={[
           {
-            commentCount: 0,
             coverPhotoUrl: null,
             createdAt: "2026-08-19T10:00:00.000Z",
             description: "We packed a blanket and stayed all afternoon.",
@@ -119,26 +110,16 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByText("We packed a blanket and stayed all afternoon.")).toBeInTheDocument();
   });
 
-  it("omits absent optional metadata and composes visibility-aware extension content", () => {
+  it("omits absent optional metadata", () => {
     renderDetail(
       <MemoryDetailPage
         memory={{ ...memory, description: null, location: null, visibility: "vault" }}
-        actions={<button type="button">Restore</button>}
-        comments={<p>Comments</p>}
-        reactions={<button type="button">React</button>}
       />,
     );
 
     expect(screen.queryByText(memory.description)).not.toBeInTheDocument();
     expect(screen.queryByText(memory.location)).not.toBeInTheDocument();
     expect(screen.getByText("Private vault")).toBeInTheDocument();
-    expect(document.querySelector('[data-extension-region="memory-actions"]')).toHaveAttribute(
-      "data-visibility",
-      "vault",
-    );
-    expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "React" })).toBeInTheDocument();
-    expect(screen.getByText("Comments")).toBeInTheDocument();
   });
 
   it("omits the update sentence when the memory has not changed since creation", () => {
@@ -168,16 +149,15 @@ describe("MemoryDetailPage", () => {
     expect(screen.getByRole("status", { name: "Loading memory…" })).toBeInTheDocument();
   });
 
-  it("uses the concise localized edit label", async () => {
+  it("keeps localized detail read-only", async () => {
     await i18n.changeLanguage("es");
     renderDetail(<MemoryDetailPage memory={memory} />);
 
-    expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
-      "href",
-      `/memories/${memory.id}/edit`,
-    );
-    expect(screen.getByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Quitar recuerdo" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Mover a la bóveda privada" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Quitar recuerdo" })).not.toBeInTheDocument();
     expect(screen.getByText("Recuerdo creado el", { exact: false })).toBeInTheDocument();
     expect(
       screen.getByText("Última actualización del recuerdo el", { exact: false }),
