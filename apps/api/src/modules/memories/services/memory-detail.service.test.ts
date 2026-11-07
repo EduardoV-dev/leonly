@@ -11,15 +11,26 @@ describe("MemoryDetailService", () => {
   const membershipsService = { requireActiveMembership: vi.fn() };
   const memories = { findFirst: vi.fn(), findMany: vi.fn() };
   const signObject = vi.fn();
+  const reactions = { getSummaries: vi.fn() };
   const service = new MemoryDetailService(
     { memory: memories } as never,
     { signObject } as never,
     membershipsService as never,
+    reactions as never,
   );
 
   beforeEach(() => {
     vi.resetAllMocks();
     membershipsService.requireActiveMembership.mockResolvedValue({ id: memberId, spaceId });
+    const reaction = {
+      counts: { heart: 0, laugh: 0, cry: 0, star: 0 },
+      currentReaction: null,
+      members: { heart: [], laugh: [], cry: [], star: [] },
+    };
+    reactions.getSummaries.mockImplementation(
+      async ({ memoryIds }: { memoryIds: string[] }) =>
+        new Map(memoryIds.map((id) => [id, reaction])),
+    );
     memories.findMany.mockResolvedValue([]);
     signObject.mockImplementation(
       async ({ key }: { key: string }) => `https://storage.example/${key}`,
@@ -90,7 +101,23 @@ describe("MemoryDetailService", () => {
     ).rejects.toThrow("storage failed");
   });
 
+  it("propagates reaction lookup failures", async () => {
+    reactions.getSummaries.mockRejectedValue(new Error("reaction lookup failed"));
+    await expect(
+      service.getDetail({ userId: "user", memoryId, visibility: "timeline" }),
+    ).rejects.toThrow("reaction lookup failed");
+  });
+
   it("signs related ready covers without exposing storage keys", async () => {
+    const reaction = {
+      counts: { heart: 1, laugh: 0, cry: 0, star: 0 },
+      currentReaction: "heart",
+      members: { heart: ["Sarah"], laugh: [], cry: [], star: [] },
+    };
+    reactions.getSummaries.mockImplementation(
+      async ({ memoryIds }: { memoryIds: string[] }) =>
+        new Map(memoryIds.map((id) => [id, reaction])),
+    );
     memories.findMany.mockResolvedValue([
       {
         id: "related",
@@ -112,6 +139,7 @@ describe("MemoryDetailService", () => {
         description: null,
         location: null,
         coverPhotoUrl: "https://storage.example/related-cover",
+        reaction,
       },
     ]);
     expect(signObject).toHaveBeenCalledWith({ key: "related-cover", expiresIn: 300 });

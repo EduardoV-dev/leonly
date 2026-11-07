@@ -8,7 +8,11 @@ import { api } from "@/lib/axios/api";
 import { i18n } from "@/lib/i18n";
 import { VaultMemories } from ".";
 
-vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
+vi.mock("@/lib/axios/api", () => ({
+  api: { get: vi.fn(), post: vi.fn() },
+  isAxiosError: () => false,
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 const memory = {
   coverPhotoUrl: null,
@@ -140,7 +144,7 @@ describe("VaultMemories", () => {
     expect(screen.getByText("A quiet afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
     expect(screen.queryByText(/\d+ comments?/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /react/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /react to this memory/i })).not.toBeInTheDocument();
     expect(api.get).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("heading", { name: "August 2026" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open Our hidden picnic" })).toHaveAttribute(

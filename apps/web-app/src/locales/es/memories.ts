@@ -189,6 +189,7 @@ export const memoriesEs = {
       count: "{{count}} reacciones",
       failed: "No pudimos actualizar tu reacción. Inténtalo de nuevo.",
       heading: "Reacciones",
+      success: "Reacción actualizada.",
       open: "Reaccionar a este recuerdo",
       select: "Reaccionar con {{reaction}}",
       types: {

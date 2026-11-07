@@ -117,6 +117,7 @@ model SpaceMember {
   createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   createdMemories       Memory[]
+  reactions             MemoryReaction[]
 
   @@unique([id, userId, spaceId], map: "space_members_id_user_space_unique")
   @@unique([id, spaceId], map: "space_members_id_space_unique")
@@ -145,6 +146,15 @@ enum MemoryVisibility {
   vault
 
   @@map("memory_visibility")
+}
+
+enum MemoryReactionType {
+  heart
+  laugh
+  cry
+  star
+
+  @@map("memory_reaction_type")
 }
 
 model File {
@@ -199,11 +209,28 @@ model Memory {
   createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   memoryFiles         MemoryFile[]     @relation("MemoryFiles")
+  reactions           MemoryReaction[]
 
   @@unique([spaceId, createdByUserId, idempotencyKey], map: "memories_creation_key_unique")
   @@unique([id, spaceId], map: "memories_id_space_unique")
   @@index([createdByMemberId, createdByUserId, spaceId], map: "memories_creator_membership")
   @@map("memories")
+}
+
+model MemoryReaction {
+  id                String             @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  spaceId           String             @map("space_id") @db.Uuid
+  memoryId          String             @map("memory_id") @db.Uuid
+  memory            Memory             @relation(fields: [memoryId, spaceId], references: [id, spaceId], onDelete: Cascade, onUpdate: NoAction)
+  reactedByMemberId String             @map("reacted_by_member_id") @db.Uuid
+  reactedByMember   SpaceMember        @relation(fields: [reactedByMemberId, spaceId], references: [id, spaceId], onDelete: Cascade, onUpdate: NoAction)
+  reactionType      MemoryReactionType @map("reaction_type")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([reactedByMemberId, memoryId], map: "memory_reactions_member_memory_unique")
+  @@index([memoryId], map: "memory_reactions_memory_id")
+  @@map("memory_reactions")
 }
 
 model MemoryFile {

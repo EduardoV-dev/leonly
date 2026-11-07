@@ -82,7 +82,7 @@ describe("MemoryDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Move to Private Vault" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
     expect(screen.queryByText("Comments")).not.toBeInTheDocument();
-    expect(screen.queryByText("Reactions")).not.toBeInTheDocument();
+    expect(screen.getByText("Reactions")).toBeInTheDocument();
   });
 
   it("renders related memories as accessible detail links", () => {

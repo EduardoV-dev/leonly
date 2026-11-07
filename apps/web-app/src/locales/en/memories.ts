@@ -189,6 +189,7 @@ export const memoriesEn = {
       heading: "Reactions",
       open: "React to this memory",
       select: "React with {{reaction}}",
+      success: "Reaction updated.",
       types: {
         cry: "Tearful",
         heart: "Love",

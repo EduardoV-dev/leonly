@@ -1,85 +1,90 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import type {
+  ApiResponse,
+  MemoryReactionSummary,
+  MemoryReactionType,
+} from "@leonly/utils/contracts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { APP_ROUTES } from "@/constants/routes";
+import { api, isAxiosError } from "@/lib/axios/api";
 import { memoryQueryKeys } from "../constants/query-keys";
-import type { MemoryReactionSummary, MemoryReactionType } from "../types/memory-reaction";
 
-type MemoryReactionErrorCode = "failed" | "unavailable";
-
-export class MemoryReactionMutationError extends Error {
-  constructor(readonly code: MemoryReactionErrorCode) {
-    super(code);
-  }
-}
-
-async function submitMemoryReaction(
-  memoryId: string,
-  reactionType: MemoryReactionType,
-): Promise<MemoryReactionSummary> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/memories/${memoryId}/reactions`, {
-      body: JSON.stringify({ reactionType }),
-      headers: { "content-type": "application/json" },
-      method: "POST",
-    });
-  } catch {
-    throw new MemoryReactionMutationError("failed");
-  }
-  const payload = (await response.json().catch(() => null)) as {
-    code?: MemoryReactionErrorCode;
-    reaction?: MemoryReactionSummary;
-  } | null;
-
-  if (!response.ok || !payload?.reaction) {
-    throw new MemoryReactionMutationError(
-      payload?.code ?? (response.status === 404 ? "unavailable" : "failed"),
-    );
-  }
-
-  return payload.reaction;
-}
-
-export function useMemoryReaction(memoryId: string, onUnavailable: () => void) {
+export function useMemoryReaction(memoryId: string, initial: MemoryReactionSummary) {
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [errorCode, setErrorCode] = useState<MemoryReactionErrorCode | null>(null);
-  const [lastOutcome, setLastOutcome] = useState<"success" | null>(null);
-  const mutation = useMutation<
-    MemoryReactionSummary,
-    MemoryReactionMutationError,
-    MemoryReactionType
-  >({
-    mutationKey: memoryQueryKeys.reactions(memoryId),
-    mutationFn: (reactionType) => submitMemoryReaction(memoryId, reactionType),
-    onError: (error) => {
-      setLastOutcome(null);
-      setErrorCode(error.code);
-      if (error.code === "unavailable") onUnavailable();
+  const queryKey = memoryQueryKeys.reactions(memoryId);
+  const [failed, setFailed] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const [isReconciling, setIsReconciling] = useState(false);
+  const pending = useRef(false);
+  const previousInitial = useRef(initial);
+  const query = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<MemoryReactionSummary>>(
+        `/memories/${memoryId}/reactions`,
+      );
+      if (!response.data.ok) throw new Error("Reaction summary unavailable");
+      return response.data.data;
     },
-    onSettled: () => {
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("full") }),
-        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("recent") }),
-        queryClient.invalidateQueries({ queryKey: memoryQueryKeys.vault() }),
-      ]);
-    },
-    onSuccess: () => {
-      setErrorCode(null);
-      setLastOutcome("success");
+    initialData: initial,
+    enabled: false,
+  });
+
+  useEffect(() => {
+    if (previousInitial.current === initial) return;
+    previousInitial.current = initial;
+    queryClient.setQueryData(memoryQueryKeys.reactions(memoryId), initial);
+  }, [queryClient, memoryId, initial]);
+
+  const handleError = (error: unknown) => {
+    if (isAxiosError(error) && error.response?.status === 401) router.push(APP_ROUTES.AUTH);
+    if (isAxiosError(error) && error.response?.status === 404) {
+      setUnavailable(true);
+      router.refresh();
+    }
+    setFailed(true);
+  };
+
+  const mutation = useMutation({
+    mutationKey: queryKey,
+    retry: false,
+    mutationFn: async (reactionType: MemoryReactionType) => {
+      const response = await api.post<ApiResponse<MemoryReactionSummary>>(
+        `/memories/${memoryId}/reactions`,
+        { reactionType },
+      );
+      if (!response.data.ok) throw new Error("Reaction update failed");
+      return response.data.data;
     },
     scope: { id: `memory-reaction:${memoryId}` },
   });
 
   const react = async (reactionType: MemoryReactionType) => {
-    if (mutation.isPending) return null;
-
-    setErrorCode(null);
-    setLastOutcome(null);
+    if (pending.current) return null;
+    pending.current = true;
+    setIsReconciling(true);
+    setFailed(false);
+    setSucceeded(false);
+    let result: MemoryReactionSummary | null = null;
     try {
-      return await mutation.mutateAsync(reactionType);
-    } catch {
-      return null;
+      result = await mutation.mutateAsync(reactionType);
+      queryClient.setQueryData(queryKey, result);
+      setSucceeded(true);
+    } catch (error) {
+      handleError(error);
+    }
+    try {
+      const refreshed = await query.refetch();
+      if (refreshed.isError) handleError(refreshed.error);
+      return result;
+    } finally {
+      pending.current = false;
+      setIsReconciling(false);
     }
   };
 
-  return { errorCode, isPending: mutation.isPending, lastOutcome, react };
+  return { summary: query.data, failed, succeeded, unavailable, isPending: isReconciling, react };
 }

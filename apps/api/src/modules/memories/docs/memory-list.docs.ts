@@ -1,8 +1,18 @@
 import type { SchemaObject } from "@nestjs/swagger";
+import { MEMORY_REACTION_SCHEMA } from "./memory-reactions.docs";
 
 export const MEMORY_LIST_ITEM_SCHEMA: SchemaObject = {
   type: "object",
-  required: ["id", "title", "memoryDate", "createdAt", "description", "location", "coverPhotoUrl"],
+  required: [
+    "id",
+    "title",
+    "memoryDate",
+    "createdAt",
+    "description",
+    "location",
+    "coverPhotoUrl",
+    "reaction",
+  ],
   properties: {
     id: { type: "string", format: "uuid" },
     title: { type: "string" },
@@ -10,6 +20,7 @@ export const MEMORY_LIST_ITEM_SCHEMA: SchemaObject = {
     createdAt: { type: "string", format: "date-time" },
     description: { type: "string", nullable: true },
     location: { type: "string", nullable: true },
+    reaction: MEMORY_REACTION_SCHEMA,
     coverPhotoUrl: {
       type: "string",
       nullable: true,

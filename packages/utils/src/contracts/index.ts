@@ -16,3 +16,8 @@ export {
 } from "./events/image-processing.event";
 export type { MemoryDetail, MemoryDetailPhoto } from "./memory-detail";
 export type { MemoryListItem, MemoryListPage } from "./memory-list";
+export {
+  MEMORY_REACTION_TYPES,
+  type MemoryReactionSummary,
+  type MemoryReactionType,
+} from "./memory-reaction";

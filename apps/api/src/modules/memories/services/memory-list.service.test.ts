@@ -20,11 +20,16 @@ describe("MemoryListService", () => {
   const memories = { findMany: vi.fn() };
   const queryRaw = vi.fn();
   const signObject = vi.fn();
-  const prisma = { spaceMember: member, memory: memories, $queryRaw: queryRaw };
+  const prisma = {
+    spaceMember: member,
+    memory: memories,
+    $queryRaw: queryRaw,
+  };
   const service = new MemoryListService(
     prisma as never,
     { signObject } as never,
     new MembershipsService(prisma as never),
+    { getSummaries: async () => new Map() } as never,
   );
 
   beforeEach(() => {
@@ -58,7 +63,9 @@ describe("MemoryListService", () => {
       query: {},
       limit: 1,
     });
-    expect(page.data).toEqual([{ ...memory, coverPhotoUrl: "https://storage.example/signed" }]);
+    expect(page.data).toEqual([
+      { ...memory, reaction: undefined, coverPhotoUrl: "https://storage.example/signed" },
+    ]);
     expect(signObject).toHaveBeenCalledWith({ key: "cover", expiresIn: 300 });
     expect(page.meta.nextCursor).toBe(
       encodeCursor({

@@ -1,151 +1,166 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
-import { memoryQueryKeys } from "../../constants/query-keys";
-import type { MemoryReactionSummary } from "../../types/memory-reaction";
 import { MemoryReactions } from ".";
 
-const refreshMock = vi.fn();
-const commentQuery = vi.fn();
-
+const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: refreshMock }),
+  useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+}));
+vi.mock("@/lib/axios/api", () => ({
+  api: { get: mocks.get, post: mocks.post },
+  isAxiosError: () => false,
 }));
 
-const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-
-function CommentQueryProbe() {
-  useQuery({
-    queryFn: commentQuery,
-    queryKey: memoryQueryKeys.comments(memoryId),
-  });
-  return null;
-}
-
-function renderReactions(
-  reaction: MemoryReactionSummary = {
-    counts: { cry: 0, heart: 1, laugh: 0, star: 0 },
-    currentReaction: "heart" as const,
-    members: { cry: [], heart: ["Alex", "Sam"], laugh: [], star: [] },
-  },
-) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryReactions memoryId={memoryId} reaction={reaction} />
-      <CommentQueryProbe />
-    </QueryClientProvider>,
-  );
-}
+const summary = {
+  counts: { heart: 1, laugh: 0, cry: 0, star: 0 },
+  currentReaction: "heart" as const,
+  members: { heart: ["Alex"], laugh: [], cry: [], star: [] },
+};
+const empty = {
+  counts: { heart: 0, laugh: 0, cry: 0, star: 0 },
+  currentReaction: null,
+  members: { heart: [], laugh: [], cry: [], star: [] },
+};
 
 describe("MemoryReactions", () => {
   beforeEach(async () => {
+    vi.resetAllMocks();
     await i18n.changeLanguage("en");
-    refreshMock.mockReset();
-    commentQuery.mockReset().mockResolvedValue({ comments: [] });
-    vi.stubGlobal("fetch", vi.fn());
+    mocks.post.mockResolvedValue({ data: { ok: true, data: empty } });
+    mocks.get.mockResolvedValue({ data: { ok: true, data: empty } });
   });
 
-  it("opens an icon-only picker and reconciles the optimistic reaction", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          reaction: {
-            counts: { cry: 0, heart: 0, laugh: 0, star: 1 },
-            currentReaction: "star",
-            members: { cry: [], heart: [], laugh: [], star: ["Alex", "Sam"] },
-          },
-        }),
-      ),
+  it("shows initial selection and names, then reconciles removal", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryReactions memoryId="memory" reaction={summary} />
+      </QueryClientProvider>,
     );
-    renderReactions();
-
-    fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    const star = screen.getByRole("button", { name: "React with Star" });
-    fireEvent.click(star);
-
-    await waitFor(() =>
-      expect(screen.getByRole("group", { name: "1 reactions" })).toHaveTextContent("⭐"),
-    );
-    expect(fetch).toHaveBeenCalledWith(`/api/memories/${memoryId}/reactions`, {
-      body: JSON.stringify({ reactionType: "star" }),
-      headers: { "content-type": "application/json" },
-      method: "POST",
+    expect(screen.getByText("Alex")).toBeInTheDocument();
+    expect(mocks.get).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    const heart = screen.getByRole("button", { name: "React with Love" });
+    expect(heart).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(heart);
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Reaction updated."));
+    expect(screen.queryByText("Alex")).not.toBeInTheDocument();
+    expect(mocks.post).toHaveBeenCalledWith("/memories/memory/reactions", {
+      reactionType: "heart",
     });
-    expect(screen.queryByText("Reaction updated.")).not.toBeInTheDocument();
-    expect(screen.getByTitle("Alex, Sam")).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledOnce();
   });
 
-  it("disables choices while pending and restores the confirmed state after failure", async () => {
-    let rejectRequest: (reason?: unknown) => void = () => {};
-    vi.mocked(fetch).mockReturnValue(
-      new Promise((_, reject) => {
-        rejectRequest = reject;
+  it("supports keyboard escape and disables choices while a toggle is pending", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mocks.post.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
       }),
     );
-    renderReactions();
-
-    fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    const laugh = screen.getByRole("button", { name: "React with Laugh" });
-    fireEvent.click(laugh);
-
-    expect(laugh).toBeDisabled();
-    expect(screen.getByRole("button", { name: /React to this memory/ })).toBeDisabled();
-
-    rejectRequest(new Error("network unavailable"));
-
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "We couldn't update your reaction. Try again.",
-      ),
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryReactions memoryId="memory" reaction={empty} />
+      </QueryClientProvider>,
     );
-    await waitFor(() => {
+    const trigger = screen.getByRole("button", { name: /react to this memory/i });
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+    fireEvent.click(trigger);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("button", { name: "React with Love" })).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "React with Love" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "React with Love" })).toBeDisabled(),
+    );
+    finish({ data: { ok: true, data: summary } });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Reaction updated."));
+  });
+
+  it("adds and changes the selected reaction using authoritative summaries", async () => {
+    const laugh = {
+      counts: { ...empty.counts, laugh: 1 },
+      currentReaction: "laugh",
+      members: { ...empty.members, laugh: ["Alex"] },
+    };
+    mocks.post
+      .mockResolvedValueOnce({ data: { ok: true, data: summary } })
+      .mockResolvedValueOnce({ data: { ok: true, data: laugh } });
+    mocks.get
+      .mockResolvedValueOnce({ data: { ok: true, data: summary } })
+      .mockResolvedValueOnce({ data: { ok: true, data: laugh } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryReactions memoryId="memory" reaction={empty} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Love" }));
+    await waitFor(() => expect(screen.getByText("Alex")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Laugh" }));
+    await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    expect(screen.getByRole("button", { name: "React with Laugh" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("keeps the confirmed selection while reconciliation is pending", async () => {
+    let finish: (value: unknown) => void = () => {};
+    mocks.post.mockResolvedValue({ data: { ok: true, data: summary } });
+    mocks.get.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryReactions memoryId="memory" reaction={empty} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Love" }));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledOnce());
+    await waitFor(() =>
       expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
         "aria-pressed",
         "true",
-      );
-      expect(laugh).toHaveAttribute("aria-pressed", "false");
-    });
-  });
-
-  it("updates the count optimistically without rendering an unconfirmed reaction", () => {
-    vi.mocked(fetch).mockReturnValue(new Promise(() => {}));
-    renderReactions({
-      counts: { cry: 0, heart: 0, laugh: 0, star: 0 },
-      currentReaction: null,
-      members: { cry: [], heart: [], laugh: [], star: [] },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "React to this memory" }));
-    fireEvent.click(screen.getByRole("button", { name: "React with Star" }));
-
-    const summary = screen.getByRole("group", { name: "1 reactions" });
-    expect(summary).toHaveTextContent("1");
-    expect(within(summary).queryByText("⭐")).not.toBeInTheDocument();
-  });
-
-  it("does not refetch comments after updating a reaction", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          reaction: {
-            counts: { cry: 0, heart: 0, laugh: 0, star: 1 },
-            currentReaction: "star",
-            members: { cry: [], heart: [], laugh: [], star: ["Alex"] },
-          },
-        }),
       ),
     );
-    renderReactions();
-    await waitFor(() => expect(commentQuery).toHaveBeenCalledTimes(1));
+    finish({ data: { ok: true, data: summary } });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Reaction updated."));
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: /React to this memory/ }));
-    fireEvent.click(screen.getByRole("button", { name: "React with Star" }));
-
-    await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "React with Star" })).not.toBeInTheDocument(),
+  it("restores the confirmed selection when an update and refresh fail", async () => {
+    mocks.post.mockRejectedValue(new Error("offline"));
+    mocks.get.mockRejectedValue(new Error("offline"));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryReactions memoryId="memory" reaction={summary} />
+      </QueryClientProvider>,
     );
-    expect(commentQuery).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /react to this memory/i }));
+    fireEvent.click(screen.getByRole("button", { name: "React with Laugh" }));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("We couldn't update your reaction"),
+    );
+    expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "React with Laugh" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 });

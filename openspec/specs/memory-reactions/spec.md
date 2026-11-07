@@ -123,3 +123,19 @@ provide a retry path, and announce the outcome through an accessible status mess
 - **WHEN** a reaction mutation returns the generic unavailable outcome
 - **THEN** the interface transitions to the existing generic memory not-found experience with no stale
   reaction data
+
+### Requirement: Current-backend reaction source of truth
+
+Reaction reads and writes SHALL use only the current backend's reaction dataset. Existing Supabase
+reactions SHALL NOT be read, imported, or used as fallback data. Reaction counts SHALL be derived
+from persisted reactions rather than independent counters.
+
+#### Scenario: Only legacy reactions exist
+- **WHEN** an authorized memory has no current-backend reactions but legacy Supabase reactions exist
+- **THEN** its summary contains zero counts, empty member lists, and no current selection without
+  querying Supabase
+
+#### Scenario: Current-backend lookup fails
+- **WHEN** an authorized reaction read fails unexpectedly
+- **THEN** the operation reports a safe failure instead of returning fabricated zero counts or
+  consulting Supabase

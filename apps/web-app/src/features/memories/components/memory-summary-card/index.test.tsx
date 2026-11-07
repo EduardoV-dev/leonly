@@ -1,7 +1,10 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { MemorySummaryCard } from ".";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 const memory = {
   commentCount: 3,
@@ -48,6 +51,31 @@ describe("MemorySummaryCard", () => {
 
     expect(screen.getByText(location).tagName).toBe("SPAN");
   });
+
+  it.each(["timeline", "recent", "related", "vault"] as const)(
+    "shows the reaction control independently of the link on %s cards",
+    (variant) => {
+      const client = new QueryClient();
+      const reaction = {
+        counts: { heart: 1, laugh: 0, cry: 0, star: 0 },
+        currentReaction: "heart" as const,
+        members: { heart: ["Alex"], laugh: [], cry: [], star: [] },
+      };
+      render(
+        <QueryClientProvider client={client}>
+          <MemorySummaryCard memory={{ ...memory, reaction }} variant={variant} />
+        </QueryClientProvider>,
+      );
+      const trigger = screen.getByRole("button", { name: /react to this memory/i });
+      expect(screen.getByRole("link", { name: "Open Our picnic" })).not.toContainElement(trigger);
+      expect(screen.getByText("Alex")).toBeInTheDocument();
+      fireEvent.click(trigger);
+      expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    },
+  );
 
   it.each(["timeline", "recent", "related", "vault"] as const)(
     "does not expose deletion on the %s summary surface",

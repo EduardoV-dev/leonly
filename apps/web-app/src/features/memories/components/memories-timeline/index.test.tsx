@@ -7,18 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/axios/api";
 import { i18n } from "@/lib/i18n";
 import { MemoriesTimeline } from ".";
+import { memory } from "./memory.fixture";
 
-vi.mock("@/lib/axios/api", () => ({ api: { get: vi.fn() } }));
-
-const memory = {
-  coverPhotoUrl: null,
-  createdAt: "2026-08-23T10:00:00.000Z",
-  description: null,
-  id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
-  location: null,
-  memoryDate: "2026-08-20",
-  title: "Our picnic",
-};
+vi.mock("@/lib/axios/api", () => ({
+  api: { get: vi.fn(), post: vi.fn() },
+  isAxiosError: () => false,
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 function jsonResponse(body: {
   cursorReset: boolean;
@@ -205,7 +200,7 @@ describe("MemoriesTimeline", () => {
     expect(screen.getByText("A sunny afternoon together")).toBeInTheDocument();
     expect(screen.getByText("The park")).toBeInTheDocument();
     expect(screen.queryByText(/\d+ comments?/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /react/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /react to this memory/i })).not.toBeInTheDocument();
     expect(api.get).toHaveBeenCalledTimes(1);
     expect(document.querySelectorAll("[data-extension-region]")).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Open Our picnic" })).toHaveAttribute(

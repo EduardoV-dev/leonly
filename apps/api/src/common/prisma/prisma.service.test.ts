@@ -74,8 +74,8 @@ describe("PrismaService", () => {
     expect(event).toBe("query");
     callback({ query: "SELECT id FROM users WHERE id = $1", duration: 12, params: '["secret"]' });
     expect(debug).toHaveBeenCalledWith(
-      { query: "SELECT id FROM users WHERE id = $1", durationMs: 12 },
-      "prisma_query",
+      { durationMs: 12 },
+      "prisma_query\n--------------------\nSELECT id FROM users WHERE id = $1\n--------------------",
     );
   });
 

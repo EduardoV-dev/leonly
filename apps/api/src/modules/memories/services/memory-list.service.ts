@@ -13,6 +13,7 @@ import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.c
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { MembershipsService } from "../../spaces/services/memberships.service";
 import type { ListMemoriesDto } from "../dtos/list-memories.dto";
+import { MemoryReactionsService } from "./memory-reactions.service";
 
 const PAGE_SIZE = 10;
 const COVER_URL_SECONDS = 300;
@@ -39,6 +40,7 @@ export class MemoryListService {
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
+    private readonly memoryReactionsService: MemoryReactionsService,
   ) {}
 
   async list({
@@ -100,6 +102,11 @@ export class MemoryListService {
     `);
 
     const page = rows.slice(0, limit);
+    const reactions = await this.memoryReactionsService.getSummaries({
+      memoryIds: page.map(({ id }) => id),
+      spaceId: membership.spaceId,
+      memberId: membership.id,
+    });
     const covers = await this.prismaService.memory.findMany({
       where: {
         id: { in: page.map(({ id }) => id) },
@@ -132,13 +139,12 @@ export class MemoryListService {
     const coversById = new Map(
       covers.map(({ id, coverFile }) => [id, coverFile?.file.variants[0]?.objectKey]),
     );
-
     const items = await Promise.all(
       page.map(async (row) => {
         const key = coversById.get(row.id);
-
         return {
           ...row,
+          reaction: reactions.get(row.id),
           coverPhotoUrl: key
             ? await this.storage.signObject({ key, expiresIn: COVER_URL_SECONDS })
             : null,

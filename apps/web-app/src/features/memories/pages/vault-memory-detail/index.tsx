@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import { MemoryDetailView, type MemoryDetailViewProps } from "../../components/memory-detail-view";
+import { MemoryReactions } from "../../components/memory-reactions";
 
 type VaultMemoryDetailPageProps = Pick<MemoryDetailViewProps, "memory" | "relatedMemories">;
 
@@ -11,6 +12,7 @@ export function VaultMemoryDetailPage(props: Readonly<VaultMemoryDetailPageProps
   return (
     <MemoryDetailView
       {...props}
+      reactions={<MemoryReactions memoryId={props.memory.id} reaction={props.memory.reaction} />}
       backHref={APP_ROUTES.VAULT}
       backLabel={t("vault.detail.actions.backToVault")}
       relatedEmpty={t("vault.detail.related.empty")}

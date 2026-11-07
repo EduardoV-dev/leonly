@@ -1,11 +1,13 @@
-import type { MemoryDetail, MemoryListPage } from "@leonly/utils/contracts";
+import type { MemoryDetail, MemoryListPage, MemoryReactionSummary } from "@leonly/utils/contracts";
 import {
   BadRequestException,
   Body,
   Controller,
   Get,
   Header,
+  HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
@@ -17,17 +19,20 @@ import type { AuthenticatedRequest } from "../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../common/http/docs/api-response.docs";
 import { MEMORY_DETAIL_EXAMPLE, MEMORY_DETAIL_SCHEMA } from "./docs/memory-detail.docs";
 import { MEMORY_LIST_EXAMPLE, MEMORY_LIST_SCHEMA } from "./docs/memory-list.docs";
+import { MEMORY_REACTION_EXAMPLE, MEMORY_REACTION_SCHEMA } from "./docs/memory-reactions.docs";
 import { CreateMemoryDto } from "./dtos/create-memory.dto";
 import { ListMemoriesDto } from "./dtos/list-memories.dto";
+import { ToggleMemoryReactionDto } from "./dtos/toggle-memory-reaction.dto";
 import { type CreationResult, MemoriesService } from "./services/memories.service";
 import { MemoryDetailService } from "./services/memory-detail.service";
 import { MemoryListService } from "./services/memory-list.service";
+import { MemoryReactionsService } from "./services/memory-reactions.service";
 
 const INVALID_MEMORY_ID_MESSAGE = "Memory id is not valid.";
 
 const UUID_PARAM_VALIDATOR = new ParseUUIDPipe({
   exceptionFactory: () => new BadRequestException({ error: INVALID_MEMORY_ID_MESSAGE }),
-})
+});
 
 @Controller("memories")
 @ApiTags("Memories")
@@ -37,7 +42,55 @@ export class MemoriesController {
     private readonly memoriesService: MemoriesService,
     private readonly memoryListService: MemoryListService,
     private readonly memoryDetailService: MemoryDetailService,
-  ) { }
+    private readonly memoryReactionsService: MemoryReactionsService,
+  ) {}
+
+  @Get(":memoryId/reactions")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({ summary: "Read memory reactions" })
+  @ApiErrorResponses(401, 404, 429, 500, 503)
+  @ApiSuccessResponse({
+    description: "Reaction summary",
+    data: MEMORY_REACTION_SCHEMA,
+    example: MEMORY_REACTION_EXAMPLE,
+  })
+  async reactions(
+    @Req() request: AuthenticatedRequest,
+    @Param(
+      "memoryId",
+      new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Memory unavailable.") }),
+    )
+    memoryId: string,
+  ): Promise<MemoryReactionSummary> {
+    return this.memoryReactionsService.read({ userId: request.authUser.id, memoryId });
+  }
+
+  @Post(":memoryId/reactions")
+  @HttpCode(HttpStatus.OK)
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({ summary: "Add, replace, or remove a reaction" })
+  @ApiBody({ type: ToggleMemoryReactionDto })
+  @ApiErrorResponses(400, 401, 404, 429, 500, 503)
+  @ApiSuccessResponse({
+    description: "Updated reaction summary",
+    data: MEMORY_REACTION_SCHEMA,
+    example: MEMORY_REACTION_EXAMPLE,
+  })
+  async toggleReaction(
+    @Req() request: AuthenticatedRequest,
+    @Param(
+      "memoryId",
+      new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Memory unavailable.") }),
+    )
+    memoryId: string,
+    @Body() body: ToggleMemoryReactionDto,
+  ): Promise<MemoryReactionSummary> {
+    return this.memoryReactionsService.toggle({
+      userId: request.authUser.id,
+      memoryId,
+      reactionType: body.reactionType,
+    });
+  }
 
   @Get("timeline")
   @ApiOperation({ summary: "List active-space Timeline memories" })
@@ -70,10 +123,7 @@ export class MemoriesController {
   })
   async getTimelineDetail(
     @Req() request: AuthenticatedRequest,
-    @Param(
-      "memoryId",
-      UUID_PARAM_VALIDATOR,
-    )
+    @Param("memoryId", UUID_PARAM_VALIDATOR)
     memoryId: string,
   ): Promise<MemoryDetail> {
     return this.memoryDetailService.getDetail({
@@ -94,10 +144,7 @@ export class MemoriesController {
   })
   async getVaultDetail(
     @Req() request: AuthenticatedRequest,
-    @Param(
-      "memoryId",
-      UUID_PARAM_VALIDATOR,
-    )
+    @Param("memoryId", UUID_PARAM_VALIDATOR)
     memoryId: string,
   ): Promise<MemoryDetail> {
     return this.memoryDetailService.getDetail({

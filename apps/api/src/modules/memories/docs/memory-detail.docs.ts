@@ -1,5 +1,6 @@
 import type { SchemaObject } from "@nestjs/swagger";
 import { MEMORY_LIST_ITEM_SCHEMA } from "./memory-list.docs";
+import { MEMORY_REACTION_EXAMPLE, MEMORY_REACTION_SCHEMA } from "./memory-reactions.docs";
 
 const signedUrl: SchemaObject = {
   type: "string",
@@ -23,6 +24,7 @@ export const MEMORY_DETAIL_SCHEMA: SchemaObject = {
     "creatorAvatarUrl",
     "photos",
     "relatedMemories",
+    "reaction",
   ],
   properties: {
     id: { type: "string", format: "uuid" },
@@ -48,6 +50,7 @@ export const MEMORY_DETAIL_SCHEMA: SchemaObject = {
       },
     },
     relatedMemories: { type: "array", maxItems: 3, items: MEMORY_LIST_ITEM_SCHEMA },
+    reaction: MEMORY_REACTION_SCHEMA,
   },
 };
 
@@ -64,4 +67,5 @@ export const MEMORY_DETAIL_EXAMPLE = {
   creatorAvatarUrl: null,
   photos: [],
   relatedMemories: [],
+  reaction: MEMORY_REACTION_EXAMPLE,
 };

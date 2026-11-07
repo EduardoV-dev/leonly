@@ -1,3 +1,5 @@
+import type { MemoryReactionSummary } from "./memory-reaction";
+
 export type MemoryListItem = {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export type MemoryListItem = {
   description: string | null;
   location: string | null;
   coverPhotoUrl: string | null;
+  reaction?: MemoryReactionSummary;
 };
 
 export type MemoryListPage = {

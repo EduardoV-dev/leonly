@@ -1,4 +1,5 @@
 import type { MemoryListItem } from "./memory-list";
+import type { MemoryReactionSummary } from "./memory-reaction";
 
 export type MemoryDetailPhoto = {
   id: string;
@@ -19,4 +20,5 @@ export type MemoryDetail = {
   creatorAvatarUrl: string | null;
   photos: MemoryDetailPhoto[];
   relatedMemories: MemoryListItem[];
+  reaction: MemoryReactionSummary;
 };

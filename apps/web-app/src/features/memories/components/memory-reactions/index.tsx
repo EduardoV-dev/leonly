@@ -1,7 +1,6 @@
 "use client";
 
 import { SmilePlus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMemoryReaction } from "../../hooks/use-memory-reaction";
@@ -26,32 +25,24 @@ const reactionIcons: Record<MemoryReactionType, string> = {
 
 function applyReaction(
   summary: MemoryReactionSummary,
-  reactionType: MemoryReactionType,
+  reactionType: MemoryReactionType | null,
 ): MemoryReactionSummary {
   const currentReaction = summary.currentReaction;
   const counts = { ...summary.counts };
 
-  if (currentReaction === reactionType) {
-    counts[reactionType] = Math.max(0, counts[reactionType] - 1);
-    return { ...summary, counts, currentReaction: null };
-  }
+  if (currentReaction === reactionType) return summary;
 
   if (currentReaction) counts[currentReaction] = Math.max(0, counts[currentReaction] - 1);
-  counts[reactionType] += 1;
+  if (reactionType) counts[reactionType] += 1;
   return { ...summary, counts, currentReaction: reactionType };
 }
 
 export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactionsProps>) {
   const { t } = useTranslation("memories");
-  const router = useRouter();
-  const [confirmedReaction, setConfirmedReaction] = useState(reaction);
   const [isOpen, setIsOpen] = useState(false);
-  const [status, setStatus] = useState("");
   const controlRef = useRef<HTMLDivElement>(null);
-  const mutation = useMemoryReaction(memoryId, () => router.refresh());
-  const [summary, addOptimisticReaction] = useOptimistic(confirmedReaction, applyReaction);
-
-  useEffect(() => setConfirmedReaction(reaction), [reaction]);
+  const mutation = useMemoryReaction(memoryId, reaction);
+  const [summary, addOptimisticReaction] = useOptimistic(mutation.summary, applyReaction);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -74,26 +65,26 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
   const selectReaction = (reactionType: MemoryReactionType) => {
     if (mutation.isPending) return;
 
+    const request = mutation.react(reactionType);
     startTransition(async () => {
-      addOptimisticReaction(reactionType);
-      const nextSummary = await mutation.react(reactionType);
+      addOptimisticReaction(summary.currentReaction === reactionType ? null : reactionType);
+      const nextSummary = await request;
       if (nextSummary) {
-        setConfirmedReaction(nextSummary);
-        setStatus("");
         setIsOpen(false);
         return;
       }
-      setStatus(t("detail.reactions.failed"));
     });
   };
 
   const activeReactions = MEMORY_REACTION_TYPES.filter(
-    (reactionType) => confirmedReaction.counts[reactionType] > 0,
+    (reactionType) => summary.counts[reactionType] > 0,
   );
   const totalReactionCount = MEMORY_REACTION_TYPES.reduce(
     (total, reactionType) => total + summary.counts[reactionType],
     0,
   );
+
+  if (mutation.unavailable) return null;
 
   return (
     <div className={styles.control} ref={controlRef}>
@@ -160,7 +151,8 @@ export function MemoryReactions({ memoryId, reaction }: Readonly<MemoryReactions
         </fieldset>
       ) : null}
       <p className={styles.status} aria-live="polite" role="status">
-        {status}
+        {mutation.failed && t("detail.reactions.failed")}
+        {!mutation.failed && mutation.succeeded && t("detail.reactions.success")}
       </p>
     </div>
   );

@@ -6,6 +6,13 @@ const fixtures = vi.hoisted(() => ({
   authenticated: true,
   member: { findFirst: vi.fn() },
   memory: { findFirst: vi.fn(), findMany: vi.fn() },
+  reaction: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
   query: vi.fn(),
 }));
 
@@ -35,7 +42,11 @@ vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
     spaceMember = fixtures.member;
     memory = fixtures.memory;
+    memoryReaction = fixtures.reaction;
     $queryRaw = fixtures.query;
+    $transaction(callback: (client: unknown) => unknown) {
+      return callback(this);
+    }
   },
 }));
 vi.mock("../../common/rate-limit/guards/rate-limit.guard", () => ({
@@ -64,6 +75,9 @@ describe("authenticated memory lists", () => {
     });
     fixtures.memory.findMany.mockReset().mockResolvedValue([]);
     fixtures.memory.findFirst.mockReset().mockResolvedValue(null);
+    fixtures.reaction.findMany.mockReset().mockResolvedValue([]);
+    fixtures.reaction.findUnique.mockReset().mockResolvedValue(null);
+    fixtures.reaction.create.mockReset().mockResolvedValue({});
     fixtures.query.mockReset().mockResolvedValue([]);
   });
 
@@ -134,6 +148,14 @@ describe("authenticated memory lists", () => {
         location: null,
       },
     ]);
+    fixtures.reaction.findMany.mockResolvedValue([
+      {
+        memoryId: "01900000-0000-7000-8000-000000000004",
+        reactionType: "heart",
+        reactedByMemberId: "01900000-0000-7000-8000-000000000006",
+        reactedByMember: { displayName: "Alex" },
+      },
+    ]);
     const response = await fetch(`${origin}/api/memories/timeline?limit=4&sort=oldest`);
     expect(response.status).toBe(200);
     const payload = await response.json();
@@ -149,6 +171,11 @@ describe("authenticated memory lists", () => {
             description: null,
             location: null,
             coverPhotoUrl: null,
+            reaction: {
+              counts: { heart: 1, laugh: 0, cry: 0, star: 0 },
+              currentReaction: "heart",
+              members: { heart: ["Alex"], laugh: [], cry: [], star: [] },
+            },
           },
         ],
         meta: { nextCursor: null, cursorReset: false },
@@ -162,6 +189,7 @@ describe("authenticated memory lists", () => {
       "id",
       "location",
       "memoryDate",
+      "reaction",
       "title",
     ]);
   });
@@ -224,6 +252,11 @@ describe("authenticated memory lists", () => {
         creatorDisplayName: "Sarah",
         photos: [],
         relatedMemories: [],
+        reaction: {
+          counts: { heart: 0, laugh: 0, cry: 0, star: 0 },
+          currentReaction: null,
+          members: { heart: [], laugh: [], cry: [], star: [] },
+        },
       },
       error: [],
     });
@@ -260,6 +293,103 @@ describe("authenticated memory lists", () => {
       expect(operation?.responses).toHaveProperty("401");
       expect(operation?.responses).toHaveProperty("404");
       expect(JSON.stringify(operation?.responses)).toContain("300 seconds");
+      expect(JSON.stringify(operation?.responses)).toContain("currentReaction");
     }
+  });
+
+  it("serves reaction reads and validated toggles with private envelopes", async () => {
+    const path = `${origin}/api/memories/01900000-0000-7000-8000-000000000004/reactions`;
+    fixtures.memory.findFirst.mockResolvedValue({ id: "memory" });
+    const read = await fetch(path);
+    expect(read.status).toBe(200);
+    expect(read.headers.get("cache-control")).toBe("no-store");
+    expect(await read.json()).toMatchObject({
+      ok: true,
+      data: { currentReaction: null, counts: { heart: 0, laugh: 0, cry: 0, star: 0 } },
+      error: [],
+    });
+    for (const reactionType of ["heart", "laugh", "cry", "star"]) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reactionType }),
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+    }
+  });
+
+  it("rejects malformed, extra and unavailable reaction requests", async () => {
+    const path = `${origin}/api/memories/01900000-0000-7000-8000-000000000004/reactions`;
+    for (const body of [
+      "{",
+      "{}",
+      '{"reactionType":"bad"}',
+      '{"reactionType":"heart","spaceId":"other"}',
+    ]) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body,
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ ok: false, data: null });
+    }
+    expect((await fetch(`${origin}/api/memories/invalid/reactions`)).status).toBe(404);
+    expect((await fetch(path)).status).toBe(404);
+    fixtures.authenticated = false;
+    expect((await fetch(path)).status).toBe(401);
+    expect(fixtures.reaction.create).not.toHaveBeenCalled();
+  });
+
+  it("documents the reaction operations", () => {
+    const document = SwaggerModule.createDocument(app, new DocumentBuilder().build());
+    const path = document.paths["/api/memories/{memoryId}/reactions"];
+    for (const operation of [path?.get, path?.post]) {
+      expect(operation?.responses).toHaveProperty("200");
+      expect(operation?.responses).toHaveProperty("401");
+      expect(operation?.responses).toHaveProperty("404");
+      expect(operation?.responses).toHaveProperty("429");
+      expect(operation?.responses).toHaveProperty("503");
+      expect(JSON.stringify(operation?.responses)).toContain("currentReaction");
+    }
+    expect(path?.post?.responses).toHaveProperty("400");
+    expect(JSON.stringify(path?.post?.requestBody)).toContain("ToggleMemoryReactionDto");
+  });
+
+  it("hides unexpected reaction storage failures", async () => {
+    fixtures.memory.findFirst.mockResolvedValue({ id: "memory" });
+    fixtures.reaction.findMany.mockRejectedValue(new Error("private storage detail"));
+    const response = await fetch(
+      `${origin}/api/memories/01900000-0000-7000-8000-000000000004/reactions`,
+    );
+    expect(response.status).toBe(500);
+    const payload = await response.json();
+    expect(payload).toMatchObject({ ok: false, data: null });
+    expect(JSON.stringify(payload)).not.toContain("private storage detail");
+  });
+
+  it("uses the same unavailable response for missing membership and inaccessible memory", async () => {
+    const path = `${origin}/api/memories/01900000-0000-7000-8000-000000000004/reactions`;
+    const missing = await fetch(path);
+    const expected = await missing.json();
+    expect(missing.status).toBe(404);
+    expect(fixtures.memory.findFirst.mock.calls[0][0].where).toMatchObject({
+      spaceId: "01900000-0000-7000-8000-000000000005",
+      deletedAt: null,
+      space: { deletedAt: null, members: { some: { userId: "user-a", deletedAt: null } } },
+    });
+    fixtures.member.findFirst.mockResolvedValue(null);
+    const noMembership = await fetch(path);
+    expect(noMembership.status).toBe(404);
+    expect(await noMembership.json()).toEqual(expected);
+    const post = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: '{"reactionType":"heart"}',
+    });
+    expect(post.status).toBe(404);
+    expect(await post.json()).toEqual(expected);
+    expect(fixtures.reaction.create).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { APP_ROUTES } from "@/constants/routes";
 import type { TimelineMemory } from "../../types/timeline";
+import { MemoryReactions } from "../memory-reactions";
 import styles from "./memory-summary-card.module.css";
 
 type MemorySummaryCardProps = {
@@ -89,6 +90,9 @@ export function MemorySummaryCard({
   variant = "timeline",
 }: Readonly<MemorySummaryCardProps>) {
   const { i18n, t } = useTranslation("memories");
+  const reactionControl =
+    reactions ??
+    (memory.reaction ? <MemoryReactions memoryId={memory.id} reaction={memory.reaction} /> : null);
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
   const coverPhotoUrl = memory.coverPhotoUrl === failedCoverUrl ? null : memory.coverPhotoUrl;
   const shouldReduceMotion = Boolean(useReducedMotion());
@@ -108,7 +112,7 @@ export function MemorySummaryCard({
 
   return (
     <motion.article
-      className={`${styles.card} ${styles[variant]} ${reactions ? styles.withReactions : ""}`}
+      className={`${styles.card} ${styles[variant]} ${reactionControl ? styles.withReactions : ""}`}
       variants={activeCardVariants}
       custom={cardMotion}
       initial="hidden"
@@ -158,7 +162,7 @@ export function MemorySummaryCard({
           </motion.div>
         </Link>
       </motion.div>
-      {variant !== "related" || "commentCount" in memory || count || reactions ? (
+      {variant !== "related" || "commentCount" in memory || count || reactionControl ? (
         <footer className={styles.footer}>
           <div className={styles.commentCount} data-extension-region="memory-count">
             {"commentCount" in memory ? (
@@ -169,7 +173,7 @@ export function MemorySummaryCard({
             ) : null}
             {count}
           </div>
-          {reactions}
+          {reactionControl}
         </footer>
       ) : null}
       {variant !== "related" || actions ? (
