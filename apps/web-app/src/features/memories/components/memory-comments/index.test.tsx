@@ -65,12 +65,47 @@ describe("MemoryComments", () => {
     renderComments();
     expect(await screen.findByText("A lovely day")).toBeInTheDocument();
     expect(api.get).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    const thread = screen.getByRole("listitem");
+    const disclosure = within(thread).getByRole("button", { name: "Show replies (1)" });
+    expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(disclosure);
     expect(await screen.findByText("A reply")).toBeInTheDocument();
+    expect(within(thread).getAllByRole("article")).toHaveLength(2);
+    expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    expect(
+      document.getElementById(disclosure.getAttribute("aria-controls") ?? ""),
+    ).toContainElement(screen.getByText("A reply"));
     expect(api.get).toHaveBeenCalledWith(
       `/memories/${memoryId}/comments/${comment.id}/replies`,
       expect.any(Object),
     );
+  });
+
+  it("keeps an unsent reply when its thread is collapsed and reopened", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockResolvedValue(page([]));
+    renderComments();
+    fireEvent.click(await screen.findByRole("button", { name: "Show replies (1)" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Reply" }), {
+      target: { value: "First line\nSecond line" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Hide replies" }));
+    expect(screen.queryByRole("textbox", { name: "Reply" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    expect(screen.getByRole("textbox", { name: "Reply" })).toHaveValue("First line\nSecond line");
+    expect(screen.getByRole("button", { name: "Reply" })).toBeEnabled();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("allows the first reply to a comment without existing replies", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([{ ...comment, replyCount: 0 }]))
+      .mockResolvedValue(page([]));
+    renderComments();
+    fireEvent.click(await screen.findByRole("button", { name: "Show replies (0)" }));
+    expect(screen.getByRole("textbox", { name: "Reply" })).toHaveAttribute("rows", "1");
+    expect(screen.getByRole("button", { name: "Reply" })).toBeDisabled();
   });
 
   it("shows a deleted root without its author or a reply composer", async () => {

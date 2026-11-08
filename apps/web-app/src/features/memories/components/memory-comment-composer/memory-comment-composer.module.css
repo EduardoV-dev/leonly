@@ -129,6 +129,83 @@
   justify-self: end;
 }
 
+.form[data-is-reply="true"] {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0;
+}
+
+.replySubmitLabel,
+.form[data-is-reply="true"] .label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.form[data-is-reply="true"] .textarea {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0.7rem 3.5rem 0.7rem 0.9rem;
+  border-color: transparent;
+  border-radius: 1.5rem;
+  background: var(--surface-muted, #f6f2ee);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  field-sizing: content;
+}
+
+.form[data-is-reply="true"] .textarea:focus {
+  border-color: var(--brand-mauve, #7f5a5f);
+}
+
+.form[data-is-reply="true"] .submit {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0.125rem;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: #6d2934;
+  box-shadow: none;
+}
+
+.form[data-is-reply="true"] .submit:hover:not(:disabled) {
+  background: #eadfdd;
+}
+
+.form[data-is-reply="true"] .helperRow,
+.form[data-is-reply="true"] .validation,
+.form[data-is-reply="true"] .submitError {
+  grid-column: 1 / -1;
+}
+
+.form[data-is-reply="true"][data-has-draft="false"]:not(:focus-within) .helperRow {
+  display: none;
+}
+
+@supports not (field-sizing: content) {
+  .form[data-is-reply="true"] .textarea:focus {
+    min-height: 5rem;
+  }
+}
+
+@supports (field-sizing: content) {
+  .form[data-is-reply="true"] .textarea {
+    resize: none;
+  }
+}
+
 @media (max-width: 39.999rem) {
   .helperRow {
     align-items: flex-start;

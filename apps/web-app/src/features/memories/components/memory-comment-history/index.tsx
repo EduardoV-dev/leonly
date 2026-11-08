@@ -1,15 +1,14 @@
 import { BookOpen, RefreshCw } from "lucide-react";
-import { Fragment } from "react";
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import type { CommentDeletionOutcome } from "../../hooks/use-comment-deletion";
 import type { RootComment } from "../../types/comment";
-import { MemoryCommentItem } from "../memory-comment-item";
 import { MemoryCommentPagination } from "../memory-comment-pagination";
 import { MemoryCommentThread } from "../memory-comment-thread";
 import styles from "./memory-comment-history.module.css";
 
 type MemoryCommentHistoryProps = {
-  comments: RootComment[];
+  comments: readonly RootComment[];
   error: Error | null;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
@@ -34,7 +33,7 @@ export function MemoryCommentHistory({
   onLoadMore,
   onRetry,
   onUnavailable,
-}: Readonly<MemoryCommentHistoryProps>) {
+}: Readonly<MemoryCommentHistoryProps>): ReactElement {
   const { t } = useTranslation("memories");
 
   if (isLoading) {
@@ -73,24 +72,13 @@ export function MemoryCommentHistory({
     <>
       <ul className={styles.list} aria-label={t("detail.comments.historyLabel")}>
         {comments.map((comment) => (
-          <Fragment key={comment.id}>
-            {comment.deletedAt !== null ? (
-              <li>{t("detail.comments.deleted")}</li>
-            ) : (
-              <MemoryCommentItem
-                comment={comment}
-                locale={locale}
-                onDeleteOutcome={onDeleteOutcome}
-                onUnavailable={onUnavailable}
-              />
-            )}
-            <MemoryCommentThread
-              comment={comment}
-              locale={locale}
-              onDeleteOutcome={onDeleteOutcome}
-              onUnavailable={onUnavailable}
-            />
-          </Fragment>
+          <MemoryCommentThread
+            key={comment.id}
+            comment={comment}
+            locale={locale}
+            onDeleteOutcome={onDeleteOutcome}
+            onUnavailable={onUnavailable}
+          />
         ))}
       </ul>
       <MemoryCommentPagination

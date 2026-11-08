@@ -1,5 +1,6 @@
 import type { RootComment } from "@leonly/utils/contracts";
-import { type ReactElement, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { type ReactElement, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCommentComposer } from "../../hooks/use-comment-composer";
 import type { CommentDeletionOutcome } from "../../hooks/use-comment-deletion";
@@ -23,6 +24,7 @@ export function MemoryCommentThread({
 }: Readonly<MemoryCommentThreadProps>): ReactElement {
   const { t } = useTranslation("memories");
   const [expanded, setExpanded] = useState(false);
+  const repliesId = useId();
   const composer = useCommentComposer({
     memoryId: comment.memoryId,
     onUnavailable,
@@ -36,18 +38,30 @@ export function MemoryCommentThread({
 
   return (
     <li className={styles.thread}>
+      {comment.deletedAt !== null ? (
+        <p className={styles.deleted}>{t("detail.comments.deleted")}</p>
+      ) : (
+        <MemoryCommentItem
+          comment={comment}
+          locale={locale}
+          onDeleteOutcome={onDeleteOutcome}
+          onUnavailable={onUnavailable}
+        />
+      )}
       <button
         className={styles.control}
         type="button"
+        aria-controls={expanded ? repliesId : undefined}
         aria-expanded={expanded}
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => setExpanded((isExpanded) => !isExpanded)}
       >
+        {expanded ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
         {expanded
           ? t("detail.comments.hideReplies")
           : t("detail.comments.showReplies", { count: comment.replyCount })}
       </button>
       {expanded ? (
-        <div className={styles.content}>
+        <div className={styles.content} id={repliesId}>
           {replies.isPending ? <p role="status">{t("detail.comments.loading")}</p> : null}
           {replies.isError ? (
             <button
@@ -60,18 +74,19 @@ export function MemoryCommentThread({
               {t("detail.comments.tryAgain")}
             </button>
           ) : null}
-          <ul>
+          <ul className={styles.replies}>
             {replies.data?.pages
               .flatMap((page) => page.data)
               .map((reply) =>
                 reply.deletedAt === null ? (
-                  <MemoryCommentItem
-                    key={reply.id}
-                    comment={reply}
-                    locale={locale}
-                    onDeleteOutcome={onDeleteOutcome}
-                    onUnavailable={onUnavailable}
-                  />
+                  <li key={reply.id}>
+                    <MemoryCommentItem
+                      comment={reply}
+                      locale={locale}
+                      onDeleteOutcome={onDeleteOutcome}
+                      onUnavailable={onUnavailable}
+                    />
+                  </li>
                 ) : null,
               )}
           </ul>

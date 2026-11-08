@@ -1,29 +1,22 @@
 .item {
+  display: grid;
+  grid-template-columns: var(--comment-avatar-size, 2rem) minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 0.65rem;
+  row-gap: 0.15rem;
   min-width: 0;
-  padding: 1rem 0;
-  border-bottom: 1px solid #eadfdd;
-}
-
-.item:first-child {
-  padding-top: 0;
-}
-
-.item:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
 }
 
 .header {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.65rem;
+  display: contents;
 }
 
 .avatar {
   display: block;
-  width: 2rem;
-  height: 2rem;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: var(--comment-avatar-size, 2rem);
+  height: var(--comment-avatar-size, 2rem);
   flex: 0 0 auto;
   border: 1px solid #e7c9cc;
   border-radius: 50%;
@@ -41,11 +34,13 @@
 
 .metadata {
   display: flex;
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   flex: 1;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.2rem 0.65rem;
+  gap: 0.1rem 0.4rem;
   margin: 0;
   color: #715e5c;
   font-size: 0.74rem;
@@ -69,45 +64,58 @@
 }
 
 .body {
+  grid-column: 2;
+  grid-row: 2;
   max-width: 70ch;
-  margin: 0.7rem 0 0;
+  min-width: 0;
+  margin: 0;
   color: #4f4544;
-  font-size: 0.95rem;
-  line-height: 1.7;
+  font-size: 0.9rem;
+  line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.editAction {
+.authorActions .editAction {
   flex: 0 0 auto;
   width: 2.75rem;
   height: 2.75rem;
   padding: 0;
   color: #6d2934;
   background: transparent;
-  border-color: #bd7580;
+  border-color: transparent;
   box-shadow: none;
 }
 
 .authorActions {
   display: flex;
+  grid-column: 3;
+  grid-row: 1 / 3;
   flex: 0 0 auto;
-  gap: 0.45rem;
+  gap: 0.1rem;
+  margin-block: -0.65rem;
 }
 
-.deleteAction {
+.authorActions .deleteAction {
   flex: 0 0 auto;
   width: 2.75rem;
   height: 2.75rem;
   padding: 0;
   color: #8d1f2d;
-  background: #fff0f1;
-  border-color: #bd7580;
+  background: transparent;
+  border-color: transparent;
   box-shadow: none;
 }
 
+.authorActions .editAction:hover,
+.authorActions .deleteAction:hover {
+  background: #fff4f3;
+}
+
 .editor {
-  margin-top: 0.7rem;
+  grid-column: 2 / -1;
+  min-width: 0;
+  margin-top: 0.35rem;
 }
 
 .editorLabel {
@@ -207,8 +215,18 @@
   border: 0;
 }
 
-.item[data-has-avatar="true"] .body {
-  margin-left: 2.65rem;
+@media (max-width: 39.999rem) {
+  .metadata,
+  .body {
+    grid-column: 2 / -1;
+  }
+
+  .authorActions {
+    grid-column: 2 / -1;
+    grid-row: auto;
+    justify-self: start;
+    margin: 0 0 -0.5rem -0.65rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

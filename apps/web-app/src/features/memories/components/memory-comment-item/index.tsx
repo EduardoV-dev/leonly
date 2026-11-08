@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import { Pencil, Trash2 } from "lucide-react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactElement } from "react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -26,7 +26,7 @@ export function MemoryCommentItem({
   locale,
   onDeleteOutcome,
   onUnavailable,
-}: Readonly<MemoryCommentItemProps>) {
+}: Readonly<MemoryCommentItemProps>): ReactElement {
   const { t } = useTranslation("memories");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const deleteTriggerRef = useRef<HTMLDivElement>(null);
@@ -64,7 +64,7 @@ export function MemoryCommentItem({
   };
 
   return (
-    <li className={styles.item} data-has-avatar="true">
+    <article className={styles.item}>
       <div className={styles.header}>
         <ProfileAvatar
           avatarUrl={comment.authorAvatarUrl}
@@ -181,6 +181,6 @@ export function MemoryCommentItem({
         onConfirm={() => void deletion.remove()}
         open={isDeleteDialogOpen}
       />
-    </li>
+    </article>
   );
 }

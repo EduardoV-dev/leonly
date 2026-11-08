@@ -1,24 +1,71 @@
 .thread {
+  min-width: 0;
   list-style: none;
-  margin-inline-start: 2.5rem;
+}
+
+.thread + .thread {
+  margin-block-start: 1.25rem;
 }
 
 .content {
-  border-inline-start: 1px solid var(--border-warm, #dfd4d2);
-  padding-inline-start: 1rem;
+  min-width: 0;
+  margin-inline-start: 2.65rem;
 }
 
-.content ul {
+.replies {
+  --comment-avatar-size: 1.5rem;
+
+  display: grid;
+  gap: 0.85rem;
   list-style: none;
+  margin: 0 0 0.75rem;
   padding: 0;
 }
 
 .control {
+  display: flex;
   min-width: 2.75rem;
   min-height: 2.75rem;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: 2.65rem;
+  padding: 0;
   color: var(--brand-mauve, #7f5a5f);
+  font: inherit;
+  font-size: 0.78rem;
   font-weight: 700;
   text-align: start;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.control svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+}
+
+.control:hover {
+  color: var(--accent-rose, #b82b49);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.content .control {
+  margin-inline-start: 0;
+}
+
+.content > p,
+.deleted {
+  margin: 0;
+  color: #715e5c;
+  font-size: 0.8rem;
+}
+
+.deleted {
+  margin-inline-start: 2.65rem;
+  font-style: italic;
 }
 
 .control:focus-visible {

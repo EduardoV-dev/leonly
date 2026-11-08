@@ -1,5 +1,5 @@
 import { AlertCircle, Send } from "lucide-react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactElement } from "react";
 import { useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ type MemoryCommentComposerProps = {
 export function MemoryCommentComposer({
   composer,
   isReply = false,
-}: Readonly<MemoryCommentComposerProps>) {
+}: Readonly<MemoryCommentComposerProps>): ReactElement {
   const { t } = useTranslation("memories");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const id = useId();
@@ -35,6 +35,8 @@ export function MemoryCommentComposer({
     <form
       aria-label={t(isReply ? "detail.comments.replyFormLabel" : "detail.comments.formLabel")}
       className={styles.form}
+      data-is-reply={isReply}
+      data-has-draft={composer.draft.length > 0}
       noValidate
       onSubmit={handleSubmit}
     >
@@ -50,8 +52,8 @@ export function MemoryCommentComposer({
         disabled={composer.isSubmitting}
         onBlur={composer.markBlurred}
         onChange={(event) => composer.updateDraft(event.target.value)}
-        placeholder={t("detail.comments.placeholder")}
-        rows={4}
+        placeholder={t(isReply ? "detail.comments.replyLabel" : "detail.comments.placeholder")}
+        rows={isReply ? 1 : 4}
         value={composer.draft}
       />
       <div className={styles.helperRow}>
@@ -84,6 +86,7 @@ export function MemoryCommentComposer({
       ) : null}
       <Button
         aria-busy={composer.isSubmitting}
+        aria-label={isReply ? t("detail.comments.replyLabel") : undefined}
         className={styles.submit}
         disabled={!composer.draftState.isValid}
         loading={composer.isSubmitting}
@@ -91,7 +94,9 @@ export function MemoryCommentComposer({
         type="submit"
       >
         {composer.isSubmitting ? null : <Send aria-hidden="true" />}
-        {composer.isSubmitting ? t("detail.comments.adding") : t("detail.comments.add")}
+        <span className={isReply ? styles.replySubmitLabel : undefined}>
+          {composer.isSubmitting ? t("detail.comments.adding") : t("detail.comments.add")}
+        </span>
       </Button>
     </form>
   );
