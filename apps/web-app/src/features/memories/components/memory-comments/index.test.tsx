@@ -1,401 +1,279 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "@/lib/axios/api";
 import { i18n } from "@/lib/i18n";
 import { MemoryComments } from ".";
 
-const { refreshMock } = vi.hoisted(() => ({ refreshMock: vi.fn() }));
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: refreshMock }),
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("@/lib/axios/api", () => ({
+  api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
-const MEMORY_ID = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
-const FIRST_ID = "64d44f34-c5fe-482a-b65b-f91d0173b7fe";
-const SECOND_ID = "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452";
-const AVATAR_URL = "https://cdn.example.com/sarah.jpg";
-
+const memoryId = "01900000-0000-7000-8000-000000000004";
 const comment = {
-  authorAvatarUrl: AVATAR_URL,
-  authorDisplayName: "Sarah Green",
-  body: "The flowers were still warm from the sun.",
-  createdAt: "2026-08-23T10:00:00.000Z",
-  id: FIRST_ID,
-  isAuthor: false,
-  memoryId: MEMORY_ID,
-  updatedAt: "2026-08-23T10:00:00.000Z",
-  version: 1,
+  deletedAt: null,
+  id: "01900000-0000-7000-8000-000000000005",
+  memoryId,
+  parentCommentId: null,
+  body: "A lovely day",
+  createdAt: "2026-09-05T16:00:00.123456Z",
+  updatedAt: "2026-09-05T16:00:00.123456Z",
+  authorDisplayName: "Sarah",
+  authorAvatarUrl: null,
+  isAuthor: true,
+  replyCount: 1,
 };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { "content-type": "application/json" },
-    status,
-  });
-}
+const success = (data: unknown) => ({
+  status: 200,
+  data: { ok: true, data, error: [], message: "" },
+});
+const page = (data: unknown[]) => success({ data, meta: { nextCursor: null, resetCursor: false } });
 
 function renderComments() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return {
-    queryClient,
-    ...render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryComments memoryId={MEMORY_ID} />
-      </QueryClientProvider>,
-    ),
-  };
-}
-
-async function settle(): Promise<void> {
-  await waitFor(() =>
-    expect(screen.queryByRole("status", { name: "Loading comments" })).not.toBeInTheDocument(),
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryComments memoryId={memoryId} />
+    </QueryClientProvider>,
   );
 }
 
 describe("MemoryComments", () => {
   beforeEach(async () => {
-    await i18n.changeLanguage("en");
     vi.clearAllMocks();
-    vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "11111111-1111-4111-8111-111111111111") });
-    vi.stubGlobal("fetch", vi.fn());
+    await i18n.changeLanguage("en");
   });
 
-  it("renders the editorial semantic composition and inert newest-first notes", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      jsonResponse({
-        comments: [
-          comment,
-          { ...comment, authorAvatarUrl: null, id: SECOND_ID, body: "A second note." },
-        ],
-        cursorReset: false,
-        nextCursor: null,
+  it("loads comments and expands replies on demand", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockResolvedValueOnce(
+        page([
+          {
+            ...comment,
+            id: "01900000-0000-7000-8000-000000000006",
+            body: "A reply",
+            parentCommentId: comment.id,
+            isAuthor: false,
+            replyCount: 0,
+          },
+        ]),
+      );
+    renderComments();
+    expect(await screen.findByText("A lovely day")).toBeInTheDocument();
+    expect(api.get).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    expect(await screen.findByText("A reply")).toBeInTheDocument();
+    expect(api.get).toHaveBeenCalledWith(
+      `/memories/${memoryId}/comments/${comment.id}/replies`,
+      expect.any(Object),
+    );
+  });
+
+  it("shows a deleted root without its author or a reply composer", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(
+        page([
+          {
+            deletedAt: "2026-09-05T16:01:00.123456Z",
+            id: comment.id,
+            memoryId,
+            createdAt: comment.createdAt,
+            replyCount: 1,
+          },
+        ]),
+      )
+      .mockResolvedValueOnce(page([]));
+    renderComments();
+    expect(await screen.findByText("Comment deleted")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("Sarah")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("textbox", { name: "Comment" })).toHaveLength(1);
+  });
+
+  it("keeps the draft and offers retry after submission failure", async () => {
+    vi.mocked(api.get).mockResolvedValue(page([]));
+    vi.mocked(api.post).mockRejectedValue(new Error("offline"));
+    renderComments();
+    const input = await screen.findByRole("textbox", { name: "Comment" });
+    fireEvent.change(input, { target: { value: "Keep this" } });
+    fireEvent.click(screen.getByRole("button", { name: "Comment" }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(input).toHaveValue("Keep this");
+  });
+
+  it("submits a reply under its root using the reply composer", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockResolvedValue(page([]));
+    vi.mocked(api.post).mockResolvedValue(
+      success({
+        ...comment,
+        id: "01900000-0000-7000-8000-000000000006",
+        parentCommentId: comment.id,
+        body: "A reply",
       }),
     );
-
     renderComments();
-    await settle();
-
-    expect(screen.getByRole("heading", { name: "Comments" })).toBeInTheDocument();
-    expect(screen.queryByText("Shared notes")).not.toBeInTheDocument();
-    expect(screen.getByRole("form")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Comment" })).toBeInTheDocument();
-    const submit = screen.getByRole("button", { name: "Comment" });
-    expect(submit).toBeDisabled();
-    expect(submit.querySelector("svg")).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "Comments" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.getAllByText("Sarah Green")).toHaveLength(2);
-    expect(screen.getAllByRole("img", { name: "Sarah Green" })[0]).toHaveAttribute(
-      "src",
-      AVATAR_URL,
+    await screen.findByText("A lovely day");
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    const input = await screen.findByRole("textbox", { name: "Reply" });
+    fireEvent.change(input, { target: { value: "A reply" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Reply composer" }));
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith(
+        `/memories/${memoryId}/comments`,
+        {
+          body: "A reply",
+          parentCommentId: comment.id,
+        },
+        expect.any(Object),
+      ),
     );
-    expect(screen.getByText("SG")).toHaveAttribute("aria-label", "Sarah Green");
-    expect(screen.getByText("A second note.")).toBeInTheDocument();
-    expect(screen.getByText("The flowers were still warm from the sun.")).toBeInTheDocument();
-
-    const body = screen.getByText("The flowers were still warm from the sun.");
-    expect(body).not.toContainHTML("<script>");
   });
 
-  it("keeps the empty composer disabled, focuses validation, and preserves its draft", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      jsonResponse({ comments: [], cursorReset: false, nextCursor: null }),
-    );
+  it("preserves the attempted edit and requires refresh after a conflict", async () => {
+    vi.mocked(api.get).mockResolvedValue(page([comment]));
+    vi.mocked(api.patch).mockResolvedValue({
+      status: 409,
+      data: { ok: false, data: null, error: [], message: "conflict" },
+    });
     renderComments();
-    await settle();
-
-    const textarea = screen.getByRole("textbox", { name: "Comment" });
-    const form = screen.getByRole("form");
-    const submit = screen.getByRole("button", { name: "Comment" });
-    expect(submit).toBeDisabled();
-    expect(submit.querySelector("svg")).toBeInTheDocument();
-    fireEvent.change(textarea, { target: { value: "   " } });
-    fireEvent.submit(form);
-
-    expect(textarea).toHaveAttribute("aria-invalid", "true");
-    expect(textarea).toHaveValue("   ");
-    expect(textarea).toHaveFocus();
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a comment.");
-    expect(screen.getAllByText(/Enter a comment\./)).toHaveLength(1);
-    expect(screen.getByRole("heading", { name: "No comments yet" })).toBeInTheDocument();
-  });
-
-  it("crops new and edited comments at the limit without rendering an over-limit error", async () => {
-    const authoredComment = { ...comment, isAuthor: true };
-    vi.mocked(fetch).mockResolvedValue(
-      jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
-    );
-    renderComments();
-    await settle();
-
-    const overLimitDraft = "🌷".repeat(1001);
-    const croppedDraft = "🌷".repeat(1000);
-    const composer = screen.getByRole("textbox", { name: "Comment" });
-    fireEvent.change(composer, { target: { value: overLimitDraft } });
-
-    expect(composer).toHaveValue(croppedDraft);
-    expect(screen.getByText("1000 / 1000")).toBeInTheDocument();
-    expect(screen.queryByText(/Remove 1 character/)).not.toBeInTheDocument();
-
+    await screen.findByText("A lovely day");
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const editor = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
-    fireEvent.change(editor, { target: { value: overLimitDraft } });
-
-    expect(editor).toHaveValue(croppedDraft);
-    expect(screen.getAllByText("1000 / 1000")).toHaveLength(2);
-    expect(screen.queryByText(/Remove 1 character/)).not.toBeInTheDocument();
-  });
-
-  it("renders localized relative time while preserving the exact timestamp", async () => {
-    const createdAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    vi.mocked(fetch).mockResolvedValue(
-      jsonResponse({
-        comments: [{ ...comment, createdAt }],
-        cursorReset: false,
-        nextCursor: null,
-      }),
+    const input = screen.getByRole("textbox", { name: /Edit comment/ });
+    fireEvent.change(input, { target: { value: "My edit" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByRole("alert");
+    expect(input).toHaveValue("My edit");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.patch).toHaveBeenCalledTimes(1);
+    expect(api.patch).toHaveBeenCalledWith(
+      `/memories/${memoryId}/comments/${comment.id}`,
+      { body: "My edit", lastKnownUpdatedAt: comment.updatedAt },
+      expect.any(Object),
     );
+  });
+
+  it("keeps the conflicting draft visible when refreshing fails", async () => {
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockRejectedValue(new Error("offline"));
+    vi.mocked(api.patch).mockResolvedValue({
+      status: 409,
+      data: { ok: false, data: null, error: [], message: "conflict" },
+    });
     renderComments();
-    await settle();
-
-    const timestamp = screen.getByText(/about 2 hours ago/);
-    expect(timestamp).toHaveAttribute("datetime", createdAt);
-    expect(timestamp).toHaveAttribute("title");
+    await screen.findByText("A lovely day");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const input = screen.getByRole("textbox", { name: /Edit comment/ });
+    fireEvent.change(input, { target: { value: "Keep my draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Refresh comment" }));
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(input).toHaveValue("Keep my draft");
+    expect(screen.getByRole("button", { name: "Refresh comment" })).toBeInTheDocument();
   });
 
-  it("submits from the form, freezes pending state, then clears and announces the canonical note", async () => {
-    let resolveCreate: (response: Response) => void = () => undefined;
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(jsonResponse({ comments: [], cursorReset: false, nextCursor: null }))
-      .mockImplementationOnce(
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveCreate = resolve;
-          }),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [comment], cursorReset: false, nextCursor: null }),
-      );
-    renderComments();
-    await settle();
-
-    const textarea = screen.getByRole("textbox", { name: "Comment" });
-    fireEvent.change(textarea, { target: { value: "A note from the garden" } });
-    fireEvent.blur(textarea);
-    fireEvent.submit(screen.getByRole("form"));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Commenting…" })).toBeDisabled());
-    expect(textarea).toBeDisabled();
-
-    resolveCreate(jsonResponse({ comment }));
-    await waitFor(() => expect(screen.getByText(comment.body)).toBeInTheDocument());
-    expect(screen.getByRole("textbox", { name: "Comment" })).toHaveValue("");
-    expect(screen.getByRole("form")).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByText("0 / 1000")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Comment" })).toBeDisabled();
-    expect(screen.queryByRole("button", { name: "Delete comment" })).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Comment added.");
-    expect(screen.getAllByText(comment.body)).toHaveLength(1);
-  });
-
-  it("preserves a failed submission and exposes retry, then supports earlier-page recovery", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [comment], cursorReset: false, nextCursor: "next" }),
-      )
-      .mockResolvedValueOnce(jsonResponse({ code: "failed" }, 500))
-      .mockResolvedValueOnce(jsonResponse({ comment }))
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [comment], cursorReset: false, nextCursor: "next" }),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse({
-          comments: [{ ...comment, id: SECOND_ID, body: "Earlier note." }],
-          cursorReset: false,
-          nextCursor: null,
-        }),
-      );
-    renderComments();
-    await settle();
-
-    const textarea = screen.getByRole("textbox", { name: "Comment" });
-    fireEvent.change(textarea, { target: { value: "Keep this text" } });
-    fireEvent.submit(screen.getByRole("form"));
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("Your text is still here."),
-    );
-    expect(textarea).toHaveValue("Keep this text");
-
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(textarea).toHaveValue(""));
-    expect(screen.getByRole("button", { name: "Comment" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Load earlier comments" }));
-    await waitFor(() => expect(screen.getByText("Earlier note.")).toBeInTheDocument());
-    expect(screen.getAllByText("Sarah Green")).toHaveLength(2);
-  });
-
-  it("replaces stale notes after a cursor refresh and routes unavailable mutations to not-found", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [comment], cursorReset: false, nextCursor: "next" }),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse({
-          comments: [{ ...comment, id: SECOND_ID, body: "Refreshed note." }],
-          cursorReset: true,
-          nextCursor: null,
-        }),
-      );
-    const { queryClient } = renderComments();
-    await settle();
-
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Load earlier comments" })).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Load earlier comments" }));
-    await waitFor(() => expect(screen.getByText("Refreshed note.")).toBeInTheDocument());
-    expect(screen.queryByText(comment.body)).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Comments were refreshed.");
-
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ code: "unavailable" }, 404));
-    const textarea = screen.getByRole("textbox", { name: "Comment" });
-    fireEvent.change(textarea, { target: { value: "A final note" } });
-    fireEvent.submit(screen.getByRole("form"));
-    await waitFor(() => expect(refreshMock).toHaveBeenCalledOnce());
-    expect(queryClient.getQueryData(["memories", "comments", MEMORY_ID])).toBeUndefined();
-  });
-
-  it("lets only an author edit and reconciles a successful keyboard save", async () => {
-    const authoredComment = { ...comment, isAuthor: true };
-    const updatedComment = {
-      ...authoredComment,
-      body: "The flowers were brighter than I remembered.",
-      updatedAt: "2026-08-23T11:00:00.000Z",
-      version: 2,
+  it("retries the failed next reply page", async () => {
+    const reply = {
+      ...comment,
+      id: "01900000-0000-7000-8000-000000000006",
+      parentCommentId: comment.id,
+      body: "First reply",
     };
-    vi.mocked(fetch)
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
       .mockResolvedValueOnce(
-        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
+        success({ data: [reply], meta: { nextCursor: "next", resetCursor: false } }),
       )
-      .mockResolvedValueOnce(jsonResponse({ comment: updatedComment }))
+      .mockRejectedValueOnce(new Error("offline"))
       .mockResolvedValueOnce(
-        jsonResponse({ comments: [updatedComment], cursorReset: false, nextCursor: null }),
+        page([{ ...reply, id: "01900000-0000-7000-8000-000000000007", body: "Second reply" }]),
       );
     renderComments();
-    await settle();
-
-    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const textarea = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
-    fireEvent.change(textarea, { target: { value: updatedComment.body } });
-    fireEvent.submit(textarea.closest("form") as HTMLFormElement);
-
-    await waitFor(() => expect(screen.getByText(updatedComment.body)).toBeInTheDocument());
-    expect(fetch).toHaveBeenCalledWith(
-      `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
-      expect.objectContaining({ method: "PATCH" }),
-    );
-    await waitFor(() => expect(screen.getByText("Edited")).toBeInTheDocument());
-    expect(screen.getByText("Comment updated.")).toHaveAttribute("role", "status");
+    await screen.findByText("A lovely day");
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    await screen.findByText("First reply");
+    fireEvent.click(screen.getByRole("button", { name: "Load more replies" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Second reply")).toBeInTheDocument();
+    expect(vi.mocked(api.get).mock.calls[3]?.[1]).toEqual({ params: { cursor: "next" } });
   });
 
-  it("shows deletion only to authors and supports confirmation, cancellation, and focus restoration", async () => {
-    const authoredComment = { ...comment, isAuthor: true };
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
-      )
-      .mockResolvedValueOnce(jsonResponse({ deletedCommentId: FIRST_ID }))
-      .mockResolvedValueOnce(jsonResponse({ comments: [], cursorReset: false, nextCursor: null }));
+  it("announces a deleted reply and restores focus", async () => {
+    const reply = {
+      ...comment,
+      id: "01900000-0000-7000-8000-000000000006",
+      parentCommentId: comment.id,
+      body: "My reply",
+    };
+    let deleted = false;
+    vi.mocked(api.get).mockImplementation(async (url) =>
+      String(url).endsWith("/replies") ? page(deleted ? [] : [reply]) : page([comment]),
+    );
+    vi.mocked(api.delete).mockImplementation(async () => {
+      deleted = true;
+      return success({ deletedCommentId: reply.id });
+    });
     renderComments();
-    await settle();
-
-    const deleteTrigger = screen.getByRole("button", { name: "Delete comment" });
-    fireEvent.click(deleteTrigger);
-    const dialog = screen.getByRole("dialog");
-    expect(screen.getByRole("heading", { name: "Remove this comment?" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Delete comment" })).toHaveFocus();
-    fireEvent(dialog, new Event("cancel", { cancelable: true }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(deleteTrigger).toHaveFocus();
-    expect(fetch).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(deleteTrigger);
+    await screen.findByText("A lovely day");
+    fireEvent.click(screen.getByRole("button", { name: "Show replies (1)" }));
+    await screen.findByText("My reply");
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete comment" })[1]);
     fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete comment" }),
+      within(screen.getByRole("dialog", { name: "Remove this comment?" })).getByRole("button", {
+        name: "Delete comment",
+      }),
     );
-    await waitFor(() => expect(screen.queryByText(comment.body)).not.toBeInTheDocument());
-    expect(screen.getByRole("status")).toHaveTextContent("Comment deleted.");
-    expect(screen.getByRole("heading", { name: "Comments" })).toHaveFocus();
-    expect(fetch).toHaveBeenCalledWith(
-      `/api/memories/${MEMORY_ID}/comments/${FIRST_ID}`,
-      expect.objectContaining({ method: "DELETE" }),
-    );
+    await waitFor(() => expect(screen.queryByText("My reply")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Comments" })).toHaveFocus());
+    expect(screen.getByText("Comment deleted.")).toBeInTheDocument();
   });
 
-  it("prevents author edit, close, and duplicate deletion while deletion is pending", async () => {
-    const authoredComment = { ...comment, isAuthor: true };
-    let resolveDelete: (response: Response) => void = () => undefined;
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
-      )
-      .mockImplementationOnce(
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveDelete = resolve;
-          }),
-      )
-      .mockResolvedValueOnce(jsonResponse({ comments: [], cursorReset: false, nextCursor: null }));
+  it("shows the saved comment after a successful edit", async () => {
+    const updated = { ...comment, body: "Updated text", updatedAt: "2026-09-05T16:01:00.123456Z" };
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockResolvedValue(page([updated]));
+    vi.mocked(api.patch).mockResolvedValue(success(updated));
     renderComments();
-    await settle();
+    await screen.findByText("A lovely day");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Edit comment/ }), {
+      target: { value: "Updated text" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByText("Comment updated.")).toHaveAttribute("role", "status"),
+    );
+    expect(screen.getByText("Updated text")).toBeInTheDocument();
+  });
 
+  it("prevents duplicate deletion while the request is pending", async () => {
+    let resolveDelete: (value: ReturnType<typeof success>) => void = () => {};
+    vi.mocked(api.get)
+      .mockResolvedValueOnce(page([comment]))
+      .mockResolvedValue(page([]));
+    vi.mocked(api.delete).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+    renderComments();
+    await screen.findByText("A lovely day");
     fireEvent.click(screen.getByRole("button", { name: "Delete comment" }));
-    fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete comment" }),
-    );
-    await waitFor(() => expect(screen.getByRole("button", { name: "Deleting…" })).toBeDisabled());
-    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Keep comment" })).toBeDisabled();
-    fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-
-    resolveDelete(jsonResponse({ deletedCommentId: FIRST_ID }));
-    await waitFor(() => expect(screen.queryByText(comment.body)).not.toBeInTheDocument());
-  });
-
-  it("preserves an outdated draft until the author refreshes or cancels", async () => {
-    const authoredComment = { ...comment, isAuthor: true };
-    const currentComment = {
-      ...authoredComment,
-      body: "Your partner's newer note.",
-      updatedAt: "2026-08-23T11:00:00.000Z",
-      version: 2,
-    };
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [authoredComment], cursorReset: false, nextCursor: null }),
-      )
-      .mockResolvedValueOnce(jsonResponse({ code: "conflict" }, 409))
-      .mockResolvedValueOnce(
-        jsonResponse({ comments: [currentComment], cursorReset: false, nextCursor: null }),
-      );
-    renderComments();
-    await settle();
-
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const textarea = screen.getByRole("textbox", { name: "Edit comment by Sarah Green" });
-    fireEvent.change(textarea, { target: { value: "My preserved draft." } });
-    fireEvent.submit(textarea.closest("form") as HTMLFormElement);
-
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("changed while you were editing"),
-    );
-    expect(textarea).toHaveValue("My preserved draft.");
-    fireEvent.click(screen.getByRole("button", { name: "Refresh comment" }));
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
-    expect(textarea).toHaveValue("My preserved draft.");
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(screen.getByText(currentComment.body)).toBeInTheDocument());
+    const dialog = screen.getByRole("dialog", { name: "Remove this comment?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete comment" }));
+    expect(await within(dialog).findByRole("button", { name: "Deleting…" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Keep comment" })).toBeDisabled();
+    expect(api.delete).toHaveBeenCalledTimes(1);
+    resolveDelete(success({ deletedCommentId: comment.id }));
+    await waitFor(() => expect(screen.queryByText("A lovely day")).not.toBeInTheDocument());
   });
 });

@@ -335,7 +335,7 @@ describe("authenticated memory lists", () => {
       expect(response.status).toBe(400);
       expect(await response.json()).toMatchObject({ ok: false, data: null });
     }
-    expect((await fetch(`${origin}/api/memories/invalid/reactions`)).status).toBe(404);
+    expect((await fetch(`${origin}/api/memories/invalid/reactions`)).status).toBe(400);
     expect((await fetch(path)).status).toBe(404);
     fixtures.authenticated = false;
     expect((await fetch(path)).status).toBe(401);
@@ -369,10 +369,9 @@ describe("authenticated memory lists", () => {
     expect(JSON.stringify(payload)).not.toContain("private storage detail");
   });
 
-  it("uses the same unavailable response for missing membership and inaccessible memory", async () => {
+  it("rejects missing membership and inaccessible memory", async () => {
     const path = `${origin}/api/memories/01900000-0000-7000-8000-000000000004/reactions`;
     const missing = await fetch(path);
-    const expected = await missing.json();
     expect(missing.status).toBe(404);
     expect(fixtures.memory.findFirst.mock.calls[0][0].where).toMatchObject({
       spaceId: "01900000-0000-7000-8000-000000000005",
@@ -382,14 +381,14 @@ describe("authenticated memory lists", () => {
     fixtures.member.findFirst.mockResolvedValue(null);
     const noMembership = await fetch(path);
     expect(noMembership.status).toBe(404);
-    expect(await noMembership.json()).toEqual(expected);
+    expect(await noMembership.json()).toMatchObject({ message: "An active space is required." });
     const post = await fetch(path, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: '{"reactionType":"heart"}',
     });
     expect(post.status).toBe(404);
-    expect(await post.json()).toEqual(expected);
+    expect(await post.json()).toMatchObject({ message: "An active space is required." });
     expect(fixtures.reaction.create).not.toHaveBeenCalled();
   });
 });

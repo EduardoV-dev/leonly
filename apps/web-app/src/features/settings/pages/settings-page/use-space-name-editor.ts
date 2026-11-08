@@ -74,7 +74,7 @@ export function useSpaceNameEditor({ name, updatedAt, onSaved }: UseSpaceNameEdi
       const response = await api.patch<ApiResponse<SpaceNameResponse | null>>(
         "/spaces/name",
         {
-          expectedUpdatedAt: revisionRef.current,
+          lastKnownUpdatedAt: revisionRef.current,
           name: draft,
         },
         { validateStatus: (status) => status === 200 || status === 409 },

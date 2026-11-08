@@ -10,7 +10,7 @@ vi.mock("@/lib/axios/api", () => ({ api: { patch: patchMock, get: getMock } }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
-const INITIAL_REVISION = "2026-09-05T16:00:00.000Z";
+const INITIAL_REVISION = "2026-09-05T16:00:00.123456Z";
 const NEXT_REVISION = "2026-09-05T16:01:00.000Z";
 
 describe("useDisplayNameEditor", () => {
@@ -54,7 +54,7 @@ describe("useDisplayNameEditor", () => {
       "/spaces/memberships/display-name",
       {
         displayName: "  Leo Vance  ",
-        expectedUpdatedAt: INITIAL_REVISION,
+        lastKnownUpdatedAt: INITIAL_REVISION,
       },
       expect.objectContaining({ validateStatus: expect.any(Function) }),
     );
@@ -169,7 +169,7 @@ describe("useDisplayNameEditor", () => {
 
     expect(patchMock.mock.calls[1]?.[1]).toMatchObject({
       displayName: "Leo Attempt",
-      expectedUpdatedAt: NEXT_REVISION,
+      lastKnownUpdatedAt: NEXT_REVISION,
     });
   });
 

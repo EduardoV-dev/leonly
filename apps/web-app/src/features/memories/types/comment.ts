@@ -1,17 +1,9 @@
-export type MemoryComment = {
-  authorAvatarUrl: string | null;
-  authorDisplayName: string;
-  body: string;
-  createdAt: string;
-  id: string;
-  isAuthor: boolean;
-  memoryId: string;
-  updatedAt: string;
-  version: number;
-};
+export type { MemoryComment, RootComment } from "@leonly/utils/contracts";
+
+import type { RootComment } from "@leonly/utils/contracts";
 
 export type MemoryCommentPage = {
-  comments: MemoryComment[];
+  comments: RootComment[];
   cursorReset: boolean;
   nextCursor: string | null;
 };

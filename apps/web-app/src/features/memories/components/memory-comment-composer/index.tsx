@@ -1,6 +1,6 @@
 import { AlertCircle, Send } from "lucide-react";
 import type { FormEvent } from "react";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { MAX_COMMENT_LENGTH } from "../../constants/comments";
@@ -9,15 +9,20 @@ import styles from "./memory-comment-composer.module.css";
 
 type MemoryCommentComposerProps = {
   composer: CommentComposerState;
+  isReply?: boolean;
 };
 
-export function MemoryCommentComposer({ composer }: Readonly<MemoryCommentComposerProps>) {
+export function MemoryCommentComposer({
+  composer,
+  isReply = false,
+}: Readonly<MemoryCommentComposerProps>) {
   const { t } = useTranslation("memories");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const id = useId();
   const error = composer.hasAttemptedSubmit ? composer.draftState.error : null;
   const hasError = Boolean(error);
-  const helperId = "memory-comment-helper";
-  const errorId = "memory-comment-error";
+  const helperId = `${id}-helper`;
+  const errorId = `${id}-error`;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,18 +33,17 @@ export function MemoryCommentComposer({ composer }: Readonly<MemoryCommentCompos
 
   return (
     <form
-      id="memory-comment-form"
-      aria-label={t("detail.comments.formLabel")}
+      aria-label={t(isReply ? "detail.comments.replyFormLabel" : "detail.comments.formLabel")}
       className={styles.form}
       noValidate
       onSubmit={handleSubmit}
     >
-      <label className={styles.label} htmlFor="memory-comment-input">
-        {t("detail.comments.label")}
+      <label className={styles.label} htmlFor={id}>
+        {t(isReply ? "detail.comments.replyLabel" : "detail.comments.label")}
       </label>
       <textarea
         ref={textareaRef}
-        id="memory-comment-input"
+        id={id}
         aria-describedby={hasError ? `${helperId} ${errorId}` : helperId}
         aria-invalid={hasError || undefined}
         className={styles.textarea}

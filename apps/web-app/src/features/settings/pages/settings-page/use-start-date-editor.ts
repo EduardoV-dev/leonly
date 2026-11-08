@@ -70,7 +70,7 @@ export function useStartDateEditor({ startDate, updatedAt, onSaved }: UseStartDa
       const response = await api.patch<ApiResponse<StartDateResponse | null>>(
         "/spaces/start-date",
         {
-          expectedUpdatedAt: revisionRef.current,
+          lastKnownUpdatedAt: revisionRef.current,
           startDate: draft,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },

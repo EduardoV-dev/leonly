@@ -10,7 +10,7 @@ vi.mock("@/lib/axios/api", () => ({ api: { patch: patchMock, get: getMock } }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
-const INITIAL_REVISION = "2026-09-05T16:00:00.000Z";
+const INITIAL_REVISION = "2026-09-05T16:00:00.123456Z";
 describe("useStartDateEditor", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -34,7 +34,7 @@ describe("useStartDateEditor", () => {
 
     expect(patchMock).toHaveBeenCalledOnce();
     expect(patchMock.mock.calls[0]?.[1]).toMatchObject({
-      expectedUpdatedAt: INITIAL_REVISION,
+      lastKnownUpdatedAt: INITIAL_REVISION,
       startDate: "2025-04-28",
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });

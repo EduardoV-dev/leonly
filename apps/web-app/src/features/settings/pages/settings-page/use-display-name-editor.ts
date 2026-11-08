@@ -84,7 +84,7 @@ export function useDisplayNameEditor({
         "/spaces/memberships/display-name",
         {
           displayName: draft,
-          expectedUpdatedAt: revisionRef.current,
+          lastKnownUpdatedAt: revisionRef.current,
         },
         { validateStatus: (status) => status === 200 || status === 409 },
       );

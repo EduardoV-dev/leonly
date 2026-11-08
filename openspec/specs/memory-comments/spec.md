@@ -83,102 +83,83 @@ a display name or creation timestamp from the submission as authoritative.
 
 ### Requirement: Deterministic bounded comment history
 
-The system SHALL return comments in pages of at most 20 active records, ordered by creation timestamp
-descending and then comment UUID descending. Pagination MUST use an opaque, versioned cursor containing
-the full timestamp and UUID ordering tuple. Soft-deleted comments MUST be excluded from pages and any
-derived counts. Initial and subsequent pages MUST contain no duplicate or skipped active comment for an
-unchanged ordered dataset.
+The system SHALL page root comments with at most 20 records in descending `(createdAt, id)` order.
+Active roots and deleted roots with visible replies participate; other deleted roots do not. The opaque
+cursor SHALL preserve the complete ordering tuple. For an unchanged dataset, traversal MUST NOT skip or
+duplicate records.
 
 #### Scenario: First comment page is requested
 
-- **WHEN** an authorized member opens a memory with more than 20 active comments
-- **THEN** the system returns the newest 20 comments in deterministic order and a next cursor
+- **WHEN** an authorized member opens a memory with more than 20 eligible root comments
+- **THEN** the system returns the newest 20 in deterministic order and a next cursor
 
 #### Scenario: Next comment page is requested
 
 - **WHEN** an authorized member requests the next page with a current valid cursor
-- **THEN** the system returns the next distinct comments after the full cursor tuple in deterministic
-  order
+- **THEN** the system returns the next distinct eligible roots after the complete cursor tuple
 
 #### Scenario: Final page is reached
 
-- **WHEN** a returned page has no additional active comments
+- **WHEN** a returned page has no additional eligible root comments
 - **THEN** the system returns no next cursor and the interface offers no load-more action
 
 #### Scenario: Comment is soft-deleted
 
-- **WHEN** a comment has a deletion timestamp
-- **THEN** the comment is absent from comment pages and derived counts
+- **WHEN** a root comment is deleted
+- **THEN** it appears only as a placeholder if it has visible replies and otherwise is excluded
 
 ### Requirement: Safe invalid and stale cursor recovery
 
-The system SHALL treat malformed, unsupported-version, mismatched, or no-longer-current cursors as a
-recoverable refresh. It MUST return the current first page with a cursor-reset indication rather than an
-error or results based on an untrusted cursor. The client MUST replace accumulated pages with that first
-page and MUST NOT append it to stale results.
+Malformed cursor encodings or payloads SHALL return a safe validation error. A valid cursor whose anchor
+or scope is no longer current SHALL signal a pagination reset without exposing inaccessible data. The
+client MUST discard accumulated pages and restart without a cursor.
 
 #### Scenario: Cursor cannot be decoded
 
-- **WHEN** a comment page request contains a malformed or unsupported cursor
-- **THEN** the system returns the current first page marked as a cursor reset
+- **WHEN** a comment page request contains a malformed cursor
+- **THEN** the API returns a validation error without using it in a query
 
 #### Scenario: Cursor anchor is no longer active
 
-- **WHEN** a comment page request uses a cursor whose anchor was removed or no longer belongs to the
-  authorized memory
-- **THEN** the system returns the current first page marked as a cursor reset without exposing why the
-  anchor is unavailable
+- **WHEN** a cursor anchor is no longer eligible or belongs to a different authorized scope
+- **THEN** the response signals a reset without exposing why the anchor is unavailable
 
 #### Scenario: Client receives a cursor reset
 
-- **WHEN** the interface receives a cursor-reset page after comments were accumulated
-- **THEN** it replaces the history, avoids duplicates, and announces that comments were refreshed
+- **WHEN** the interface receives a reset indication after accumulating comments
+- **THEN** it discards the pagination chain, reloads the first page, and announces the refresh
 
 ### Requirement: Soft-deleted comments remain absent from product reads
 
-The system SHALL exclude soft-deleted comments from comment pages and all derived comment counts.
-An authorized member who refreshes comment history after any local comment deletion MUST receive a
-history reconciled to the active-comment dataset without duplicate, stale, or skipped active comments.
+The system SHALL never expose a deleted comment's body or author actions. A deleted root with visible
+replies SHALL appear as a placeholder; deleted replies and deleted roots without visible replies SHALL
+be excluded. Counts SHALL reflect visible replies only.
 
 #### Scenario: History is refreshed after a local deletion
 
-- **WHEN** an authorized member refreshes comment history after a successful local deletion
-- **THEN** the deleted comment is absent and the returned active-comment order and count are current
+- **WHEN** an authorized member refreshes after deleting a comment
+- **THEN** history and reply counts reflect the deletion and any eligible root placeholder
 
 #### Scenario: Cursor anchor was deleted
 
-- **WHEN** a comment page request uses a cursor whose anchor was soft-deleted
-- **THEN** the system returns the current first page marked as a cursor reset without exposing why the
-  anchor is unavailable
+- **WHEN** a cursor anchor no longer belongs in the eligible result set after deletion
+- **THEN** the response signals a reset without exposing why the anchor is unavailable
 
-### Requirement: Idempotent comment submission
+### Requirement: Comment submission
 
-Each logical submission SHALL carry an opaque idempotency key generated by the client and bound on the
-server to the authenticated author and normalized request fingerprint. Repeating a completed submission
-with the same key and content MUST return the original comment without creating another record. Reusing
-the key for different content MUST be rejected. The interface MUST disable submission while one request is
-pending.
+The interface MUST disable submission while one request is pending. Each accepted request creates a
+comment; retries after an uncertain response can create another comment.
 
 #### Scenario: Member activates submit twice while pending
 
 - **WHEN** a member attempts a second activation before the first request completes
 - **THEN** the interface sends only the pending logical submission
 
-#### Scenario: Completed request is retried
-
-- **WHEN** the same author retries the same normalized content with the same completed idempotency key
-- **THEN** the system returns the original comment and creates no duplicate
-
-#### Scenario: Key is reused for different content
-
-- **WHEN** an author submits different normalized content with a previously used idempotency key
-- **THEN** the system rejects the mismatched request and creates no additional comment
-
 ### Requirement: Recoverable comment composer feedback
 
 The composer SHALL have a persistent accessible label, visible character count, field-associated helper
 or validation text, and a clear submit action. Whitespace-only or over-limit drafts MUST disable
-submission. While pending, the request draft and key MUST remain stable and submission MUST be disabled.
+submission. While pending, the request draft MUST remain stable and submission MUST be disabled.
 Failure MUST preserve the entered text and provide an accessible retry path. Success MUST clear the draft,
 place the returned comment once at the start of the history, refresh local comment data, and announce the
 outcome without relying on color or moving focus unexpectedly.
@@ -247,13 +228,10 @@ local successful actions MUST refresh the history.
 
 ### Requirement: Accessible responsive comments section
 
-Timeline and Vault detail screens SHALL NOT mount or fetch the comments section while they are
-read-only. Existing comment functionality outside these screens remains available under this capability.
-The comments section SHALL use semantic headings, list structure, form controls, status messaging, and
-keyboard-operable actions. Validation MUST be programmatically associated with the composer, async status
-MUST be announced, focus MUST remain predictable, and color MUST NOT be the only state indicator. The
-composition MUST remain readable and operable in the existing mobile and desktop memory-detail layouts,
-with controls meeting a minimum 44-by-44 CSS-pixel target and motion respecting reduced-motion settings.
+Timeline and Vault detail screens SHALL mount the migrated comments section for available memories.
+Controls MUST be semantic, keyboard operable, responsive, and accessible, with associated validation,
+announced asynchronous status, predictable focus, minimum 44-by-44 CSS-pixel targets, and reduced-motion
+support.
 
 #### Scenario: Keyboard member submits a comment
 
@@ -272,18 +250,15 @@ with controls meeting a minimum 44-by-44 CSS-pixel target and motion respecting 
   document overflow is introduced
 
 #### Scenario: Member views detail at any supported width
-- **WHEN** a member opens a Timeline or Vault detail screen at mobile or desktop widths
-- **THEN** no comment section, composer, controls, validation UI, or comment request is present
+- **WHEN** a member opens an available Timeline or Vault detail screen at supported widths
+- **THEN** the comments section is available and uses the current backend
 
 ### Requirement: Author-owned versioned comment edits
 
-The system SHALL allow an authenticated active member to edit the normalized plain-text body of an active
-comment they authored on an available Timeline or shared Private Vault memory in their active space. The
-system MUST derive the author, membership, space, comment, and memory access from the authenticated session
-and MUST NOT trust client-supplied identity or ownership values. The updated value MUST meet the existing
-trimmed 1-to-1,000 Unicode-character comment constraint, preserve intentional internal line breaks, and
-render as inert plain text. A successful edit MUST preserve the comment identity, author, memory, creation
-timestamp, and current author attribution while returning server-owned update metadata.
+An authenticated active member SHALL edit only their own active comment or reply on an available memory
+in their active space. The system MUST derive ownership and scope from the session, validate normalized
+1–1,000 Unicode-character plain text, preserve identity and creation metadata, and return the updated
+comment and server-owned timestamp.
 
 #### Scenario: Author updates an active comment
 
@@ -309,12 +284,10 @@ timestamp, and current author attribution while returning server-owned update me
 
 ### Requirement: Optimistic concurrency for comment edits
 
-The system SHALL condition each comment edit on the server-owned version that the author originally read.
-When the current stored version differs from the submitted expected version, the system MUST make no change
-and return a conflict outcome only to an otherwise authorized author. The interface MUST preserve the
-author's attempted text, identify that the comment changed elsewhere, and provide a refresh or cancel path;
-it MUST NOT silently overwrite the newer persisted text. A deleted or inaccessible target MUST remain
-indistinguishable from other unavailable targets rather than being reported as a conflict.
+The system SHALL atomically condition each edit on `lastKnownUpdatedAt` matching the full-precision
+server-owned timestamp. A stale value produces a conflict only for an otherwise authorized author,
+preserves persisted content and the attempted draft, and requires explicit refresh or cancel. Unavailable
+targets remain generic not-found outcomes.
 
 #### Scenario: Concurrent edit is detected
 
@@ -331,6 +304,70 @@ indistinguishable from other unavailable targets rather than being reported as a
 
 - **WHEN** an author cancels an in-progress or conflicted edit
 - **THEN** the interface discards only the local attempted text and leaves the persisted comment unchanged
+
+### Requirement: Accessible author edit controls
+
+The interface SHALL display an edit action only for comments authored by the authenticated member. Edit
+controls, validation, pending feedback, conflict messaging, save, cancel, and recovery actions MUST be
+keyboard operable, have clear accessible names, keep focus predictable, and announce asynchronous outcomes.
+The comment history MUST reconcile a successful edit by comment identity without duplicates or stale local
+text.
+
+#### Scenario: Author edits by keyboard
+
+- **WHEN** a comment author activates Edit with the keyboard, changes valid text, and saves
+- **THEN** the edit completes without requiring pointer input, the updated text appears once, and feedback is announced
+
+#### Scenario: Another member reads the history
+
+- **WHEN** a member views a comment authored by their partner
+- **THEN** the comment exposes no edit control and remains readable as current persisted text
+
+### Requirement: Single-level comment replies
+
+An active member SHALL reply to an active root comment of an available memory. Replies MUST share the
+root's memory and space and MUST NOT have replies of their own. Parent identity is immutable, and reply
+creation MUST be serialized with root deletion.
+
+#### Scenario: Member replies to a root
+
+- **WHEN** an active member submits a valid reply to an active root in the same memory
+- **THEN** the reply is created under that root with server-derived author and space
+
+#### Scenario: Parent is unavailable or is a reply
+
+- **WHEN** the supplied parent is deleted, inaccessible, belongs elsewhere, or is itself a reply
+- **THEN** no reply is created and no protected parent information is exposed
+
+#### Scenario: Deletion races reply creation
+
+- **WHEN** a root deletion commits before a competing reply creation
+- **THEN** reply creation fails without attaching a new reply to the deleted root
+
+### Requirement: On-demand paginated replies
+
+Root comments with visible replies SHALL offer an accessible see-replies action. Expanding it SHALL fetch
+a bounded cursor page ordered by `(createdAt, id)` ascending. Replies SHALL be indented once, support author
+
+#### Scenario: Member expands a thread
+
+- **WHEN** a member activates see replies
+- **THEN** the client requests that root's replies and renders the first page in ascending order
+
+#### Scenario: More replies exist
+
+- **WHEN** the member requests a subsequent valid cursor page
+- **THEN** the next distinct replies are appended in deterministic order without gaps for unchanged data
+
+#### Scenario: Thread request fails
+
+- **WHEN** loading a thread or next page fails
+- **THEN** previously loaded replies remain visible and an accessible retry is offered
+
+#### Scenario: Replies are changed
+
+- **WHEN** a reply is created, edited, or deleted
+- **THEN** the affected thread and root reply count are reconciled with server state
 
 ### Requirement: Accessible author edit controls
 

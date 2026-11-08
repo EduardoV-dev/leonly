@@ -28,7 +28,7 @@ export function MemoryComments({ memoryId }: Readonly<MemoryCommentsProps>) {
     router.refresh();
   }, [memoryId, queryClient, router]);
   const history = useMemoryComments(memoryId, handleUnavailable);
-  const composer = useCommentComposer(memoryId, handleUnavailable);
+  const composer = useCommentComposer({ memoryId, onUnavailable: handleUnavailable });
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const isInitialLoading = history.isPending && !history.data;
 

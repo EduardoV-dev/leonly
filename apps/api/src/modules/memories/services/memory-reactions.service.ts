@@ -1,8 +1,9 @@
 import type { Prisma } from "@leonly/database/client";
 import type { MemoryReactionSummary, MemoryReactionType } from "@leonly/utils/contracts";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { MembershipsService } from "../../spaces/services/memberships.service";
+import { MemoriesService } from "./memories.service";
 
 type ReactionScope = { userId: string; memoryId: string };
 type ToggleReactionParams = ReactionScope & { reactionType: MemoryReactionType };
@@ -25,6 +26,7 @@ export class MemoryReactionsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly membershipsService: MembershipsService,
+    private readonly memoriesService: MemoriesService,
   ) {}
 
   async getSummaries({
@@ -69,21 +71,8 @@ export class MemoryReactionsService {
   }
 
   async read({ userId, memoryId }: ReactionScope): Promise<MemoryReactionSummary> {
-    const membership = await this.membershipsService.requireActiveMembership(userId);
-    const memory = await this.prismaService.memory.findFirst({
-      where: {
-        id: memoryId,
-        spaceId: membership.spaceId,
-        deletedAt: null,
-        space: {
-          deletedAt: null,
-          members: { some: { id: membership.id, userId, deletedAt: null } },
-        },
-      },
-      select: { id: true },
-    });
-
-    if (!memory) throw new NotFoundException("Memory unavailable.");
+    const membership = await this.membershipsService.requireActiveMembership({ userId });
+    await this.memoriesService.requireActiveMemory({ userId, memoryId, membership });
 
     const summaries = await this.getSummaries({
       memoryIds: [memoryId],
@@ -101,25 +90,12 @@ export class MemoryReactionsService {
     memoryId,
     reactionType,
   }: ToggleReactionParams): Promise<MemoryReactionSummary> {
-    const membership = await this.membershipsService.requireActiveMembership(userId);
+    const membership = await this.membershipsService.requireActiveMembership({ userId });
 
     return this.prismaService.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM memories WHERE id = ${memoryId}::uuid FOR UPDATE`;
 
-      const memory = await transaction.memory.findFirst({
-        where: {
-          id: memoryId,
-          spaceId: membership.spaceId,
-          deletedAt: null,
-          space: {
-            deletedAt: null,
-            members: { some: { id: membership.id, userId, deletedAt: null } },
-          },
-        },
-        select: { id: true },
-      });
-
-      if (!memory) throw new NotFoundException("Memory unavailable.");
+      await this.memoriesService.requireActiveMemory({ userId, memoryId, membership, transaction });
 
       const where = { reactedByMemberId_memoryId: { reactedByMemberId: membership.id, memoryId } };
       const current = await transaction.memoryReaction.findUnique({ where });

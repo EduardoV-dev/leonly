@@ -1,4 +1,4 @@
-import { SpaceMemberRole } from "@leonly/database/client";
+import { type Prisma, SpaceMemberRole } from "@leonly/database/client";
 import { isValidInviteCode, normalizeInviteCode } from "@leonly/utils/invite-code";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
@@ -16,14 +16,36 @@ import type {
 import { normalizeDisplayName } from "../utils/display-name";
 import { getUniqueIndex } from "../utils/invite-code";
 
-type UpdateDisplayNameParams = { userId: string; displayName: string; expectedUpdatedAt: string };
+type UpdateDisplayNameParams = { userId: string; displayName: string; lastKnownUpdatedAt: string };
+type RequireActiveMembershipParams = {
+  userId: string;
+  transaction?: Prisma.TransactionClient;
+  lock?: boolean;
+};
 
 @Injectable()
 export class MembershipsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async requireActiveMembership(userId: string): Promise<{ id: string; spaceId: string }> {
-    const membership = await this.prismaService.spaceMember.findFirst({
+  async requireActiveMembership({
+    userId,
+    transaction,
+    lock = false,
+  }: RequireActiveMembershipParams): Promise<{ id: string; spaceId: string }> {
+    if (lock) {
+      if (!transaction) throw new Error("A transaction is required to lock a membership.");
+      const members = await transaction.$queryRaw<{ id: string; spaceId: string }[]>`
+        SELECT sm.id, sm.space_id AS "spaceId" FROM space_members sm
+        JOIN spaces s ON s.id = sm.space_id
+        WHERE sm.user_id = ${userId} AND sm.deleted_at IS NULL AND s.deleted_at IS NULL
+        FOR UPDATE OF sm, s
+      `;
+      const membership = members[0];
+      if (!membership) throw new NotFoundException({ error: "An active space required." });
+      return membership;
+    }
+
+    const membership = await (transaction ?? this.prismaService).spaceMember.findFirst({
       where: { userId, deletedAt: null, space: { deletedAt: null } },
       select: { id: true, spaceId: true },
     });
@@ -35,7 +57,7 @@ export class MembershipsService {
   async updateDisplayName({
     userId,
     displayName,
-    expectedUpdatedAt,
+    lastKnownUpdatedAt,
   }: UpdateDisplayNameParams): Promise<DisplayNameEditResult> {
     return this.prismaService.$transaction(async (transaction) => {
       const rows = await transaction.$queryRaw<Array<{ memberId: string }>>`
@@ -50,7 +72,7 @@ export class MembershipsService {
 
       const updated = await transaction.$queryRaw<Array<{ updatedAt: string }>>`
         UPDATE space_members SET display_name = ${displayName}, updated_at = clock_timestamp()
-        WHERE id = ${current.memberId}::uuid AND updated_at = ${expectedUpdatedAt}::timestamptz
+        WHERE id = ${current.memberId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
         RETURNING to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
       const revision = updated[0]?.updatedAt;

@@ -1,6 +1,8 @@
+import type { ApiResponse } from "@leonly/utils/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "@/lib/axios/api";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment } from "../types/comment";
 import { cropCommentDraft, getCommentDraftState } from "./use-comment-composer";
@@ -20,27 +22,24 @@ class CommentEditError extends Error {
 type UpdateCommentPayload = {
   body: string;
   commentId: string;
-  expectedVersion: number;
+  lastKnownUpdatedAt: string;
   memoryId: string;
 };
 
 async function submitCommentEdit(payload: UpdateCommentPayload): Promise<MemoryComment> {
-  const response = await fetch(`/api/memories/${payload.memoryId}/comments/${payload.commentId}`, {
-    body: JSON.stringify({ body: payload.body, expectedVersion: payload.expectedVersion }),
-    headers: { "content-type": "application/json" },
-    method: "PATCH",
-  });
-  const responsePayload = (await response.json().catch(() => null)) as {
-    code?: CommentEditErrorCode;
-    comment?: MemoryComment;
-  } | null;
-
-  if (!response.ok || !responsePayload?.comment) {
-    const code = responsePayload?.code ?? (response.status === 404 ? "unavailable" : "failed");
+  const response = await api.patch<ApiResponse<MemoryComment>>(
+    `/memories/${payload.memoryId}/comments/${payload.commentId}`,
+    { body: payload.body, lastKnownUpdatedAt: payload.lastKnownUpdatedAt },
+    { validateStatus: () => true },
+  );
+  if (!response.data.ok) {
+    let code: CommentEditErrorCode = "failed";
+    if (response.status === 404) code = "unavailable";
+    if (response.status === 409) code = "conflict";
     throw new CommentEditError(code, code);
   }
 
-  return responsePayload.comment;
+  return response.data.data;
 }
 
 type UseCommentEditorOptions = {
@@ -51,7 +50,7 @@ type UseCommentEditorOptions = {
 export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOptions) {
   const { t } = useTranslation("memories");
   const queryClient = useQueryClient();
-  const expectedVersionRef = useRef<number | null>(null);
+  const expectedVersionRef = useRef<string | null>(null);
   const [draft, setDraft] = useState("");
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -93,7 +92,7 @@ export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOpt
   });
 
   const startEditing = () => {
-    expectedVersionRef.current = comment.version;
+    expectedVersionRef.current = comment.updatedAt;
     setDraft(comment.body);
     setHasAttemptedSave(false);
     setIsConflict(false);
@@ -105,7 +104,6 @@ export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOpt
   const updateDraft = (value: string) => {
     if (mutation.isPending) return;
     setDraft(cropCommentDraft(value));
-    setIsConflict(false);
     setLastOutcome(null);
     setSubmitError(null);
   };
@@ -121,13 +119,24 @@ export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOpt
   };
 
   const refresh = async () => {
+    const rootKey = memoryQueryKeys.comments(comment.memoryId);
+    const queryKey = comment.parentCommentId
+      ? [...rootKey, "replies", comment.parentCommentId]
+      : rootKey;
+    try {
+      await queryClient.refetchQueries({ queryKey, exact: true }, { throwOnError: true });
+    } catch {
+      setSubmitError(t("detail.comments.edit.submitError"));
+      return;
+    }
     expectedVersionRef.current = null;
     setIsConflict(false);
-    await queryClient.refetchQueries({ queryKey: memoryQueryKeys.comments(comment.memoryId) });
+    setIsEditing(false);
+    setSubmitError(null);
   };
 
   const save = async () => {
-    if (mutation.isPending) return;
+    if (mutation.isPending || isConflict) return;
     if (!draftState.isValid) {
       setHasAttemptedSave(true);
       return;
@@ -140,7 +149,7 @@ export function useCommentEditor({ comment, onUnavailable }: UseCommentEditorOpt
       await mutation.mutateAsync({
         body: draft,
         commentId: comment.id,
-        expectedVersion: expectedVersionRef.current ?? comment.version,
+        lastKnownUpdatedAt: expectedVersionRef.current ?? comment.updatedAt,
         memoryId: comment.memoryId,
       });
     } catch {

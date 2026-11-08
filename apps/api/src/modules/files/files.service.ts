@@ -125,7 +125,7 @@ export class FilesService {
 
   async issue({ userId, body }: IssueParams): Promise<UploadIssuanceResult> {
     const descriptors = body.files;
-    const membership = await this.membershipsService.requireActiveMembership(userId);
+    const membership = await this.membershipsService.requireActiveMembership({ userId });
 
     const issuedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
     const expiresAt = new Date(issuedAt.getTime() + UPLOAD_URL_SECONDS * 1000);

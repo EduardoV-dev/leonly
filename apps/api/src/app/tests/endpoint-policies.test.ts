@@ -30,14 +30,14 @@ vi.mock("../../common/prisma/prisma.service", () => ({
 const REVISION = "2026-09-05T16:00:00.123456Z";
 const SPACE_REQUEST = { space_name: "Our Space", start_date: "2025-04-27", timezone: "UTC" };
 const SETTINGS_REQUESTS = [
-  { path: "/api/spaces/name", body: { name: "New Space", expectedUpdatedAt: REVISION } },
+  { path: "/api/spaces/name", body: { name: "New Space", lastKnownUpdatedAt: REVISION } },
   {
     path: "/api/spaces/start-date",
-    body: { startDate: "2025-04-28", timezone: "UTC", expectedUpdatedAt: REVISION },
+    body: { startDate: "2025-04-28", timezone: "UTC", lastKnownUpdatedAt: REVISION },
   },
   {
     path: "/api/spaces/memberships/display-name",
-    body: { displayName: "Leo Hart", expectedUpdatedAt: REVISION },
+    body: { displayName: "Leo Hart", lastKnownUpdatedAt: REVISION },
   },
 ];
 

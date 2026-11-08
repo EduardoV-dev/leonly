@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { decodeCursor, encodeCursor, InvalidCursorError } from "./base-cursor";
-import { memoryCursorSchema } from "./memory-cursor";
+import { decodeCursor, encodeCursor, InvalidCursorError } from "./cursor";
+import { memoryCursorSchema } from "./memories/memory-list";
 
 const cursor = {
   createdAt: "2026-10-01T12:30:00.123456Z",

@@ -51,25 +51,25 @@ const getColumnConfigs = (value: string) =>
 
 @Injectable()
 export class SpacesService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
-  updateName({ userId, expectedUpdatedAt, name }: UpdateNameParams): Promise<SpaceEditResult> {
-    return this.updateSpace({ userId, expectedUpdatedAt, field: "name", value: name });
+  async updateName({ userId, lastKnownUpdatedAt, name }: UpdateNameParams): Promise<SpaceEditResult> {
+    return await this.updateSpace({ userId, lastKnownUpdatedAt, field: "name", value: name });
   }
 
-  updateStartDate({
+  async updateStartDate({
     userId,
-    expectedUpdatedAt,
+    lastKnownUpdatedAt,
     startDate,
   }: UpdateStartDateParams): Promise<SpaceEditResult> {
-    return this.updateSpace({ userId, expectedUpdatedAt, field: "startDate", value: startDate });
+    return await this.updateSpace({ userId, lastKnownUpdatedAt, field: "startDate", value: startDate });
   }
 
   private async updateSpace({
     userId,
     field,
     value,
-    expectedUpdatedAt,
+    lastKnownUpdatedAt,
   }: UpdateSpaceParams): Promise<SpaceEditResult> {
     return this.prismaService.$transaction(async (transaction) => {
       const rows = await transaction.$queryRaw<Array<{ spaceId: string }>>`
@@ -87,7 +87,7 @@ export class SpacesService {
       const updated = await transaction.$queryRaw<Array<{ updatedAt: string }>>`
         UPDATE spaces SET ${config.column} = ${config.transformation},
           updated_at = clock_timestamp(), updated_by_user_id = ${userId}
-        WHERE id = ${current.spaceId}::uuid AND updated_at = ${expectedUpdatedAt}::timestamptz
+        WHERE id = ${current.spaceId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
         RETURNING to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
 

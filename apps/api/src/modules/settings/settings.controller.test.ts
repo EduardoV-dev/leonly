@@ -175,7 +175,7 @@ describe("settings API", () => {
         path,
         body: {
           [field]: value,
-          expectedUpdatedAt: REVISION,
+          lastKnownUpdatedAt: REVISION,
           ...extra,
         },
       }).expect(200);
@@ -197,7 +197,7 @@ describe("settings API", () => {
         path,
         body: {
           [field]: value,
-          expectedUpdatedAt: NEXT_REVISION,
+          lastKnownUpdatedAt: NEXT_REVISION,
           ...extra,
         },
       }).expect(409);
@@ -212,9 +212,10 @@ describe("settings API", () => {
     "returns 404 for $field without a live membership",
     async ({ path, field, value, ...extra }) => {
       queryRaw.mockResolvedValueOnce([]);
-      await patch({ path, body: { [field]: value, expectedUpdatedAt: REVISION, ...extra } }).expect(
-        404,
-      );
+      await patch({
+        path,
+        body: { [field]: value, lastKnownUpdatedAt: REVISION, ...extra },
+      }).expect(404);
       expect(queryRaw).toHaveBeenCalledOnce();
     },
   );
@@ -224,7 +225,7 @@ describe("settings API", () => {
     async (field) => {
       const path = field === "name" ? "/api/spaces/name" : "/api/spaces/memberships/display-name";
       for (const value of ["x", " ", "😀".repeat(101), 42]) {
-        await patch({ path, body: { [field]: value, expectedUpdatedAt: REVISION } }).expect(400);
+        await patch({ path, body: { [field]: value, lastKnownUpdatedAt: REVISION } }).expect(400);
       }
       expect(queryRaw).not.toHaveBeenCalled();
       queryRaw
@@ -234,7 +235,7 @@ describe("settings API", () => {
         path,
         body: {
           [field]: ` ${"😀".repeat(100)} `,
-          expectedUpdatedAt: REVISION,
+          lastKnownUpdatedAt: REVISION,
         },
       }).expect(200);
       expect(body.data[field]).toBe("😀".repeat(100));
@@ -250,22 +251,27 @@ describe("settings API", () => {
   ])("rejects invalid calendar dates and timezones", async (body) => {
     await patch({
       path: "/api/spaces/start-date",
-      body: { ...body, expectedUpdatedAt: REVISION },
+      body: { ...body, lastKnownUpdatedAt: REVISION },
     }).expect(400);
     expect(queryRaw).not.toHaveBeenCalled();
   });
 
   it("rejects malformed revisions and forged scope fields", async () => {
+    for (const { path, field, value, ...extra } of edits) {
+      await patch({ path, body: { [field]: value, expectedUpdatedAt: REVISION, ...extra } }).expect(
+        400,
+      );
+    }
     await patch({
       path: "/api/spaces/name",
-      body: { name: "Valid", expectedUpdatedAt: "not-a-date" },
+      body: { name: "Valid", lastKnownUpdatedAt: "not-a-date" },
     }).expect(400);
     expect(queryRaw).not.toHaveBeenCalled();
     await patch({
       path: "/api/spaces/name",
       body: {
         name: "Valid",
-        expectedUpdatedAt: REVISION,
+        lastKnownUpdatedAt: REVISION,
         userId: "other-user",
       },
     }).expect(400);
@@ -273,7 +279,7 @@ describe("settings API", () => {
       path: "/api/spaces/memberships/display-name",
       body: {
         displayName: "Valid",
-        expectedUpdatedAt: REVISION,
+        lastKnownUpdatedAt: REVISION,
         membershipId: "other-member",
       },
     }).expect(400);
@@ -288,14 +294,14 @@ describe("settings API", () => {
       path: "/api/spaces/name",
       body: {
         name: "Valid",
-        expectedUpdatedAt: REVISION,
+        lastKnownUpdatedAt: REVISION,
       },
     }).expect(200);
     await patch({
       path: "/api/spaces/memberships/display-name",
       body: {
         displayName: "Valid",
-        expectedUpdatedAt: REVISION,
+        lastKnownUpdatedAt: REVISION,
       },
     }).expect(200);
     expect(queryRaw.mock.calls[0]?.slice(1)).toContain("current-user");

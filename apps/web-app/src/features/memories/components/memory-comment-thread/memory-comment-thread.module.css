@@ -1,0 +1,27 @@
+.thread {
+  list-style: none;
+  margin-inline-start: 2.5rem;
+}
+
+.content {
+  border-inline-start: 1px solid var(--border-warm, #dfd4d2);
+  padding-inline-start: 1rem;
+}
+
+.content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.control {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  color: var(--brand-mauve, #7f5a5f);
+  font-weight: 700;
+  text-align: start;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--accent-rose, #b82b49);
+  outline-offset: 2px;
+}

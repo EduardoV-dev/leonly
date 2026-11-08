@@ -1,6 +1,8 @@
+import type { ApiResponse } from "@leonly/utils/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "@/lib/axios/api";
 import { MAX_COMMENT_LENGTH } from "../constants/comments";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment } from "../types/comment";
@@ -50,31 +52,39 @@ export function getCommentDraftState(draft: string): CommentDraftState {
 type CreateCommentPayload = {
   body: string;
   memoryId: string;
+  parentCommentId?: string;
 };
 
 async function submitComment(payload: CreateCommentPayload): Promise<MemoryComment> {
-  const response = await fetch(`/api/memories/${payload.memoryId}/comments`, {
-    body: JSON.stringify({ body: payload.body }),
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  const responsePayload = (await response.json().catch(() => null)) as {
-    code?: CommentMutationErrorCode;
-    comment?: MemoryComment;
-  } | null;
-
-  if (!response.ok || !responsePayload?.comment) {
-    const code = responsePayload?.code ?? (response.status === 404 ? "unavailable" : "failed");
+  const response = await api.post<ApiResponse<MemoryComment>>(
+    `/memories/${payload.memoryId}/comments`,
+    {
+      body: payload.body,
+      parentCommentId: payload.parentCommentId,
+    },
+    { validateStatus: () => true },
+  );
+  if (!response.data.ok) {
+    const code = response.status === 404 ? "unavailable" : "failed";
     throw new CommentMutationError(code, code);
   }
 
-  return responsePayload.comment;
+  return response.data.data;
 }
 
-export function useCommentComposer(memoryId: string, onUnavailable?: () => void) {
+type UseCommentComposerParams = {
+  memoryId: string;
+  onUnavailable?: () => void;
+  parentCommentId?: string;
+};
+
+export function useCommentComposer({
+  memoryId,
+  onUnavailable,
+  parentCommentId,
+}: UseCommentComposerParams) {
   const { t } = useTranslation("memories");
   const queryClient = useQueryClient();
-  const submittedBodyRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
   const [draft, setDraft] = useState("");
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -95,9 +105,11 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       setSubmitError(t("detail.comments.submitError"));
     },
     onSuccess: async (comment) => {
-      queryClient.setQueryData<MemoryCommentsData>(memoryQueryKeys.comments(memoryId), (data) =>
-        prependCommentToData(data, comment),
-      );
+      if (!parentCommentId) {
+        queryClient.setQueryData<MemoryCommentsData>(memoryQueryKeys.comments(memoryId), (data) =>
+          prependCommentToData(data, comment),
+        );
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: memoryQueryKeys.comments(memoryId) }),
         queryClient.invalidateQueries({ queryKey: memoryQueryKeys.timeline("full") }),
@@ -109,7 +121,6 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       setHasBlurred(false);
       setHasAttemptedSubmit(false);
       setSubmitError(null);
-      submittedBodyRef.current = null;
       setLastOutcome("success");
     },
   });
@@ -117,7 +128,6 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
   const updateDraft = useCallback(
     (value: string) => {
       if (mutation.isPending) return;
-      submittedBodyRef.current = null;
       setHasInteracted(true);
       setDraft(cropCommentDraft(value));
       setSubmitError(null);
@@ -139,20 +149,23 @@ export function useCommentComposer(memoryId: string, onUnavailable?: () => void)
       return "invalid" as const;
     }
 
-    submittedBodyRef.current ??= draft;
     setSubmitError(null);
     setLastOutcome(null);
     submittingRef.current = true;
 
     try {
-      await mutation.mutateAsync({ body: submittedBodyRef.current, memoryId });
+      await mutation.mutateAsync({
+        body: draft,
+        memoryId,
+        parentCommentId,
+      });
       return "submitted" as const;
     } catch {
       return "submitted" as const;
     } finally {
       submittingRef.current = false;
     }
-  }, [draft, memoryId, mutation]);
+  }, [draft, memoryId, mutation, parentCommentId]);
 
   return {
     draft,

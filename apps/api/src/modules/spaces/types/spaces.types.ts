@@ -5,7 +5,7 @@ export type SpaceEditResult = {
 
 export type SpaceEditOptions = {
   userId: string;
-  expectedUpdatedAt: string;
+  lastKnownUpdatedAt: string;
 };
 
 export type RegenerateReturn = { invite_code: string; invite_code_expires_at: string };

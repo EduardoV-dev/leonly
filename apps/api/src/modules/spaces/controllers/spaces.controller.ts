@@ -52,7 +52,7 @@ export class SpacesController {
     return this.spacesService.updateName({
       userId: request.authUser.id,
       name: body.name,
-      expectedUpdatedAt: body.expectedUpdatedAt,
+      lastKnownUpdatedAt: body.lastKnownUpdatedAt,
     });
   }
 
@@ -72,7 +72,7 @@ export class SpacesController {
     return this.spacesService.updateStartDate({
       userId: request.authUser.id,
       startDate: body.startDate,
-      expectedUpdatedAt: body.expectedUpdatedAt,
+      lastKnownUpdatedAt: body.lastKnownUpdatedAt,
     });
   }
 

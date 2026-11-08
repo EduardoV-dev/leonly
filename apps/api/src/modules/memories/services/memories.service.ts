@@ -19,6 +19,13 @@ type FindExistingCreationParams = { scope: CreationScope; input: CreationInput; 
 type CommitParams = FindExistingCreationParams & { uploads: ClaimedFile[] };
 type CreateParams = { userId: string; body: CreateMemoryDto };
 type CommitReturn = { result: CreationResult; eventIds: string[] };
+type RequireActiveMemoryParams = {
+  userId: string;
+  memoryId: string;
+  membership: { id: string; spaceId: string };
+  transaction?: Prisma.TransactionClient;
+  lock?: boolean;
+};
 
 @Injectable()
 export class MemoriesService {
@@ -28,12 +35,12 @@ export class MemoriesService {
     private readonly filesService: FilesService,
     private readonly outboxPublisherService: OutboxPublisher,
     private readonly membershipsService: MembershipsService,
-  ) {}
+  ) { }
 
   async create({ userId, body }: CreateParams): Promise<CreationResult> {
     const input = normalizeCreation(body);
     const hash = hashCreation(input);
-    const membership = await this.membershipsService.requireActiveMembership(userId);
+    const membership = await this.membershipsService.requireActiveMembership({ userId });
 
     const scope = { userId, spaceId: membership.spaceId, memberId: membership.id };
     const existing = await this.findExistingCreation({ scope, input, hash });
@@ -117,6 +124,34 @@ export class MemoriesService {
         }
       }
     }
+  }
+
+  async requireActiveMemory({
+    userId,
+    memoryId,
+    membership,
+    transaction,
+    lock = false,
+  }: RequireActiveMemoryParams): Promise<void> {
+    if (lock) {
+      if (!transaction) throw new Error("A transaction is required to lock a memory.");
+      await transaction.$queryRaw`SELECT id FROM memories WHERE id = ${memoryId}::uuid FOR UPDATE`;
+    }
+
+    const memory = await (transaction ?? this.prismaService).memory.findFirst({
+      where: {
+        id: memoryId,
+        spaceId: membership.spaceId,
+        deletedAt: null,
+        space: {
+          deletedAt: null,
+          members: { some: { id: membership.id, userId, deletedAt: null } },
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!memory) throw new NotFoundException("Memory unavailable.");
   }
 
   private async findExistingCreation({

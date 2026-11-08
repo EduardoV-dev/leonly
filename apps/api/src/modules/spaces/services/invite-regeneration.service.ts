@@ -25,7 +25,7 @@ export class InviteRegenerationService {
     return this.redisService.withLock({
       key: `invite-regeneration:${userId}:mutex`,
       operation: async () => {
-        await this.membershipsService.requireActiveMembership(userId);
+        await this.membershipsService.requireActiveMembership({ userId });
 
         return retry(
           () =>

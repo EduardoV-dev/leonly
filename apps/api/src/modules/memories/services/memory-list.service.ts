@@ -1,16 +1,13 @@
 import { type MemoryVisibility, Prisma } from "@leonly/database/client";
-import {
-  decodeCursor,
-  encodeCursor,
-  InvalidCursorError,
-  type MemoryCursor,
-  type MemoryListPage,
-  memoryCursorSchema,
-} from "@leonly/utils/contracts";
+import { encodeCursor, type MemoryListPage, memoryCursorSchema } from "@leonly/utils/contracts";
 import { ObjectStorage } from "@leonly/utils/storage";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
+import {
+  createCursorPage,
+  decodePaginationCursor,
+} from "../../../common/utils/cursor-pagination.util";
 import { MembershipsService } from "../../spaces/services/memberships.service";
 import type { ListMemoriesDto } from "../dtos/list-memories.dto";
 import { MemoryReactionsService } from "./memory-reactions.service";
@@ -50,20 +47,9 @@ export class MemoryListService {
     limit = PAGE_SIZE,
   }: ListParams): Promise<MemoryListPage> {
     const sort = query.sort ?? "newest";
-    let cursor: MemoryCursor | null = null;
+    const cursor = decodePaginationCursor({ schema: memoryCursorSchema, cursor: query.cursor });
 
-    if (query.cursor !== undefined) {
-      try {
-        cursor = decodeCursor({ schema: memoryCursorSchema, cursor: query.cursor });
-      } catch (error) {
-        if (error instanceof InvalidCursorError) {
-          throw new BadRequestException({ error: "Invalid cursor." });
-        }
-        throw error;
-      }
-    }
-
-    const membership = await this.membershipsService.requireActiveMembership(userId);
+    const membership = await this.membershipsService.requireActiveMembership({ userId });
 
     const scope = Prisma.sql`
       m.space_id = ${membership.spaceId}::uuid AND m.visibility = ${visibility}::memory_visibility
@@ -101,7 +87,15 @@ export class MemoryListService {
       LIMIT ${limit + 1}
     `);
 
-    const page = rows.slice(0, limit);
+    const { data: page, nextCursor } = createCursorPage({
+      rows,
+      limit,
+      encodeNextCursor: (last) =>
+        encodeCursor({
+          schema: memoryCursorSchema,
+          payload: { sort, id: last.id, memoryDate: last.memoryDate, createdAt: last.createdAt },
+        }),
+    });
     const reactions = await this.memoryReactionsService.getSummaries({
       memoryIds: page.map(({ id }) => id),
       spaceId: membership.spaceId,
@@ -151,20 +145,6 @@ export class MemoryListService {
         };
       }),
     );
-
-    const last = page.at(-1);
-    const nextCursor =
-      rows.length > limit && last
-        ? encodeCursor({
-            schema: memoryCursorSchema,
-            payload: {
-              sort,
-              id: last.id,
-              memoryDate: last.memoryDate,
-              createdAt: last.createdAt,
-            },
-          })
-        : null;
 
     return { data: items, meta: { nextCursor, cursorReset } };
   }

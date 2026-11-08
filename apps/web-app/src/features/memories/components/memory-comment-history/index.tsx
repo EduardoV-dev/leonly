@@ -1,13 +1,15 @@
 import { BookOpen, RefreshCw } from "lucide-react";
+import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import type { CommentDeletionOutcome } from "../../hooks/use-comment-deletion";
-import type { MemoryComment } from "../../types/comment";
+import type { RootComment } from "../../types/comment";
 import { MemoryCommentItem } from "../memory-comment-item";
 import { MemoryCommentPagination } from "../memory-comment-pagination";
+import { MemoryCommentThread } from "../memory-comment-thread";
 import styles from "./memory-comment-history.module.css";
 
 type MemoryCommentHistoryProps = {
-  comments: MemoryComment[];
+  comments: RootComment[];
   error: Error | null;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
@@ -71,13 +73,24 @@ export function MemoryCommentHistory({
     <>
       <ul className={styles.list} aria-label={t("detail.comments.historyLabel")}>
         {comments.map((comment) => (
-          <MemoryCommentItem
-            key={comment.id}
-            comment={comment}
-            locale={locale}
-            onDeleteOutcome={onDeleteOutcome}
-            onUnavailable={onUnavailable}
-          />
+          <Fragment key={comment.id}>
+            {comment.deletedAt !== null ? (
+              <li>{t("detail.comments.deleted")}</li>
+            ) : (
+              <MemoryCommentItem
+                comment={comment}
+                locale={locale}
+                onDeleteOutcome={onDeleteOutcome}
+                onUnavailable={onUnavailable}
+              />
+            )}
+            <MemoryCommentThread
+              comment={comment}
+              locale={locale}
+              onDeleteOutcome={onDeleteOutcome}
+              onUnavailable={onUnavailable}
+            />
+          </Fragment>
         ))}
       </ul>
       <MemoryCommentPagination

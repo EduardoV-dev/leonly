@@ -1,5 +1,6 @@
 import { NotFoundException } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoriesService } from "./memories.service";
 import { MemoryReactionsService } from "./memory-reactions.service";
 
 describe("MemoryReactionsService", () => {
@@ -16,7 +17,17 @@ describe("MemoryReactionsService", () => {
   const lock = vi.fn();
   const transaction = { memoryReaction: reactions, memory, $queryRaw: lock };
   const prisma = { ...transaction, $transaction: vi.fn(async (callback) => callback(transaction)) };
-  const service = new MemoryReactionsService(prisma as never, memberships as never);
+  const memoriesService = new MemoriesService(
+    prisma as never,
+    {} as never,
+    {} as never,
+    memberships as never,
+  );
+  const service = new MemoryReactionsService(
+    prisma as never,
+    memberships as never,
+    memoriesService,
+  );
 
   beforeEach(() => {
     vi.resetAllMocks();

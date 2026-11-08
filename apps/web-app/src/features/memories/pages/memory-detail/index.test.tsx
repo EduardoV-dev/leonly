@@ -81,7 +81,7 @@ describe("MemoryDetailPage", () => {
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Move to Private Vault" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Comments")).not.toBeInTheDocument();
+    expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Reactions")).toBeInTheDocument();
   });
 

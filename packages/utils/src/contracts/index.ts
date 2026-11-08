@@ -4,8 +4,7 @@ export {
   decodeCursor,
   encodeCursor,
   InvalidCursorError,
-} from "./cursors/base-cursor";
-export { type MemoryCursor, memoryCursorSchema } from "./cursors/memory-cursor";
+} from "./cursor";
 export {
   IMAGE_VARIANT_NAMES,
   type ImageEvent,
@@ -14,10 +13,24 @@ export {
   imageProcessingEventSchema,
   parseImageEvent,
 } from "./events/image-processing.event";
-export type { MemoryDetail, MemoryDetailPhoto } from "./memory-detail";
-export type { MemoryListItem, MemoryListPage } from "./memory-list";
+export {
+  type CommentCursor,
+  type CommentPage,
+  commentCursorSchema,
+  type DeletedComment,
+  type MemoryComment,
+  memoryCommentSchema,
+  type RootComment,
+} from "./memories/memory-comment";
+export type { MemoryDetail, MemoryDetailPhoto } from "./memories/memory-detail";
+export {
+  type MemoryCursor,
+  type MemoryListItem,
+  type MemoryListPage,
+  memoryCursorSchema,
+} from "./memories/memory-list";
 export {
   MEMORY_REACTION_TYPES,
   type MemoryReactionSummary,
   type MemoryReactionType,
-} from "./memory-reaction";
+} from "./memories/memory-reaction";

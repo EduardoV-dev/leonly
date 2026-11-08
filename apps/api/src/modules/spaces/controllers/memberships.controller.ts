@@ -40,7 +40,7 @@ export class MembershipsController {
     return this.membershipsService.updateDisplayName({
       userId: request.authUser.id,
       displayName: body.displayName,
-      expectedUpdatedAt: body.expectedUpdatedAt,
+      lastKnownUpdatedAt: body.lastKnownUpdatedAt,
     });
   }
 

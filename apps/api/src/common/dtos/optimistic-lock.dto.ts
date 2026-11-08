@@ -6,5 +6,5 @@ export class OptimisticLockDto {
   @IsString()
   @IsISO8601({ strict: true })
   @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/)
-  expectedUpdatedAt!: string;
+  lastKnownUpdatedAt!: string;
 }

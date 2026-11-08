@@ -107,17 +107,17 @@ render unnecessary navigation controls.
 
 ### Requirement: Detail extension regions respect visibility
 
-Timeline and Vault detail screens SHALL enable reactions for authorized memories. They MUST NOT render or mount edit, delete, move, restore, or comment controls or empty placeholders for those unsupported actions, and MUST NOT issue associated requests. The screens SHALL preserve gallery navigation, related-memory links, and contextual back navigation.
+Timeline and Vault detail screens SHALL enable reactions and the migrated comments section for authorized memories. They MUST NOT render or mount memory edit, delete, move, or restore controls or issue those unsupported memory-action requests. The screens SHALL preserve gallery navigation, related-memory links, and contextual back navigation.
 
 #### Scenario: Timeline memory detail is composed
 
 - **WHEN** the detail view renders a timeline memory
-- **THEN** unsupported controls and comment sections are absent and no corresponding requests are issued
+- **THEN** reactions and comments are available while unsupported memory mutation controls and requests are absent
 
 #### Scenario: Vault memory detail is composed
 
 - **WHEN** the detail view renders a Vault memory
-- **THEN** unsupported controls and comment sections are absent and no corresponding requests are issued
+- **THEN** reactions and comments are available while unsupported memory mutation controls and requests are absent
 
 ### Requirement: Detail loading and recoverable failure feedback
 

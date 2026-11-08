@@ -10,7 +10,7 @@ vi.mock("@/lib/axios/api", () => ({ api: { patch: patchMock, get: getMock } }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: refreshMock }) }));
 
-const INITIAL_REVISION = "2026-09-05T16:00:00.000Z";
+const INITIAL_REVISION = "2026-09-05T16:00:00.123456Z";
 
 describe("useSpaceNameEditor", () => {
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe("useSpaceNameEditor", () => {
     expect(patchMock).toHaveBeenCalledWith(
       "/spaces/name",
       {
-        expectedUpdatedAt: INITIAL_REVISION,
+        lastKnownUpdatedAt: INITIAL_REVISION,
         name: "  Our place  ",
       },
       expect.objectContaining({ validateStatus: expect.any(Function) }),
@@ -95,7 +95,7 @@ describe("useSpaceNameEditor", () => {
 
     await act(async () => result.current.save());
     expect(patchMock.mock.calls[1]?.[1]).toMatchObject({
-      expectedUpdatedAt: "2026-09-05T16:02:00.000Z",
+      lastKnownUpdatedAt: "2026-09-05T16:02:00.000Z",
       name: "Our retry",
     });
     expect(onSaved).toHaveBeenLastCalledWith("Our retry", "2026-09-05T16:03:00.000Z");

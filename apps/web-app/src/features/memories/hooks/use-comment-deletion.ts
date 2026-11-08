@@ -1,6 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ApiResponse, CommentPage, RootComment } from "@leonly/utils/contracts";
+import { type InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { AxiosResponse } from "axios";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { api } from "@/lib/axios/api";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment } from "../types/comment";
 import {
@@ -18,30 +21,31 @@ class CommentDeletionError extends Error {
   }
 }
 
-type DeleteCommentPayload = Pick<MemoryComment, "id" | "memoryId" | "version">;
+type DeleteCommentPayload = Pick<MemoryComment, "id" | "memoryId" | "updatedAt">;
 
 async function deleteComment(payload: DeleteCommentPayload): Promise<void> {
-  let response: Response;
+  let response: AxiosResponse<ApiResponse<{ deletedCommentId: string }>>;
   try {
-    response = await fetch(`/api/memories/${payload.memoryId}/comments/${payload.id}`, {
-      body: JSON.stringify({ expectedVersion: payload.version }),
-      headers: { "content-type": "application/json" },
-      method: "DELETE",
-    });
+    response = await api.delete<ApiResponse<{ deletedCommentId: string }>>(
+      `/memories/${payload.memoryId}/comments/${payload.id}`,
+      {
+        data: { lastKnownUpdatedAt: payload.updatedAt },
+        validateStatus: () => true,
+      },
+    );
   } catch {
     throw new CommentDeletionError("indeterminate");
   }
 
-  const responsePayload = (await response.json().catch(() => null)) as {
-    code?: CommentDeletionErrorCode;
-    deletedCommentId?: string;
-  } | null;
-  if (!response.ok) {
-    throw new CommentDeletionError(
-      responsePayload?.code ?? (response.status === 404 ? "unavailable" : "failed"),
-    );
+  if (!response.data || typeof response.data.ok !== "boolean") {
+    throw new CommentDeletionError("indeterminate");
   }
-  if (responsePayload?.deletedCommentId !== payload.id) {
+  if (!response.data.ok) {
+    if (response.status === 404) throw new CommentDeletionError("unavailable");
+    if (response.status === 409) throw new CommentDeletionError("conflict");
+    throw new CommentDeletionError("failed");
+  }
+  if (response.data.data.deletedCommentId !== payload.id) {
     throw new CommentDeletionError("indeterminate");
   }
 }
@@ -80,14 +84,38 @@ export function useCommentDeletion({
       }
 
       if (error.code === "indeterminate") {
-        await queryClient.refetchQueries({ queryKey });
-        const comments = flattenCommentPages(
-          queryClient.getQueryData<MemoryCommentsData>(queryKey),
-        );
-        if (!comments.some((entry) => entry.id === comment.id)) {
-          setOutcome("success");
-          onOutcome?.("success");
-          return;
+        const targetKey = comment.parentCommentId
+          ? [...queryKey, "replies", comment.parentCommentId]
+          : queryKey;
+        if (queryClient.getQueryState(targetKey)) {
+          try {
+            await queryClient.refetchQueries(
+              { queryKey: targetKey, exact: true, type: "all" },
+              { throwOnError: true },
+            );
+            const replyPages =
+              queryClient.getQueryData<InfiniteData<CommentPage<RootComment>>>(targetKey);
+            const rootPages = queryClient.getQueryData<MemoryCommentsData>(targetKey);
+            const comments = comment.parentCommentId
+              ? replyPages?.pages.flatMap((page) => page.data)
+              : rootPages && flattenCommentPages(rootPages);
+            const hasPlaceholder = comments?.some(
+              (entry) => entry.id === comment.id && entry.deletedAt !== null,
+            );
+            const hasComment = comments?.some(
+              (entry) => entry.id === comment.id && entry.deletedAt === null,
+            );
+            const reachedEnd = comment.parentCommentId
+              ? replyPages?.pages.at(-1)?.meta.nextCursor === null
+              : rootPages?.pages.at(-1)?.nextCursor === null;
+            if (hasPlaceholder || (comments && !hasComment && reachedEnd)) {
+              setOutcome("success");
+              onOutcome?.("success");
+              return;
+            }
+          } catch {
+            // A failed refresh cannot establish whether deletion committed.
+          }
         }
       }
 
@@ -114,7 +142,7 @@ export function useCommentDeletion({
       await mutation.mutateAsync({
         id: comment.id,
         memoryId: comment.memoryId,
-        version: comment.version,
+        updatedAt: comment.updatedAt,
       });
     } catch {
       // Mutation callbacks reconcile and expose recoverable outcomes.

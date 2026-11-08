@@ -6,59 +6,67 @@ under the established soft-deletion data lifecycle.
 ## Requirements
 
 ### Requirement: Author-owned versioned comment deletion
-The system SHALL allow an authenticated active member to soft-delete an active comment they authored
-on an available Timeline or shared Private Vault memory in their active space. It MUST derive the
-member, author, space, comment, and memory access from the authenticated session and MUST NOT trust
-client-supplied identity or ownership values. The delete request MUST be conditioned on the
-server-owned comment version read by the author and, on success, MUST record a deletion timestamp
-without altering the retained comment body, author, memory, or creation timestamp.
+An active member SHALL soft-delete only their own active comment or reply on an available memory in
+their active space. The request MUST use `lastKnownUpdatedAt` and atomically match the server-owned
+timestamp. Successful deletion records a deletion timestamp, advances the update timestamp, and retains
+the stored body, author, memory, and creation timestamp.
 
 #### Scenario: Author deletes an active comment
-- **WHEN** a comment author confirms deletion with the current comment version
+- **WHEN** the author confirms deletion with the current timestamp
 - **THEN** the system records a deletion timestamp and returns a successful deletion outcome
 
 #### Scenario: Non-author attempts deletion
-- **WHEN** another active member submits a deletion request for a comment they did not author
+- **WHEN** another active member requests deletion
 - **THEN** the system makes no change and returns the generic not-found outcome without revealing
   ownership
 
 #### Scenario: Comment or memory is unavailable
-- **WHEN** a deletion targets a missing, inactive, soft-deleted, cross-space, or inaccessible comment
-  or memory
+- **WHEN** the target is missing, inactive, deleted, cross-space, or inaccessible
 - **THEN** the system makes no change and returns the generic not-found outcome without exposing
   target state
 
 #### Scenario: Concurrent edit is detected
-- **WHEN** a comment author submits deletion using an outdated comment version while the active
-  comment remains otherwise available
+- **WHEN** the authorized author deletes an active comment with a stale timestamp
 - **THEN** the system makes no change and returns a conflict outcome only to that authorized author
 
 ### Requirement: Reconciled comment deletion outcome
-The interface SHALL require explicit confirmation before requesting deletion and SHALL leave the
-comment unchanged when the author cancels. While deletion is pending, it MUST prevent duplicate
-deletion and conflicting author actions for that comment and communicate progress. On success, it
-MUST remove the comment from rendered history, reconcile affected derived counts, refresh local
-comment data, return focus to the invoking control or a logical surviving target, and announce the
-outcome. On a recoverable failure, it MUST keep the comment visible and offer retry.
+The interface SHALL require confirmation and prevent conflicting actions while deletion is pending.
+On success it MUST reconcile history and counts, preserve eligible root placeholders, announce the
+outcome, and restore focus logically. Recoverable failures MUST keep the comment visible and offer
+retry; uncertain outcomes MUST be reconciled from authoritative state.
 
 #### Scenario: Author cancels confirmation
-- **WHEN** a comment author dismisses the deletion confirmation without accepting it
+- **WHEN** the author dismisses the confirmation
 - **THEN** the interface sends no deletion request and the comment remains unchanged
 
 #### Scenario: Deletion succeeds
-- **WHEN** the server confirms a comment deletion
-- **THEN** the comment disappears from the history and count after reconciliation, focus remains
-  predictable, and success is announced
+- **WHEN** the server confirms deletion
+- **THEN** a reply or root without visible replies disappears, while a root with visible replies
+  becomes a placeholder; counts and focus are reconciled and success is announced
 
 #### Scenario: Deletion fails recoverably
-- **WHEN** a deletion request fails for a reason other than comment or memory unavailability
+- **WHEN** a deletion fails for a recoverable reason
 - **THEN** the interface keeps the comment visible, reports a retryable error, and does not claim
   deletion succeeded
 
 #### Scenario: Deletion response is indeterminate
-- **WHEN** a deletion request ends without a reliable server outcome
-- **THEN** the interface refreshes comment history before presenting retry, treats absence of the
-  comment as success, and otherwise leaves the visible comment available for retry
+- **WHEN** a deletion ends without a reliable outcome
+- **THEN** the interface refreshes authoritative state and treats a deleted placeholder or absence as
+  success, otherwise offering retry
+
+### Requirement: Deleted root preserves replies
+
+A deleted root with visible replies SHALL display a localized "Comment deleted" placeholder without its
+body or author actions. Its visible replies remain readable; editing and creating new replies under that
+root are prohibited. A root with no visible replies SHALL be omitted.
+
+#### Scenario: Root with replies is deleted
+- **WHEN** an author deletes a root with visible replies
+- **THEN** members see the placeholder and can retrieve existing replies without seeing deleted content
+
+#### Scenario: Last visible reply is deleted
+- **WHEN** the last visible reply under a deleted root is deleted
+- **THEN** the root placeholder no longer appears after reconciliation
 
 ### Requirement: Accessible destructive comment deletion control
 The interface SHALL expose the delete action only for comments authored by the authenticated member.

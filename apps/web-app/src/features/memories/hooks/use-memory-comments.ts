@@ -1,5 +1,7 @@
+import type { ApiResponse, CommentPage, RootComment } from "@leonly/utils/contracts";
 import { type InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { api } from "@/lib/axios/api";
 import { memoryQueryKeys } from "../constants/query-keys";
 import type { MemoryComment, MemoryCommentPage } from "../types/comment";
 
@@ -23,26 +25,30 @@ async function fetchCommentPage(
   if (cursor) searchParams.set("cursor", cursor);
 
   const query = searchParams.size > 0 ? `?${searchParams}` : "";
-  const response = await fetch(`/api/memories/${memoryId}/comments${query}`);
-  const payload = (await response.json().catch(() => null)) as
-    | { code?: "failed" | "unavailable"; error?: string }
-    | MemoryCommentPage
-    | null;
-
-  if (!response.ok) {
-    const errorPayload = payload && "error" in payload ? payload : null;
-    throw new MemoryCommentsError(
-      errorPayload?.code ?? (response.status === 404 ? "unavailable" : "failed"),
-      errorPayload?.error ?? "failed",
-    );
+  const response = await api.get<ApiResponse<CommentPage<RootComment>>>(
+    `/memories/${memoryId}/comments${query}`,
+    { validateStatus: () => true },
+  );
+  if (!response.data.ok) {
+    const code = response.status === 404 ? "unavailable" : "failed";
+    throw new MemoryCommentsError(code, code);
   }
-
-  return payload as MemoryCommentPage;
+  let page = response.data.data;
+  const cursorReset = page.meta.resetCursor;
+  if (cursorReset) {
+    const restarted = await api.get<ApiResponse<CommentPage<RootComment>>>(
+      `/memories/${memoryId}/comments`,
+      { validateStatus: () => true },
+    );
+    if (!restarted.data.ok) throw new MemoryCommentsError("failed", "failed");
+    page = restarted.data.data;
+  }
+  return { comments: page.data, cursorReset, nextCursor: page.meta.nextCursor };
 }
 
-export function flattenCommentPages(data: MemoryCommentsData | undefined): MemoryComment[] {
+export function flattenCommentPages(data: MemoryCommentsData | undefined): RootComment[] {
   const seen = new Set<string>();
-  const comments: MemoryComment[] = [];
+  const comments: RootComment[] = [];
 
   for (const page of data?.pages ?? []) {
     for (const comment of page.comments) {
