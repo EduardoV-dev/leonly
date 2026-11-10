@@ -154,13 +154,15 @@ describe("MemoryReactions", () => {
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("We couldn't update your reaction"),
     );
-    expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "React with Laugh" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "React with Love" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "React with Laugh" })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
   });
 });

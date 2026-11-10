@@ -51,9 +51,13 @@ const getColumnConfigs = (value: string) =>
 
 @Injectable()
 export class SpacesService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
-  async updateName({ userId, lastKnownUpdatedAt, name }: UpdateNameParams): Promise<SpaceEditResult> {
+  async updateName({
+    userId,
+    lastKnownUpdatedAt,
+    name,
+  }: UpdateNameParams): Promise<SpaceEditResult> {
     return await this.updateSpace({ userId, lastKnownUpdatedAt, field: "name", value: name });
   }
 
@@ -62,7 +66,12 @@ export class SpacesService {
     lastKnownUpdatedAt,
     startDate,
   }: UpdateStartDateParams): Promise<SpaceEditResult> {
-    return await this.updateSpace({ userId, lastKnownUpdatedAt, field: "startDate", value: startDate });
+    return await this.updateSpace({
+      userId,
+      lastKnownUpdatedAt,
+      field: "startDate",
+      value: startDate,
+    });
   }
 
   private async updateSpace({
@@ -71,31 +80,32 @@ export class SpacesService {
     value,
     lastKnownUpdatedAt,
   }: UpdateSpaceParams): Promise<SpaceEditResult> {
-    return this.prismaService.$transaction(async (transaction) => {
-      const rows = await transaction.$queryRaw<Array<{ spaceId: string }>>`
+    const rows = await this.prismaService.$queryRaw<Array<{ spaceId: string }>>`
         SELECT s.id AS "spaceId"
         FROM space_members c JOIN spaces s ON s.id = c.space_id
         WHERE c.user_id = ${userId} AND c.deleted_at IS NULL AND s.deleted_at IS NULL
-        FOR UPDATE OF s, c
       `;
 
-      const current = rows[0];
-      if (!current) throw new NotFoundException({ error: "This shared space is unavailable." });
+    const current = rows[0];
+    if (!current) throw new NotFoundException({ error: "This shared space is unavailable." });
 
-      const config = getColumnConfigs(value)[field];
+    const config = getColumnConfigs(value)[field];
 
-      const updated = await transaction.$queryRaw<Array<{ updatedAt: string }>>`
+    const updated = await this.prismaService.$queryRaw<Array<{ updatedAt: string }>>`
         UPDATE spaces SET ${config.column} = ${config.transformation},
-          updated_at = clock_timestamp(), updated_by_user_id = ${userId}
+          updated_by_user_id = ${userId}
         WHERE id = ${current.spaceId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
+          AND deleted_at IS NULL AND EXISTS (
+            SELECT 1 FROM space_members c WHERE c.space_id = spaces.id
+              AND c.user_id = ${userId} AND c.deleted_at IS NULL
+          )
         RETURNING to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
 
-      const revision = updated[0]?.updatedAt;
-      if (!revision) throw new ConflictException();
+    const revision = updated[0]?.updatedAt;
+    if (!revision) throw new ConflictException();
 
-      return { [field]: value, status: "updated", updatedAt: revision } as SpaceEditResult;
-    });
+    return { [field]: value, status: "updated", updatedAt: revision } as SpaceEditResult;
   }
 
   async getActiveSpace(userId: string): Promise<ActiveSpace | null> {

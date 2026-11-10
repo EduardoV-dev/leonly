@@ -1,6 +1,11 @@
 import { FilePurpose, FileStatus, Prisma } from "@leonly/database/client";
-import { IMAGE_VARIANT_NAMES } from "@leonly/utils/contracts";
+import {
+  IMAGE_VARIANT_NAMES,
+  type MemoryPlacementRequest,
+  type MemoryPlacementResult,
+} from "@leonly/utils/contracts";
 import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
 import { OutboxPublisher } from "../../../common/outbox/outbox-publisher";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { type ClaimedFile, FilesService } from "../../files/files.service";
@@ -19,12 +24,16 @@ type FindExistingCreationParams = { scope: CreationScope; input: CreationInput; 
 type CommitParams = FindExistingCreationParams & { uploads: ClaimedFile[] };
 type CreateParams = { userId: string; body: CreateMemoryDto };
 type CommitReturn = { result: CreationResult; eventIds: string[] };
+type UpdateVisibilityParams = MemoryPlacementRequest & { userId: string; memoryId: string };
 type RequireActiveMemoryParams = {
   userId: string;
   memoryId: string;
   membership: { id: string; spaceId: string };
-  transaction?: Prisma.TransactionClient;
-  lock?: boolean;
+  options?: {
+    transaction?: Prisma.TransactionClient;
+    lock?: boolean;
+    where?: Prisma.MemoryWhereInput;
+  };
 };
 
 @Injectable()
@@ -35,7 +44,7 @@ export class MemoriesService {
     private readonly filesService: FilesService,
     private readonly outboxPublisherService: OutboxPublisher,
     private readonly membershipsService: MembershipsService,
-  ) { }
+  ) {}
 
   async create({ userId, body }: CreateParams): Promise<CreationResult> {
     const input = normalizeCreation(body);
@@ -126,28 +135,65 @@ export class MemoriesService {
     }
   }
 
+  async updateVisibility({
+    userId,
+    memoryId,
+    visibility,
+    lastKnownUpdatedAt,
+  }: UpdateVisibilityParams): Promise<MemoryPlacementResult> {
+    const membership = await this.membershipsService.requireActiveMembership({
+      userId,
+    });
+    await this.requireActiveMemory({
+      userId,
+      memoryId,
+      membership,
+      options: {
+        where: { visibility: { not: visibility } },
+      },
+    });
+
+    const updated = await this.prismaService.$queryRaw<MemoryPlacementResult[]>`
+        UPDATE memories SET visibility = ${visibility}::memory_visibility
+        WHERE id = ${memoryId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
+          AND space_id = ${membership.spaceId}::uuid AND deleted_at IS NULL
+          AND visibility <> ${visibility}::memory_visibility
+          AND EXISTS (
+            SELECT 1 FROM space_members sm JOIN spaces s ON s.id = sm.space_id
+            WHERE sm.id = ${membership.id}::uuid AND sm.user_id = ${userId}
+              AND sm.space_id = memories.space_id AND sm.deleted_at IS NULL AND s.deleted_at IS NULL
+          )
+        RETURNING id, visibility, to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
+      `;
+
+    if (!updated[0]) throw new ConflictException();
+
+    return updated[0];
+  }
+
   async requireActiveMemory({
     userId,
     memoryId,
     membership,
-    transaction,
-    lock = false,
+    options: { transaction, lock = false, where = {} } = {},
   }: RequireActiveMemoryParams): Promise<void> {
     if (lock) {
       if (!transaction) throw new Error("A transaction is required to lock a memory.");
       await transaction.$queryRaw`SELECT id FROM memories WHERE id = ${memoryId}::uuid FOR UPDATE`;
     }
 
-    const memory = await (transaction ?? this.prismaService).memory.findFirst({
-      where: {
-        id: memoryId,
-        spaceId: membership.spaceId,
+    const baseWhere: Prisma.MemoryWhereInput = {
+      id: memoryId,
+      spaceId: membership.spaceId,
+      deletedAt: null,
+      space: {
         deletedAt: null,
-        space: {
-          deletedAt: null,
-          members: { some: { id: membership.id, userId, deletedAt: null } },
-        },
+        members: { some: { id: membership.id, userId, deletedAt: null } },
       },
+    };
+
+    const memory = await (transaction ?? this.prismaService).memory.findFirst({
+      where: { AND: [baseWhere, where] },
       select: { id: true },
     });
 

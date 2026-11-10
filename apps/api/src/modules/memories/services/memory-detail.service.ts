@@ -29,7 +29,7 @@ export class MemoryDetailService {
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
     private readonly memoryReactionsService: MemoryReactionsService,
-  ) {}
+  ) { }
 
   async getDetail({ userId, memoryId, visibility }: GetDetailParams): Promise<MemoryDetail> {
     const membership = await this.membershipsService.requireActiveMembership({ userId });
@@ -75,7 +75,6 @@ export class MemoryDetailService {
         },
       },
     });
-
     if (!memory) throw new NotFoundException({ error: "Memory unavailable." });
 
     const signObject = (key: string | undefined): Promise<string | null> =>

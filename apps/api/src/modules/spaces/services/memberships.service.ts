@@ -59,32 +59,31 @@ export class MembershipsService {
     displayName,
     lastKnownUpdatedAt,
   }: UpdateDisplayNameParams): Promise<DisplayNameEditResult> {
-    return this.prismaService.$transaction(async (transaction) => {
-      const rows = await transaction.$queryRaw<Array<{ memberId: string }>>`
+    const rows = await this.prismaService.$queryRaw<Array<{ memberId: string }>>`
         SELECT c.id AS "memberId"
         FROM space_members c JOIN spaces s ON s.id = c.space_id
         WHERE c.user_id = ${userId} AND c.deleted_at IS NULL AND s.deleted_at IS NULL
-        FOR UPDATE OF s, c
       `;
-      const current = rows[0];
+    const current = rows[0];
 
-      if (!current) throw new NotFoundException({ error: "This shared space is unavailable." });
+    if (!current) throw new NotFoundException({ error: "This shared space is unavailable." });
 
-      const updated = await transaction.$queryRaw<Array<{ updatedAt: string }>>`
-        UPDATE space_members SET display_name = ${displayName}, updated_at = clock_timestamp()
+    const updated = await this.prismaService.$queryRaw<Array<{ updatedAt: string }>>`
+        UPDATE space_members SET display_name = ${displayName}
         WHERE id = ${current.memberId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
+          AND user_id = ${userId} AND deleted_at IS NULL
+          AND EXISTS (SELECT 1 FROM spaces s WHERE s.id = space_members.space_id AND s.deleted_at IS NULL)
         RETURNING to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
-      const revision = updated[0]?.updatedAt;
+    const revision = updated[0]?.updatedAt;
 
-      if (!revision) throw new ConflictException();
+    if (!revision) throw new ConflictException();
 
-      return {
-        displayName,
-        status: "updated",
-        updatedAt: revision,
-      };
-    });
+    return {
+      displayName,
+      status: "updated",
+      updatedAt: revision,
+    };
   }
 
   async completeSetup(userId: string): Promise<{ completed: true }> {

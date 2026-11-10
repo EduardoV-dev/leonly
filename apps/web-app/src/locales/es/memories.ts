@@ -211,6 +211,9 @@ export const memoriesEs = {
       moving: "Moviendo recuerdo…",
       successTimeline: "Recuerdo movido a la línea de tiempo.",
       successVault: "Recuerdo movido a la bóveda privada.",
+      refresh: "Actualizar recuerdo",
+      refreshFailed:
+        "El recuerdo se movió, pero no se pudieron actualizar algunas vistas. Recarga la página para ver los cambios.",
     },
     error: {
       description: "La historia sigue aquí. Simplemente no pudimos abrirla en este momento.",

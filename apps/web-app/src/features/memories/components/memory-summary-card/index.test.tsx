@@ -83,6 +83,10 @@ describe("MemorySummaryCard", () => {
       render(<MemorySummaryCard memory={memory} variant={variant} />);
 
       expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Move to Private Vault" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Move to Timeline" })).not.toBeInTheDocument();
     },
   );
 

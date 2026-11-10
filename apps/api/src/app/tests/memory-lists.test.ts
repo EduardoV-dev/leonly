@@ -249,6 +249,7 @@ describe("authenticated memory lists", () => {
       data: {
         title: "Memory",
         visibility: route,
+        updatedAt: date.toISOString(),
         creatorDisplayName: "Sarah",
         photos: [],
         relatedMemories: [],

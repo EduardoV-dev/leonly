@@ -186,6 +186,7 @@ describe("settings API", () => {
       expect(queryRaw.mock.calls[0]?.slice(1)).toContain("current-user");
       expect(queryRaw.mock.calls[1]?.slice(1)).toContain(REVISION);
       expect(queryRaw.mock.calls[1]?.[0].join(" ")).toContain("::timestamptz");
+      expect(queryRaw.mock.calls[0]?.[0].join(" ")).not.toContain("FOR UPDATE");
     },
   );
 

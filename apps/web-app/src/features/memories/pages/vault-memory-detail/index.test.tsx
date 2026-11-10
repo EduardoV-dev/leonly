@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { VaultMemoryDetailPage } from ".";
 
+vi.mock("../../server/revalidate-placement-views", () => ({ revalidatePlacementViews: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
@@ -68,7 +70,7 @@ describe("VaultMemoryDetailPage", () => {
     );
     expect(screen.getByRole("heading", { name: "More from the Vault" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Move to Timeline" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Reactions")).toBeInTheDocument();

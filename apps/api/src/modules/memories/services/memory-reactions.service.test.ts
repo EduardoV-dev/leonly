@@ -190,13 +190,17 @@ describe("MemoryReactionsService", () => {
     expect(memory.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          id: "memory",
-          spaceId: "space",
-          deletedAt: null,
-          space: {
-            deletedAt: null,
-            members: { some: { id: "member", userId: "user", deletedAt: null } },
-          },
+          AND: expect.arrayContaining([
+            expect.objectContaining({
+              id: "memory",
+              spaceId: "space",
+              deletedAt: null,
+              space: {
+                deletedAt: null,
+                members: { some: { id: "member", userId: "user", deletedAt: null } },
+              },
+            }),
+          ]),
         }),
       }),
     );

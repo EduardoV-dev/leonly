@@ -95,7 +95,12 @@ export class MemoryReactionsService {
     return this.prismaService.$transaction(async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM memories WHERE id = ${memoryId}::uuid FOR UPDATE`;
 
-      await this.memoriesService.requireActiveMemory({ userId, memoryId, membership, transaction });
+      await this.memoriesService.requireActiveMemory({
+        userId,
+        memoryId,
+        membership,
+        options: { transaction },
+      });
 
       const where = { reactedByMemberId_memoryId: { reactedByMemberId: membership.id, memoryId } };
       const current = await transaction.memoryReaction.findUnique({ where });

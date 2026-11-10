@@ -11,6 +11,7 @@ import { MemoryDetailNotFound } from "./not-found";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
+vi.mock("../../server/revalidate-placement-views", () => ({ revalidatePlacementViews: vi.fn() }));
 vi.mock("../../components/memory-comments", () => ({
   MemoryComments: () => <p>Comments</p>,
 }));
@@ -79,7 +80,7 @@ describe("MemoryDetailPage", () => {
       "/timeline",
     );
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Move to Private Vault" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Reactions")).toBeInTheDocument();
@@ -154,9 +155,7 @@ describe("MemoryDetailPage", () => {
     renderDetail(<MemoryDetailPage memory={memory} />);
 
     expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Mover a la bóveda privada" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Quitar recuerdo" })).not.toBeInTheDocument();
     expect(screen.getByText("Recuerdo creado el", { exact: false })).toBeInTheDocument();
     expect(

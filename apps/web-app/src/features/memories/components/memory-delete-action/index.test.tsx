@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { i18n } from "@/lib/i18n";
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { MemoryDetailActions } from "../memory-detail-actions";
+
 import { MemoryDeleteAction } from ".";
+
+vi.mock("../../server/revalidate-placement-views", () => ({ revalidatePlacementViews: vi.fn() }));
 
 const { pushMock, refreshMock, successMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),

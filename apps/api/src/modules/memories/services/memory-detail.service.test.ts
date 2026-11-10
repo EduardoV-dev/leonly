@@ -5,7 +5,7 @@ import { MemoryDetailService } from "./memory-detail.service";
 const memoryId = "01900000-0000-7000-8000-000000000004";
 const spaceId = "01900000-0000-7000-8000-000000000005";
 const memberId = "01900000-0000-7000-8000-000000000006";
-const date = new Date("2026-10-01T12:00:00Z");
+const date = new Date("2026-10-01T12:00:00.123Z");
 
 describe("MemoryDetailService", () => {
   const membershipsService = { requireActiveMembership: vi.fn() };
@@ -57,6 +57,7 @@ describe("MemoryDetailService", () => {
     "scopes %s detail and related reads",
     async (visibility) => {
       const result = await service.getDetail({ userId: "user", memoryId, visibility });
+      expect(result.updatedAt).toBe(date.toISOString());
       expect(result.creatorDisplayName).toBe("Sarah");
       expect(result.photos).toEqual([
         { id: "second", coverUrl: null, detailUrl: "https://storage.example/detail" },

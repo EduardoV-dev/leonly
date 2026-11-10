@@ -1,5 +1,18 @@
-import type { MemoryDetail, MemoryListPage } from "@leonly/utils/contracts";
-import { Body, Controller, Get, Header, HttpStatus, Param, Post, Query, Req } from "@nestjs/common";
+import type { MemoryDetail, MemoryListPage, MemoryPlacementResult } from "@leonly/utils/contracts";
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { AuthenticatedRequest } from "../../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../../common/http/docs/api-response.docs";
@@ -8,6 +21,7 @@ import { MEMORY_DETAIL_EXAMPLE, MEMORY_DETAIL_SCHEMA } from "../docs/memory-deta
 import { MEMORY_LIST_EXAMPLE, MEMORY_LIST_SCHEMA } from "../docs/memory-list.docs";
 import { CreateMemoryDto } from "../dtos/create-memory.dto";
 import { ListMemoriesDto } from "../dtos/list-memories.dto";
+import { PlaceMemoryDto } from "../dtos/place-memory.dto";
 import { type CreationResult, MemoriesService } from "../services/memories.service";
 import { MemoryDetailService } from "../services/memory-detail.service";
 import { MemoryListService } from "../services/memory-list.service";
@@ -25,6 +39,44 @@ export class MemoriesController {
     private readonly memoryListService: MemoryListService,
     private readonly memoryDetailService: MemoryDetailService,
   ) {}
+
+  @Patch(":memoryId/placement")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({ summary: "Move an active-space memory between Timeline and Vault" })
+  @ApiBody({ type: PlaceMemoryDto })
+  @ApiErrorResponses(400, 401, 404, 409, 500)
+  @ApiSuccessResponse({
+    description: "Memory placement updated",
+    data: {
+      type: "object",
+      required: ["id", "visibility", "updatedAt"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        visibility: { type: "string", enum: ["timeline", "vault"] },
+        updatedAt: { type: "string", format: "date-time" },
+      },
+    },
+    example: {
+      id: "01900000-0000-7000-8000-000000000004",
+      visibility: "vault",
+      updatedAt: "2026-09-05T16:00:00.123Z",
+    },
+  })
+  async updateVisibility(
+    @Req() request: AuthenticatedRequest,
+    @Param(
+      "memoryId",
+      new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Memory unavailable.") }),
+    )
+    memoryId: string,
+    @Body() body: PlaceMemoryDto,
+  ): Promise<MemoryPlacementResult> {
+    return this.memoriesService.updateVisibility({
+      userId: request.authUser.id,
+      memoryId,
+      ...body,
+    });
+  }
 
   @Get("timeline")
   @ApiOperation({ summary: "List active-space Timeline memories" })

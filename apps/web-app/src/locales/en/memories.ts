@@ -209,6 +209,9 @@ export const memoriesEn = {
       moving: "Moving memory…",
       successTimeline: "Memory moved to Timeline.",
       successVault: "Memory moved to Private Vault.",
+      refresh: "Refresh memory",
+      refreshFailed:
+        "Memory moved, but some views could not be refreshed. Reload to see the latest changes.",
     },
     error: {
       description: "The story is still here. We just could not open it right now.",

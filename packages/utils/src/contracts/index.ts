@@ -29,6 +29,7 @@ export {
   type MemoryListPage,
   memoryCursorSchema,
 } from "./memories/memory-list";
+export type { MemoryPlacementRequest, MemoryPlacementResult } from "./memories/memory-placement";
 export {
   MEMORY_REACTION_TYPES,
   type MemoryReactionSummary,

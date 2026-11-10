@@ -87,14 +87,14 @@ model Space {
   name                String
   startDate           DateTime      @map("start_date") @db.Date
   inviteCode          String?       @map("invite_code")
-  inviteCodeExpiresAt DateTime?     @map("invite_code_expires_at") @db.Timestamptz(6)
+  inviteCodeExpiresAt DateTime?     @map("invite_code_expires_at") @db.Timestamptz(3)
   createdByUserId     String        @map("created_by_user_id")
   createdByUser       User          @relation("SpaceCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
   updatedByUserId     String        @map("updated_by_user_id")
   updatedByUser       User          @relation("SpaceUpdater", fields: [updatedByUserId], references: [id], onDelete: Restrict)
-  deletedAt           DateTime?     @map("deleted_at") @db.Timestamptz(6)
-  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt           DateTime?     @map("deleted_at") @db.Timestamptz(3)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   members             SpaceMember[]
   files               File[]
   memories            Memory[]
@@ -112,10 +112,10 @@ model SpaceMember {
   user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   displayName           String          @map("display_name")
   role                  SpaceMemberRole
-  onboardingCompletedAt DateTime?       @map("onboarding_completed_at") @db.Timestamptz(6)
-  deletedAt             DateTime?       @map("deleted_at") @db.Timestamptz(6)
-  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  onboardingCompletedAt DateTime?       @map("onboarding_completed_at") @db.Timestamptz(3)
+  deletedAt             DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   createdMemories       Memory[]
   reactions             MemoryReaction[]
   comments              MemoryComment[]
@@ -175,10 +175,10 @@ model File {
   purpose                FilePurpose
   status                 FileStatus  @default(pending)
   operationLockToken     String?     @map("operation_lock_token") @db.Uuid
-  operationLockExpiresAt DateTime?   @map("operation_lock_expires_at") @db.Timestamptz(6)
+  operationLockExpiresAt DateTime?   @map("operation_lock_expires_at") @db.Timestamptz(3)
   lastErrorCode          String?     @map("last_error_code")
-  createdAt              DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt              DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   memoryFiles            MemoryFile[]
 
   @@unique([id, spaceId], map: "files_id_space_unique")
@@ -204,11 +204,11 @@ model Memory {
   location            String?
   memoryDate          DateTime         @map("memory_date") @db.Date
   visibility          MemoryVisibility
-  deletedAt           DateTime?        @map("deleted_at") @db.Timestamptz(6)
+  deletedAt           DateTime?        @map("deleted_at") @db.Timestamptz(3)
   idempotencyKey      String           @map("idempotency_key") @db.Uuid
   creationRequestHash String           @map("creation_request_hash")
-  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   memoryFiles         MemoryFile[]     @relation("MemoryFiles")
   reactions           MemoryReaction[]
   comments            MemoryComment[]
@@ -226,9 +226,9 @@ model MemoryComment {
   authorMembershipId String          @map("author_membership_id") @db.Uuid
   parentCommentId    String?         @map("parent_comment_id") @db.Uuid
   body               String
-  deletedAt          DateTime?       @map("deleted_at") @db.Timestamptz(6)
-  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   memory             Memory          @relation(fields: [memoryId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
   author             SpaceMember     @relation(fields: [authorMembershipId, spaceId], references: [id, spaceId], onDelete: Restrict, onUpdate: NoAction)
   parent             MemoryComment?  @relation("CommentReplies", fields: [parentCommentId, memoryId, spaceId], references: [id, memoryId, spaceId], onDelete: NoAction, onUpdate: NoAction)
@@ -247,8 +247,8 @@ model MemoryReaction {
   reactedByMemberId String             @map("reacted_by_member_id") @db.Uuid
   reactedByMember   SpaceMember        @relation(fields: [reactedByMemberId, spaceId], references: [id, spaceId], onDelete: Cascade, onUpdate: NoAction)
   reactionType      MemoryReactionType @map("reaction_type")
-  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([reactedByMemberId, memoryId], map: "memory_reactions_member_memory_unique")
   @@index([memoryId], map: "memory_reactions_memory_id")
@@ -277,8 +277,8 @@ model OutboxEvent {
   entityId               String    @map("entity_id")
   eventType              String    @map("event_type")
   payload                Json      @db.JsonB
-  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  publishedAt            DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  publishedAt            DateTime? @map("published_at") @db.Timestamptz(3)
   publishAttemptCount    Int       @default(0) @map("publish_attempt_count")
   lastPublishErrorCode   String?   @map("last_publish_error_code")
 

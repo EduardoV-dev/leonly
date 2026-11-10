@@ -51,7 +51,10 @@ type EditCommentParams = CommentScope & {
 type DeleteCommentParams = Omit<EditCommentParams, "body">;
 type Member = { id: string; spaceId: string };
 type CommentResult = Omit<MemoryComment, "deletedAt"> & { deletedAt: string | null };
-type RequireMemoryParams = CommentScope & { transaction: Prisma.TransactionClient };
+type RequireMemoryParams = CommentScope & {
+  transaction?: Prisma.TransactionClient;
+  lock?: boolean;
+};
 type GetCommentParams = { transaction: Prisma.TransactionClient; commentId: string };
 
 @Injectable()
@@ -175,18 +178,18 @@ export class MemoryCommentsService {
     transaction,
     userId,
     memoryId,
+    lock = false,
   }: RequireMemoryParams): Promise<Member> {
     const member = await this.membershipsService.requireActiveMembership({
       userId,
       transaction,
-      lock: true,
+      lock,
     });
     await this.memoriesService.requireActiveMemory({
       userId,
       memoryId,
       membership: member,
-      transaction,
-      lock: true,
+      options: { transaction, lock },
     });
     return member;
   }
@@ -215,7 +218,7 @@ export class MemoryCommentsService {
   }: CreateCommentParams): Promise<MemoryComment> {
     const normalized = body.trim();
     return this.prismaService.$transaction(async (transaction) => {
-      const member = await this.requireMemory({ transaction, userId, memoryId });
+      const member = await this.requireMemory({ transaction, userId, memoryId, lock: true });
       if (parentCommentId) {
         const parent = await transaction.$queryRaw<{ id: string }[]>`
           SELECT id FROM memory_comments WHERE id = ${parentCommentId}::uuid AND memory_id = ${memoryId}::uuid
@@ -253,6 +256,7 @@ export class MemoryCommentsService {
       await this.updateComment({
         transaction,
         member,
+        userId,
         memoryId,
         commentId,
         lastKnownUpdatedAt,
@@ -268,23 +272,23 @@ export class MemoryCommentsService {
     commentId,
     lastKnownUpdatedAt,
   }: DeleteCommentParams): Promise<{ deletedCommentId: string }> {
-    return this.prismaService.$transaction(async (transaction) => {
-      const member = await this.requireMemory({ transaction, userId, memoryId });
-      await this.updateComment({
-        transaction,
-        member,
-        memoryId,
-        commentId,
-        lastKnownUpdatedAt,
-        body: null,
-      });
-      return { deletedCommentId: commentId };
+    const member = await this.requireMemory({ userId, memoryId });
+    await this.updateComment({
+      transaction: this.prismaService,
+      member,
+      userId,
+      memoryId,
+      commentId,
+      lastKnownUpdatedAt,
+      body: null,
     });
+    return { deletedCommentId: commentId };
   }
 
   private async updateComment({
     transaction,
     member,
+    userId,
     memoryId,
     commentId,
     lastKnownUpdatedAt,
@@ -292,6 +296,7 @@ export class MemoryCommentsService {
   }: {
     transaction: Prisma.TransactionClient;
     member: Member;
+    userId: string;
     memoryId: string;
     commentId: string;
     lastKnownUpdatedAt: string;
@@ -300,14 +305,23 @@ export class MemoryCommentsService {
     const rows = await transaction.$queryRaw<{ id: string }[]>`
       SELECT id FROM memory_comments WHERE id = ${commentId}::uuid AND memory_id = ${memoryId}::uuid
         AND space_id = ${member.spaceId}::uuid AND author_membership_id = ${member.id}::uuid
-        AND deleted_at IS NULL FOR UPDATE
+        AND deleted_at IS NULL
     `;
     if (!rows.length) throw new NotFoundException("Memory unavailable.");
     const updated = await transaction.$queryRaw<{ id: string }[]>(Prisma.sql`
       UPDATE memory_comments SET
         ${body === null ? Prisma.sql`deleted_at = clock_timestamp()` : Prisma.sql`body = ${body}`},
-        updated_at = greatest(clock_timestamp(), updated_at + interval '1 microsecond')
-      WHERE id = ${commentId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz RETURNING id
+        updated_at = greatest(clock_timestamp()::timestamptz(3), updated_at + interval '1 millisecond')
+      WHERE id = ${commentId}::uuid AND updated_at = ${lastKnownUpdatedAt}::timestamptz
+        AND memory_id = ${memoryId}::uuid AND space_id = ${member.spaceId}::uuid
+        AND author_membership_id = ${member.id}::uuid AND deleted_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM memories m JOIN spaces s ON s.id = m.space_id
+          JOIN space_members sm ON sm.space_id = s.id
+          WHERE m.id = memory_comments.memory_id AND m.space_id = memory_comments.space_id
+            AND m.deleted_at IS NULL AND s.deleted_at IS NULL AND sm.id = ${member.id}::uuid
+            AND sm.user_id = ${userId} AND sm.deleted_at IS NULL
+        ) RETURNING id
     `);
     if (!updated.length) throw new ConflictException();
   }

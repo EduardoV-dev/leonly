@@ -136,6 +136,7 @@ describe("MemoryCommentsService writes", () => {
   const memoriesService = { requireActiveMemory: vi.fn() };
   const service = new MemoryCommentsService(
     {
+      $queryRaw: queryRaw,
       $transaction: (operation: (tx: typeof transaction) => unknown) => operation(transaction),
     } as never,
     membershipsService as never,
@@ -197,7 +198,10 @@ describe("MemoryCommentsService writes", () => {
   it("advances the timestamp strictly on a successful deletion", async () => {
     queryRaw.mockResolvedValueOnce([{ id: commentId }]).mockResolvedValueOnce([{ id: commentId }]);
     expect(await service.remove(scope)).toEqual({ deletedCommentId: commentId });
-    expect(queryRaw.mock.calls[2][0].sql).toContain("interval '1 microsecond'");
+    expect(queryRaw.mock.calls[2][0].sql).toContain("interval '1 millisecond'");
+    expect(queryRaw.mock.calls[1][0].join(" ")).not.toContain("FOR UPDATE");
+    expect(queryRaw.mock.calls[2][0].sql).toContain("sm.user_id");
+    expect(queryRaw.mock.calls[2][0].sql).toContain("author_membership_id");
   });
 
   it("does not attach a reply after the root was deleted", async () => {
@@ -232,6 +236,7 @@ describe("MemoryCommentsService writes", () => {
     };
     const serviceWithLocks = new MemoryCommentsService(
       {
+        $queryRaw: fakeTransaction.$queryRaw,
         $transaction: (operation: (tx: typeof fakeTransaction) => Promise<unknown>) => {
           const result = queue.then(() => operation(fakeTransaction));
           queue = result.then(
