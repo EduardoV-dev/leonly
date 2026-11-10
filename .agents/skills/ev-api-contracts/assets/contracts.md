@@ -47,6 +47,16 @@ Use `ApiResponse<OffsetPage<Item>>`, `ApiResponse<CursorPage<Item>>`, or the exp
 For ordinary endpoints, success includes `error: []`; failure includes `data: null` and an `ApiError[]`.
 Both branches include a string `message`. Keep client errors free of internal details.
 
+## Resource Update Preconditions
+
+Require the last-read version in resource-update bodies, including PATCH, when the table has a version
+column; otherwise require `lastKnownUpdatedAt: string`, the last-read timezone-qualified `updatedAt`
+preserved at database precision. Neither token is writable entity data.
+Apply the [optimistic-locking contract](../references/optimistic-locking.md): atomically match the token
+with identity and authorization scope, advance it, and return its persisted new value. A failed match returns
+HTTP 409 in `ApiResponse<T>`'s failure branch with a safe refresh instruction, preserving established
+authorization/not-found handling. Creates do not require this precondition.
+
 ## Health-Check Exception
 
 Export and reuse this shared type for health-check endpoints, including liveness and readiness:

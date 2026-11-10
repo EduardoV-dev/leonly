@@ -56,6 +56,46 @@ for nested collections when applicable. Do not introduce coercion decorators whe
 needed. Interfaces, utility types that erase runtime metadata, and scalar `@Body("field")` extraction
 alone do not replace validation of the complete body.
 
+## Require An Optimistic-Locking Token On Updates
+
+Apply the backend `backend-optimistic-locking` rule to resource updates. Prefer an existing version
+column, with a required validated last-read version DTO field matching its actual database range and
+representation; do not convert large integers to unsafe JavaScript numbers. Otherwise reuse this runtime
+timestamp DTO at the narrowest shared owner, in `dtos/`, and keep its field required even for PATCH.
+
+```ts
+// dtos/optimistic-lock.dto.ts
+import { ApiProperty } from "@nestjs/swagger";
+import { IsDefined, IsISO8601, IsString, Matches } from "class-validator";
+
+export class OptimisticLockDto {
+  @ApiProperty({
+    type: String,
+    format: "date-time",
+    example: "2026-09-05T16:00:00.123Z",
+  })
+  @IsDefined()
+  @IsString()
+  @IsISO8601({ strict: true })
+  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/)
+  lastKnownUpdatedAt!: string;
+}
+```
+
+Extend or compose this DTO with the update's writable fields. Apply `PartialType` only to editable
+fields, not to `OptimisticLockDto` or the final combined DTO. Do not add `@IsOptional()` or conditional
+validation that skips the token: these can bypass its requiredness even with `@IsDefined()`.
+`@IsDefined()` preserves the required field when validation skips missing properties. This example is
+for millisecond precision; retain an exact string and appropriate validation for existing microsecond
+contracts until safely migrated. Do not pass microsecond tokens through `Date`.
+
+Use the [shared atomic update contract](../../ev-api-contracts/references/optimistic-locking.md).
+Separate the chosen token from writable properties before persistence. On a failed conditional
+match, raise `ConflictException` from `@nestjs/common` (or the existing mapped domain conflict) with
+"This resource was updated elsewhere. Refresh it and try again." Preserve existing access/not-found
+policy, map the error to HTTP 409 in the shared failure envelope, and document that response in OpenAPI.
+On success, return the persisted new token; never silently retry with a refreshed token.
+
 ## Validate Path Parameters With Pipes
 
 Prefer a matching built-in pipe directly on `@Param()` rather than manually validating the HTTP
@@ -173,6 +213,8 @@ their shape. Framework health helpers' default output must be adapted to this co
 
 - Body validation rejects invalid fields, unknown fields, and invalid nested objects/arrays, while
   accepting valid input and preserving intended transformation behavior.
+- Update DTOs require the selected token even after partial-update composition; verify invalid/missing
+  tokens, exact round trips at stored precision, HTTP 409 envelopes, and one winner for concurrent updates.
 - Path parameters accept valid identifiers and reject invalid formats before the controller method;
   integer pipes also deliver numbers to the service.
 - API routes use `/api` once; Scalar loads at `/docs` and documents prefixed operation paths and DTOs.

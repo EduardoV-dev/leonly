@@ -1,6 +1,6 @@
 ---
 name: ev-coding-standards
-description: "Trigger: coding, implementing, fixing, ev-check, ev-fix, ev-update. Load applicable installed EV standards before edits and manage check/fix/update workflows."
+description: "Trigger: coding, implementing, fixing review findings, ev-update. Load applicable installed EV standards before edits and manage check/fix/update workflows."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"

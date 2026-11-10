@@ -1,107 +1,125 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "ev-api-contracts": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-api-contracts/SKILL.md",
-      "computedHash": "e78a71baac88a8a6b36a1d9c0feb5f500956ae8c1262d1b8a28c0de047a9b77b"
+      "computedHash": "929dcfcd87cde4bf3ee0188994cea8ecfa77310d08766f6487c9d32d0096e7ad"
     },
     "ev-code-review": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "818fa5abef0d87cd067ea6fae184e0cbdf3f8bdf17e3072148d273012cb4cdbf"
+      "computedHash": "d754218bbac9b3c4c0c593373cd9000083d5b7120d398d8e38bf67a1974e14ff"
+    },
+    "ev-code-simplification": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-code-simplification/SKILL.md",
+      "computedHash": "2d355f812d5e3292081f69d587ebc6df2d8ac18dc88b69b3dcee16950162b0b3"
     },
     "ev-coding-standards": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-coding-standards/SKILL.md",
-      "computedHash": "0eb070f10d07364d66b59921ca18978666fddc072044e0a3612af1b52605db53"
+      "computedHash": "59d9108cb9d359dc0b12fee087fcc77d680e8eaf0f5dc3735916186b11e2441b"
+    },
+    "ev-dead-code": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-dead-code/SKILL.md",
+      "computedHash": "0c4e04e3a0f67a824ac3efd891ae9670ab7e49a516febb4f6f24f1471448d12e"
+    },
+    "ev-postgres": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-postgres/SKILL.md",
+      "computedHash": "cad587b7568f85e4192dc19aae4996f20f2022c829db621f99d340ada9c8cf9c"
     },
     "ev-project-setup": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-project-setup/SKILL.md",
-      "computedHash": "3d3ebc1a809c6dc54a390766603f1fd5cf2a255dcf3e568f5b6bee27ff90da1d"
+      "computedHash": "5aeea165e8ed93763329e69221ae9fdb7a148e225ac6038c27fade42fbb82411"
     },
     "ev-review-nestjs": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-nestjs/SKILL.md",
-      "computedHash": "6e65d694f16db7ba74414a902489a150bfea8b6ee840774ddb9d46f7e7263f04"
+      "computedHash": "4b58b7c9cb994046a582c34d8a723cbde32eecca90c1b6351978cdc27307e245"
     },
     "ev-review-nextjs": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-nextjs/SKILL.md",
-      "computedHash": "ddc0b59efbd5e8b0d22b2c4e6af3001fe83a167cd7a67bd43000b91a4d709a12"
+      "computedHash": "b0231bba11672678613166ff0cf991354a2cd18cb950bd21e9a63c6d7e2c0d87"
     },
     "ev-review-react": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-react/SKILL.md",
-      "computedHash": "1894be22fefd315faf05fa9a996c70fc9ab4c73de21df23a893fb38236821fb7"
+      "computedHash": "4975858aaea2c5ab865a205c2ca3c4cbe75ce854c09a74837d8dacd66765a1fe"
     },
     "ev-review-typescript": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-review-typescript/SKILL.md",
-      "computedHash": "a08dfa3d9cb117a95c9d1809711e2b4a64960a114645e223c5b886670f73f656"
+      "computedHash": "f996e4d1379a92005040c500e8a302833bab2d7a1739ba25a7707c03ace57e14"
     },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grill-me/SKILL.md",
-      "computedHash": "9cdbb4b8f7a3aeaef82e6230c9e823500d4a8a1214c726cf342cf9829d34fc7d"
+      "computedHash": "ab1acb9fbd9eaee03da254abb8a8de228d1e7a07475fe959da4a5eefa34ea4b9"
     },
     "humanizer": {
       "source": "blader/humanizer",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "1e67c3a4a675bd0c961b1fd8ebb718174f9a61a547d9bedad2ade5eb99cce831"
+      "computedHash": "04cdabbcceaa7b5d4bd4b1ea02339013503d623b270b5b3b2e274837494d7134"
     },
     "neon-postgres": {
       "source": "neondatabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/neon-postgres/SKILL.md",
-      "computedHash": "752cee6dde53a738b4b994cb1962a60c036b215eab97adc975dce0e3416d92b6"
+      "computedHash": "692a5436b9f23caae7887cedc93f0e3eb099e5da72794b9c0c902030e180b687"
     },
     "nestjs-best-practices": {
       "source": "kadajett/agent-nestjs-skills",
       "sourceType": "github",
       "skillPath": "skills/nestjs-best-practices/SKILL.md",
-      "computedHash": "58f8a630637be3acce1f118c747d68160346ada8a43d76cb52a5b4c4edaa2d37"
+      "computedHash": "15dfabf74412bab8e6232cbe111b56048aac496d2f151a08995f305475d82fad"
     },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
     },
     "tdd": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/tdd/SKILL.md",
-      "computedHash": "daf55026f456af104a72fa43247f7bcec89e5127316dc5b1b8d675d6a9d8ce94"
+      "computedHash": "e3e0f78ff1c2d52ffefa0378baa1e80e129d359288cf9a56f4e59afcd2aac86c"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/composition-patterns/SKILL.md",
-      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+      "computedHash": "f711ed8b16162eaa712abbcdbbae6c926f86c57e60127735fecc3ad0dd85b3fa"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
-      "computedHash": "3219a1944e404ffc14d1d9d6aef6dd2e3855b81387ee0a044ccbfe14d34c2357"
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+      "computedHash": "4f68ae07187fb0d1fb78c88b503d089da4cf5a9d9625d1f2e425b1590bf96d92"
     }
   }
 }

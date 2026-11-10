@@ -26,6 +26,7 @@ work, reload missing/changed guidance and load newly applicable rules, not the e
    | React components/hooks/JSX; Next.js framework boundaries | `ev-review-react`; `ev-review-nextjs` as applicable |
    | NestJS providers/modules/endpoints/bootstrap/tests | `ev-review-nestjs` |
    | First-party JSON API producers/consumers or pagination implementation | `ev-api-contracts` plus applicable backend/TypeScript rules |
+   | PostgreSQL schema, timestamp handling, transactions, or locking | `ev-postgres` |
 
 5. Record internally the scope, selected installed rule paths, and available skill metadata/version.
    Resolve references relative to each installed skill; do not search for an upstream checkout or run

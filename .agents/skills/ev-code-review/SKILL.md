@@ -18,6 +18,8 @@ fixes or supplied after the user's own review. Formal execution/artifacts apply 
 standards checks/fixes, or corrections to findings from a formal review, not ordinary completion.
 For formal reviews, honor explicit scope/baseline; otherwise use staged, unstaged, and untracked
 non-ignored working-tree changes.
+After reporting findings, treat a request such as "fix them all" as authorization to correct those
+findings using the standards fix workflow and the review's original scope and baseline.
 The core works without technology companions.
 
 ## Hard Rules

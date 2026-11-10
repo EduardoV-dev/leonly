@@ -256,6 +256,11 @@ Apply this to implementation, debugging, review, documentation, setup, and other
 workflows, including newly installed skills. Reevaluate when task scope changes. Discovery alone
 does not load rules; do not load unrelated skill bodies or limit selection to a fixed skill list.
 
+Apply compatible instructions from all applicable skills together without requiring third-party skills.
+Follow the instruction hierarchy and applicable project guidance; do not treat skill origin as priority.
+For irreconcilable instructions with no governing priority, identify the sources and affected action,
+surface the conflict, and obtain a decision before that action. Do not silently weaken EV rules.
+
 Before generating or changing code, load `ev-coding-standards`. Follow its pre-coding workflow to
 read complete general, applicable frontend/backend, technology, and implementation rules. Reuse
 `ev-code-review` rules while generating code; do not defer standards until an explicit review.

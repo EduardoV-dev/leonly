@@ -6,7 +6,8 @@ Load general rules as well. Shared contracts may require inspection across front
 
 Coverage IDs: `backend-input-validation-errors`; `backend-api-contracts-pagination`;
 `backend-injection-query-construction`; `backend-authorization-data-isolation`;
-`backend-browser-facing-security`; `backend-service-operational-resilience`; `backend-worker-structure`.
+`backend-browser-facing-security`; `backend-service-operational-resilience`; `backend-worker-structure`;
+`backend-optimistic-locking`; `backend-transactions-locking`.
 Record results using `coverage.md`.
 
 ## Input And Error Boundaries
@@ -47,6 +48,45 @@ Record results using `coverage.md`.
   or cursor for sequential/large/changing datasets. Ask the user to choose and stop until answered,
   unless the current task already specifies the choice. Review-only work reports violations without
   interrupting for implementation decisions; load installed `ev-api-contracts` for implementation.
+
+## Optimistic Locking For Resource Updates
+
+Rule ID: `backend-optimistic-locking`.
+
+- Require the validated last-read token on resource-update request bodies, including partial updates.
+  Prefer an existing version column; otherwise require the `lastKnownUpdatedAt` timestamp string.
+  Reject missing or malformed values and preserve exact version range and precision.
+- Perform one atomic conditional update with resource identity, authorization/tenant scope, and
+  the selected version or timestamp in its predicate. A read-compare-write sequence is insufficient.
+  Treat the token as a precondition, never a writable entity field; bind parameters safely.
+- Continue only when exactly one row updates, returning its persisted new token. Zero matches
+  return HTTP 409 through the ordinary failure envelope with a safe refresh instruction, preserving
+  existing authorization/not-found policy without revealing resource existence. Zero matches alone
+  do not prove a stale token; do not convert unexpected database failures into conflicts.
+- Preserve exact token precision across database reads, serialization, clients, validation, and binding.
+  Do not round microseconds through JavaScript `Date` or unsafe integers through JavaScript numbers.
+  Every writer must atomically advance the token, even for rapid/no-op writes; clock resolution alone
+  is insufficient. For JavaScript/PostgreSQL system timestamps use `timestamptz(3)` with safe migration
+  of existing higher-precision values; see [PostgreSQL rules](../../ev-postgres/references/locking.md).
+- Never retry without the predicate or overwrite using a silently refreshed token. Run success side
+  effects only after successful persistence; roll back related transactional writes on conflict.
+- Verify matching/stale tokens, exactly one winner for concurrent updates, token advancement and exact
+  round trips, invalid/missing input, scoped access, and failure/rollback behavior.
+  For implementation detail, use the [shared contract and examples](../../ev-api-contracts/references/optimistic-locking.md).
+
+## Transactions And Locking
+
+Rule ID: `backend-transactions-locking`.
+
+- Wrap two or more mutations belonging to one atomic operation in a transaction, including an
+  optimistic conditional write and related writes; roll everything back on failure or conflict.
+- For pessimistic locking, acquire the appropriate lock inside the transaction and hold it until the
+  protected work finishes. An autocommit locking read cannot protect subsequent statements.
+- Choose optimistic or pessimistic locking for the same protected operation, not both. A single atomic
+  optimistic write does not need an explicit transaction solely for locking. If another invariant
+  requires a transaction or a different strategy, surface that requirement; never weaken correctness.
+- Verify rollback and concurrent behavior at the database boundary; test lock lifetime when using
+  pessimistic locking. Do not confuse a database's implicit update locks with explicit pessimistic locking.
 
 ## Feature-Owned Worker Structure And Event Validation
 
@@ -125,3 +165,5 @@ Use the project's shared-contract package for genuinely shared schemas; keep fun
   effects for invalid messages, trigger retry behavior, and business operations independent of triggers.
 - API envelopes and pagination metadata match their contracts; cursor checks cover malformed input,
   round trips, tied timestamps, boundaries, reset signaling/client restart, and backward navigation when requested.
+- Resource updates reject stale tokens atomically with HTTP 409; selected tokens advance across all
+  writers, and concurrent requests using one token cannot both succeed.

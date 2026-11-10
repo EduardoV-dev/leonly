@@ -18,7 +18,7 @@ Keep each ID tied to its meaning rather than its position; use the same slug in 
 | --- | --- |
 | `core` | `general-ownership-structure`; `general-correctness-naming-boundaries`; `general-configuration-async-side-effects`; `general-errors-trust-boundaries-security`; `general-tests-verification` |
 | `frontend` | `frontend-ui-boundaries-state-rendering`; `frontend-xss-url-browser-security`; `frontend-accessibility`; `frontend-performance` |
-| `backend` | `backend-input-validation-errors`; `backend-api-contracts-pagination`; `backend-injection-query-construction`; `backend-authorization-data-isolation`; `backend-browser-facing-security`; `backend-service-operational-resilience`; `backend-worker-structure` |
+| `backend` | `backend-input-validation-errors`; `backend-api-contracts-pagination`; `backend-injection-query-construction`; `backend-authorization-data-isolation`; `backend-browser-facing-security`; `backend-service-operational-resilience`; `backend-worker-structure`; `backend-optimistic-locking`; `backend-transactions-locking` |
 | `typescript` | `typescript-exported-api-contracts`; `typescript-trust-narrowing-state-types`; `typescript-function-signatures-object-types`; `typescript-imports-configuration-environment` |
 | `react` | `react-component-ownership-props`; `react-hooks-state-derived-values`; `react-safe-rendering-accessibility-testing` |
 | `nextjs` | `nextjs-routes-rendering-client-boundaries`; `nextjs-server-only-imports-environment`; `nextjs-server-entry-validation-authorization` |

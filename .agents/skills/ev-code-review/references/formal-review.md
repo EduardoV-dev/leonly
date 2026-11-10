@@ -17,7 +17,7 @@ Honor an explicit follow-up delta baseline; do not replace it with the full dirt
    project/user locations (`.agents/skills`, `.opencode/skills`, `~/.agents/skills`,
    `~/.config/opencode/skills`, `~/.claude/skills`). Resolve
    exact paths; never assume sibling installation.
-   Match `ev-review-typescript`, `ev-review-react`, `ev-review-nextjs`, and `ev-review-nestjs` to scoped
+   Match `ev-review-typescript`, `ev-review-react`, `ev-review-nextjs`, `ev-review-nestjs`, and `ev-postgres` to scoped
    usage; read their applicability conditions. Report detected technologies lacking installed coverage,
    including unknown ones; continue with core rules.
 4. Create an internal review plan before analysis: list each applicable domain/technology check ID from

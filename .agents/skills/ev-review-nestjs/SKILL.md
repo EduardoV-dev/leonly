@@ -1,6 +1,6 @@
 ---
 name: ev-review-nestjs
-description: "Trigger: implementing or reviewing NestJS or Nest.js. Enforce plural grouping, DTO validation, API/docs setup, health contracts, service naming, and test ownership."
+description: "Trigger: implementing or reviewing NestJS or Nest.js. Enforce layout, DTO validation, optimistic locking, API/docs setup, health contracts, service naming, and test ownership."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -31,6 +31,9 @@ Use before NestJS implementation or with `ev-code-review`. Load general/backend 
 - Require runtime DTO classes for request bodies unless explicitly overridden. Validate on DTOs with
   `class-validator`; use `class-transformer` for needed transformations/nested instances. Prefer these
   alone; separate validation files/additional validators require a concrete need. Static types do not suffice.
+- Require the selected [optimistic-locking token](references/http.md#require-an-optimistic-locking-token-on-updates)
+  on resource updates, including PATCH: prefer an existing version; otherwise require a timezone-qualified
+  timestamp at stored precision. Apply the backend atomic update/409 rule and document the conflict response.
 - Validate path parameters at the HTTP boundary using a matching built-in pipe inline in `@Param()`;
   avoid duplicate manual format checks in controllers or services. Preserve distinct domain validation
   and use custom pipes when built-ins cannot meet the contract.
@@ -48,6 +51,7 @@ Use before NestJS implementation or with `ev-code-review`. Load general/backend 
 | Ambiguous injected dependency | Trace provider contracts before applying service naming. |
 | Module files/tests | Apply independent category counts, plural grouping, and test ownership. |
 | Body endpoint/bootstrap | Verify DTO metadata, global validation, `/api`, and OpenAPI/Scalar at `/docs`. |
+| Resource update | Verify selected token validation, atomic comparison, and documented HTTP 409. |
 | Path parameters | Verify format validation uses an appropriate inline built-in pipe when available. |
 | Health endpoint | Verify actual checks, direct payload, aggregation, and 200/503 mapping. |
 
@@ -70,4 +74,5 @@ During reviews, return severity, `path:line`, rule, evidence, impact, and minima
 
 - [Paired examples and exceptions](references/examples.md): injected-service classification/naming,
   supporting folders, controller/service thresholds, colocated tests, and module-owned fixtures.
-- [HTTP rules and examples](references/http.md): DTOs, global validation, API/docs setup, and health checks.
+- [HTTP rules and examples](references/http.md): DTOs, optimistic locking, global validation, API/docs
+  setup, and health checks.

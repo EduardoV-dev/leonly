@@ -43,12 +43,12 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(unrelated.read_text(), "Unrelated skill")
         for skill in validate(self.repo):
             self.assertEqual((self.home / ".agents/skills" / skill.name).resolve(), skill)
-        for name in ("ev-check", "ev-fix", "ev-update"):
+        for name in ("ev-code-review", "ev-clean-unused-code", "ev-simplify-code", "ev-update"):
             command = self.home / f".config/opencode/commands/{name}.md"
             self.assertTrue(command.is_symlink())
             self.assertIn("$ARGUMENTS", command.read_text())
         commands = self.home / ".config/opencode/commands"
-        self.assertEqual(len(list(commands.glob("*.md"))), 3)
+        self.assertEqual(len(list(commands.glob("*.md"))), 4)
 
     def test_loader_uses_installed_skills_without_embedding_source_paths(self):
         self.install()
@@ -65,12 +65,26 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(relocated, original)
         self.assertFalse((installed.parent / ".git").exists())
 
+    def test_commands_dispatch_to_the_requested_skills(self):
+        self.install()
+        commands = self.home / ".config/opencode/commands"
+        expected = {
+            "ev-code-review": "ev-code-review",
+            "ev-clean-unused-code": "ev-dead-code",
+            "ev-simplify-code": "ev-code-simplification",
+        }
+        for command, skill in expected.items():
+            with self.subTest(command=command):
+                self.assertIn(f"Load `{skill}`", (commands / f"{command}.md").read_text())
+        self.assertIn("read-only", (commands / "ev-code-review.md").read_text())
+
     def test_retired_owned_commands_are_removed_without_touching_foreign_commands(self):
         for name in ("commands", "command"):
             directory = self.home / ".config/opencode" / name
             directory.mkdir(exist_ok=True)
-            retired = directory / "ev-retired.md"
-            retired.symlink_to(self.repo / "skills/ev-coding-standards/assets/commands/ev-retired.md")
+            for name in ("ev-check.md", "ev-fix.md"):
+                retired = directory / name
+                retired.symlink_to(self.repo / "skills/ev-coding-standards/assets/commands" / name)
             foreign = directory / "ev-foreign.md"
             foreign.symlink_to(self.root / "missing-foreign.md")
             custom = directory / "ev-custom.md"
@@ -80,12 +94,13 @@ class InstallationTests(unittest.TestCase):
         self.install()
         for name in ("commands", "command"):
             directory = self.home / ".config/opencode" / name
-            self.assertFalse((directory / "ev-retired.md").is_symlink())
+            for name in ("ev-check.md", "ev-fix.md"):
+                self.assertFalse((directory / name).is_symlink())
             self.assertTrue((directory / "ev-foreign.md").is_symlink())
             self.assertEqual((directory / "ev-custom.md").read_text(), "User command")
 
     def test_command_collision_prevents_all_installation_writes(self):
-        collision = self.home / ".config/opencode/commands/ev-fix.md"
+        collision = self.home / ".config/opencode/commands/ev-code-review.md"
         collision.parent.mkdir()
         collision.write_text("User command")
         original = self.instructions.read_text()

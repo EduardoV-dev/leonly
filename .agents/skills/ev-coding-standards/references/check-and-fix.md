@@ -19,8 +19,11 @@ follow pre-coding guidance and relevant implementation checks instead; do not au
 
 ## Fix
 
-1. Establish the same scope/baseline and read full applicable rules before editing. Review it first;
-   fix only evidenced violations in requested scope. Existing user changes are not disposable.
+1. Establish the same scope/baseline and read full applicable rules before editing. When the user asks
+   to fix findings from a completed review, reuse that review's findings and baseline; verify they still
+   apply to the current code rather than repeating the initial review. If the findings or baseline are
+   unavailable or ambiguous, ask for them. Otherwise review the requested scope first. Fix only evidenced
+   violations in requested scope. Existing user changes are not disposable.
 2. Apply the smallest consistent correction, including affected callers/imports/contracts/tests.
    Preserve exceptions, public behavior, and security controls. Resolve ambiguous policy intent before
    affected edits; API pagination implementation still requires the user's choice. Necessary caller

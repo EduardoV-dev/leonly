@@ -92,8 +92,10 @@ def install(repo, home):
     command_source = skill / "assets/commands"
     commands = sorted(command_source.glob("ev-*.md"))
     command_names = {command.name for command in commands}
-    if command_names != {"ev-check.md", "ev-fix.md", "ev-update.md"}:
-        raise RuntimeError("Expected check, fix, and update command templates")
+    if command_names != {
+        "ev-code-review.md", "ev-clean-unused-code.md", "ev-simplify-code.md", "ev-update.md"
+    }:
+        raise RuntimeError("Expected review, cleanup, simplification, and update command templates")
     destinations.extend((config / "commands" / source.name, source) for source in commands)
 
     # Preflight every collision before changing any installation files.
