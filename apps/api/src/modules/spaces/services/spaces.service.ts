@@ -1,7 +1,10 @@
 import { Prisma, SpaceMemberRole } from "@leonly/database/client";
 import { retry } from "@leonly/utils";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
+import {
+  POSTGRES_TIMESTAMP_FORMAT,
+  STALE_RESOURCE_MESSAGE,
+} from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { ACTIVE_SPACE_MEMBER_INDEX } from "../constants/memberships.constants";
 import {
@@ -103,7 +106,7 @@ export class SpacesService {
       `;
 
     const revision = updated[0]?.updatedAt;
-    if (!revision) throw new ConflictException();
+    if (!revision) throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
 
     return { [field]: value, status: "updated", updatedAt: revision } as SpaceEditResult;
   }

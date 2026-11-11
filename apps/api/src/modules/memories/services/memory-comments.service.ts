@@ -7,7 +7,10 @@ import {
   type RootComment,
 } from "@leonly/utils/contracts";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
+import {
+  POSTGRES_TIMESTAMP_FORMAT,
+  STALE_RESOURCE_MESSAGE,
+} from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import {
   createCursorPage,
@@ -323,6 +326,6 @@ export class MemoryCommentsService {
             AND sm.user_id = ${userId} AND sm.deleted_at IS NULL
         ) RETURNING id
     `);
-    if (!updated.length) throw new ConflictException();
+    if (!updated.length) throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
   }
 }

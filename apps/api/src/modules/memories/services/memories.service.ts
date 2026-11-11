@@ -5,7 +5,10 @@ import {
   type MemoryPlacementResult,
 } from "@leonly/utils/contracts";
 import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
+import {
+  POSTGRES_TIMESTAMP_FORMAT,
+  STALE_RESOURCE_MESSAGE,
+} from "../../../common/constants/timestamp.constants";
 import { OutboxPublisher } from "../../../common/outbox/outbox-publisher";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import { type ClaimedFile, FilesService } from "../../files/files.service";
@@ -148,9 +151,6 @@ export class MemoriesService {
       userId,
       memoryId,
       membership,
-      options: {
-        where: { visibility: { not: visibility } },
-      },
     });
 
     const updated = await this.prismaService.$queryRaw<MemoryPlacementResult[]>`
@@ -166,7 +166,7 @@ export class MemoriesService {
         RETURNING id, visibility, to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
 
-    if (!updated[0]) throw new ConflictException();
+    if (!updated[0]) throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
 
     return updated[0];
   }

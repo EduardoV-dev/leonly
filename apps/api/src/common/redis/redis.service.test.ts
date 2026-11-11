@@ -1,83 +1,13 @@
-import { describe, expect, it, type Mock, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RedisService } from "./redis.service";
-
-type CreateServiceReturn = {
-  evalScript: Mock<() => Promise<number>>;
-  redis: {
-    ping: Mock<() => Promise<string>>;
-    set: Mock<() => Promise<string>>;
-    createScript: Mock<() => { eval: Mock<() => Promise<number>> }>;
-  };
-  service: RedisService;
-};
-
-function createService(): CreateServiceReturn {
-  const evalScript = vi.fn(async () => 1);
-  const redis = {
-    ping: vi.fn(async () => "PONG"),
-    set: vi.fn(async () => "OK"),
-    createScript: vi.fn(() => ({ eval: evalScript })),
-  };
-
-  return { evalScript, redis, service: new RedisService(redis as never) };
-}
 
 describe("RedisService", () => {
   it("requires a PONG response for a healthy Redis connection", async () => {
-    const { redis, service } = createService();
+    const redis = { ping: vi.fn(async () => "PONG") };
+    const service = new RedisService(redis as never);
+
     await expect(service.ping()).resolves.toBe(true);
     redis.ping.mockResolvedValue("unexpected");
     await expect(service.ping()).resolves.toBe(false);
-  });
-
-  it("runs the operation under a lock and releases it", async () => {
-    const { evalScript, redis, service } = createService();
-    const operation = vi.fn(async () => "complete");
-
-    await expect(service.withLock({ key: "user:1:lock", operation })).resolves.toBe("complete");
-
-    expect(redis.set).toHaveBeenCalledWith("user:1:lock", expect.any(String), {
-      nx: true,
-      px: 60_000,
-    });
-    expect(operation).toHaveBeenCalledOnce();
-    expect(evalScript).toHaveBeenCalledWith(["user:1:lock"], [expect.any(String)]);
-  });
-
-  it("releases the lock when the operation fails", async () => {
-    const { evalScript, service } = createService();
-
-    await expect(
-      service.withLock({
-        key: "user:1:lock",
-        operation: async () => Promise.reject(new Error("failed")),
-      }),
-    ).rejects.toThrow("failed");
-
-    expect(evalScript).toHaveBeenCalledOnce();
-  });
-
-  it("preserves a successful operation when releasing the lock fails", async () => {
-    const { evalScript, service } = createService();
-    evalScript.mockRejectedValueOnce(new Error("Release failed"));
-
-    await expect(
-      service.withLock({ key: "user:1:lock", operation: async () => "committed" }),
-    ).resolves.toBe("committed");
-  });
-
-  it("preserves the original operation error when releasing the lock also fails", async () => {
-    const { evalScript, service } = createService();
-    const operationError = new Error("Operation failed");
-    evalScript.mockRejectedValueOnce(new Error("Release failed"));
-
-    await expect(
-      service.withLock({
-        key: "user:1:lock",
-        operation: async () => {
-          throw operationError;
-        },
-      }),
-    ).rejects.toBe(operationError);
   });
 });

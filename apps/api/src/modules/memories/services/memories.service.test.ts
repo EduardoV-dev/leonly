@@ -52,14 +52,14 @@ describe("MemoriesService.updateVisibility", () => {
                 members: { some: { id: "member", userId: "user", deletedAt: null } },
               },
             },
-            { visibility: { not: visibility } },
+            {},
           ],
         },
       }),
     );
   });
 
-  it("rejects an unavailable or already placed memory without updating", async () => {
+  it("rejects an unavailable memory without updating", async () => {
     const { service, query, findFirst } = createService();
     findFirst.mockResolvedValueOnce(null);
 

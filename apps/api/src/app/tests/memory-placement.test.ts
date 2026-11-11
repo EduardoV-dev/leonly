@@ -132,7 +132,10 @@ describe("authenticated placement endpoint", () => {
     expect(fixtures.query).not.toHaveBeenCalled();
   });
 
-  it("returns conflict when an eligible memory has a stale timestamp", async () => {
+  it("returns an actionable conflict when a stale request targets the current placement", async () => {
+    fixtures.findFirst.mockImplementationOnce(async ({ where }) =>
+      where.AND.some((condition: { visibility?: unknown }) => condition.visibility) ? null : { id },
+    );
     fixtures.query.mockResolvedValueOnce([]);
     const response = await fetch(`${origin}/api/memories/${id}/placement`, {
       method: "PATCH",
@@ -140,7 +143,13 @@ describe("authenticated placement endpoint", () => {
       body: JSON.stringify({ visibility: "vault", lastKnownUpdatedAt: timestamp }),
     });
     expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ ok: false, data: null });
+    expect(await response.json()).toMatchObject({
+      ok: false,
+      data: null,
+      error: [
+        { code: "HTTP_409", message: "This resource may have changed. Refresh it and try again." },
+      ],
+    });
   });
 
   it("rejects forged fields and hides unexpected database failures", async () => {

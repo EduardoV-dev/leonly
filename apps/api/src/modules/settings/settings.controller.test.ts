@@ -15,17 +15,14 @@ import {
   SPACE_ID,
 } from "./tests/settings-fixtures";
 
-const { session, queryRaw, findUser, findMember, countMembers, updateSpace, withLock } = vi.hoisted(
-  () => ({
-    session: vi.fn(),
-    queryRaw: vi.fn(),
-    findUser: vi.fn(),
-    findMember: vi.fn(),
-    countMembers: vi.fn(),
-    updateSpace: vi.fn(),
-    withLock: vi.fn(),
-  }),
-);
+const { session, queryRaw, findUser, findMember, countMembers, updateSpace } = vi.hoisted(() => ({
+  session: vi.fn(),
+  queryRaw: vi.fn(),
+  findUser: vi.fn(),
+  findMember: vi.fn(),
+  countMembers: vi.fn(),
+  updateSpace: vi.fn(),
+}));
 
 vi.mock("../../common/prisma/prisma.service", () => ({
   PrismaService: class {
@@ -42,9 +39,7 @@ vi.mock("../../auth/configs/auth.config", () => ({
   createAuth: () => ({ api: { getSession: session } }),
 }));
 vi.mock("../../common/redis/redis.service", () => ({
-  RedisService: class {
-    withLock = withLock;
-  },
+  RedisService: class {},
 }));
 vi.mock("../../common/configs/environment-variables.config", () => ({
   ENVIRONMENT_VARIABLES: {
@@ -84,9 +79,6 @@ describe("settings API", () => {
       inviteCode: "lny7kmp2",
       inviteCodeExpiresAt: new Date("2099-01-02T00:00:00.000Z"),
     });
-    withLock.mockImplementation(async ({ operation }: { operation: () => Promise<unknown> }) =>
-      operation(),
-    );
   });
 
   const get = () =>
@@ -205,6 +197,12 @@ describe("settings API", () => {
       expect(body).toMatchObject({
         ok: false,
         data: null,
+        error: [
+          {
+            code: "HTTP_409",
+            message: "This resource may have changed. Refresh it and try again.",
+          },
+        ],
       });
     },
   );

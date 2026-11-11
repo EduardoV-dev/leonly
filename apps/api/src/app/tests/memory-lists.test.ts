@@ -375,9 +375,14 @@ describe("authenticated memory lists", () => {
     const missing = await fetch(path);
     expect(missing.status).toBe(404);
     expect(fixtures.memory.findFirst.mock.calls[0][0].where).toMatchObject({
-      spaceId: "01900000-0000-7000-8000-000000000005",
-      deletedAt: null,
-      space: { deletedAt: null, members: { some: { userId: "user-a", deletedAt: null } } },
+      AND: [
+        {
+          spaceId: "01900000-0000-7000-8000-000000000005",
+          deletedAt: null,
+          space: { deletedAt: null, members: { some: { userId: "user-a", deletedAt: null } } },
+        },
+        {},
+      ],
     });
     fixtures.member.findFirst.mockResolvedValue(null);
     const noMembership = await fetch(path);

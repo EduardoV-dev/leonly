@@ -1,7 +1,10 @@
 import { type Prisma, SpaceMemberRole } from "@leonly/database/client";
 import { isValidInviteCode, normalizeInviteCode } from "@leonly/utils/invite-code";
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { POSTGRES_TIMESTAMP_FORMAT } from "../../../common/constants/timestamp.constants";
+import {
+  POSTGRES_TIMESTAMP_FORMAT,
+  STALE_RESOURCE_MESSAGE,
+} from "../../../common/constants/timestamp.constants";
 import { PrismaService } from "../../../common/prisma/prisma.service";
 import {
   ACTIVE_SPACE_MEMBER_INDEX,
@@ -77,7 +80,7 @@ export class MembershipsService {
       `;
     const revision = updated[0]?.updatedAt;
 
-    if (!revision) throw new ConflictException();
+    if (!revision) throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
 
     return {
       displayName,
