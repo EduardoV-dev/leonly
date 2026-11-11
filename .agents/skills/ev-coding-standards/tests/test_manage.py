@@ -43,12 +43,8 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(unrelated.read_text(), "Unrelated skill")
         for skill in validate(self.repo):
             self.assertEqual((self.home / ".agents/skills" / skill.name).resolve(), skill)
-        for name in ("ev-code-review", "ev-clean-unused-code", "ev-simplify-code", "ev-update"):
-            command = self.home / f".config/opencode/commands/{name}.md"
-            self.assertTrue(command.is_symlink())
-            self.assertIn("$ARGUMENTS", command.read_text())
         commands = self.home / ".config/opencode/commands"
-        self.assertEqual(len(list(commands.glob("*.md"))), 4)
+        self.assertEqual(list(commands.glob("*.md")), [])
 
     def test_loader_uses_installed_skills_without_embedding_source_paths(self):
         self.install()
@@ -65,24 +61,15 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(relocated, original)
         self.assertFalse((installed.parent / ".git").exists())
 
-    def test_commands_dispatch_to_the_requested_skills(self):
-        self.install()
-        commands = self.home / ".config/opencode/commands"
-        expected = {
-            "ev-code-review": "ev-code-review",
-            "ev-clean-unused-code": "ev-dead-code",
-            "ev-simplify-code": "ev-code-simplification",
-        }
-        for command, skill in expected.items():
-            with self.subTest(command=command):
-                self.assertIn(f"Load `{skill}`", (commands / f"{command}.md").read_text())
-        self.assertIn("read-only", (commands / "ev-code-review.md").read_text())
-
     def test_retired_owned_commands_are_removed_without_touching_foreign_commands(self):
         for name in ("commands", "command"):
             directory = self.home / ".config/opencode" / name
             directory.mkdir(exist_ok=True)
-            for name in ("ev-check.md", "ev-fix.md"):
+            retired_names = (
+                "ev-check.md", "ev-fix.md", "ev-code-review.md",
+                "ev-clean-unused-code.md", "ev-simplify-code.md", "ev-update.md",
+            )
+            for name in retired_names:
                 retired = directory / name
                 retired.symlink_to(self.repo / "skills/ev-coding-standards/assets/commands" / name)
             foreign = directory / "ev-foreign.md"
@@ -94,24 +81,20 @@ class InstallationTests(unittest.TestCase):
         self.install()
         for name in ("commands", "command"):
             directory = self.home / ".config/opencode" / name
-            for name in ("ev-check.md", "ev-fix.md"):
+            for name in retired_names:
                 self.assertFalse((directory / name).is_symlink())
             self.assertTrue((directory / "ev-foreign.md").is_symlink())
             self.assertEqual((directory / "ev-custom.md").read_text(), "User command")
 
-    def test_command_collision_prevents_all_installation_writes(self):
+    def test_foreign_command_with_retired_name_is_preserved(self):
         collision = self.home / ".config/opencode/commands/ev-code-review.md"
         collision.parent.mkdir()
         collision.write_text("User command")
-        original = self.instructions.read_text()
-        with self.assertRaisesRegex(RuntimeError, "collision"):
-            self.install()
-        self.assertFalse((self.home / ".agents").exists())
+        self.install()
         self.assertEqual(collision.read_text(), "User command")
-        self.assertEqual(self.instructions.read_text(), original)
 
     def test_legacy_global_skill_collision_is_not_silently_shadowed(self):
-        collision = self.home / ".config/opencode/skills/ev-review-react"
+        collision = self.home / ".config/opencode/skills/ev-react-rules"
         collision.mkdir(parents=True)
         with self.assertRaisesRegex(RuntimeError, "collision"):
             self.install()
@@ -126,7 +109,7 @@ class InstallationTests(unittest.TestCase):
         self.assertNotIn("Old loader", updated)
 
     def test_broken_foreign_symlink_is_preserved(self):
-        collision = self.home / ".agents/skills/ev-code-review"
+        collision = self.home / ".agents/skills/ev-code-rules"
         collision.parent.mkdir(parents=True)
         collision.symlink_to(self.root / "missing")
         with self.assertRaisesRegex(RuntimeError, "collision"):

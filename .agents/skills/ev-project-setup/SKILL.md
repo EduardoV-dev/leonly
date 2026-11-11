@@ -36,7 +36,7 @@ Use when asked to wire installed skills into a project or refresh its skill-load
 ## Execution Steps
 
 1. Inspect target guidance, workspace boundaries, manifests, and available skill metadata. Resolve
-   `ev-coding-standards` and `ev-code-review`, preferring project-local copies; report shadowing.
+   `ev-coding-standards` and `ev-code-rules`, preferring project-local copies; report shadowing.
 2. Read those core skills and the full setup reference. Identify relevant installed companions
    without restricting future task selection to today's dependencies or a fixed skill list.
 3. Run this skill's `assets/setup_project.py <project-root>` with Python 3 to maintain instructions

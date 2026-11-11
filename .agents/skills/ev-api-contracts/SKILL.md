@@ -39,8 +39,11 @@ For review-only work, report contract violations without starting an implementat
   lexicographic continuation predicates. Never paginate tied timestamps by timestamp alone.
 - Expose an extendable base cursor schema and schema-aware encode/decode methods so additional sort
   fields can be validated without duplicating utilities. Preserve timestamp precision through round trips.
-- Require the last-read optimistic token on resource-update bodies: prefer an existing version column,
-  otherwise use `lastKnownUpdatedAt`. Apply the complete
+- Select the simplest concurrency mechanism that preserves the business invariant, following the
+  backend concurrency decision table. Do not require optimistic locking for every update; preserve
+  established API preconditions unless a compatible change is explicitly planned.
+- When protecting stale user edits, require the last-read optimistic token on resource-update bodies:
+  prefer a suitable integer version, otherwise use `lastKnownUpdatedAt`. Apply the complete
   [optimistic-locking contract](references/optimistic-locking.md): atomically match resource identity,
   authorization scope, and the token; advance the server-owned token.
   Continue only for one updated row; zero matches return HTTP 409 through the ordinary failure envelope,
@@ -50,7 +53,7 @@ For review-only work, report contract violations without starting an implementat
 
 | Use case | Recommendation |
 | --- | --- |
-| Resource update | Require the last-read version when available, otherwise timestamp; use an atomic conditional update and HTTP 409 on conflict. |
+| Resource update | Select concurrency protection for the invariant; for stale user edits require a version or reliable timestamp and return HTTP 409 on conflict. |
 | Health endpoint | Return direct `HealthResponse`; aggregate actual checks and use HTTP 200 or 503. |
 | Numbered pages, random page access, exact totals | Offset; note count/deep-offset costs and shifting rows. |
 | Sequential feeds, large or frequently changing datasets | Cursor; note lack of arbitrary page jumps. |
@@ -60,7 +63,7 @@ For review-only work, report contract violations without starting an implementat
 
 1. Inspect response producers, consumers, shared contracts, ordering fields, and existing utilities.
    Read the [paired examples and exceptions](references/examples.md).
-   For resource updates, load the optimistic-locking contract and verify its concurrency scenarios.
+   For updates requiring optimistic locking, load its contract and verify its concurrency scenarios.
 2. Resolve the pagination choice before pagination implementation; apply the contract template.
 3. Implement validated cursor utilities when needed; extend the base schema for the selected ordering.
 4. Verify success/error envelopes, health aggregation and 200/503 responses, empty and final pages,
@@ -70,7 +73,7 @@ For review-only work, report contract violations without starting an implementat
 
 ## Output Contract
 
-For explicit reviews, follow the coordinator's exhaustive chat report contract. During generation,
+For explicit standards checks, report every evidenced finding. During generation,
 apply and verify these rules internally without a separate standards report or summary; surface blockers.
 At the pagination decision gate, return only the recommendation and one question; wait for the answer.
 

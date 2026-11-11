@@ -109,24 +109,12 @@ Typecheck: UNVERIFIED — required generated types are unavailable.
 Build: NOT RUN — prerequisite environment configuration is unavailable.
 ```
 
-```text
-Situation: The coverage validator accepts the review results.
-
-// Avoid:
-"The validator proves that the code is correct and every rule was satisfied."
-
-// Prefer:
-"The validator confirmed completeness and referential consistency
-for the submitted review plan/results.
-Behavioral correctness still depends on the recorded review evidence."
-```
 
 Select checks appropriate to the changed behavior from documented scripts/CI. Do not automatically run
 every command, infer coverage from a command name, or confuse a failed check with an unavailable check.
 Apply the core's read-only verification policy: inspect artifact/cache writes and service effects,
 use external output locations or isolation only when permitted, and obey stricter plan-mode restrictions.
-These narrative verification labels do not replace the review coverage contract: map missing evidence
-to `UNVERIFIED` for an assigned check and explain its cause. Never claim a check passed if it did not run.
+Mark missing evidence as `UNVERIFIED` and explain its cause. Never claim a check passed if it did not run.
 
 ## Match Reporting To The Requested Workflow
 
@@ -144,13 +132,13 @@ to `UNVERIFIED` for an assigned check and explain its cause. Never claim a check
 | Implement multiple files with the same loaded rules | Reuse full coding guidance and run relevant project checks; no automatic unit review or per-rule assessment. |
 | Fix behavior after checks passed | Rerun affected checks; reuse unrelated results only while still valid. |
 | User requests concrete edits after their own review of a 100-file implementation | Continue implementation and check changed behavior and dependent consumers; do not review the delta or restart a review of all 100 files. The word "fix" alone does not select formal review. |
-| User requests "review these corrections" | Formally review the follow-up delta and relevant dependencies, not the entire original dirty diff. |
+| User requests "review these corrections" | Use an appropriate review skill for the follow-up delta and relevant dependencies, not the entire original dirty diff. |
 | Change a shared API/schema after checks passed | Check affected consumers/integration, including unchanged files; stale command results are not reused. |
 | Complete a multi-unit task | Verify affected integration and report relevant checks/gaps; no review-evidence ledger or final review-coverage reconciliation. |
 | Compact the context | Retain task/check context and source identities; verify current changes and reload missing full rules before resuming. A summary does not prove a check passed. |
-| Request an explicit review after generation | Run the complete formal workflow over the requested baseline/scope; implementation checks alone do not satisfy it. |
+| Request an explicit review after generation | Use an appropriate functional review skill over the requested baseline/scope. |
 
-The selected review core's `references/generation-review.md` owns this workflow. Its
+The selected coding rules skill's `references/generation-review.md` owns this workflow. Its
 `references/generation-verification.md` defines behavioral regressions and paired cost/quality trials;
 static metadata checks do not establish agent behavior, quality parity, or speed gains.
 

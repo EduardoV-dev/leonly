@@ -1,6 +1,6 @@
 ---
 name: ev-coding-standards
-description: "Trigger: coding, implementing, fixing review findings, ev-update. Load applicable installed EV standards before edits and manage check/fix/update workflows."
+description: "Trigger: coding, implementing, checking standards, updating skills. Load applicable installed EV standards before edits and manage check/fix/update workflows."
 license: Apache-2.0
 metadata:
   author: "eduardovdev"
@@ -19,7 +19,7 @@ Use the selected installed skills and their bundled references as the rule sourc
 - Read [pre-coding](references/pre-coding.md) before the first code edit and whenever scope expands.
 - Reuse full guidance already loaded in the active context; reload only missing/changed guidance.
   Apply rules as implementation guidance and run relevant project checks; do not automatically review
-  work units or track review coverage. Explicit review/check/fix requests use the full formal workflow.
+  work units or track review coverage. Explicit standards checks use the check/fix workflow.
 - Read full applicable rules, including exceptions. Do not copy rules into project instructions or
   infer requirements from names alone. Preserve correctness, security, accessibility, and data integrity.
 - Work in the current agent thread only. Never spawn subagents or parallel reviewers; perform coding,
@@ -51,7 +51,7 @@ Use the selected installed skills and their bundled references as the rule sourc
 
 ## Output Contract
 
-For explicit check/fix requests, follow the review coordinator's exhaustive chat report: show every
+For explicit check/fix requests, show every
 finding with severity, evidence, impact, minimal fix, and fixed/remaining status when applicable.
 Include scope, installed rule paths/available metadata, results, and verification gaps.
 During generation, record rule selection and completion checks internally; do not emit a separate

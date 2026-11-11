@@ -6,7 +6,7 @@
    ask only when the target is ambiguous. Read its root and applicable nested instructions. Inspect
    existing global loaders for conflicting policy, but do not modify them.
 2. Discover skill metadata from the harness or known project/user skill directories. Resolve
-   `ev-coding-standards` and `ev-code-review` to exact readable paths. Read both skill bodies and
+   `ev-coding-standards` and `ev-code-rules` to exact readable paths. Read both skill bodies and
    follow their guidance when implementing code; setup alone does not require an application review.
    Use each installed skill as the base for its references and report paths/available metadata.
    Do not search for or require an upstream checkout or its Git state. Unavailable source revisions
@@ -15,13 +15,13 @@
    technology companions and implementation skills. Report relevant missing coverage. A missing
    core skill or required reference blocks wiring; missing optional technology coverage does not.
    Inspect the project's formatter/linter, installed versions, effective configuration, and scripts.
-   Read the selected review core's `references/logical-code-grouping.md`; identify compatible automated
+   Read the selected coding rules skill's `references/logical-code-grouping.md`; identify compatible automated
    spacing checks and semantic-only coverage. Propose minimal configuration changes where useful;
    do not silently install tooling or modify formatter/linter configuration during instruction wiring.
 4. If installation is needed, report the missing names and a targeted Skills CLI command for the
    user's agent. Obtain installation authorization before running it. For example, from the target
    project, `npx skills add EduardoV-dev/my-skills --skill ev-project-setup --skill ev-coding-standards
-   --skill ev-code-review`. Select relevant companions as needed. Do not replace an existing same-name
+   --skill ev-code-rules`. Select relevant companions as needed. Do not replace an existing same-name
    skill to obtain a clean setup.
 
 The installed setup skill's directory is the base for commands below. Do not assume sibling skills
@@ -62,12 +62,12 @@ checks; do not change real application behavior just to test activation.
 | Add a skill with a new task trigger, restart, and request that task | New skill activates without rewriting the managed block. |
 | Remove required core guidance or a required reference | Agent reports the exact gap before affected code edits. |
 | Work crosses into a new technology/domain | Agent reselects and loads newly applicable rules before affected edits. |
-| Explicit review discovers more than five distinct findings | Every finding appears in chat with severity, location, rule, evidence, impact, and minimal fix. |
+| Explicit standards check discovers more than five distinct findings | Every finding appears in chat with severity, location, rule, evidence, impact, and minimal fix. |
 | Generate code without requesting a review | No unit-review passes, per-rule evidence ledgers, or final coverage reconciliation; check results and material gaps are reported without a compliance claim. |
 | Edit multiple files under unchanged guidance | Loaded full coding guidance is reused; no automatic review workflow starts. |
 | Change a shared contract or resume after compaction | Affected checks are reconsidered; missing full rules reload and retained results are verified against current state before reuse. |
 
 Separate helper/metadata test results from these agent traces. If no fresh session was exercised,
 report behavior as unverified. Instructions establish obligations; they are not a runtime tool gate.
-Use the selected review core's `references/generation-verification.md` for the complete regression
+Use the selected coding rules skill's `references/generation-verification.md` for the complete regression
 matrix and paired cost/quality comparison; do not infer savings from fewer instructions alone.

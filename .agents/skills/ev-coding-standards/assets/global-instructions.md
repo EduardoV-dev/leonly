@@ -15,11 +15,9 @@ parallel reviewers; perform applicable work sequentially.
 Combine compatible applicable skill instructions; follow instruction hierarchy and project guidance.
 Do not require third-party skills or prioritize by origin. Surface unresolved conflicts and obtain a
 decision before affected work; do not silently weaken existing rules.
-Use `ev-code-review` for the read-only review command; a subsequent request to fix its findings
-uses the standards fix workflow. Use the matching cleanup skills for their commands.
-Use `ev-coding-standards` for `ev-update`.
+Use matching skills for requested standards checks, cleanup, simplification, or standards updates.
 Record installed rule paths, available skill metadata, and checks internally during generation without a separate
-standards report or summary; surface blockers and material verification gaps. Explicit review/check/fix
+standards report or summary; surface blockers and material verification gaps. Explicit standards check/fix
 requests require every finding in chat with severity, location, evidence, impact, and minimal fix,
-plus fixed/remaining status when applicable. Use the full formal workflow over the entire requested
-scope; implementation checks do not replace it. Never truncate to five or a top-N subset. Respect plan mode.
+plus fixed/remaining status when applicable. Check the entire requested scope. Never truncate to five or a top-N subset. Respect plan mode.
+Use other skills for functional code reviews.

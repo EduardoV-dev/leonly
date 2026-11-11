@@ -5,13 +5,13 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-api-contracts/SKILL.md",
-      "computedHash": "929dcfcd87cde4bf3ee0188994cea8ecfa77310d08766f6487c9d32d0096e7ad"
+      "computedHash": "66bf65a12ae6372f5f18d9062f54dc0f9aa7615d8b07599fb8f9cc4d502757e3"
     },
-    "ev-code-review": {
+    "ev-code-rules": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
-      "skillPath": "skills/ev-code-review/SKILL.md",
-      "computedHash": "d754218bbac9b3c4c0c593373cd9000083d5b7120d398d8e38bf67a1974e14ff"
+      "skillPath": "skills/ev-code-rules/SKILL.md",
+      "computedHash": "d4aff21859c4265bf0a8a6c1842e8429f1ac04b6b0a5fa75b776c1dc7c310b8d"
     },
     "ev-code-simplification": {
       "source": "EduardoV-dev/my-skills",
@@ -23,7 +23,7 @@
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-coding-standards/SKILL.md",
-      "computedHash": "59d9108cb9d359dc0b12fee087fcc77d680e8eaf0f5dc3735916186b11e2441b"
+      "computedHash": "69178c0f04473848d27ef3ce97525d0b804089b4730578799946dde276f80a8f"
     },
     "ev-dead-code": {
       "source": "EduardoV-dev/my-skills",
@@ -31,41 +31,41 @@
       "skillPath": "skills/ev-dead-code/SKILL.md",
       "computedHash": "0c4e04e3a0f67a824ac3efd891ae9670ab7e49a516febb4f6f24f1471448d12e"
     },
+    "ev-nestjs-rules": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-nestjs-rules/SKILL.md",
+      "computedHash": "c5d35789ba5e7b8dea55254970375f82715bd17e3f9d573f9cbb798568407624"
+    },
+    "ev-nextjs-rules": {
+      "source": "EduardoV-dev/my-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ev-nextjs-rules/SKILL.md",
+      "computedHash": "47055ac112a9514df9889ed297acdc534e7b9a26ef4f3b72d0efa0a6f92dd4c7"
+    },
     "ev-postgres": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-postgres/SKILL.md",
-      "computedHash": "cad587b7568f85e4192dc19aae4996f20f2022c829db621f99d340ada9c8cf9c"
+      "computedHash": "bd8c72d3bbe7790547fdce57a88d19f5ea838cfc23b33d6add1dc2b154cb7900"
     },
     "ev-project-setup": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
       "skillPath": "skills/ev-project-setup/SKILL.md",
-      "computedHash": "5aeea165e8ed93763329e69221ae9fdb7a148e225ac6038c27fade42fbb82411"
+      "computedHash": "1731af4ee2e351c1c2bf41de5171b640788d3e061e951afbd2002d886d000d5d"
     },
-    "ev-review-nestjs": {
+    "ev-react-rules": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
-      "skillPath": "skills/ev-review-nestjs/SKILL.md",
-      "computedHash": "4b58b7c9cb994046a582c34d8a723cbde32eecca90c1b6351978cdc27307e245"
+      "skillPath": "skills/ev-react-rules/SKILL.md",
+      "computedHash": "290a79ac0687e5cb54312f086b9e68638809d2b333538e7849387b871640f598"
     },
-    "ev-review-nextjs": {
+    "ev-typescript-rules": {
       "source": "EduardoV-dev/my-skills",
       "sourceType": "github",
-      "skillPath": "skills/ev-review-nextjs/SKILL.md",
-      "computedHash": "b0231bba11672678613166ff0cf991354a2cd18cb950bd21e9a63c6d7e2c0d87"
-    },
-    "ev-review-react": {
-      "source": "EduardoV-dev/my-skills",
-      "sourceType": "github",
-      "skillPath": "skills/ev-review-react/SKILL.md",
-      "computedHash": "4975858aaea2c5ab865a205c2ca3c4cbe75ce854c09a74837d8dacd66765a1fe"
-    },
-    "ev-review-typescript": {
-      "source": "EduardoV-dev/my-skills",
-      "sourceType": "github",
-      "skillPath": "skills/ev-review-typescript/SKILL.md",
-      "computedHash": "f996e4d1379a92005040c500e8a302833bab2d7a1739ba25a7707c03ace57e14"
+      "skillPath": "skills/ev-typescript-rules/SKILL.md",
+      "computedHash": "68fe9b355bb8a5a664168e340acd1d7090eb575631af803e318508f59a2419e3"
     },
     "grill-me": {
       "source": "mattpocock/skills",

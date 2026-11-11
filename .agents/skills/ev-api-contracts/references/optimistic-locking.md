@@ -1,8 +1,11 @@
 # Optimistic Locking For Resource Updates
 
-Prefer an existing version column as the token; otherwise use `updated_at`. Require the resource's
-last-read token in update bodies, including partial updates: use the established version field contract
-or `lastKnownUpdatedAt` for timestamps. Never use the client's current local time. Validate tokens
+Apply this contract when a stale user edit must not overwrite another change; not every update needs
+optimistic locking. Preserve existing API preconditions unless a compatible change is planned. Prefer
+a suitable integer version as the token, reusing an existing version column where appropriate; otherwise
+use a reliably advancing `updated_at`. Require the resource's last-read token in update bodies, including
+partial updates: use the established version field contract or `lastKnownUpdatedAt` for timestamps.
+Never use the client's current local time. Validate tokens
 before mutation, preserving version range and precision end to end. Keep creates outside this precondition.
 
 ## Perform One Conditional Write
@@ -21,7 +24,7 @@ WHERE id = :id
   AND updated_at = :lastKnownUpdatedAt;
 ```
 
-This illustrates the timestamp fallback. For an existing version column, match `version = :lastKnownVersion`
+This illustrates the timestamp fallback. For a version column, match `version = :lastKnownVersion`
 and atomically advance the version instead; return the persisted version. Ensure the version cannot wrap
 or be reused, and represent large integers without JavaScript precision loss.
 
@@ -48,6 +51,8 @@ fail another predicate. Preserve established authorization and not-found handlin
 policy. For an authorized update that fails the token precondition, use a conflict message such as
 "This resource was updated elsewhere. Refresh it and try again." Clients must refresh and reconcile
 their edits before resubmitting, rather than automatically replaying the stale patch.
+Update the client cache with the persisted new token before submitting subsequent edits. Do not share a
+token across unrelated operations unless they genuinely belong to the same concurrency boundary.
 
 ## Preserve An Exact, Changing Token
 
@@ -59,8 +64,8 @@ their edits before resubmitting, rather than automatically replaying the stale p
 - Advance `updated_at` atomically for every accepted update, including no-op patches. Do not assume
   clock resolution or transaction-stable `now()` guarantees a different value. Use a database-compatible
   mechanism that produces a strictly later value at stored precision; verify driver/ORM behavior.
-- Ensure every writer to the protected resource advances the same timestamp, including background jobs
-  and administrative paths. If the schema or driver cannot preserve and advance the token, surface the
+- Ensure every writer affecting the protected concurrency boundary advances the same timestamp,
+  including background jobs and administrative paths. If the schema or driver cannot preserve and advance the token, surface the
   limitation before claiming optimistic-lock protection; do not silently weaken the comparison.
 - For JavaScript applications using PostgreSQL, use `timestamptz(3)` for application-owned system
   timestamps and follow the [PostgreSQL trigger pattern](../../ev-postgres/references/locking.md).

@@ -7,9 +7,9 @@ work, reload missing/changed guidance and load newly applicable rules, not the e
    package/configuration, relevant callers/contracts/tests, and actual runtime/technology usage.
    Inspect the owning project's formatter/linter, installed versions, inherited configuration,
    scripts, and CI; do not assume a formatter inserts semantic group boundaries.
-2. Resolve `ev-code-review` and companions from the harness registry or known project/user skill
+2. Resolve `ev-code-rules` and companions from the harness registry or known project/user skill
    locations, including `~/.agents/skills/`. Prefer a project-local skill of the same name, as the
-   review coordinator already requires. Report shadowing with the exact selected path; never silently
+   project guidance requires. Report shadowing with the exact selected path; never silently
    mix incompatible global/project versions. Missing required rules or unresolved policy conflicts
    block affected implementation until resolved; do not invent or auto-install standards.
 3. Read the selected core's complete `references/general.md`. Add `frontend.md` for UI/browser
@@ -22,9 +22,9 @@ work, reload missing/changed guidance and load newly applicable rules, not the e
 
    | Scoped usage | Skills |
    | --- | --- |
-   | TypeScript source/declarations/configuration | `ev-review-typescript` |
-   | React components/hooks/JSX; Next.js framework boundaries | `ev-review-react`; `ev-review-nextjs` as applicable |
-   | NestJS providers/modules/endpoints/bootstrap/tests | `ev-review-nestjs` |
+   | TypeScript source/declarations/configuration | `ev-typescript-rules` |
+   | React components/hooks/JSX; Next.js framework boundaries | `ev-react-rules`; `ev-nextjs-rules` as applicable |
+   | NestJS providers/modules/endpoints/bootstrap/tests | `ev-nestjs-rules` |
    | First-party JSON API producers/consumers or pagination implementation | `ev-api-contracts` plus applicable backend/TypeScript rules |
    | PostgreSQL schema, timestamp handling, transactions, or locking | `ev-postgres` |
 
@@ -43,11 +43,11 @@ companion remains a reported coverage gap; apply available core rules without in
 
 Concrete follow-up edits remain implementation, even when called fixes or supplied after the user's
 own review. Check changed behavior and affected dependencies; a requested review,
-standards check/fix, or correction of formal-review findings uses the formal workflow instead.
+standards check/fix uses the check-and-fix workflow instead.
 
 Before completing implementation, run relevant documented project checks and verify affected integration.
 Reuse successful results only while they cover the completed state. Do not require review checkpoints,
 per-rule evidence records, or final review-coverage reconciliation. A pre-existing defect outside the
 task is not permission to expand the change. Report what works and material verification gaps without
-a separate standards report or claims of full compliance. Explicit review/check/fix requests use the
-complete formal workflow and chat report with every finding over the entire requested scope.
+a separate standards report or claims of full compliance. Explicit standards check/fix requests use the
+check-and-fix workflow and chat report with every finding over the entire requested scope.

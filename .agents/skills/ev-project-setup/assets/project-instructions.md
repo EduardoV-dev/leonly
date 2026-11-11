@@ -26,18 +26,15 @@ surface the conflict, and obtain a decision before that action. Do not silently 
 
 Before generating or changing code, load `ev-coding-standards`. Follow its pre-coding workflow to
 read complete general, applicable frontend/backend, technology, and implementation rules. Reuse
-`ev-code-review` rules while generating code; do not defer standards until an explicit review.
+`ev-code-rules` rules while generating code; do not defer standards until an explicit review.
 Apply standards as coding guidance and run relevant project checks, including affected integration.
 Do not automatically review work units, assess every rule after implementation, keep review-evidence
 ledgers, or reconcile review coverage at handoff. Reuse check results only while they cover the completed
 state. Before compaction retain task/check context; afterward verify current changes and reload missing
 full rules. Record installed rule paths, available skill metadata, and performed checks internally;
 do not emit a separate review report or standards summary. Surface unresolved blockers,
-required decisions, and material verification gaps. For explicit review/check/fix requests, display
-every finding in chat with severity, location, rule, evidence, impact, minimal fix, and fixed/remaining
-status when applicable. Run a complete review only when explicitly requested, using the full formal
-workflow over the entire requested scope. Implementation checks do not replace it. Never truncate
-findings to five or another top-N subset.
+required decisions, and material verification gaps. For explicit standards checks/fixes, report every finding with severity, location, rule, evidence,
+impact, minimal fix, and fixed/remaining status when applicable. Use other skills for functional reviews.
 
 Use the skill tool when available; otherwise read the resolved local `SKILL.md` directly and follow
 its references. If a required core skill or required reference is missing, name the exact gap and

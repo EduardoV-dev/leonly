@@ -90,13 +90,6 @@ def install(repo, home):
     config = home / ".config/opencode"
     destinations = [(home / ".agents/skills" / source.name, source) for source in skills]
     command_source = skill / "assets/commands"
-    commands = sorted(command_source.glob("ev-*.md"))
-    command_names = {command.name for command in commands}
-    if command_names != {
-        "ev-code-review.md", "ev-clean-unused-code.md", "ev-simplify-code.md", "ev-update.md"
-    }:
-        raise RuntimeError("Expected review, cleanup, simplification, and update command templates")
-    destinations.extend((config / "commands" / source.name, source) for source in commands)
 
     # Preflight every collision before changing any installation files.
     for link, target in destinations:
@@ -104,8 +97,6 @@ def install(repo, home):
     for source in skills:
         for directory in (config / "skills", config / "skill", home / ".claude/skills"):
             check_link(directory / source.name, source)
-    for source in commands:
-        check_link(config / "command" / source.name, source)
     instructions = config / "AGENTS.md"
     existing = instructions.read_text() if instructions.exists() else ""
     updated = build_instruction_text(existing, skill)
@@ -127,7 +118,7 @@ def install(repo, home):
             target = link.resolve()
             is_retired_owned_command = (
                 link.is_symlink() and target.parent == command_source
-                and target.name == link.name and link.name not in command_names
+                and target.name == link.name
             )
             if is_retired_owned_command:
                 link.unlink()
@@ -171,7 +162,7 @@ def main():
         revision = git(repo, "rev-parse", "HEAD")
         state = " (dirty)" if git(repo, "status", "--porcelain") else ""
         print(f"Installed source: {revision}{state}")
-        print("Quit and restart OpenCode to refresh skills and commands.")
+        print("Quit and restart OpenCode to refresh skills.")
     except (RuntimeError, OSError) as error:
         print(f"EV standards: {error}", file=sys.stderr)
         sys.exit(1)

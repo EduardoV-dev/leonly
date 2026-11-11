@@ -17,7 +17,8 @@ sonar-project.properties
 supabase/.temp/
 supabase/snippets/
 supabase/.branches/
-.atl/
+.atl/*
+!.atl/skill-registry.md
 .codegraph/
 apps/api/data/
 apps/api/src/generated/prisma
