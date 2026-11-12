@@ -12,6 +12,7 @@ unfinished work. Delete entries when they are done; no completion log belongs he
 | 03 | [Verify global UI states](epics/03-security-and-global-states/README.md) | Check loading, empty, error, retry, and accessibility behavior across MVP flows. | MVP |
 | 04 | [Build places and currency](epics/04-places-and-currency/README.md) | Add currency preferences, places, budgets, ranking, ratings, editing, and deletion. | Future |
 | 05 | [Expand the dashboard](epics/05-dashboard-expansion/README.md) | Add real memory and place previews after their dependencies are ready. | Future |
+| 06 | [Make API and worker failures diagnosable](epics/06-api-and-worker-observability/README.md) | Establish logging, metrics, tracing, alerts, and verified incident diagnosis. | Operational readiness |
 
 This is the recommended execution order, not a claim that every task blocks the next one. Each epic
 lists actual prerequisites. Finish the MVP queue before starting future-release work.
