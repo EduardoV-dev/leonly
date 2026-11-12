@@ -6,23 +6,23 @@ import { MemoryPhotoGallery } from ".";
 const photos = [
   {
     coverUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/cover",
+      "https://storage.example.com/signed/memory-photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/cover.webp?sig=cover",
     detailUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/detail",
+      "https://storage.example.com/signed/memory-photos/64d44f34-c5fe-482a-b65b-f91d0173b7fe/detail.webp?sig=detail",
     id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
   },
   {
     coverUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/cover",
+      "https://storage.example.com/signed/memory-photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/cover.webp?sig=cover",
     detailUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail",
+      "https://storage.example.com/signed/memory-photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail.webp?sig=detail",
     id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
   },
   {
     coverUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/cover",
+      "https://storage.example.com/signed/memory-photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/cover.webp?sig=cover",
     detailUrl:
-      "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/detail",
+      "https://storage.example.com/signed/memory-photos/cc2df916-833a-4f1b-b744-b7b4c176ae93/detail.webp?sig=detail",
     id: "cc2df916-833a-4f1b-b744-b7b4c176ae93",
   },
 ];

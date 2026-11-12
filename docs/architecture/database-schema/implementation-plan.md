@@ -1,7 +1,10 @@
 # Database Schema Implementation Plan
 
-The baseline migration is complete and is the runtime source of truth. This document records the
-implemented contracts for future changes; it is not a migration runbook.
+This document records the implemented contracts of the retired Supabase-era baseline for delivery
+history; it is not a migration runbook and no longer describes the runtime schema. The current
+database source of truth is `packages/database/prisma/schema.prisma` with its migration history.
+The Supabase legacy paths (signed upload URLs, storage RPCs, and cleanup cron) were removed with
+the Supabase retirement; current storage cleanup is separate deferred work.
 
 ## Core contracts
 
@@ -9,7 +12,7 @@ implemented contracts for future changes; it is not a migration runbook.
 | --- | --- |
 | Identity and tenancy | Internal `users.id` is linked to `auth.users` by unique `auth_subject`. Active memberships enforce the space boundary and ownership cardinality. |
 | Memories | Create and edit mutations use deterministic IDs and optimistic `memories.updated_at` checks. Create retries use the creator mutation; edit retries use the last edit mutation. |
-| Upload grants | The server signs a short-lived create/edit grant binding actor, space, target memory/version, mutation, asset IDs, and exact paths. The browser uploads only temporary originals through Supabase signed upload URLs. |
+| Upload grants | The server signs a short-lived create/edit grant binding actor, space, target memory/version, mutation, asset IDs, and exact paths. The browser uploads only temporary originals through signed upload URLs. |
 | Permanent assets | Finalization validates untrusted bytes, creates permanent `memory_assets` and ready `memory_asset_objects`, then atomically publishes selection, ordering, and cover ownership. No attempt tables exist. |
 | Cleanup | `resource_cleanup` is the generic deletion outbox. Service-role cleanup claims bounded leases with `FOR UPDATE SKIP LOCKED`, retries failures with backoff, and treats missing objects as deleted. |
 

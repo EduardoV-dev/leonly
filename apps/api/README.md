@@ -216,7 +216,8 @@ The parent cookie domain must contain both hosts and only trusted applications; 
 frontend and API domains cannot share this session cookie. Existing host-only sessions may
 require clearing old cookies and signing in again after changing the cookie domain.
 
-The web app's Supabase-backed endpoints remain Next.js routes and are not sent to Nest.
+No Supabase-backed endpoints remain: the legacy frontend-origin memory routes were retired. The
+Nest memory endpoints above are the only memory operations, reached from the configured Nest origin.
 
 ## Rate limiting
 
@@ -266,4 +267,4 @@ IP identity comes from the connection address, not client-supplied forwarding he
 adapter uses API Gateway's `requestContext.http.sourceIp` as that address. Anonymous authentication
 requests forwarded by Next.js consequently share the proxy's IP quota. Per-browser-IP quotas behind
 that proxy require an authenticated proxy-to-API identity boundary before forwarding headers can
-be trusted. Supabase-backed Next.js routes retain their existing policies.
+be trusted.

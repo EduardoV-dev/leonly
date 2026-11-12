@@ -4,7 +4,7 @@ import { i18n } from "@/lib/i18n";
 import { MemoryEditorPhotoWorkspace } from ".";
 
 const previewUrl =
-  "/api/memories/0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0/photos/22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf/detail";
+  "https://storage.example.com/signed/memory-photos/22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf/detail.webp?sig=preview";
 
 describe("MemoryEditorPhotoWorkspace", () => {
   beforeEach(async () => {

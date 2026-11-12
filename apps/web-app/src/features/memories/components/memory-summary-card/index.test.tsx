@@ -90,8 +90,9 @@ describe("MemorySummaryCard", () => {
     },
   );
 
-  it("requests the authorized route directly and preserves its fallback on failure", () => {
-    const coverPhotoUrl = `/api/memories/${memory.id}/photos/22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf/cover`;
+  it("requests the signed cover URL directly and preserves its fallback on failure", () => {
+    const coverPhotoUrl =
+      "https://storage.example.com/signed/memory-photos/22a6c4ed-10c7-42a9-a7a8-b31d210ea2bf/cover.webp?sig=cover";
     render(<MemorySummaryCard memory={{ ...memory, coverPhotoUrl }} />);
 
     const cover = screen.getByRole("img", { name: "Cover for Our picnic" });

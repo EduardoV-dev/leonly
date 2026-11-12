@@ -13,8 +13,8 @@ describe("normalizeError", () => {
     });
   });
 
-  it("omits sensitive Supabase fields including details", () => {
-    const supabaseError = {
+  it("omits sensitive third-party error fields including details", () => {
+    const thirdPartyError = {
       code: "PGRST116",
       details: "email=leo@example.com invite_code=invite-secret",
       hint: "authorization=Bearer secret",
@@ -22,7 +22,7 @@ describe("normalizeError", () => {
       user_metadata: { email: "leo@example.com" },
     };
 
-    expect(normalizeError(supabaseError)).toEqual({
+    expect(normalizeError(thirdPartyError)).toEqual({
       code: "PGRST116",
       error_type: "UnknownError",
       message: "No rows returned for [REDACTED_EMAIL]",
@@ -33,7 +33,7 @@ describe("normalizeError", () => {
     const error = new Error("Unable to place the memory.", {
       cause: {
         code: "PGRST202",
-        message: "Could not find function at https://supabase.example/rpc",
+        message: "Could not find function at https://api.example/rpc",
       },
     });
 
