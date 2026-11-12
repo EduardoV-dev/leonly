@@ -10,6 +10,9 @@ import { FilesService } from "../../modules/files/files.service";
 import { MemoriesService } from "../../modules/memories/services/memories.service";
 import type { CreationInput } from "../../modules/memories/utils/memory-creation.util";
 import { MembershipsService } from "../../modules/spaces/services/memberships.service";
+import { MEMBER_ID, matchesUpload, SPACE_ID } from "./prisma-predicates";
+
+export { MEMBER_ID, matchesUpload, SPACE_ID };
 
 @Module({})
 class CreationFixtureModule {}
@@ -18,13 +21,9 @@ type CreationRequest = Pick<
   CreationInput,
   "title" | "memoryDate" | "timezone" | "visibility" | "uploadIds" | "idempotencyKey"
 >;
-type MatchesUploadParams = { upload: File; where: Record<string, unknown> };
 type AddUploadParams = { bytes: Buffer; overrides?: Partial<File> };
 
-export const SPACE_ID = "01900000-0000-7000-8000-000000000005";
-export const MEMBER_ID = "01900000-0000-7000-8000-000000000006";
 export const CREATION_ID = "01900000-0000-7000-8000-000000000004";
-
 export function createMemoryRequest(uploadIds: string[] = []): CreationRequest {
   return {
     title: "A day together",
@@ -34,21 +33,6 @@ export function createMemoryRequest(uploadIds: string[] = []): CreationRequest {
     uploadIds,
     idempotencyKey: CREATION_ID,
   };
-}
-
-function matchesUpload({ upload, where }: MatchesUploadParams): boolean {
-  return Object.entries(where).every(([field, expected]) => {
-    if (field === "OR" && Array.isArray(expected)) {
-      return expected.some((condition) => matchesUpload({ upload, where: condition }));
-    }
-    const actual = upload[field as keyof File];
-    if (typeof expected === "object" && expected !== null && !(expected instanceof Date)) {
-      if ("in" in expected && Array.isArray(expected.in)) return expected.in.includes(actual);
-      if ("gt" in expected) return actual instanceof Date && actual > (expected.gt as Date);
-      if ("lte" in expected) return actual instanceof Date && actual <= (expected.lte as Date);
-    }
-    return actual === expected;
-  });
 }
 
 class CreationFixtures {

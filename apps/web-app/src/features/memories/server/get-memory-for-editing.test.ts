@@ -1,89 +1,85 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ cookie: "session=abc" }) }));
 
-const { createClientMock, getAvailableMemoryMock } = vi.hoisted(() => ({
-  createClientMock: vi.fn(),
-  getAvailableMemoryMock: vi.fn(),
+const serverApiGet = vi.fn();
+
+vi.mock("@/lib/axios/server-api", () => ({
+  serverApi: { get: (...args: unknown[]) => serverApiGet(...args) },
 }));
 
-vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
-vi.mock("./get-available-memory", () => ({ getAvailableMemory: getAvailableMemoryMock }));
-
 import { getMemoryForEditing } from "./get-memory-for-editing";
-import { decodeMemoryVersion } from "./memory-version";
 
-const memory = {
-  coverPhotoId: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
+const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
+const photoId = "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452";
+const updatedAt = "2026-09-05T16:00:00.123000Z";
+
+const snapshot = {
+  coverFileId: photoId,
   description: null,
-  id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+  id: memoryId,
   location: null,
   memoryDate: "2026-08-20",
-  spaceId: "561ecf16-cc9f-489c-ac1d-38fbfc35d97c",
+  photos: [
+    { id: photoId, previewUrl: "https://signed/detail" },
+    { id: "9a2b1c3d-0d34-48f7-8d0d-e7cf9a62e453", previewUrl: null },
+  ],
   title: "Among the flowers",
-  updatedAt: "2026-08-23T10:00:00.000Z",
+  updatedAt,
   visibility: "vault" as const,
 };
 
-function client(photoRows: unknown[] = []) {
-  const query = {
-    eq: vi.fn(),
-    order: vi.fn().mockResolvedValue({ data: photoRows, error: null }),
-  };
-  query.eq.mockReturnValue(query);
-  return {
-    from: vi.fn(() => ({ select: vi.fn(() => query) })),
-  };
+function okResponse(data: unknown, status = 200) {
+  return { status, data: { ok: true, data, error: [], message: "ok" } };
 }
 
 describe("getMemoryForEditing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAvailableMemoryMock.mockResolvedValue(memory);
+  });
+
+  it("returns the placement-neutral snapshot with the exact timestamp and nullable previews", async () => {
+    serverApiGet.mockResolvedValue(okResponse(snapshot));
+
+    const result = await getMemoryForEditing(memoryId);
+
+    expect(result).toEqual({
+      coverPhotoId: photoId,
+      description: null,
+      id: memoryId,
+      initialVisibility: "vault",
+      location: null,
+      memoryDate: "2026-08-20",
+      photos: snapshot.photos,
+      title: "Among the flowers",
+      version: updatedAt,
+    });
+    expect(serverApiGet).toHaveBeenCalledWith(
+      `/memories/${memoryId}/edit`,
+      expect.objectContaining({ headers: { cookie: "session=abc" } }),
+    );
+    expect(JSON.stringify(result)).not.toContain("objectKey");
   });
 
   it.each(["malformed", "missing", "inactive", "other-space", "deleted"])(
     "returns the same unavailable result for a %s memory",
-    async () => {
-      getAvailableMemoryMock.mockResolvedValue(null);
-      await expect(getMemoryForEditing("not-disclosed")).resolves.toBeNull();
-      expect(createClientMock).not.toHaveBeenCalled();
+    async (kind) => {
+      if (kind === "malformed") {
+        await expect(getMemoryForEditing("not-a-uuid")).resolves.toBeNull();
+      } else {
+        serverApiGet.mockResolvedValue({ status: 404, data: { ok: false, data: null } });
+        await expect(getMemoryForEditing(memoryId)).resolves.toBeNull();
+      }
+      if (kind !== "malformed") {
+        expect(serverApiGet).toHaveBeenCalledTimes(1);
+      }
     },
   );
 
-  it("returns placement-neutral editable state with persisted order and opaque version", async () => {
-    const supabase = client([
-      {
-        id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-        position: 0,
-      },
-      {
-        id: memory.coverPhotoId,
-        position: 1,
-      },
-    ]);
-    createClientMock.mockResolvedValue(supabase);
+  it("rejects malformed snapshot payloads as a retryable read failure", async () => {
+    serverApiGet.mockResolvedValue(okResponse({ ...snapshot, updatedAt: 123 }));
 
-    const result = await getMemoryForEditing(memory.id);
-
-    expect(result?.initialVisibility).toBe("vault");
-    expect(result?.photos.map((photo) => photo.id)).toEqual([
-      "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-      memory.coverPhotoId,
-    ]);
-    expect(result?.version).not.toContain(memory.updatedAt);
-    expect(decodeMemoryVersion(result?.version ?? "")).toBe(memory.updatedAt);
-    expect(result?.photos).toEqual([
-      {
-        id: "2505a6a1-0d34-48f7-8d0d-e7cf9a62e452",
-        previewUrl: `/api/memories/${memory.id}/photos/2505a6a1-0d34-48f7-8d0d-e7cf9a62e452/detail`,
-      },
-      {
-        id: memory.coverPhotoId,
-        previewUrl: `/api/memories/${memory.id}/photos/${memory.coverPhotoId}/detail`,
-      },
-    ]);
-    expect(JSON.stringify(result?.photos)).not.toContain("space/");
-    expect(supabase.from).toHaveBeenCalledWith("memory_assets");
+    await expect(getMemoryForEditing(memoryId)).rejects.toThrow("Failed to load memory editor.");
   });
 });

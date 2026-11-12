@@ -22,5 +22,5 @@ export type MemoryEditorPhoto =
       key: string;
       kind: "retained";
       name: string;
-      previewUrl: string;
+      previewUrl: string | null;
     };

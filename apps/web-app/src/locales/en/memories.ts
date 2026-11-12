@@ -98,6 +98,11 @@ export const memoriesEn = {
       saving: "Saving changes…",
     },
     success: "Memory updated.",
+    uncertain: {
+      description:
+        "We could not confirm whether your changes were saved. Reload the current memory before editing again; your draft will not be applied automatically.",
+      heading: "We could not confirm your last save.",
+    },
     validation: {
       photoCount: "Choose up to {{count}} photos in the final memory.",
       saveFailed: "We could not update this memory. Please try again.",

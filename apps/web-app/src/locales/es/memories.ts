@@ -100,6 +100,11 @@ export const memoriesEs = {
       saving: "Guardando cambios…",
     },
     success: "Recuerdo actualizado.",
+    uncertain: {
+      description:
+        "No pudimos confirmar si tus cambios fueron guardados. Recarga el recuerdo actual antes de volver a editarlo; tu borrador no se aplicará automáticamente.",
+      heading: "No pudimos confirmar tu último guardado.",
+    },
     validation: {
       photoCount: "Elige hasta {{count}} fotos para el recuerdo final.",
       saveFailed: "No pudimos actualizar este recuerdo. Inténtalo de nuevo.",

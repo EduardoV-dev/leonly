@@ -97,7 +97,7 @@ describe("authenticated placement endpoint", () => {
     fixtures.authenticated = false;
     expect((await fetch(`${origin}/api/memories/invalid/placement`, request)).status).toBe(401);
     fixtures.authenticated = true;
-    expect((await fetch(`${origin}/api/memories/invalid/placement`, request)).status).toBe(404);
+    expect((await fetch(`${origin}/api/memories/invalid/placement`, request)).status).toBe(400);
     expect(fixtures.query).not.toHaveBeenCalled();
   });
 
@@ -117,18 +117,23 @@ describe("authenticated placement endpoint", () => {
     expect(await withoutMemory.json()).toMatchObject({ ok: false });
   });
 
-  it("uses the same unavailable response for malformed identifiers and unavailable records", async () => {
+  it("rejects malformed identifiers with a validation error distinct from unavailable records", async () => {
     const request = {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ visibility: "vault", lastKnownUpdatedAt: timestamp }),
     };
     const malformed = await fetch(`${origin}/api/memories/invalid/placement`, request);
+    expect(malformed.status).toBe(400);
+    expect(await malformed.json()).toMatchObject({
+      message: "Memory id is not valid.",
+      error: [{ code: "HTTP_400", message: "Memory id is not valid." }],
+    });
+
     fixtures.findFirst.mockResolvedValueOnce(null);
     const unavailable = await fetch(`${origin}/api/memories/${id}/placement`, request);
-    expect(malformed.status).toBe(404);
     expect(unavailable.status).toBe(404);
-    expect(await malformed.json()).toEqual(await unavailable.json());
+    expect(await unavailable.json()).toMatchObject({ ok: false, data: null });
     expect(fixtures.query).not.toHaveBeenCalled();
   });
 

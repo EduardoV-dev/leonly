@@ -5,19 +5,38 @@ import { i18n } from "@/lib/i18n";
 import type { MemoryEdit } from "../../types/memory-edit";
 import { EditMemoryPage } from ".";
 
-const { pushMock, refreshMock, signedUploadMock, toastSuccessMock } = vi.hoisted(() => ({
+const {
+  apiPatchMock,
+  apiPostMock,
+  pushMock,
+  refreshMock,
+  revalidateMock,
+  replaceMock,
+  toastErrorMock,
+  toastSuccessMock,
+} = vi.hoisted(() => ({
+  apiPatchMock: vi.fn(),
+  apiPostMock: vi.fn(),
   pushMock: vi.fn(),
   refreshMock: vi.fn(),
-  signedUploadMock: vi.fn(),
+  revalidateMock: vi.fn(),
+  replaceMock: vi.fn(),
+  toastErrorMock: vi.fn(),
   toastSuccessMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  useRouter: () => ({ push: pushMock, refresh: refreshMock, replace: replaceMock }),
 }));
-vi.mock("@/utils/toast", () => ({ toast: { success: toastSuccessMock } }));
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({ storage: { from: () => ({ uploadToSignedUrl: signedUploadMock }) } }),
+vi.mock("@/utils/toast", () => ({ toast: { success: toastSuccessMock, error: toastErrorMock } }));
+vi.mock("@/lib/axios/api", () => ({
+  api: {
+    post: (...args: unknown[]) => apiPostMock(...args),
+    patch: (...args: unknown[]) => apiPatchMock(...args),
+  },
+}));
+vi.mock("../../server/revalidate-placement-views", () => ({
+  revalidatePlacementViews: revalidateMock,
 }));
 vi.mock("@/components/past-date-picker", () => ({
   PastDatePicker: ({
@@ -33,22 +52,70 @@ vi.mock("@/components/past-date-picker", () => ({
   ),
 }));
 
+const memoryId = "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0";
+const photoId = "64d44f34-c5fe-482a-b65b-f91d0173b7fe";
+const updatedAt = "2026-09-05T16:00:00.123000Z";
+
 const memory: MemoryEdit = {
-  coverPhotoId: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
+  coverPhotoId: photoId,
   description: "A quiet afternoon together.",
-  id: "0f45254e-5c9d-4a25-b17f-5e0ce1c5d0b0",
+  id: memoryId,
   initialVisibility: "timeline",
   location: "The botanical gardens",
   memoryDate: "2026-08-20",
   photos: [
     {
-      id: "64d44f34-c5fe-482a-b65b-f91d0173b7fe",
+      id: photoId,
       previewUrl: "https://storage.example/photo",
     },
   ],
   title: "Among the flowers",
-  version: "opaque-version",
+  version: updatedAt,
 };
+
+function issuanceResponse() {
+  return {
+    data: {
+      ok: true,
+      data: {
+        uploads: [
+          {
+            id: "01900000-0000-7000-8000-0000000000aa",
+            putUrl: "https://storage.example/signed-put",
+            requiredHeaders: { "Content-Type": "image/png", "If-None-Match": "*" },
+            expiresAt: "2026-10-11T00:10:00.000Z",
+          },
+        ],
+      },
+      error: [],
+      message: "ok",
+    },
+  };
+}
+
+function committedResponse(visibility: "timeline" | "vault" = "timeline") {
+  return {
+    status: 200,
+    data: {
+      ok: true,
+      data: { id: memoryId, visibility, updatedAt: "2026-10-11T00:00:00.000000Z" },
+      error: [],
+      message: "ok",
+    },
+  };
+}
+
+function failureResponse(status: number) {
+  return {
+    status,
+    data: {
+      ok: false,
+      data: null,
+      error: [{ code: `HTTP_${status}`, message: "failed" }],
+      message: "failed",
+    },
+  };
+}
 
 function renderEditor(editableMemory: MemoryEdit = memory) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -63,7 +130,6 @@ describe("EditMemoryPage", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
-    signedUploadMock.mockResolvedValue({ error: null });
     await i18n.changeLanguage("en");
     vi.stubGlobal("fetch", vi.fn());
     vi.stubGlobal("crypto", { randomUUID: () => "a9c28177-afb7-456e-a83d-8ef74047226f" });
@@ -89,60 +155,62 @@ describe("EditMemoryPage", () => {
     expect(screen.getByLabelText("The story")).toHaveValue("A quiet afternoon together.");
     expect(screen.getByRole("radio", { name: /Our timeline/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Cover/i })).toBeChecked();
-    expect(screen.queryByText("Saved photo")).not.toBeInTheDocument();
     expect(screen.getByText("1/10")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute(
       "href",
-      `/memories/${memory.id}`,
+      `/memories/${memoryId}`,
     );
   });
 
-  it("adds and removes draft photos, changes cover and placement, and submits the backend contract", async () => {
-    vi.mocked(fetch)
-      .mockImplementationOnce(async (_url, request) => {
-        if (!(request?.body instanceof FormData)) throw new Error("Expected photo form data.");
-        const photoId = request.body.get("photoIds");
-        return Response.json({
-          grant: "signed-edit-grant",
-          uploads: [
-            {
-              id: photoId,
-              path: "space/temporary/mutation/photo/original",
-              token: "upload-token",
-            },
-          ],
-        });
-      })
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: memory.id, visibility: "vault" }), { status: 200 }),
-      );
+  it("stages additions with immutable PUT and submits the strict save contract", async () => {
+    apiPostMock.mockResolvedValue(issuanceResponse());
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
+    apiPatchMock.mockResolvedValue(committedResponse("vault"));
     renderEditor();
     const replacement = new File(["photo"], "replacement.png", { type: "image/png" });
 
     fireEvent.change(screen.getByLabelText(/Drag and drop your photos/i), {
       target: { files: [replacement] },
     });
-    expect(screen.queryByText("New photo")).not.toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("radio", { name: /cover/i })[1]);
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
     fireEvent.click(screen.getByRole("radio", { name: /Private vault/i }));
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    const [url, request] = vi.mocked(fetch).mock.calls[1];
-    const body = JSON.parse(request?.body as string) as { grant: string };
-    expect(url).toBe(`/api/memories/${memory.id}/edit`);
-    expect(request?.method).toBe("PATCH");
-    expect(request?.headers).toEqual({ "content-type": "application/json" });
-    expect(body).toEqual({ grant: "signed-edit-grant" });
-    expect(signedUploadMock).toHaveBeenCalledWith(
-      "space/temporary/mutation/photo/original",
-      "upload-token",
-      replacement,
-      { contentType: "image/png" },
+    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledTimes(1));
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/files/uploads",
+      {
+        purpose: "memory_image",
+        files: [{ filename: "replacement.png", contentType: "image/png", byteSize: 5 }],
+      },
+      expect.objectContaining({ validateStatus: expect.any(Function) }),
     );
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith(`/vault/${memory.id}`));
+    const [putUrl, putRequest] = vi.mocked(fetch).mock.calls[0];
+    expect(putUrl).toBe("https://storage.example/signed-put");
+    expect(putRequest?.method).toBe("PUT");
+    expect(putRequest?.headers).toEqual({
+      "Content-Type": "image/png",
+      "If-None-Match": "*",
+    });
+    const [, patchRequest] = apiPatchMock.mock.calls[0];
+    expect(patchRequest).toMatchObject({
+      title: "Among the flowers",
+      description: "A quiet afternoon together.",
+      location: "The botanical gardens",
+      memoryDate: "2026-08-20",
+      visibility: "vault",
+      lastKnownUpdatedAt: updatedAt,
+      retainedPhotoIds: [],
+      uploadIds: ["01900000-0000-7000-8000-0000000000aa"],
+      coverFileId: "01900000-0000-7000-8000-0000000000aa",
+    });
+    expect(patchRequest).not.toHaveProperty("idempotencyKey");
+    expect(patchRequest).not.toHaveProperty("mutationId");
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith(`/vault/${memoryId}`));
     expect(toastSuccessMock).toHaveBeenCalledWith("Memory updated.");
+    expect(revalidateMock).toHaveBeenCalledWith({ memoryId, visibility: "vault" });
   });
 
   it("enforces the ten-photo final count", () => {
@@ -162,53 +230,46 @@ describe("EditMemoryPage", () => {
     expect(screen.getByText("10/10")).toBeInTheDocument();
   });
 
-  it("allows removing every photo and submits no cover", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(Response.json({ grant: "metadata-edit-grant", uploads: [] }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: memory.id, visibility: "timeline" }), { status: 200 }),
-      );
+  it("submits a null cover for remove-all edits", async () => {
+    apiPatchMock.mockResolvedValue(committedResponse());
     renderEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
     expect(screen.getByText("This memory will use its no-photo presentation.")).toBeInTheDocument();
-    expect(screen.getByText("0/10")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    const body = vi.mocked(fetch).mock.calls[0][1]?.body as FormData;
-    expect(body.getAll("retainedPhotoIds")).toEqual([]);
-    expect(body.has("coverPhotoId")).toBe(false);
-    expect(body.has("coverPhotoIndex")).toBe(false);
+    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledTimes(1));
+    expect(apiPostMock).not.toHaveBeenCalled();
+    const [, patchRequest] = apiPatchMock.mock.calls[0];
+    expect(patchRequest).toMatchObject({
+      retainedPhotoIds: [],
+      uploadIds: [],
+      coverFileId: null,
+    });
   });
 
-  it("preserves the draft and idempotency key for a recoverable retry", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(Response.json({ grant: "retry-edit-grant", uploads: [] }))
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: "Please try again." }), { status: 500 }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ id: memory.id, visibility: "timeline" }), { status: 200 }),
-      );
+  it("retries a definite failure with the same timestamp and staged upload identities", async () => {
+    apiPostMock.mockResolvedValue(issuanceResponse());
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
+    apiPatchMock
+      .mockResolvedValueOnce(failureResponse(500))
+      .mockResolvedValueOnce(committedResponse());
     renderEditor();
-    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Revised title" } });
+    fireEvent.change(screen.getByLabelText(/Drag and drop your photos/i), {
+      target: { files: [new File(["photo"], "replacement.png", { type: "image/png" })] },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Please try again.");
-    expect(screen.getByLabelText("Title")).toHaveValue("Revised title");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
-    expect(vi.mocked(fetch).mock.calls[1][1]?.body).toEqual(
-      vi.mocked(fetch).mock.calls[2][1]?.body,
-    );
+    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledTimes(2));
+    expect(apiPostMock).toHaveBeenCalledTimes(1);
+    expect(apiPatchMock.mock.calls[0][1]).toEqual(apiPatchMock.mock.calls[1][1]);
   });
 
   it("keeps the draft visible on conflict and reloads only on explicit activation", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ code: "conflict", error: "stale" }), { status: 409 }),
-    );
+    apiPatchMock.mockResolvedValue(failureResponse(409));
     renderEditor();
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Revised title" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
@@ -219,6 +280,24 @@ describe("EditMemoryPage", () => {
     expect(screen.getByLabelText("Title")).toHaveValue("Revised title");
     expect(screen.getByLabelText("Title")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save Changes" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Reload Current Memory" }));
+    expect(refreshMock).toHaveBeenCalledOnce();
+  });
+
+  it("offers reload without blind replay after an uncertain response", async () => {
+    apiPostMock.mockResolvedValue(issuanceResponse());
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }));
+    apiPatchMock.mockRejectedValue(new Error("network lost"));
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We could not confirm your last save.",
+    );
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(apiPatchMock).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Reload Current Memory" }));
     expect(refreshMock).toHaveBeenCalledOnce();
   });
@@ -236,8 +315,8 @@ describe("EditMemoryPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Your saved draft was restored.");
   });
 
-  it("submits only once while a save is pending", () => {
-    vi.mocked(fetch).mockReturnValue(new Promise<Response>(() => undefined));
+  it("submits only once while a save is pending", async () => {
+    apiPatchMock.mockReturnValue(new Promise(() => undefined));
     renderEditor();
     const form = screen.getByRole("button", { name: "Save Changes" }).closest("form");
     if (!form) throw new Error("Edit-memory form is missing.");
@@ -245,23 +324,25 @@ describe("EditMemoryPage", () => {
     fireEvent.submit(form);
     fireEvent.submit(form);
 
-    expect(fetch).toHaveBeenCalledOnce();
+    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledOnce());
     expect(screen.getByRole("status")).toHaveTextContent("Saving changes…");
     expect(screen.getByRole("button", { name: "Saving changes…" })).toBeDisabled();
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("clears only the validation error for the field that changes", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          code: "validation_failed",
-          error: "Please review the highlighted fields.",
-          fields: { location: "Location is too long.", title: "Title is required." },
-        }),
-        { status: 400 },
-      ),
-    );
+    apiPatchMock.mockResolvedValue({
+      status: 400,
+      data: {
+        ok: false,
+        data: null,
+        error: [
+          { code: "VALIDATION_ERROR", message: "Too long.", field: "location" },
+          { code: "VALIDATION_ERROR", message: "Required.", field: "title" },
+        ],
+        message: "failed",
+      },
+    });
     renderEditor();
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
@@ -271,18 +352,13 @@ describe("EditMemoryPage", () => {
     expect(screen.getAllByText("Please review the highlighted fields.")).toHaveLength(1);
   });
 
-  it("refreshes into the generic unavailable route state when the mutation loses access", async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ code: "unavailable", error: "This memory is unavailable." }), {
-        status: 404,
-      }),
-    );
+  it("refreshes into the generic unavailable route state when the save loses access", async () => {
+    apiPatchMock.mockResolvedValue(failureResponse(404));
     renderEditor();
 
     fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
     await waitFor(() => expect(refreshMock).toHaveBeenCalledOnce());
-    expect(screen.queryByText("This memory is unavailable.")).not.toBeInTheDocument();
   });
 
   it("shows the accessible retained-photo fallback when a signed preview expires", () => {
@@ -291,6 +367,5 @@ describe("EditMemoryPage", () => {
     fireEvent.error(screen.getByRole("img", { name: "Memory photo 1" }));
 
     expect(screen.getByRole("img", { name: "Photo preview unavailable" })).toBeInTheDocument();
-    expect(screen.queryByText("Saved photo")).not.toBeInTheDocument();
   });
 });

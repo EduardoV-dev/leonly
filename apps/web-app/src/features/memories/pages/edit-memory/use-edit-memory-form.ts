@@ -13,6 +13,7 @@ import {
 } from "../../constants/create-memory";
 import { memoryQueryKeys } from "../../constants/query-keys";
 import { useMemoryDraftProtection } from "../../hooks/use-memory-draft-protection";
+import { revalidatePlacementViews } from "../../server/revalidate-placement-views";
 import type { MemoryEdit } from "../../types/memory-edit";
 import type { MemoryEditorPhoto, MemoryEditorValues } from "../../types/memory-editor";
 import { createUuidV7 } from "../../utils/create-uuid-v7";
@@ -22,17 +23,17 @@ import {
   readMemoryDraft,
   writeMemoryDraft,
 } from "../../utils/memory-draft-storage";
-import {
-  type PreparedMemoryUpload,
-  uploadStagedMemoryPhotos,
-} from "../../utils/upload-staged-memory-photos";
+import { type PreparedEditUpload, submitMemoryEdit } from "./edit-memory-request";
 
-type EditResponse = {
-  code?: "conflict" | "pending" | "unavailable" | "validation_failed";
-  fields?: Record<string, string>;
-  id?: string;
-  visibility?: "timeline" | "vault";
-};
+const VISIBLE_FIELDS = ["title", "memoryDate", "description", "location", "photos"] as const;
+const PHOTO_FIELDS = new Set(["retainedPhotoIds", "uploadIds", "coverFileId"]);
+
+function toLocalField(field: string): string {
+  if (PHOTO_FIELDS.has(field)) return "photos";
+  if (field === "timezone") return "memoryDate";
+
+  return field;
+}
 
 function hasAcceptedPhotoExtension(photo: File): boolean {
   const extension = photo.name.split(".").at(-1)?.toLowerCase();
@@ -49,35 +50,6 @@ function detailRoute(memoryId: string, visibility: "timeline" | "vault"): string
   return visibility === "vault"
     ? APP_ROUTES.VAULT_MEMORY_DETAIL(memoryId)
     : APP_ROUTES.MEMORY_DETAIL(memoryId);
-}
-
-function createEditFormData(
-  memory: MemoryEdit,
-  values: MemoryEditorValues,
-  photos: MemoryEditorPhoto[],
-  coverPhotoKey: string | null,
-  mutationId: string,
-): FormData {
-  const formData = new FormData();
-  formData.set("title", values.title);
-  formData.set("description", values.description);
-  formData.set("location", values.location);
-  formData.set("memoryDate", values.memoryDate);
-  formData.set("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
-  formData.set("visibility", values.visibility);
-  formData.set("expectedVersion", memory.version);
-  formData.set("mutationId", mutationId);
-  const retained = photos.filter((photo) => photo.kind === "retained");
-  for (const photo of retained) formData.append("retainedPhotoIds", photo.id);
-  const newPhotos = photos.filter((photo) => photo.kind === "new");
-  for (const photo of newPhotos) {
-    formData.append("photoIds", photo.id);
-    formData.append("photoNames", photo.name);
-  }
-  for (const photo of photos) formData.append("selectedPhotoIds", photo.id);
-  const cover = photos.find((photo) => photo.key === coverPhotoKey);
-  if (cover) formData.set("coverPhotoId", cover.id);
-  return formData;
 }
 
 function toDraft(memory: MemoryEdit) {
@@ -105,8 +77,10 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const { t } = useTranslation("memories");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const preparedUpload = useRef<PreparedMemoryUpload | null>(null);
-  const mutationId = useRef(createUuidV7());
+  const preparedUpload = useRef<PreparedEditUpload | null>(null);
+  const submissionInFlight = useRef(false);
+  const hasCommitted = useRef(false);
+  const isMounted = useRef(true);
   const nextPhotoKey = useRef(0);
   const previewUrls = useRef(new Set<string>());
   const storageKey = getEditMemoryDraftKey(memory.id, memory.version);
@@ -117,12 +91,19 @@ export function useEditMemoryForm(memory: MemoryEdit) {
   const [draftWasRestored, setDraftWasRestored] = useState(false);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
-  const [isConflict, setIsConflict] = useState(false);
+  const [isBlockedState, setIsBlockedState] = useState<null | "conflict" | "uncertain">(null);
   const [isDirty, setIsDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [restoredPhotoNames, setRestoredPhotoNames] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     const draft = toDraft(memory);
     const storedDraft = readMemoryDraft(storageKey);
@@ -148,11 +129,10 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setRestoredPhotoNames(storedDraft?.newPhotoNames ?? []);
     setFields({});
     setHasLoadedDraft(true);
-    setIsConflict(false);
+    setIsBlockedState(null);
     setIsDirty(Boolean(storedDraft));
     setSubmitError(null);
     preparedUpload.current = null;
-    mutationId.current = createUuidV7();
   }, [memory, storageKey]);
   useEffect(() => {
     if (!hasLoadedDraft || !isDirty) return;
@@ -199,7 +179,6 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     });
   const changeDraft = (field: string) => {
     preparedUpload.current = null;
-    mutationId.current = createUuidV7();
     clearFieldError(field);
     setIsDirty(true);
     setSubmitError(null);
@@ -208,11 +187,12 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     key: TKey,
     value: MemoryEditorValues[TKey],
   ) => {
-    if (values[key] === value) return;
+    if (isBlockedState || submissionInFlight.current || values[key] === value) return;
     changeDraft(key);
     setValues((current) => ({ ...current, [key]: value }));
   };
   const addPhotos = (files: File[]) => {
+    if (isBlockedState || submissionInFlight.current || files.length === 0) return;
     if (photos.length + files.length > MAX_MEMORY_PHOTO_COUNT) {
       setFields((current) => ({
         ...current,
@@ -254,6 +234,7 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setCoverPhotoKey((current) => current ?? additions[0]?.key ?? null);
   };
   const removePhoto = (key: string) => {
+    if (isBlockedState || submissionInFlight.current) return;
     const removed = photos.find((photo) => photo.key === key);
     if (!removed) return;
     if (removed.kind === "new") {
@@ -266,66 +247,92 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     setCoverPhotoKey((current) => (current === key ? (remaining[0]?.key ?? null) : current));
   };
   const selectCoverPhoto = (key: string) => {
-    if (coverPhotoKey === key) return;
+    if (isBlockedState || submissionInFlight.current || coverPhotoKey === key) return;
     changeDraft("photos");
     setCoverPhotoKey(key);
   };
   const reload = () => {
     discardDraft();
+    preparedUpload.current = null;
     router.refresh();
   };
   const submit = async () => {
-    if (isSubmitting) return;
+    if (submissionInFlight.current || hasCommitted.current || isBlockedState) return;
+    submissionInFlight.current = true;
     setFields({});
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const response = await uploadStagedMemoryPhotos({
+      const outcome = await submitMemoryEdit({
+        memory,
+        values,
+        photos,
+        coverPhotoKey,
         preparedUpload: preparedUpload.current,
-        finalMethod: "PATCH",
-        finalUrl: `/api/memories/${memory.id}/edit`,
-        formData: createEditFormData(memory, values, photos, coverPhotoKey, mutationId.current),
         onPrepared: (prepared) => {
           preparedUpload.current = prepared;
         },
-        photos,
-        prepareUrl: `/api/memories/${memory.id}/edit/uploads`,
       });
-      const payload = (await response.json()) as EditResponse;
-      if (payload.code === "unavailable") {
+      if (!isMounted.current) return;
+
+      if (outcome.status === "unauthorized") {
+        router.replace(APP_ROUTES.AUTH);
+        return;
+      }
+      if (outcome.status === "unavailable") {
         preparedUpload.current = null;
         discardDraft();
         router.refresh();
         return;
       }
-      if (payload.code === "conflict") {
+      if (outcome.status === "conflict") {
         preparedUpload.current = null;
-        setIsConflict(true);
+        setIsBlockedState("conflict");
         return;
       }
-      if (!response.ok) {
-        if (response.status < 500) preparedUpload.current = null;
-        setFields(
-          Object.fromEntries(
-            Object.keys(payload.fields ?? {}).map((field) => [
-              field,
-              t("edit.validation.serverInvalid"),
-            ]),
-          ),
-        );
-        if (payload.code === "validation_failed") return;
-        throw new Error(t("edit.validation.saveFailed"));
+      if (outcome.status === "uncertain") {
+        preparedUpload.current = null;
+        setIsBlockedState("uncertain");
+        return;
       }
-      const finalVisibility = payload.visibility ?? values.visibility;
-      await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all });
+      if (outcome.status === "invalid") {
+        const fieldErrors = outcome.errors.flatMap(({ field }) => {
+          if (!field) return [];
+          const localField = toLocalField(field);
+          if (!VISIBLE_FIELDS.includes(localField as (typeof VISIBLE_FIELDS)[number])) return [];
+          return [[localField, t("edit.validation.serverInvalid")]] as const;
+        });
+        if (fieldErrors.length > 0) {
+          setFields(Object.fromEntries(fieldErrors));
+          return;
+        }
+        setSubmitError(t("edit.validation.saveFailed"));
+        return;
+      }
+      if (outcome.status === "retryable") {
+        setSubmitError(t("edit.validation.saveFailed"));
+        return;
+      }
+
+      hasCommitted.current = true;
+      await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all, refetchType: "none" });
+      queryClient.removeQueries({ queryKey: memoryQueryKeys.all });
       preparedUpload.current = null;
       discardDraft();
+      const finalVisibility = outcome.result.visibility;
+      try {
+        await revalidatePlacementViews({ memoryId: memory.id, visibility: finalVisibility });
+      } catch {
+        toast.error(t("detail.placement.refreshFailed"));
+      }
       toast.success(t("edit.success"));
       router.push(detailRoute(memory.id, finalVisibility));
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : t("edit.validation.saveFailed"));
+      router.refresh();
+    } catch {
+      if (isMounted.current) setSubmitError(t("edit.validation.saveFailed"));
     } finally {
-      setIsSubmitting(false);
+      submissionInFlight.current = false;
+      if (isMounted.current) setIsSubmitting(false);
     }
   };
 
@@ -342,7 +349,9 @@ export function useEditMemoryForm(memory: MemoryEdit) {
     coverPhotoKey,
     draftNotice,
     fields,
-    isConflict,
+    isBlockedState,
+    isConflict: isBlockedState === "conflict",
+    isUncertain: isBlockedState === "uncertain",
     isSubmitting,
     photos,
     reload,

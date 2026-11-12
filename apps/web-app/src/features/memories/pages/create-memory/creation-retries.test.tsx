@@ -105,6 +105,9 @@ describe("creation retry identity", () => {
       void result.current.submit();
       result.current.updateValue("title", "Changed during save");
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(postMock).toHaveBeenCalledTimes(1);
     expect(result.current.values.title).toBe("Our picnic");
     await act(async () => {

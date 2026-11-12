@@ -78,6 +78,27 @@ describe("file-oriented queued image processing", () => {
     expect(getVariantFile("cover").status).toBe("ready");
   });
 
+  it("does not revive a family whose edit removal commits during processing", async () => {
+    const putObjectIfAbsent = fixtures.storage.putObjectIfAbsent.getMockImplementation();
+    if (!putObjectIfAbsent) throw new Error("Missing storage fixture");
+    fixtures.storage.putObjectIfAbsent.mockImplementationOnce(async (parameters) => {
+      // A committed edit removal retires the family while generation is in flight.
+      getVariantFile("cover").status = "deleting";
+
+      return putObjectIfAbsent(parameters);
+    });
+
+    await expect(
+      processImage({ value: fixtures.event, dependencies: fixtures.dependencies }),
+    ).rejects.toThrow("PROCESSING_OWNERSHIP_LOST");
+
+    const cover = getVariantFile("cover");
+    expect(cover.status).toBe("deleting");
+    expect(cover.uploadedByUserId).toBe("user-a");
+    expect(cover.objectKey).toBeTruthy();
+    expect(fixtures.files.get(fixtures.fileId)?.status).toBe("ready");
+  });
+
   it("acknowledges missing, detached, deleted-memory, and deleted-space contexts without storage access", async () => {
     fixtures.memory.deletedAt = new Date();
     await expect(

@@ -69,7 +69,10 @@ describe("VaultMemoryDetailPage", () => {
       "/vault",
     );
     expect(screen.getByRole("heading", { name: "More from the Vault" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      `/vault/${memory.id}/edit`,
+    );
     expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();

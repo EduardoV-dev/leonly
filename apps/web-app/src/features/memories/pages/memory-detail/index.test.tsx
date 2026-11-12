@@ -79,7 +79,10 @@ describe("MemoryDetailPage", () => {
       "href",
       "/timeline",
     );
-    expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      `/memories/${memory.id}/edit`,
+    );
     expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
@@ -154,7 +157,10 @@ describe("MemoryDetailPage", () => {
     await i18n.changeLanguage("es");
     renderDetail(<MemoryDetailPage memory={memory} />);
 
-    expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Editar" })).toHaveAttribute(
+      "href",
+      `/memories/${memory.id}/edit`,
+    );
     expect(screen.queryByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Quitar recuerdo" })).toBeInTheDocument();
     expect(screen.getByText("Recuerdo creado el", { exact: false })).toBeInTheDocument();

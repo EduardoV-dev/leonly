@@ -24,6 +24,15 @@ export {
 } from "./memories/memory-comment";
 export type { MemoryDetail, MemoryDetailPhoto } from "./memories/memory-detail";
 export {
+  type MemoryEditSaveRequest,
+  memoryEditSaveRequestSchema,
+} from "./memories/memory-edit-save";
+export {
+  type MemoryEditorSnapshot,
+  type MemoryEditorSnapshotPhoto,
+  memoryEditorSnapshotSchema,
+} from "./memories/memory-editor-snapshot";
+export {
   type MemoryCursor,
   type MemoryListItem,
   type MemoryListPage,

@@ -38,6 +38,7 @@ export type MemoryEditorFormProps = {
   coverPhotoKey: string | null;
   draftNotice?: string | null;
   isConflict?: boolean;
+  isUncertain?: boolean;
   fields: Record<string, string>;
   isSubmitting: boolean;
   maxPhotos: number;
@@ -62,6 +63,7 @@ export function MemoryEditorForm({
   draftNotice = null,
   fields,
   isConflict = false,
+  isUncertain = false,
   isSubmitting,
   maxPhotos,
   mode,
@@ -79,7 +81,7 @@ export function MemoryEditorForm({
   const formRef = useRef<HTMLFormElement>(null);
   const shouldReduceMotion = Boolean(useReducedMotion());
   const activeVariants = shouldReduceMotion ? reducedMotionVariants : revealVariants;
-  const isDraftLocked = isSubmitting || isConflict;
+  const isDraftLocked = isSubmitting || isConflict || isUncertain;
   const savingLabel = mode === "create" ? "create.status.saving" : "edit.status.saving";
   const submitLabel = mode === "create" ? "create.actions.preserve" : "edit.actions.save";
 
@@ -289,14 +291,14 @@ export function MemoryEditorForm({
             {draftNotice}
           </motion.p>
         ) : null}
-        {isConflict ? (
+        {isConflict || isUncertain ? (
           <motion.section
             className={`${styles.conflict} ${wideStyles.feedback}`}
             role="alert"
             variants={activeVariants}
           >
-            <h2>{t("edit.conflict.heading")}</h2>
-            <p>{t("edit.conflict.description")}</p>
+            <h2>{t(isConflict ? "edit.conflict.heading" : "edit.uncertain.heading")}</h2>
+            <p>{t(isConflict ? "edit.conflict.description" : "edit.uncertain.description")}</p>
             <div>
               <button type="button" onClick={onReload}>
                 {t("edit.conflict.reload")}
@@ -336,7 +338,7 @@ export function MemoryEditorForm({
           </Link>
           <Button
             className={styles.preserveButton}
-            disabled={isConflict}
+            disabled={isConflict || isUncertain}
             loading={isSubmitting}
             type="submit"
           >

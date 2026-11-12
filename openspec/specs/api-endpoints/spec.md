@@ -259,19 +259,19 @@ revocation limitations. It MUST NOT advertise a cover-bytes endpoint or new appl
   contracts, including nullable signed cover URLs
 
 ### Requirement: Legacy image endpoint boundary
-Migrated Timeline, Vault, and dashboard recent-memory covers MUST NOT use
-`GET /api/memories/:memoryId/photos/:photoId/:variant`. The system SHALL NOT add a replacement NestJS
-image endpoint or Next.js image proxy. Existing editor-preview consumers may continue using the legacy
-route until their separate migration.
+
+Migrated Timeline, Vault, dashboard, detail, and editor previews SHALL use authorized signed storage
+URLs from the current backend, not `/api/memories/:memoryId/photos/:photoId/:variant`. No replacement
+application image proxy SHALL be introduced. Legacy routes SHALL remain only where independently
+required by verified remaining consumers and MUST NOT be a fallback for migrated editor data.
 
 #### Scenario: Migrated list or detail renders a cover
-- **WHEN** a Timeline, Vault, dashboard recent-memory, or migrated detail view renders a ready cover
-- **THEN** the browser uses the signed URL from the read response and makes no request to the legacy
-  image route or a new application image proxy
+- **WHEN** a migrated list, dashboard, or detail renders an eligible ready photo
+- **THEN** the browser requests its signed storage URL directly without a legacy or replacement image proxy
 
 #### Scenario: Existing editor preview renders an image
-- **WHEN** an existing edit preview requests a legacy image
-- **THEN** its current route and authorization behavior remain available without a NestJS replacement
+- **WHEN** the migrated editor displays a retained photo
+- **THEN** it uses the signed URL from its current-backend editor read, without querying Supabase
 
 ### Requirement: Read active-space memory reactions
 
@@ -376,18 +376,21 @@ grant authorization. Malformed cursors SHALL produce a safe 400; invalidated cha
 ### Requirement: Shared optimistic-lock request field
 
 The API SHALL accept `lastKnownUpdatedAt` as the precision-preserving optimistic-lock field for comment
-mutations and the existing space-name, start-date, and display-name update operations. Clients SHALL send
-the exact last observed `updatedAt`; this replaces `expectedUpdatedAt`.
+mutations, memory placement, and the existing space-name, start-date, and display-name
+update operations. Clients SHALL send the exact last observed `updatedAt`; this replaces `expectedUpdatedAt`.
 
 #### Scenario: Current timestamp is submitted
+
 - **WHEN** an authorized client sends the current `lastKnownUpdatedAt`
 - **THEN** the API evaluates the mutation atomically and returns its updated canonical timestamp on success
 
 #### Scenario: Stale timestamp is submitted
-- **WHEN** an otherwise authorized client sends a stale timestamp
+
+- **WHEN** an otherwise authorized client sends a stale timestamp for an eligible resource
 - **THEN** the API returns 409 without overwriting newer data
 
 #### Scenario: Old or invalid field is submitted
+
 - **WHEN** a client supplies the old field instead of `lastKnownUpdatedAt` or an invalid timestamp
 - **THEN** the API rejects the request as invalid without mutating data
 
@@ -446,3 +449,156 @@ The local OpenAPI document and Scalar reference SHALL describe the placement rou
 
 - **WHEN** a developer opens the local API reference
 - **THEN** the placement operation and detail examples describe the same fields, timestamp precision, authentication, and failure statuses as the API
+
+### Requirement: Read an active-space memory for editing
+
+`GET /api/memories/:memoryId/edit` SHALL authorize either active member and return the standard
+response envelope with editable metadata, visibility, cover file ID, exact `updatedAt`, and all
+attached root photo IDs in persisted position order with nullable signed preview URLs. The read
+SHALL use `Cache-Control: no-store` and current-backend records only, independent of current placement.
+
+#### Scenario: Editor requests prefilled values
+- **WHEN** either active member requests an available Timeline or Vault memory
+- **THEN** HTTP 200 returns editable state without detail-only cover-first sorting or editable creator/social fields
+
+#### Scenario: Attached photo has no preview
+- **WHEN** an attached file has no ready preview variant
+- **THEN** its photo ID remains in the ordered collection and its preview URL is null
+
+### Requirement: Save a memory edit
+
+`PATCH /api/memories/:memoryId` SHALL accept only `title`, `description`, `location`, `memoryDate`,
+`timezone`, `visibility`, `lastKnownUpdatedAt`, `retainedPhotoIds`, ordered `uploadIds`, and nullable
+`coverFileId`. Required empty selections mean retain/add none. The request MUST NOT accept an edit
+idempotency key. Responses SHALL use the standard envelope and `Cache-Control: no-store`.
+
+#### Scenario: Metadata-only edit completes
+- **WHEN** a valid metadata-only edit matches the current timestamp
+- **THEN** HTTP 200 returns the advanced persisted token after commit without creating image events
+
+#### Scenario: Photo edit completes before processing
+- **WHEN** a valid edit retains A/C, removes B, and attaches new D while D is not ready
+- **THEN** HTTP 200 reports the committed save and fresh reads show A/C normally with a nullable preview for D and no B
+
+#### Scenario: Repeated save uses an old timestamp
+- **WHEN** a request repeats a timestamp already consumed by a committed edit
+- **THEN** HTTP 409 prevents another mutation without promising replay of the original successful result
+
+### Requirement: Memory edit save completion
+
+HTTP 200 SHALL return `{ id, visibility, updatedAt }` after metadata, final ordered associations,
+cover, removals/file retirement, and new-photo events commit together. New photos SHALL process
+after attachment as in creation. Success MUST mean persistence, not image readiness or queue
+acceptance. No edit-status resource, 202 preparation response, or finalize/resume request SHALL be added.
+
+#### Scenario: Save transaction commits
+- **WHEN** all required edit writes commit while new image variants are pending
+- **THEN** HTTP 200 returns the persisted advanced token without waiting for a second finalization request
+
+#### Scenario: Post-commit publication fails
+- **WHEN** the edit commits but bounded queue publication fails or is uncertain
+- **THEN** the saved edit is not reported as rolled back, outbox failure evidence remains, and no second save is required to finalize it
+
+### Requirement: Memory edit failure boundaries
+
+Editor APIs SHALL return 401 without a session and the same generic 404 for absent membership or
+malformed, missing, inactive, deleted, cross-space, or inaccessible targets. Saves SHALL use 400 for
+invalid input, 409 for eligible stale edits or conflicting upload claims, and safe 5xx for unexpected
+pre-commit failures. Failures MUST use shared envelopes without partial edits or Supabase fallback.
+
+#### Scenario: Input or reference is invalid
+- **WHEN** fields, timezone, future date, count, cover, duplicates, timestamp precision, or foreign retained/new-upload references fail validation
+- **THEN** HTTP 400 identifies applicable fields without revealing foreign data or changing the memory
+
+#### Scenario: Edit loses a lifecycle race
+- **WHEN** another edit or placement commits first, or deletion makes the parent unavailable
+- **THEN** Save returns 409 for a still-accessible stale target or generic 404 for an unavailable target
+
+#### Scenario: Pre-commit persistence fails
+- **WHEN** the transaction fails before commit
+- **THEN** the ordinary safe error envelope claims no success and all related memory, file-state, association, and event writes roll back
+
+#### Scenario: Image processing fails after commit
+- **WHEN** a newly attached photo later fails actual content checks or processing
+- **THEN** the existing photo-read contract returns unavailable variants without changing the committed save or retained photos
+
+#### Scenario: Save response is lost
+- **WHEN** the client cannot determine whether a save committed
+- **THEN** recovery reloads the authorized current memory without an attempt lookup, automatic stale-token replacement, or blind replay
+
+### Requirement: Document memory editor operations
+
+The local API reference SHALL document the editor snapshot and single save operation with shared
+schemas, authentication, strict inputs, exact timestamps, ten-photo/cover/order rules, 200 committed
+save semantics, asynchronous per-photo readiness, safe errors, uncertain-response reload, and signed
+URL expiry. It SHALL explicitly distinguish retained, added, and removed photos and state that no
+historical edit-result replay or durable operation resource is provided.
+
+#### Scenario: Developer inspects editor contracts
+- **WHEN** a developer opens OpenAPI or Scalar locally
+- **THEN** both editor operations describe matching schemas and applicable 200, 400, 401, 404, 409, and server-error behavior without staged-edit endpoints
+
+### Requirement: Delete an active-space memory
+
+`DELETE /api/memories/:memoryId` SHALL require a valid session and no request body or version token.
+It SHALL derive membership and space server-side and apply the ordered cascading soft deletion to that
+memory only. A successful deletion SHALL return HTTP 200 with the shared `ApiResponse` envelope whose `data`
+is `null`, whose `error` is empty, and with `Cache-Control: no-store`. The success response MUST NOT include
+the deleted identifier or any other payload.
+
+#### Scenario: Active member deletes a memory
+
+- **WHEN** either active member confirms deletion of an eligible memory and sends a bodyless request
+- **THEN** HTTP 200 returns `{ ok: true, data: null, error: [] }` and the memory, its comments, reactions, and attached files are marked deleted or deleting
+
+#### Scenario: Version token is not required
+
+- **WHEN** an authorized deletion request contains no body and the memory remains available
+- **THEN** it is evaluated against the current locked state without requiring `lastKnownUpdatedAt` or comparing a client version
+
+### Requirement: Memory deletion endpoint failure boundaries
+
+Deletion SHALL map each failure to one response status and SHALL leave no partial change on any failure.
+
+#### Scenario: Failures use the defined statuses
+- **WHEN** a deletion request supplies a malformed identifier, fails authentication, targets an unavailable memory, or hits an unexpected error
+- **THEN** it returns 400, 401, the generic 404, or a safe 500 respectively, each in the standard error envelope; memory version changes do not produce a deletion conflict
+
+#### Scenario: Repeated deletion of a deleted memory
+- **WHEN** a deletion request targets a memory that is already soft-deleted
+- **THEN** it returns the same generic 404 as any unavailable memory
+
+#### Scenario: Deletion session is unavailable
+
+- **WHEN** a deletion request has no valid session
+- **THEN** HTTP 401 exposes no memory data and makes no change
+
+#### Scenario: Deletion target is unavailable
+
+- **WHEN** an authenticated request has no active membership or targets a missing, inactive, already deleted, other-space, or inaccessible memory
+- **THEN** the same generic HTTP 404 exposes no record or lifecycle details and makes no change
+
+#### Scenario: Deletion identifier is malformed
+
+- **WHEN** a deletion request targets an identifier that is not a valid UUID
+- **THEN** HTTP 400 rejects the request with the shared validation failure and makes no change
+
+#### Scenario: Another mutation commits before deletion
+
+- **WHEN** another mutation commits before deletion obtains its lock and the memory remains available
+- **THEN** deletion applies to the current state, including committed comments and reactions, without a stale-version 409
+
+#### Scenario: Cascade step fails unexpectedly
+
+- **WHEN** an unexpected backend failure occurs while marking comments, reactions, or files
+- **THEN** the whole transaction rolls back, the memory stays active, and a safe server error is returned without partial writes, internal details, or a Supabase fallback
+
+### Requirement: Document memory deletion operations
+
+The local OpenAPI document and Scalar reference SHALL describe the bodyless deletion route, authentication,
+the null success payload, the cascade behavior, and generic unavailable outcomes without a version-conflict contract.
+
+#### Scenario: Developer inspects deletion documentation
+
+- **WHEN** a developer opens the local API reference
+- **THEN** the deletion operation describes the same body, response, authentication, and failure statuses as the API

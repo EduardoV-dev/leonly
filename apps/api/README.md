@@ -22,6 +22,8 @@ Upload and memory request schemas come from runtime DTO classes and use the glob
 | GET | `/api/users/me/space` | Active space with members, or `null` | 401 missing or expired session |
 | POST | `/api/files/uploads` | Ordered `uploads` with IDs, signed staging PUT URLs, required headers, and deadlines | 400 invalid purpose/descriptors or client-controlled fields; 404 no active space |
 | POST | `/api/memories` | `{ "id": "<uuid>", "visibility": "timeline" }` | 400 invalid details; 404 unavailable uploads/space; 409 changed-input key reuse or creation in progress |
+| GET | `/api/memories/:memoryId/edit` | Editable snapshot: metadata, exact `updatedAt`, `coverFileId`, attached photo IDs in persisted order with nullable 300-second signed previews | 400 invalid identifier; 401 no session; 404 missing membership or unavailable/cross-space/deleted memory |
+| PATCH | `/api/memories/:memoryId` | `{ "id": "<uuid>", "visibility": "timeline", "updatedAt": "<timestamp>" }` committed before new photo variants finish | 400 invalid input or photo references; 401 no session; 404 unavailable memory; 409 stale `lastKnownUpdatedAt` or conflicting photo claim |
 
 Except for health checks, successful Nest operations return HTTP 200 or their documented HTTP 201 creation status with a JSON body, including when `data` is null:
 
@@ -153,6 +155,27 @@ automatically; do not set the forbidden `Content-Length` header from browser cod
 body length requires a new upload capability.
 
 The upload and creation JSON contracts are in `openspec/changes/archive/2026-10-28-create-memory-upload-worker/contracts.md`. Matching creation retries return the existing result before checking consumed uploads. Originals are validated and promoted with destination-create-only writes; image events are persisted atomically. Creation awaits a bounded post-commit publication attempt and succeeds even when publication fails. The independent `apps/workers` Lambda generates variants; new reads and cleanup remain deferred.
+
+### Memory editing
+
+Memory edits reuse the creation upload lifecycle and the same persistence models — there is no
+edit-attempt, reservation, or operation-status model. `GET /api/memories/:memoryId/edit` returns the
+authorized editable snapshot (either active member, both placements) with the exact `updatedAt`
+token and all attached photo IDs in persisted position order; missing variants have `null` preview
+URLs, and issued preview URLs stay usable until their effective 300-second expiry even after a
+later removal. `PATCH /api/memories/:memoryId` takes only the strict save body (metadata, captured
+timezone, `lastKnownUpdatedAt`, `retainedPhotoIds`, ordered `uploadIds`, nullable `coverFileId`) and
+commits metadata, placement, final ordered associations, cover, removals, and one existing-shape
+image event per new attachment in one version-checked transaction.
+
+Success means persistence, not image readiness: HTTP 200 returns the persisted advanced token after
+commit while new photos still process. Retained photos keep their identities, objects, ready
+variants, and relative order; explicitly removed photos disappear at commit and their file families
+are marked `deleting` with attribution kept for deferred cleanup. Later publication or image
+failure never rolls back a committed save. There is no edit idempotency key, status resource, 202
+preparation, or finalize protocol; creation's key/hash contract is unchanged. A stale eligible save
+returns 409 and requires reloading the editor; after a lost or uncertain response the client must
+reload before another deliberate save. Bodyless memory deletion gains no version precondition.
 
 Recovery of unpublished outbox events is deferred. No replay command or scheduled publisher
 exists; a commit-before-send interruption or queue outage can leave image variants pending.

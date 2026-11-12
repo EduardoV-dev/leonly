@@ -83,7 +83,7 @@ describe("CreateMemoryPage", () => {
     fireEvent.submit(form);
     fireEvent.submit(form);
 
-    expect(postMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(postMock).toHaveBeenCalledTimes(1));
     resolveRequest();
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/timeline"));
     expect(postMock).toHaveBeenCalledTimes(1);

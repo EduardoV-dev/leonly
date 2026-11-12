@@ -88,6 +88,12 @@ Records and variants run sequentially; native Sharp concurrency is one and its c
 
 The current recipe uses the existing auto-orientation, 40-million-pixel bound, aspect-preserving resize without enlargement, WebP quality 85, and 1024/1600 cover/detail bounds. Originals are bounded at 5 MiB and variant downloads at 10 MiB. Permanent image/contract failures are diagnosed and returned as failed records, allowing the configured receive limit to send them to a DLQ. Transient failures are also isolated per record.
 
+Committed memory-edit attachments are processed with the same creation event shape, recipes, leases,
+and retry budget; there is no edit-specific context or finalization step. Before publishing file
+metadata the worker rechecks owned leases and effective root/parent eligibility, so a photo detached
+or retired by an edit or deletion during processing cannot regain active readiness; any output
+written after eligibility is lost remains durably attributed for deferred cleanup.
+
 Approved initial settings are 1024 MiB memory, a 120-second Lambda timeout, batch size 1,
 concurrency 2, queue visibility 720 seconds, and DLQ redrive after 5 receives. Queue settings
 are configured in `infra/modules/image-queue`; staging Lambda/IAM/event-source wiring

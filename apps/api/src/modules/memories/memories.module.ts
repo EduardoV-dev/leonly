@@ -8,6 +8,7 @@ import { MemoryReactionsController } from "./controllers/memory-reactions.contro
 import { MemoriesService } from "./services/memories.service";
 import { MemoryCommentsService } from "./services/memory-comments.service";
 import { MemoryDetailService } from "./services/memory-detail.service";
+import { MemoryEditService } from "./services/memory-edit.service";
 import { MemoryListService } from "./services/memory-list.service";
 import { MemoryReactionsService } from "./services/memory-reactions.service";
 
@@ -18,6 +19,7 @@ import { MemoryReactionsService } from "./services/memory-reactions.service";
     MemoriesService,
     MemoryListService,
     MemoryDetailService,
+    MemoryEditService,
     MemoryReactionsService,
     MemoryCommentsService,
   ],

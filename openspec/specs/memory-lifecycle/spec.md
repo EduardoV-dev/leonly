@@ -40,72 +40,77 @@ Timeline eligibility SHALL require a null `deleted_at` timestamp and `timeline` 
 
 ### Requirement: Preserve ordered photo metadata and cover integrity
 
-The system SHALL persist photo metadata with a UUID identifier belonging to one memory with a deterministic
-per-memory ordering position and an object-path reference. A memory MAY reference one cover photo, but any
-cover reference MUST identify a photo belonging to that same memory. Photo availability MUST inherit from
-its parent memory. Photo ordering and cover selection MUST remain valid without requiring binary upload
-behavior.
+Committed photos SHALL use same-space memory/file associations with unique per-memory positions and
+exclusive root-file attachment. Cover SHALL reference an attachment of that memory or be null when
+no photos remain. Availability SHALL inherit from the parent and file eligibility. Edits MUST
+preserve retained identities and relative order, append new uploads in selection order, and commit
+final associations/cover without waiting for new variants. Retained objects MUST NOT be rewritten.
+Selecting an unready new cover MUST NOT silently change its identity or hide ready retained photos.
 
 #### Scenario: Photos retain deterministic order
-
-- GIVEN multiple photo metadata records belong to one memory
-- WHEN their metadata is read
-- THEN each has a unique per-memory position and the records have a deterministic order
+- **WHEN** committed photo associations are read
+- **THEN** they have unique positions and deterministic persisted order
 
 #### Scenario: Cover references another memory
+- **WHEN** a cover points to a file not attached to that memory
+- **THEN** persistence rejects the invalid relationship
 
-- GIVEN a cover reference targets a photo belonging to a different memory
-- WHEN the relationship is persisted
-- THEN the system rejects the invalid relationship
+#### Scenario: Edit changes the photo set
+- **WHEN** Save removes B, retains A/C, and adds pending D
+- **THEN** final A/C/D associations and selected cover commit together, B disappears immediately, A/C remain usable, and unrelated data is preserved
 
 ### Requirement: Protect private photo objects by available-memory membership
 
-New creation photo objects SHALL reside in a private Cloudflare R2 bucket. Staging keys SHALL use `staging/memories/{spaceId}/{uploadId}/original`; final originals and variants SHALL use `memories/{spaceId}/{uploadId}/...`. Upload capability MUST be authorized by authenticated available membership and limited to its staging key. Final writes MUST remain server-controlled and actual final bytes MUST be validated before attachment. Every intended final copy SHALL be durably attributed to an upload record before copying. Public access and client-side storage credentials MUST NOT be available. New read/download endpoints, storage cleanup, and R2 lifecycle rules SHALL be deferred.
-
-Existing Supabase-backed readers SHALL retain their available-memory membership authorization. These legacy read guarantees MUST NOT imply R2 read support for newly created PostgreSQL memories.
+Current-backend photos SHALL remain in the configured private bucket under server-selected immutable
+keys with durable file attribution before storage writes. Session-derived active-space membership
+SHALL authorize uploads and new signed reads. Verified bytes SHALL be required for readiness, not
+for committing a new photo association. Creation and editing SHALL share exclusive attachment
+claims; unconsumed uploads remain separate from committed associations. Physical cleanup and bucket
+lifecycle rules remain deferred.
 
 #### Scenario: Available member reads a cover object
-- **WHEN** an available member reads a legacy cover through the existing storage reader
-- **THEN** that reader authorizes only the object belonging to an available memory in the member's available space
+- **WHEN** an active member reads an eligible current-backend photo
+- **THEN** the authorized read signs only its recorded ready variant
 
 #### Scenario: Object belongs to an unavailable or other-space memory
-- **WHEN** an existing reader receives a request for an object belonging to a deleted, unauthorized, or other-space memory
-- **THEN** it returns no authorized object and exposes no parent-memory metadata
+- **WHEN** a fresh read targets a deleted, unauthorized, other-space, or detached photo
+- **THEN** no new URL or parent/storage metadata is returned
 
 #### Scenario: Creation stages a prospective object
-- **WHEN** an authenticated available member obtains a staging upload capability
-- **THEN** it targets only the authorized staging key and an upload record exists before the client uploads
+- **WHEN** an authenticated member obtains an upload capability
+- **THEN** its immutable server-selected object has a durable file record before upload
 
 #### Scenario: Staged creation cannot complete
-- **WHEN** an upload cannot commit a parent memory and asset records
-- **THEN** its staging/final copies remain private and attributable without a cleanup-execution promise
+- **WHEN** an upload cannot commit a parent memory association
+- **THEN** its objects remain private and attributed without a cleanup-execution promise
 
 #### Scenario: Staging URL is reused after promotion
-- **WHEN** the client writes staging again after the final copy is accepted
-- **THEN** the accepted final original and worker input do not change
+- **WHEN** a client reuses an upload capability after its immutable key already exists
+- **THEN** the accepted original and worker input cannot be overwritten
+
+#### Scenario: Edit attaches an unready addition
+- **WHEN** Save commits a newly added photo before variants finish
+- **THEN** its association is current but only verified ready variants can receive signed URLs and other variants remain nullable
 
 ### Requirement: Resolve private cover previews on the server
 
-The system SHALL expose a same-origin cover-photo media URL only after a server-side resolver establishes
-that the requested memory is available to the authenticated requester. Every request to that media URL MUST
-reauthorize the parent memory before returning bytes, MUST use server-owned persisted object metadata, and
-MUST NOT expose or accept an object path, redirect, signed Storage credential, or client-supplied identity as
-authority. Missing, deleted, other-space, and unauthorized memories MUST return the same generic unavailable
-outcome, and media URLs MUST NOT be persisted as memory metadata.
+Current-backend readers SHALL authorize the member, parent, attachment, and ready variant before
+issuing a direct storage GET URL for 300 seconds, subject to earlier credential expiry. URLs MUST NOT
+be persisted as memory metadata or accepted as mutation authority. Standalone object keys and reusable
+credentials MUST NOT be exposed. Earlier URLs can remain usable until effective expiry after removal
+or access revocation. Pending/failed new variants MUST NOT prevent signing eligible retained variants.
 
 #### Scenario: Authorized memory receives a preview URL
-
-- GIVEN an authenticated user resolves an available memory with a cover photo
-- WHEN the server resolves its cover preview
-- THEN it returns an opaque same-origin media URL whose requests reauthorize that memory before returning
-  photo bytes
+- **WHEN** an active member resolves a ready attached preview
+- **THEN** the response contains a signed GET URL derived from recorded storage metadata
 
 #### Scenario: Unavailable memory requests a preview URL
+- **WHEN** a request targets a missing, deleted, cross-space, or unauthorized memory
+- **THEN** generic unavailable returns no new preview or storage metadata
 
-- GIVEN a request targets a missing, deleted, other-space, or unauthorized memory
-- WHEN the server resolves its cover preview
-- THEN it returns the generic unavailable outcome without returning photo bytes, Storage credentials, or
-  object metadata
+#### Scenario: Existing URL outlives authorization
+- **WHEN** a photo is detached or membership is revoked after issuance
+- **THEN** fresh reads deny that preview while the earlier capability can remain usable until effective expiry
 
 ### Requirement: Authorize through the available space
 
@@ -165,12 +170,21 @@ The system SHALL use UUID identifiers for spaces, memberships, file uploads, mem
 
 ### Requirement: Memory assets exclude staging lifecycle
 
-`memory_assets` SHALL reference exactly one committed memory and a deterministic nonnegative position. `memory_asset_objects` SHALL represent only final originals and their variants, with one object per asset/variant pair and unique final paths. Upload issuance, promotion attempts, and unattached objects MUST be represented by `file_uploads`, not by nullable-memory staging assets. Asset-space and cover-memory integrity MUST be enforced.
+Committed photo associations SHALL represent the selection saved on a committed memory, independently
+of image-processing readiness. Issuance/upload alone SHALL NOT attach a file. Save SHALL attach
+accepted new originals directly without an edit-attempt or reservation model. Same-space identity,
+exclusive attachment, unique ordered positions, and cover membership MUST remain enforced. Explicit
+removal SHALL detach and retire the file family in the same transaction; no old-to-new delayed swap
+or automatic restoration after processing failure SHALL be introduced.
 
 #### Scenario: Upload is issued without a memory
-- **WHEN** an upload record is created or an original is promoted before memory commit
-- **THEN** no committed memory asset or memory asset object exists solely to represent that staging/finalization attempt
+- **WHEN** issuance creates a file before a memory save
+- **THEN** no committed association is created merely to represent staging
 
 #### Scenario: Memory commits accepted images
-- **WHEN** the memory transaction attaches uploads
-- **THEN** every asset references that memory and its consumed upload, has a unique position, and owns an original plus pending cover/detail metadata
+- **WHEN** creation or editing commits accepted new originals
+- **THEN** each association identifies its memory and file with a unique position while variant readiness remains independent
+
+#### Scenario: Edit addition fails after a removal commits
+- **WHEN** an added photo fails processing after Save already removed an old photo
+- **THEN** the committed selection remains current with a fallback for the failed addition and the removed family remains non-serving and attributed

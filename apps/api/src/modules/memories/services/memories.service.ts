@@ -251,7 +251,7 @@ export class MemoriesService {
       select: { id: true },
     });
 
-    if (!memory) throw new NotFoundException("Memory unavailable.");
+    if (!memory) throw new NotFoundException({ error: "Memory unavailable." });
   }
 
   private async findExistingCreation({

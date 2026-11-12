@@ -1,6 +1,6 @@
 export type MemoryEditPhoto = {
   id: string;
-  previewUrl: string;
+  previewUrl: string | null;
 };
 
 export type MemoryEdit = {
@@ -17,6 +17,6 @@ export type MemoryEdit = {
 
 export type MemoryEditResult = {
   id: string;
-  version: string;
   visibility: "timeline" | "vault";
+  updatedAt: string;
 };

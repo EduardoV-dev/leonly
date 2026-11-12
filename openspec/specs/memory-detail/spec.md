@@ -58,28 +58,43 @@ Creator attribution MUST NOT grant or broaden access to the memory.
 
 ### Requirement: Deterministic private photo presentation
 
-The system SHALL present every attached photo belonging to the authorized memory. When a selected cover
-exists, it MUST appear first; all remaining photos MUST follow by persisted position ascending while keeping
-their relative order. Ready cover and detail variants SHALL use direct storage GET URLs signed for 300 seconds,
-subject to earlier credential expiry; absent or non-ready variants SHALL be nullable. Storage keys and reusable
-credentials MUST NOT be exposed. An issued URL may remain usable until effective expiry after membership
-revocation or deletion. Missing photos and unavailable variants MUST use an accessible fallback without
-preventing other photos from being viewed.
+Authorized detail SHALL present attached photos with the selected cover first and remaining photos
+in persisted relative order. Ready cover/detail variants SHALL use direct GET URLs signed for 300
+seconds, subject to earlier credential expiry; absent variants SHALL be nullable. Fresh reads MUST
+omit removed photos and expose no standalone keys or reusable credentials. Issued URLs can remain
+usable until effective expiry after removal, revocation, or deletion. After an edit commits, retained
+ready photos SHALL remain normally usable while only pending or failed variants use fallbacks.
+Explicit removals SHALL disappear at commit without waiting for additions. A newly selected unready
+cover MAY show its normal fallback without hiding other ready gallery photos or silently changing
+the selected cover. Later processing failure MUST NOT restore removed photos or roll back the edit.
 
 #### Scenario: Selected cover is not the first persisted photo
-
-- **WHEN** an authorized memory's selected cover has a later persisted position
-- **THEN** the gallery shows that cover first and every other photo in persisted-position order
+- **WHEN** the selected cover has a later persisted position
+- **THEN** the gallery places it first and keeps every other photo in persisted relative order
 
 #### Scenario: Memory has no photos
-
-- **WHEN** an authorized memory has no available photo metadata
-- **THEN** the detail view shows a valid accessible no-photo presentation
+- **WHEN** an authorized memory has no attached photos
+- **THEN** detail shows its accessible no-photo fallback
 
 #### Scenario: One photo response is unavailable
+- **WHEN** an authorized photo's signed URL cannot deliver bytes
+- **THEN** that position shows an accessible fallback while the remaining photos stay usable
 
-- **WHEN** one authorized photo cannot deliver bytes through its reauthorizing media URL
-- **THEN** that photo position shows an accessible fallback while the remaining available photos stay usable
+#### Scenario: Editor removes a photo
+- **WHEN** a successful edit detaches a photo
+- **THEN** subsequent detail reads immediately omit it and issue no new URL even if added photos are still processing, while a previously issued URL can work until effective expiry
+
+#### Scenario: Retained and newly added photos are mixed
+- **WHEN** Save retains ready A/C, removes B, and adds pending D
+- **THEN** fresh detail renders A/C normally, omits B, and shows an accessible fallback only for D's unavailable variants
+
+#### Scenario: Selected new cover is not ready
+- **WHEN** the committed selected cover has no ready variant but other retained photos are ready
+- **THEN** cover consumers use their normal fallback and ready retained gallery photos stay usable without a silent cover change
+
+#### Scenario: Added photo fails after Save
+- **WHEN** a newly attached photo permanently fails processing
+- **THEN** its unavailable fallback does not hide retained ready photos, undo saved metadata, or restore removed photos
 
 ### Requirement: Accessible photo navigation
 
@@ -107,41 +122,40 @@ render unnecessary navigation controls.
 
 ### Requirement: Detail extension regions respect visibility
 
-Timeline and Vault detail screens SHALL enable reactions, migrated comments, and one contextual placement button for authorized memories: Move to Vault on Timeline detail and Move to Timeline on Vault detail. They MUST NOT render or mount memory edit or delete controls or issue those unsupported requests. The screens SHALL preserve gallery navigation, related-memory links, and contextual back navigation.
+Timeline and Vault detail screens SHALL enable reactions, migrated comments, one contextual placement
+button, and one Delete action for authorized memories. The Delete action is available only on detail
+screens: Move to Vault on Timeline detail and Move to Timeline on Vault detail. The screens MUST NOT render
+or mount memory edit controls or issue unsupported edit requests. The screens SHALL preserve gallery
+navigation, related-memory links, and contextual back navigation.
 
 #### Scenario: Timeline memory detail is composed
 
 - **WHEN** the detail view renders an authorized Timeline memory
-- **THEN** reactions, comments, and Move to Vault are available while Move to Timeline, edit, and delete controls and their requests are absent
+- **THEN** reactions, comments, Move to Vault, and Delete are available while Move to Timeline and edit controls and their requests are absent
 
 #### Scenario: Vault memory detail is composed
 
 - **WHEN** the detail view renders an authorized Vault memory
-- **THEN** reactions, comments, and Move to Timeline are available while Move to Vault, edit, and delete controls and their requests are absent
+- **THEN** reactions, comments, Move to Timeline, and Delete are available while Move to Vault and edit controls and their requests are absent
 
 ### Requirement: Detail loading and recoverable failure feedback
 
-The system SHALL provide a dedicated loading presentation while authorized detail is pending. A read failure
-that is not an unavailable outcome MUST render a retryable error, MUST NOT display stale detail as current,
-and MUST preserve the requested route for retry. Retrying or directly refreshing an authorized detail URL
-SHALL resolve access again and issue current opaque photo media URLs. Realtime partner updates are not
-required.
+Detail SHALL show dedicated loading and retryable read-failure states without stale content presented
+as current. Retry and refresh SHALL preserve the requested route, reauthorize access, and issue fresh
+signed URLs for eligible variants, including newly ready edit additions. Realtime partner updates and
+automatic image-readiness polling are not required.
 
 #### Scenario: Initial detail read is pending
-
-- **WHEN** an authorized memory detail read has not completed
-- **THEN** the route shows a detail-shaped loading presentation without fabricated memory content
+- **WHEN** an authorized detail read has not completed
+- **THEN** the route shows detail-shaped loading without fabricated content
 
 #### Scenario: Detail read fails
-
-- **WHEN** an authorized detail read fails for a reason other than an unavailable memory
+- **WHEN** a read fails for a reason other than an unavailable memory
 - **THEN** the route shows no stale detail and provides an accessible retry action
 
 #### Scenario: Authorized detail route is refreshed
-
-- **WHEN** a member directly refreshes or retries an authorized memory detail URL
-- **THEN** the system resolves authorization again and renders current detail with reauthorizing photo media
-  URLs
+- **WHEN** a member directly refreshes or retries detail
+- **THEN** current authorization and detail are resolved with newly signed URLs for eligible photos
 
 ### Requirement: Detail reaction summary and controls
 

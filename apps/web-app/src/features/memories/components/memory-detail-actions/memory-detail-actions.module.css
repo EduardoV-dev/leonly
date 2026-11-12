@@ -12,3 +12,37 @@
 .iconActions {
   gap: 0.65rem;
 }
+
+.editLink {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 1rem;
+  border: 1px solid #dfd4d2;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  color: #252323;
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+.editLink:hover {
+  border-color: var(--auth-brand);
+  background: #fff4f3;
+}
+.editLink:focus-visible {
+  outline: 2px solid #b82b49;
+  outline-offset: 2px;
+}
+.editLink svg {
+  width: 1rem;
+  height: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .editLink {
+    transition: none;
+  }
+}

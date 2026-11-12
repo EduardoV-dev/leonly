@@ -1,7 +1,14 @@
 # US-007: Edit Memory
 
-**Remaining work:** Migrate the editor and photo workflow to NestJS/Prisma. The legacy implementation
-does not operate on new-backend memories. The [editing specification](../../../../openspec/specs/memory-editing/spec.md)
+**Remaining work:** None in the editor itself. The editor now reads and saves through the current
+backend (`GET /api/memories/:memoryId/edit` and `PATCH /api/memories/:memoryId`): it reuses
+creation's upload issuance, immutable PUT, exclusive attachment claims, version-checked commit, and
+asynchronous image processing. Save success means commit, not image readiness; retained photos
+keep their objects and ready variants, removed photos disappear at commit, and new photos process
+independently with per-photo fallbacks. There is no edit-attempt model, historical result replay,
+or automatic recovery: after a lost or uncertain response the editor offers a current-state reload
+before another deliberate save. Legacy Supabase edit routes, upload grants, and preview readers
+were removed with the migration. The [editing specification](../../../../openspec/specs/memory-editing/spec.md)
 is authoritative where this historical story differs, including the ten-photo limit and concurrency rules.
 
 **Priority:** Must

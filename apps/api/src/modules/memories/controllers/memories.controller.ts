@@ -1,4 +1,9 @@
-import type { MemoryDetail, MemoryListPage, MemoryPlacementResult } from "@leonly/utils/contracts";
+import type {
+  MemoryDetail,
+  MemoryEditorSnapshot,
+  MemoryListPage,
+  MemoryPlacementResult,
+} from "@leonly/utils/contracts";
 import {
   Body,
   Controller,
@@ -6,9 +11,7 @@ import {
   Get,
   Header,
   HttpStatus,
-  NotFoundException,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -19,17 +22,22 @@ import type { AuthenticatedRequest } from "../../../auth/guards/auth.guard";
 import { ApiErrorResponses, ApiSuccessResponse } from "../../../common/http/docs/api-response.docs";
 import { createUuidValidationPipe } from "../../../common/utils/validation-pipes";
 import { MEMORY_DETAIL_EXAMPLE, MEMORY_DETAIL_SCHEMA } from "../docs/memory-detail.docs";
+import {
+  MEMORY_EDIT_SAVE_RESULT_EXAMPLE,
+  MEMORY_EDITOR_SNAPSHOT_EXAMPLE,
+  MEMORY_EDITOR_SNAPSHOT_SCHEMA,
+} from "../docs/memory-editor.docs";
 import { MEMORY_LIST_EXAMPLE, MEMORY_LIST_SCHEMA } from "../docs/memory-list.docs";
 import { CreateMemoryDto } from "../dtos/create-memory.dto";
+import { EditMemoryDto } from "../dtos/edit-memory.dto";
 import { ListMemoriesDto } from "../dtos/list-memories.dto";
 import { PlaceMemoryDto } from "../dtos/place-memory.dto";
 import { type CreationResult, MemoriesService } from "../services/memories.service";
 import { MemoryDetailService } from "../services/memory-detail.service";
+import { MemoryEditService } from "../services/memory-edit.service";
 import { MemoryListService } from "../services/memory-list.service";
 
-const INVALID_MEMORY_ID_MESSAGE = "Memory id is not valid.";
-
-const UUID_PARAM_VALIDATOR = createUuidValidationPipe(INVALID_MEMORY_ID_MESSAGE);
+const UUID_PARAM_VALIDATOR = createUuidValidationPipe("Memory id is not valid.");
 
 @Controller("memories")
 @ApiTags("Memories")
@@ -39,7 +47,66 @@ export class MemoriesController {
     private readonly memoriesService: MemoriesService,
     private readonly memoryListService: MemoryListService,
     private readonly memoryDetailService: MemoryDetailService,
+    private readonly memoryEditService: MemoryEditService,
   ) {}
+
+  @Get(":memoryId/edit")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({
+    summary: "Load the authorized editable snapshot of an active-space memory",
+    description:
+      "Returns editable metadata, the exact updatedAt token, all attached photo IDs in persisted position order, and nullable 300-second signed previews. Independent of current placement.",
+  })
+  @ApiErrorResponses(400, 401, 404, 429, 500, 503)
+  @ApiSuccessResponse({
+    description: "Editable memory snapshot",
+    data: MEMORY_EDITOR_SNAPSHOT_SCHEMA,
+    example: MEMORY_EDITOR_SNAPSHOT_EXAMPLE,
+  })
+  async getEditSnapshot(
+    @Req() request: AuthenticatedRequest,
+    @Param("memoryId", UUID_PARAM_VALIDATOR) memoryId: string,
+  ): Promise<MemoryEditorSnapshot> {
+    return this.memoryEditService.getEditableSnapshot({
+      userId: request.authUser.id,
+      memoryId,
+    });
+  }
+
+  @Patch(":memoryId")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({
+    summary: "Commit an edit to an active-space memory",
+    description:
+      "Atomically commits metadata, placement, final ordered photo selection, cover, removals, and new-photo processing events. Success means persistence, not image readiness; new photos process after commit as in creation. No edit idempotency key or status resource exists.",
+  })
+  @ApiBody({ type: EditMemoryDto })
+  @ApiErrorResponses(400, 401, 404, 409, 500)
+  @ApiSuccessResponse({
+    description: "Edit committed; new photo variants may still be processing",
+    data: {
+      type: "object",
+      required: ["id", "visibility", "updatedAt"],
+      properties: {
+        id: { type: "string", format: "uuid" },
+        visibility: { type: "string", enum: ["timeline", "vault"] },
+        updatedAt: {
+          type: "string",
+          format: "date-time",
+          description:
+            "Persisted advanced token; reload the editor before any later deliberate save.",
+        },
+      },
+    },
+    example: MEMORY_EDIT_SAVE_RESULT_EXAMPLE,
+  })
+  async saveEdit(
+    @Req() request: AuthenticatedRequest,
+    @Param("memoryId", UUID_PARAM_VALIDATOR) memoryId: string,
+    @Body() body: EditMemoryDto,
+  ): Promise<MemoryPlacementResult> {
+    return this.memoryEditService.save({ userId: request.authUser.id, memoryId, body });
+  }
 
   @Patch(":memoryId/placement")
   @Header("Cache-Control", "no-store")
@@ -65,10 +132,7 @@ export class MemoriesController {
   })
   async updateVisibility(
     @Req() request: AuthenticatedRequest,
-    @Param(
-      "memoryId",
-      new ParseUUIDPipe({ exceptionFactory: () => new NotFoundException("Memory unavailable.") }),
-    )
+    @Param("memoryId", UUID_PARAM_VALIDATOR)
     memoryId: string,
     @Body() body: PlaceMemoryDto,
   ): Promise<MemoryPlacementResult> {
