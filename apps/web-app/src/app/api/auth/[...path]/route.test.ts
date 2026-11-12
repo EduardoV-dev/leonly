@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { apiRequestMock, logServerErrorMock, requestLoggerMock } = vi.hoisted(() => ({
+const { apiRequestMock, captureExceptionMock } = vi.hoisted(() => ({
   apiRequestMock: vi.fn(),
-  logServerErrorMock: vi.fn(),
-  requestLoggerMock: {},
+  captureExceptionMock: vi.fn(),
 }));
 
 vi.mock("axios", async (importOriginal) => {
@@ -18,9 +17,8 @@ vi.mock("axios", async (importOriginal) => {
 });
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/server-logger", () => ({
-  createRequestLogger: () => requestLoggerMock,
-  logServerError: logServerErrorMock,
+vi.mock("@sentry/nextjs", () => ({
+  captureException: captureExceptionMock,
 }));
 vi.mock("@/constants/environment-variables", () => ({
   ENVIRONMENT_VARIABLES: { NEXT_PUBLIC_API_BASE_URL: "http://nest-api.test" },
@@ -107,10 +105,13 @@ describe("Better Auth API proxy", () => {
     await expect(response.json()).resolves.toEqual({
       message: "Authentication service is unavailable.",
     });
-    expect(logServerErrorMock).toHaveBeenCalledWith(
-      { event: "auth_proxy_failed", operation: "proxy_auth_request" },
-      connectionError,
-      requestLoggerMock,
-    );
+    expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+
+    const [capturedError, captureOptions] = captureExceptionMock.mock.calls[0];
+    expect(capturedError).not.toBe(connectionError);
+    expect((capturedError as Error).message).toBe("Authentication service is unavailable.");
+    expect(captureOptions).toEqual({
+      tags: { event: "auth_proxy_failed", operation: "proxy_auth_request" },
+    });
   });
 });

@@ -1,7 +1,7 @@
 import "server-only";
+import * as Sentry from "@sentry/nextjs";
 import axios, { type AxiosRequestConfig, type AxiosResponse } from "axios";
 import { ENVIRONMENT_VARIABLES } from "@/constants/environment-variables";
-import { createRequestLogger, logServerError } from "@/lib/server-logger";
 
 const authApi = axios.create({
   baseURL: `${ENVIRONMENT_VARIABLES.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "")}/api`,
@@ -74,12 +74,11 @@ async function proxyAuthRequest(request: Request, context: AuthRouteContext): Pr
       maxRedirects: 0,
       transformResponse: [],
     });
-  } catch (error) {
-    logServerError(
-      { event: "auth_proxy_failed", operation: "proxy_auth_request" },
-      error,
-      createRequestLogger(request),
-    );
+  } catch {
+    // Fixed message: the raw Axios error carries request headers (cookies) in its config, which must not reach Sentry.
+    Sentry.captureException(new Error("Authentication service is unavailable."), {
+      tags: { event: "auth_proxy_failed", operation: "proxy_auth_request" },
+    });
     return Response.json({ message: "Authentication service is unavailable." }, { status: 502 });
   }
   const responseHeaders = new Headers();
