@@ -1,9 +1,16 @@
-# US-002: Relationship/Friendship Day Counter
+# 01. Verify and Complete the Day Counter (US-002)
 
-**Status:** Retained pending confirmation of a completed and archived OpenSpec change.
+**Release:** MVP. **Prerequisites:** active-space setup and settings (US-001).
 
-**Priority:** Must<br>
-**Depends on:** US-001
+## Work to do
+
+1. Check the current dashboard counter against the acceptance criteria below; implementation status
+   is unconfirmed, so do not assume the feature must be rebuilt.
+2. Decide the fallback for invalid stored dates and fix any demonstrated calculation or UI gaps.
+3. Verify settings changes and local-date rollover in the running app, plus deterministic date tests.
+
+Delete this task when the acceptance criteria and verification checks pass. OpenSpec archival is not
+a prerequisite for removing it.
 
 ## User Story
 

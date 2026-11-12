@@ -1,10 +1,19 @@
-# US-025: View Expanded Shared-Space Dashboard
+# 01. Expand the Shared-Space Dashboard (US-025)
 
 **Release:** Future.
 
-**Priority:** Future<br>
 **OpenSpec:** [shared-space-dashboard](../../../../openspec/specs/shared-space-dashboard/spec.md)<br>
-**Depends on:** US-001, US-002, US-003, US-004, US-019, US-024
+**Prerequisites:** active-space setup, verified day counter, memory list/creation, ranked places, and
+invitation status (US-001, US-002, US-003, US-004, US-019, US-024).
+
+## Work to do
+
+1. Resolve preview limits, deterministic ordering, and section-level versus whole-page failure.
+2. Extend the dashboard with real space/member data and bounded memory/place previews; preserve
+   one-member invitation status above all other content.
+3. Verify one-/two-member states, empty/error behavior, direct refresh, and cross-space isolation.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

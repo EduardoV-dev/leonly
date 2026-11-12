@@ -1,9 +1,17 @@
-# US-019: View Ranked Places
+# 04. View Ranked Places (US-019)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-001, US-016 through US-018
+**Prerequisites:** active-space setup (US-001), currency conversion, place creation, and expense totals
+(US-016 through US-018).
+
+## Work to do
+
+1. Resolve pagination, initial sort, rating precision, and unavailable-conversion ordering decisions.
+2. Implement scoped place cards with the five supported sorts and cursor-based load more.
+3. Verify deterministic pages, ties, missing values, conversion consistency, and accessible states.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

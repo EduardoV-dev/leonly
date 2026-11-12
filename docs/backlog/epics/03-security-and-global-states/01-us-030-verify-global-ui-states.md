@@ -1,9 +1,16 @@
-# US-030: Verify Global Empty, Loading, and Error States
+# 01. Verify Global Empty, Loading, and Error States (US-030)
 
-**Status:** Retained pending confirmation of a completed and archived OpenSpec change.
+**Release:** MVP. **Prerequisites:** the MVP flows listed under Scope must be ready to exercise.
+Reference stories: US-001 through US-015, US-024, US-026 through US-029, US-031.
 
-**Priority:** Must<br>
-**Depends on:** US-001 through US-015, US-024, US-026 through US-029, US-031
+## Work to do
+
+1. Resolve which mutations may safely retry and how forms handle navigation with unsaved work.
+2. Exercise each scoped flow in loading, empty, success, not-found, and failure states; fix gaps.
+3. Verify keyboard access, announced feedback, direct refresh, and duplicate-submission prevention.
+
+Delete this task once the acceptance criteria and verification checks pass; no audit history needs
+to stay in the backlog.
 
 ## User Story
 

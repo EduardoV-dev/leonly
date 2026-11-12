@@ -1,9 +1,16 @@
-# US-023: Delete Place
+# 08. Delete a Place (US-023)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-017 through US-022
+**Prerequisites:** place creation, expenses, list/detail, rating, and editing (US-017 through US-022).
+
+## Work to do
+
+1. Resolve delete-versus-edit/rating conflicts, stale confirmations, and post-delete navigation.
+2. Implement confirmation and authorized soft deletion with retained-data access denial.
+3. Verify removal from all views, budgets, averages, and rankings; cover media denial and races.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

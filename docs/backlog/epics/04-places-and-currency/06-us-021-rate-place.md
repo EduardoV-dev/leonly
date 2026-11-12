@@ -1,9 +1,16 @@
-# US-021: Rate Place
+# 06. Rate a Place (US-021)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-017, US-019, US-020
+**Prerequisites:** place creation, ranked list, and detail (US-017, US-019, US-020).
+
+## Work to do
+
+1. Resolve rating-clear storage, average rounding/ranking, and same-member conflict behavior.
+2. Implement set/replace/clear controls and authenticated member-owned mutations.
+3. Verify uniqueness under concurrency, refreshed averages/ranking, and failure rollback.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

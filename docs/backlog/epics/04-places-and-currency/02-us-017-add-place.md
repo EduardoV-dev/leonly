@@ -1,9 +1,16 @@
-# US-017: Add Place
+# 02. Add a Place (US-017)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-001, US-016
+**Prerequisites:** active-space setup (US-001) and the preferred-currency contract (US-016).
+
+## Work to do
+
+1. Resolve input limits, amount precision, atomic creation, retry behavior, and navigation decisions.
+2. Implement place creation with optional private cover, initial expenses, and member-owned rating.
+3. Verify validation, derived ownership, duplicate requests, and upload/database failure cleanup.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

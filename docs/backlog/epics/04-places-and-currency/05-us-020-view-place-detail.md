@@ -1,9 +1,17 @@
-# US-020: View Place Detail
+# 05. View Place Detail (US-020)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-016 through US-019
+**Prerequisites:** currency conversion, place creation, expense totals, and ranked places
+(US-016 through US-019).
+
+## Work to do
+
+1. Implement the authorized detail read and page, reusing the currency, budget, and rating contracts.
+2. Add optional-data fallbacks and an action region for later rating/edit/delete tasks.
+3. Verify member-specific ratings, currency failures, direct refresh, and generic not-found behavior.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

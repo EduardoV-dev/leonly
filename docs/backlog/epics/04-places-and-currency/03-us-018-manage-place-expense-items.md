@@ -1,9 +1,18 @@
-# US-018: Manage Place Expense Items and Converted Total
+# 03. Manage Place Expenses and Converted Total (US-018)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-016, US-017
+**Prerequisites:** currency conversion (US-016) and place creation (US-017), including their amount
+and validation contracts.
+
+## Work to do
+
+1. Resolve item limits, ordering, and concurrent edit/delete behavior.
+2. Implement expense-item add/edit/remove and the temporary total-currency selector.
+3. Verify original values stay unchanged and one rate snapshot produces the total; cover no-rate
+   fallback, authorization, and concurrent mutations.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

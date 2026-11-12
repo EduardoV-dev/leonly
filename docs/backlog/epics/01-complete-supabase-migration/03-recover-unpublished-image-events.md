@@ -1,6 +1,13 @@
-# Recover Unpublished Image Events
+# 03. Recover Unpublished Image Events
 
-**Priority:** MVP operational completion. **Dependencies:** existing transactional outbox and image worker.
+**Release:** MVP. **Prerequisites:** existing transactional outbox and image worker.
+Independent of storage cleanup.
+
+## Work to do
+
+1. Choose an authenticated operator-triggered or scheduled path to republish committed events.
+2. Implement recovery using the existing outbox and duplicate-safe worker contracts.
+3. Verify outage recovery and concurrent retries; document invocation, failures, and rollback.
 
 ## Outcome
 

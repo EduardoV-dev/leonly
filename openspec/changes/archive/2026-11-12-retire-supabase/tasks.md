@@ -28,6 +28,4 @@
 - [x] 4.2 Run `pnpm --filter web-app check`, `pnpm --filter web-app typecheck`, `pnpm --filter web-app test:run`, and `pnpm --filter web-app build` with Supabase configuration absent, accounting for automatically loaded env files; record each result and any verification blocker without exposing secrets.
 - [x] 4.3 Verify supported current journeys with configured local integrations: sign-in/out, create/join/onboarding/settings, Timeline/Vault/detail, create/edit/place/delete, comments/replies/reactions, and upload-to-ready processing; verify retired frontend routes perform no legacy work and record unavailable live checks as pending.
 
-Deployment and hosted shutdown are operator-owned actions outside repository scope; their ordered
-procedure, evidence fields, and rollback boundary live in
-`docs/backlog/epics/complete-supabase-migration/retire-supabase-runbook.md` and remain pending there.
+Deployment and hosted shutdown are operator-owned actions outside repository scope.

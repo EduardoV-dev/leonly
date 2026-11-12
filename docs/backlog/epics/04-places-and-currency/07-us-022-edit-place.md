@@ -1,9 +1,16 @@
-# US-022: Edit Place
+# 07. Edit a Place (US-022)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-017, US-020
+**Prerequisites:** place creation and detail (US-017, US-020). Rating implementation is not a blocker.
+
+## Work to do
+
+1. Resolve cover removal, stale writes, full-versus-partial updates, and navigation decisions.
+2. Implement the prefilled form and authorized save, reusing creation's validation and media rules.
+3. Verify list/detail refresh, concurrent changes, and safe cover replacement/failure cleanup.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 

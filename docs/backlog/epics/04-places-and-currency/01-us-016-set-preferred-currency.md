@@ -1,9 +1,17 @@
-# US-016: Set Preferred Currency
+# 01. Set Preferred Currency (US-016)
 
 **Release:** Future.
 
-**Priority:** Future<br>
-**Depends on:** US-001, US-015
+**Prerequisites:** active-space setup and settings (US-001, US-015).
+
+## Work to do
+
+1. Resolve the provider, cache, initial preference, precision, rounding, pagination-snapshot, and
+   concurrent-update decisions below before building dependent place features.
+2. Implement the per-member USD/NIO setting and server-owned conversion contract.
+3. Verify member isolation, stable rate snapshots, and fresh/cached/no-rate behavior.
+
+Delete this task when the acceptance criteria and verification checks below pass.
 
 ## User Story
 
