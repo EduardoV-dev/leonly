@@ -43,6 +43,7 @@ export class MemoryReactionsService {
       where: {
         memoryId: { in: memoryIds },
         spaceId,
+        deletedAt: null,
         reactedByMember: { deletedAt: null, spaceId },
       },
       select: {
@@ -102,21 +103,35 @@ export class MemoryReactionsService {
         options: { transaction },
       });
 
-      const where = { reactedByMemberId_memoryId: { reactedByMemberId: membership.id, memoryId } };
-      const current = await transaction.memoryReaction.findUnique({ where });
+      const identity = {
+        reactedByMemberId_memoryId: { reactedByMemberId: membership.id, memoryId },
+      };
+      const current = await transaction.memoryReaction.findUnique({
+        where: { ...identity, deletedAt: null },
+      });
 
-      if (current?.reactionType === reactionType) {
-        await transaction.memoryReaction.delete({ where });
+      // The unique (member, memory) identity is retained by soft-deleting instead of
+      // removing rows, so an inactive row is revived rather than re-created.
+      if (current && current.reactionType === reactionType) {
+        await transaction.memoryReaction.update({
+          where: identity,
+          data: { deletedAt: new Date() },
+        });
       } else if (current) {
-        await transaction.memoryReaction.update({ where, data: { reactionType } });
+        await transaction.memoryReaction.update({
+          where: identity,
+          data: { deletedAt: null, reactionType },
+        });
       } else {
-        await transaction.memoryReaction.create({
-          data: {
+        await transaction.memoryReaction.upsert({
+          where: identity,
+          create: {
             spaceId: membership.spaceId,
             memoryId,
             reactedByMemberId: membership.id,
             reactionType,
           },
+          update: { deletedAt: null, reactionType },
         });
       }
 

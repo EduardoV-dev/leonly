@@ -71,7 +71,7 @@ describe("VaultMemoryDetailPage", () => {
     expect(screen.getByRole("heading", { name: "More from the Vault" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move to Timeline" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Reactions")).toBeInTheDocument();
     expect(document.querySelector('[data-detail-footer="true"]')).toHaveTextContent(

@@ -17,4 +17,4 @@ This change does not migrate memory readers. The current web-app detail, photo, 
 
 ## Outbox contract
 
-Persist events in `outbox_event` with `entity_type`, `entity_id`, `event_type`, `payload`, `created_at`, `published_at`, `publish_attempt_count`, and `last_publish_error_code`. Neither the table nor the image transport envelope has a schema-version field. The envelope uses `entityType` and `entityId`; its payload identifies `memoryId`, `spaceId`, and requested `variantNames`. Legacy asset-shaped messages must be drained or quarantined before enabling the new worker.
+Persist events in `outbox_events` with `entity_type`, `entity_id`, `event_type`, `payload`, `created_at`, `published_at`, `publish_attempt_count`, and `last_publish_error_code`. Neither the table nor the image transport envelope has a schema-version field. The envelope uses `entityType` and `entityId`; its payload identifies `memoryId`, `spaceId`, and requested `variantNames`. Legacy asset-shaped messages must be drained or quarantined before enabling the new worker.

@@ -126,21 +126,6 @@ function editParameters(payload: EditMemoryUploadGrantPayload) {
   };
 }
 
-async function enqueueEditCleanup(
-  payload: EditMemoryUploadGrantPayload,
-  includePermanentPaths: boolean,
-): Promise<void> {
-  await createAdminClient().rpc("enqueue_memory_edit_cleanup", {
-    p_actor_subject: payload.actorId,
-    p_memory_id: payload.memoryId,
-    p_mutation_id: payload.mutationId,
-    p_paths: payload.newAssets.flatMap((asset) => [
-      asset.temporaryPath,
-      ...(includePermanentPaths ? [asset.originalPath, asset.coverPath, asset.detailPath] : []),
-    ]),
-  });
-}
-
 function handleOutcome(status: string): never {
   if (status === "unavailable") unavailable();
   if (status === "conflict") conflict();
@@ -242,7 +227,6 @@ export async function editMemory(
     const preflight = await admin.rpc("get_memory_edit_result", editParameters(payload));
     const parsedPreflight = editResultSchema.safeParse(preflight.data);
     if (preflight.error || !parsedPreflight.success) {
-      await enqueueEditCleanup(payload, true).catch(() => undefined);
       throw new Error("Unable to check memory edit status.", { cause: preflight.error });
     }
     if (
@@ -251,7 +235,6 @@ export async function editMemory(
       parsedPreflight.data.updated_at &&
       parsedPreflight.data.visibility
     ) {
-      await enqueueEditCleanup(payload, false).catch(() => undefined);
       return {
         id: parsedPreflight.data.memory_id,
         version: encodeMemoryVersion(parsedPreflight.data.updated_at),
@@ -259,7 +242,6 @@ export async function editMemory(
       };
     }
     if (parsedPreflight.data.status !== "pending") {
-      await enqueueEditCleanup(payload, true).catch(() => undefined);
       handleOutcome(parsedPreflight.data.status);
     }
 
@@ -309,7 +291,6 @@ export async function editMemory(
     });
     const result = editResultSchema.safeParse(response.data);
     if (response.error || !result.success) {
-      await enqueueEditCleanup(payload, true).catch(() => undefined);
       throw new Error("Unable to finalize the memory edit.", { cause: response.error });
     }
     if (
@@ -318,10 +299,8 @@ export async function editMemory(
       !result.data.updated_at ||
       !result.data.visibility
     ) {
-      await enqueueEditCleanup(payload, true).catch(() => undefined);
       handleOutcome(result.data.status);
     }
-    await enqueueEditCleanup(payload, false).catch(() => undefined);
     return {
       id: result.data.memory_id,
       version: encodeMemoryVersion(result.data.updated_at),
@@ -340,4 +319,3 @@ export async function editMemory(
 }
 
 export { MemoryInputError } from "./memory-input-validation";
-export { cleanupResources } from "./resource-cleanup";

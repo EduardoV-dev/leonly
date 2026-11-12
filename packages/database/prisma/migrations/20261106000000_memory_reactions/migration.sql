@@ -1,7 +1,7 @@
 CREATE TYPE "memory_reaction_type" AS ENUM ('heart', 'laugh', 'cry', 'star');
 
 CREATE TABLE "memory_reactions" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "space_id" UUID NOT NULL,
   "memory_id" UUID NOT NULL,
   "reacted_by_member_id" UUID NOT NULL,

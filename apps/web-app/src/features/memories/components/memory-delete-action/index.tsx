@@ -20,24 +20,22 @@ import styles from "./memory-delete-action.module.css";
 type MemoryDeleteActionProps = {
   memoryId: string;
   onPendingChange?: (isPending: boolean) => void;
-  version: string;
   visibility: "timeline" | "vault";
 };
 
 export function MemoryDeleteAction({
   memoryId,
   onPendingChange,
-  version,
   visibility,
 }: Readonly<MemoryDeleteActionProps>) {
   const { t } = useTranslation("memories");
   const [isOpen, setIsOpen] = useState(false);
-  const deletion = useDeleteMemory({ memoryId, version, visibility });
+  const deletion = useDeleteMemory({ memoryId, visibility });
 
   useEffect(() => onPendingChange?.(deletion.isPending), [deletion.isPending, onPendingChange]);
 
   useEffect(() => {
-    if (deletion.status === "conflict" || deletion.status === "unavailable") setIsOpen(false);
+    if (deletion.status === "unavailable") setIsOpen(false);
   }, [deletion.status]);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -51,7 +49,6 @@ export function MemoryDeleteAction({
   };
   let statusMessage = "";
   if (deletion.status === "pending") statusMessage = t("detail.delete.pending");
-  if (deletion.status === "conflict") statusMessage = t("detail.delete.conflict");
   if (deletion.status === "unavailable") statusMessage = t("detail.delete.unavailable");
   if (deletion.status === "failed") statusMessage = t("detail.delete.failed");
   let confirmLabel = t("detail.delete.confirm");

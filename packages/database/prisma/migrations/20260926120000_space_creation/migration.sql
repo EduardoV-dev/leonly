@@ -1,20 +1,9 @@
 CREATE SCHEMA IF NOT EXISTS "private";
 
-CREATE FUNCTION "private"."uuid_v7"() RETURNS uuid
-LANGUAGE sql VOLATILE SET search_path = pg_catalog AS $$
-  SELECT (
-    pg_catalog.lpad(
-      pg_catalog.to_hex(pg_catalog.floor(pg_catalog.date_part('epoch', pg_catalog.clock_timestamp()) * 1000)::bigint),
-      12,
-      '0'
-    ) || '7' || pg_catalog.substr(pg_catalog.replace(pg_catalog.gen_random_uuid()::text, '-', ''), 14)
-  )::uuid;
-$$;
-
 CREATE TYPE "space_member_role" AS ENUM ('owner', 'partner');
 
 CREATE TABLE "spaces" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "name" TEXT NOT NULL,
   "start_date" DATE NOT NULL,
   "invite_code" TEXT,
@@ -33,7 +22,7 @@ CREATE TABLE "spaces" (
 );
 
 CREATE TABLE "space_members" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "space_id" UUID NOT NULL,
   "user_id" TEXT NOT NULL,
   "display_name" TEXT NOT NULL,
@@ -69,7 +58,7 @@ ALTER TABLE "space_members" ADD CONSTRAINT "space_members_space_id_fkey"
 ALTER TABLE "space_members" ADD CONSTRAINT "space_members_user_id_fkey"
   FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-CREATE FUNCTION "private"."set_space_updated_at"() RETURNS trigger
+CREATE OR REPLACE FUNCTION "private"."set_space_updated_at"() RETURNS trigger
 LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
   NEW.updated_at := pg_catalog.clock_timestamp();

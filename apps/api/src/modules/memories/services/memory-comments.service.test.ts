@@ -130,22 +130,57 @@ describe("MemoryCommentsService writes", () => {
   const queryRaw = vi.fn();
   const create = vi.fn();
   const transaction = { $queryRaw: queryRaw, memoryComment: { create } };
-  const membershipsService = {
-    requireActiveMembership: async () => (await queryRaw`SELECT id FROM space_members`)[0],
-  };
+  const requireActiveMembership = vi.fn(
+    async (_params: { transaction?: typeof transaction; lock?: boolean; userId?: string }) =>
+      (await queryRaw`SELECT id FROM space_members`)[0],
+  );
   const memoriesService = { requireActiveMemory: vi.fn() };
   const service = new MemoryCommentsService(
     {
       $queryRaw: queryRaw,
       $transaction: (operation: (tx: typeof transaction) => unknown) => operation(transaction),
     } as never,
-    membershipsService as never,
+    { requireActiveMembership } as never,
     memoriesService as never,
   );
 
   beforeEach(() => {
     vi.resetAllMocks();
+    requireActiveMembership.mockImplementation(
+      async () => (await queryRaw`SELECT id FROM space_members`)[0],
+    );
     queryRaw.mockResolvedValueOnce([member]);
+  });
+
+  it("coordinates creation, edits, and removals through the parent lock", async () => {
+    create.mockResolvedValue({ id: commentId });
+    queryRaw.mockResolvedValueOnce([{ ...row, replyCount: 0 }]);
+    await service.create({ userId: "user", memoryId, body: " Text ", parentCommentId: null });
+    expect(requireActiveMembership).toHaveBeenCalledWith(
+      expect.objectContaining({ lock: true, transaction }),
+    );
+    expect(memoriesService.requireActiveMemory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({ lock: true, transaction }),
+      }),
+    );
+
+    queryRaw
+      .mockResolvedValueOnce([member])
+      .mockResolvedValueOnce([{ id: commentId }])
+      .mockResolvedValueOnce([{ id: commentId }])
+      .mockResolvedValueOnce([{ ...row, replyCount: 0 }]);
+    await service.edit({ ...scope, body: " Text " });
+    expect(requireActiveMembership.mock.calls.at(-1)?.[0]).toMatchObject({ lock: true });
+    expect(requireActiveMembership.mock.calls.at(-1)?.[0].transaction).toBe(transaction);
+
+    queryRaw
+      .mockResolvedValueOnce([member])
+      .mockResolvedValueOnce([{ id: commentId }])
+      .mockResolvedValueOnce([{ id: commentId }]);
+    await service.remove(scope);
+    expect(requireActiveMembership.mock.calls.at(-1)?.[0]).toMatchObject({ lock: true });
+    expect(requireActiveMembership.mock.calls.at(-1)?.[0].transaction).toBe(transaction);
   });
 
   it("rejects a missing or deleted parent", async () => {
@@ -199,7 +234,10 @@ describe("MemoryCommentsService writes", () => {
     queryRaw.mockResolvedValueOnce([{ id: commentId }]).mockResolvedValueOnce([{ id: commentId }]);
     expect(await service.remove(scope)).toEqual({ deletedCommentId: commentId });
     expect(queryRaw.mock.calls[2][0].sql).toContain("interval '1 millisecond'");
-    expect(queryRaw.mock.calls[1][0].join(" ")).not.toContain("FOR UPDATE");
+    expect(requireActiveMembership.mock.calls.at(-1)?.[0]).toMatchObject({
+      lock: true,
+      transaction,
+    });
     expect(queryRaw.mock.calls[2][0].sql).toContain("sm.user_id");
     expect(queryRaw.mock.calls[2][0].sql).toContain("author_membership_id");
   });

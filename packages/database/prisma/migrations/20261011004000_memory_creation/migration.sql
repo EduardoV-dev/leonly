@@ -7,7 +7,7 @@ CREATE TYPE "memory_object_variant" AS ENUM ('original', 'cover', 'detail');
 CREATE TYPE "memory_object_status" AS ENUM ('pending', 'processing', 'ready', 'failed');
 
 CREATE TABLE "file_uploads" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "uploader_user_id" TEXT NOT NULL,
   "space_id" UUID,
   "category" "file_category" NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE "file_uploads" (
 );
 
 CREATE TABLE "memories" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "space_id" UUID NOT NULL,
   "created_by_user_id" TEXT NOT NULL,
   "created_by_member_id" UUID NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE "memories" (
 );
 
 CREATE TABLE "memory_assets" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "space_id" UUID NOT NULL,
   "memory_id" UUID NOT NULL,
   "upload_id" UUID NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE "memory_assets" (
 );
 
 CREATE TABLE "memory_asset_objects" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "asset_id" UUID NOT NULL,
   "variant_type" "memory_object_variant" NOT NULL,
   "object_path" TEXT NOT NULL,
@@ -151,7 +151,7 @@ CREATE TABLE "memory_asset_objects" (
 );
 
 CREATE TABLE "outbox_event" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "aggregate_type" TEXT NOT NULL,
   "aggregate_id" TEXT NOT NULL,
   "event_type" TEXT NOT NULL,
@@ -214,7 +214,7 @@ ALTER TABLE "memory_assets" ADD CONSTRAINT "memory_assets_upload_id_space_id_fke
 ALTER TABLE "memory_asset_objects" ADD CONSTRAINT "memory_asset_objects_asset_id_fkey"
   FOREIGN KEY ("asset_id") REFERENCES "memory_assets" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-CREATE FUNCTION "private"."protect_memory_creation_identity"() RETURNS trigger
+CREATE OR REPLACE FUNCTION "private"."protect_memory_creation_identity"() RETURNS trigger
 LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
   IF NEW.creation_request_hash IS DISTINCT FROM OLD.creation_request_hash OR

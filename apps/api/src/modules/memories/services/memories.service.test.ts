@@ -11,12 +11,14 @@ const input = {
 
 function createService() {
   const query = vi.fn();
+  const executeRaw = vi.fn().mockResolvedValue(1);
   const findFirst = vi.fn().mockResolvedValue({ id: input.memoryId });
   const membership = vi.fn().mockResolvedValue({ id: "member", spaceId: "space" });
-  const transaction = { $queryRaw: query, memory: { findFirst } };
+  const transaction = { $queryRaw: query, $executeRaw: executeRaw, memory: { findFirst } };
   const service = new MemoriesService(
     {
       $queryRaw: query,
+      $executeRaw: executeRaw,
       memory: { findFirst },
       $transaction: (run: (tx: typeof transaction) => Promise<unknown>) => run(transaction),
     } as never,
@@ -24,7 +26,7 @@ function createService() {
     {} as never,
     { requireActiveMembership: membership } as never,
   );
-  return { service, membership, query, findFirst, transaction };
+  return { service, membership, query, executeRaw, findFirst, transaction };
 }
 
 describe("MemoriesService.updateVisibility", () => {
@@ -73,6 +75,15 @@ describe("MemoriesService.updateVisibility", () => {
     await expect(service.updateVisibility(input)).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it("reports unavailable instead of a conflict when deletion committed first", async () => {
+    const { service, query, findFirst } = createService();
+    query.mockResolvedValueOnce([]);
+    findFirst.mockResolvedValueOnce({ id: input.memoryId }).mockResolvedValueOnce(null);
+
+    await expect(service.updateVisibility(input)).rejects.toBeInstanceOf(NotFoundException);
+    expect(findFirst).toHaveBeenCalledTimes(2);
+  });
+
   it("propagates missing membership without querying memory", async () => {
     const { service, membership, query } = createService();
     membership.mockRejectedValueOnce(new NotFoundException("membership"));
@@ -85,6 +96,98 @@ describe("MemoriesService.updateVisibility", () => {
     const { service, query } = createService();
     query.mockRejectedValueOnce(new Error("database unavailable"));
     await expect(service.updateVisibility(input)).rejects.toThrow("database unavailable");
+  });
+});
+
+describe("MemoriesService.delete", () => {
+  it.each(["timeline", "vault"] as const)(
+    "locks membership before the memory to delete %s",
+    async () => {
+      const { service, membership, query, findFirst } = createService();
+      await service.delete({ userId: input.userId, memoryId: input.memoryId });
+
+      expect(membership).toHaveBeenCalledWith(
+        expect.objectContaining({ lock: true, transaction: expect.anything() }),
+      );
+      const [lockStatement] = query.mock.calls[0];
+      expect(lockStatement.join(" ")).toContain("FOR UPDATE");
+      expect(findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            AND: [
+              {
+                id: input.memoryId,
+                spaceId: "space",
+                deletedAt: null,
+                space: {
+                  deletedAt: null,
+                  members: { some: { id: "member", userId: "user", deletedAt: null } },
+                },
+              },
+              {},
+            ],
+          },
+        }),
+      );
+    },
+  );
+
+  it("cascades comments, reactions, and files before the memory row", async () => {
+    const { service, executeRaw } = createService();
+    await service.delete({ userId: input.userId, memoryId: input.memoryId });
+
+    const statements = executeRaw.mock.calls.map((call) => call[0].join(" "));
+    const commentIndex = statements.findIndex((sql) => sql.includes("UPDATE memory_comments"));
+    const reactionIndex = statements.findIndex((sql) => sql.includes("UPDATE memory_reactions"));
+    const fileIndex = statements.findIndex((sql) => sql.includes("UPDATE files"));
+    const memoryIndex = statements.findIndex((sql) => sql.includes("UPDATE memories"));
+    expect(commentIndex).toBeGreaterThan(-1);
+    expect(reactionIndex).toBeGreaterThan(commentIndex);
+    expect(fileIndex).toBeGreaterThan(reactionIndex);
+    expect(memoryIndex).toBeGreaterThan(fileIndex);
+
+    const fileStatement = statements[fileIndex];
+    expect(executeRaw.mock.calls[fileIndex].slice(1)).toContain("deleting");
+    expect(fileStatement).toContain("original_file_id");
+    expect(fileStatement).toContain("memory_files");
+    const commentStatement = statements[commentIndex];
+    expect(commentStatement).toContain("deleted_at IS NULL");
+    expect(statements[memoryIndex]).toContain("deleted_at IS NULL");
+  });
+
+  it("rejects unavailable targets without any cascade write", async () => {
+    const { service, findFirst, query, executeRaw } = createService();
+    findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.delete({ userId: input.userId, memoryId: input.memoryId }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(executeRaw).not.toHaveBeenCalled();
+  });
+
+  it("rejects missing membership without querying memory", async () => {
+    const { service, membership, query, findFirst, executeRaw } = createService();
+    membership.mockRejectedValueOnce(new NotFoundException("membership"));
+
+    await expect(
+      service.delete({ userId: input.userId, memoryId: input.memoryId }),
+    ).rejects.toMatchObject({
+      message: "membership",
+    });
+    expect(findFirst).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+    expect(executeRaw).not.toHaveBeenCalled();
+  });
+
+  it("rolls the whole cascade back when a child update fails", async () => {
+    const { service, executeRaw } = createService();
+    executeRaw.mockRejectedValueOnce(new Error("cascade failure"));
+
+    await expect(
+      service.delete({ userId: input.userId, memoryId: input.memoryId }),
+    ).rejects.toThrow("cascade failure");
+    expect(executeRaw).toHaveBeenCalledTimes(1);
   });
 });
 

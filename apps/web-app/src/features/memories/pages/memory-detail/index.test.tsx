@@ -81,7 +81,7 @@ describe("MemoryDetailPage", () => {
     );
     expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move to Private Vault" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove memory" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove memory" })).toBeInTheDocument();
     expect(screen.getByText("Comments")).toBeInTheDocument();
     expect(screen.getByText("Reactions")).toBeInTheDocument();
   });
@@ -156,7 +156,7 @@ describe("MemoryDetailPage", () => {
 
     expect(screen.queryByRole("link", { name: "Editar" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mover a la bóveda privada" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Quitar recuerdo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Quitar recuerdo" })).toBeInTheDocument();
     expect(screen.getByText("Recuerdo creado el", { exact: false })).toBeInTheDocument();
     expect(
       screen.getByText("Última actualización del recuerdo el", { exact: false }),

@@ -120,7 +120,6 @@ export const memoriesEn = {
       action: "Remove memory",
       cancel: "Keep this memory",
       confirm: "Remove memory",
-      conflict: "This memory changed. Take a moment to look it over before deciding.",
       deleting: "Removing…",
       description:
         "It will no longer be part of your shared story, and neither of you will be able to see it.",

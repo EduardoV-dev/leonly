@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  CreateMemoryError,
-  cleanupResources,
-  prepareMemoryCreation,
-} from "@/features/memories/server/create-memory";
+import { CreateMemoryError, prepareMemoryCreation } from "@/features/memories/server/create-memory";
 import { createRequestLogger, logServerError } from "@/lib/server-logger";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,9 +14,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This memory is unavailable." }, { status: 404 });
     }
 
-    void Promise.resolve()
-      .then(cleanupResources)
-      .catch(() => undefined);
     const result = await prepareMemoryCreation(await request.formData(), user.id);
     return NextResponse.json(result);
   } catch (error) {

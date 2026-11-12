@@ -7,7 +7,7 @@ Persist downstream file-processing work atomically with business creation, prese
 
 ### Requirement: Atomic generic event persistence
 
-The system SHALL persist `outbox_event` with stable event ID, entity type/ID, event type, payload, creation time, and publication bookkeeping, without a schema-version column. Memory creation MUST insert one generation event per attached original in its business transaction. Events MUST NOT reference expiring upload URLs. Memories without images SHALL require no generation events.
+The system SHALL persist `outbox_events` with stable event ID, entity type/ID, event type, payload, creation time, and publication bookkeeping, without a schema-version column. Memory creation MUST insert one generation event per attached original in its business transaction. Events MUST NOT reference expiring upload URLs. Memories without images SHALL require no generation events.
 
 #### Scenario: Image memory commits
 - **WHEN** creation commits multiple image attachments

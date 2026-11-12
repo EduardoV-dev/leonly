@@ -19,7 +19,6 @@ import {
 import { uploadMemoryObjectIfAbsentOrIdentical } from "./memory-upload-storage";
 
 export { validateCreateMemoryFormData } from "./memory-input-validation";
-export { cleanupResources } from "./resource-cleanup";
 
 export const CreateMemoryError = MemoryInputError;
 

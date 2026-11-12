@@ -2,6 +2,7 @@ import type { MemoryDetail, MemoryListPage, MemoryPlacementResult } from "@leonl
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   HttpStatus,
@@ -76,6 +77,25 @@ export class MemoriesController {
       memoryId,
       ...body,
     });
+  }
+
+  @Delete(":memoryId")
+  @Header("Cache-Control", "no-store")
+  @ApiOperation({
+    summary: "Soft-delete an active-space memory with its comments, reactions, and attached files",
+  })
+  @ApiErrorResponses(400, 401, 404, 500)
+  @ApiSuccessResponse({
+    description: "Memory and its children soft-deleted",
+    data: { type: "object", nullable: true, enum: [null] },
+    example: null,
+  })
+  async delete(
+    @Req() request: AuthenticatedRequest,
+    @Param("memoryId", UUID_PARAM_VALIDATOR) memoryId: string,
+  ): Promise<null> {
+    await this.memoriesService.delete({ userId: request.authUser.id, memoryId });
+    return null;
   }
 
   @Get("timeline")

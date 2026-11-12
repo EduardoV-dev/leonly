@@ -255,7 +255,7 @@ export class MemoryCommentsService {
     lastKnownUpdatedAt,
   }: EditCommentParams): Promise<MemoryComment> {
     return this.prismaService.$transaction(async (transaction) => {
-      const member = await this.requireMemory({ transaction, userId, memoryId });
+      const member = await this.requireMemory({ transaction, userId, memoryId, lock: true });
       await this.updateComment({
         transaction,
         member,
@@ -275,17 +275,19 @@ export class MemoryCommentsService {
     commentId,
     lastKnownUpdatedAt,
   }: DeleteCommentParams): Promise<{ deletedCommentId: string }> {
-    const member = await this.requireMemory({ userId, memoryId });
-    await this.updateComment({
-      transaction: this.prismaService,
-      member,
-      userId,
-      memoryId,
-      commentId,
-      lastKnownUpdatedAt,
-      body: null,
+    return this.prismaService.$transaction(async (transaction) => {
+      const member = await this.requireMemory({ transaction, userId, memoryId, lock: true });
+      await this.updateComment({
+        transaction,
+        member,
+        userId,
+        memoryId,
+        commentId,
+        lastKnownUpdatedAt,
+        body: null,
+      });
+      return { deletedCommentId: commentId };
     });
-    return { deletedCommentId: commentId };
   }
 
   private async updateComment({

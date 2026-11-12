@@ -1,5 +1,5 @@
 CREATE TABLE "memory_comments" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "memory_id" UUID NOT NULL,
   "space_id" UUID NOT NULL,
   "author_membership_id" UUID NOT NULL,

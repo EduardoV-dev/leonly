@@ -1,56 +1,69 @@
+import type { ApiResponse } from "@leonly/utils/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { AxiosResponse } from "axios";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/constants/routes";
+import { api } from "@/lib/axios/api";
 import { memoryQueryKeys } from "../constants/query-keys";
 
-export type MemoryDeletionStatus = "idle" | "pending" | "conflict" | "unavailable" | "failed";
+export type MemoryDeletionStatus = "idle" | "pending" | "unavailable" | "failed";
 
 type DeleteMemoryInput = {
   memoryId: string;
-  version: string;
   visibility: "timeline" | "vault";
 };
 
-type DeleteOutcome = "completed" | "conflict" | "unavailable" | "failed";
+type DeleteOutcome = "completed" | "unauthorized" | "unavailable" | "failed";
 
-async function reconcileUncertainDeletion(memoryId: string): Promise<DeleteOutcome> {
+async function isMemoryReadable(
+  memoryId: string,
+  visibility: "timeline" | "vault",
+): Promise<boolean | null> {
   try {
-    const response = await fetch(`/api/memories/${memoryId}`, {
-      cache: "no-store",
-      method: "GET",
+    const response = await api.get<ApiResponse<unknown>>(`/memories/${visibility}/${memoryId}`, {
+      validateStatus: () => true,
     });
-    if (response.status === 404) return "completed";
-    return "failed";
+    return response.status === 200 && response.data?.ok === true;
   } catch {
-    return "failed";
+    return null;
   }
 }
 
-async function requestMemoryDeletion(memoryId: string, version: string): Promise<DeleteOutcome> {
-  let response: Response;
+async function reconcileUncertainDeletion(memoryId: string): Promise<DeleteOutcome> {
+  // Reconciliation goes through both detail routes: either readable means retryable
+  // failure, neither readable means the memory is gone. Neither outcome claims this
+  // request succeeded, so deletion-success feedback stays reserved for 200 responses.
+  const [timeline, vault] = await Promise.all([
+    isMemoryReadable(memoryId, "timeline"),
+    isMemoryReadable(memoryId, "vault"),
+  ]);
+  if (timeline === null || vault === null) return "failed";
+  return timeline || vault ? "failed" : "unavailable";
+}
+
+async function requestMemoryDeletion(memoryId: string): Promise<DeleteOutcome> {
+  let response: AxiosResponse<ApiResponse<null>>;
   try {
-    response = await fetch(`/api/memories/${memoryId}`, {
-      body: JSON.stringify({ expectedVersion: version }),
-      headers: { "content-type": "application/json" },
-      method: "DELETE",
+    response = await api.delete<ApiResponse<null>>(`/memories/${memoryId}`, {
+      validateStatus: () => true,
     });
   } catch {
     return reconcileUncertainDeletion(memoryId);
   }
 
-  if (response.status === 204) return "completed";
-  const payload = (await response.json().catch(() => null)) as {
-    code?: "conflict" | "unavailable";
-  } | null;
-  if (response.status === 409 && payload?.code === "conflict") return "conflict";
-  if (response.status === 404 && payload?.code === "unavailable") return "unavailable";
-  return reconcileUncertainDeletion(memoryId);
+  if (!response.data || typeof response.data.ok !== "boolean") {
+    return reconcileUncertainDeletion(memoryId);
+  }
+  if (response.status === 401) return "unauthorized";
+  if (response.data.ok) return "completed";
+  if (response.status === 404) return "unavailable";
+  return "failed";
 }
 
-export function useDeleteMemory({ memoryId, version, visibility }: Readonly<DeleteMemoryInput>) {
+export function useDeleteMemory({ memoryId, visibility }: Readonly<DeleteMemoryInput>) {
   const { t } = useTranslation("memories");
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -59,15 +72,15 @@ export function useDeleteMemory({ memoryId, version, visibility }: Readonly<Dele
   const destination = visibility === "vault" ? APP_ROUTES.VAULT : APP_ROUTES.TIMELINE;
 
   const mutation = useMutation({
-    mutationFn: () => requestMemoryDeletion(memoryId, version),
+    mutationFn: () => requestMemoryDeletion(memoryId),
     mutationKey: [...memoryQueryKeys.all, "delete", memoryId],
     onSettled: () => {
       inFlight.current = false;
     },
     onSuccess: async (outcome) => {
-      if (outcome === "conflict") {
-        setStatus("conflict");
-        router.refresh();
+      if (outcome === "unauthorized") {
+        setStatus("failed");
+        router.push(APP_ROUTES.AUTH);
         return;
       }
       if (outcome === "unavailable") {
@@ -87,6 +100,7 @@ export function useDeleteMemory({ memoryId, version, visibility }: Readonly<Dele
       await queryClient.invalidateQueries({ queryKey: memoryQueryKeys.all, refetchType: "none" });
       queryClient.removeQueries({ queryKey: memoryQueryKeys.all });
       toast.success(t("detail.delete.success"));
+      router.refresh();
       router.push(destination);
     },
     scope: { id: `memory-delete:${memoryId}` },

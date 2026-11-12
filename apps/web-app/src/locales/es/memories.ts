@@ -122,7 +122,6 @@ export const memoriesEs = {
       action: "Quitar recuerdo",
       cancel: "Conservar este recuerdo",
       confirm: "Quitar recuerdo",
-      conflict: "Este recuerdo cambió. Tómense un momento para revisarlo antes de decidir.",
       deleting: "Quitando…",
       description:
         "Dejará de formar parte de la historia que comparten y ninguno de los dos podrá verlo.",

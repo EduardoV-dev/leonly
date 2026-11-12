@@ -11,7 +11,7 @@ describe("MemoryReactionsService", () => {
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn(),
+    upsert: vi.fn(),
   };
   const memory = { findFirst: vi.fn() };
   const lock = vi.fn();
@@ -130,6 +130,7 @@ describe("MemoryReactionsService", () => {
     expect(reactions.findMany.mock.calls[0][0].where).toEqual({
       memoryId: { in: ["a", "b", "c"] },
       spaceId: "space",
+      deletedAt: null,
       reactedByMember: { deletedAt: null, spaceId: "space" },
     });
   });
@@ -160,17 +161,43 @@ describe("MemoryReactionsService", () => {
     expect(reactions.findMany).not.toHaveBeenCalled();
   });
 
+  it("excludes tombstoned reactions from summaries", async () => {
+    await service.read({ userId: "user", memoryId: "memory" });
+    expect(reactions.findMany.mock.calls[0][0].where).toEqual({
+      memoryId: { in: ["memory"] },
+      spaceId: "space",
+      deletedAt: null,
+      reactedByMember: { deletedAt: null, spaceId: "space" },
+    });
+  });
+
   it.each([
-    [null, "create"],
-    [{ reactionType: "laugh" }, "update"],
-    [{ reactionType: "heart" }, "delete"],
-  ])("locks before the %s transition", async (current, action) => {
+    { case: "create", current: null, updateData: null },
+    { case: "revive", current: null, updateData: null },
+    {
+      case: "retype",
+      current: { reactionType: "laugh", deletedAt: null },
+      updateData: { deletedAt: null, reactionType: "heart" },
+    },
+    {
+      case: "soft-delete",
+      current: { reactionType: "heart", deletedAt: null },
+      updateData: { deletedAt: expect.any(Date) },
+    },
+  ])("locks before the $case transition", async ({ current, updateData }) => {
     reactions.findUnique.mockResolvedValue(current);
     await service.toggle({ userId: "user", memoryId: "memory", reactionType: "heart" });
     expect(lock.mock.invocationCallOrder[0]).toBeLessThan(
       reactions.findUnique.mock.invocationCallOrder[0],
     );
-    expect(reactions[action as "create" | "update" | "delete"]).toHaveBeenCalledOnce();
+    if (current === null) {
+      expect(reactions.upsert).toHaveBeenCalledOnce();
+      expect(reactions.update).not.toHaveBeenCalled();
+      return;
+    }
+    expect(reactions.upsert).not.toHaveBeenCalled();
+    expect(reactions.update).toHaveBeenCalledOnce();
+    expect(reactions.update.mock.calls[0][0].data).toEqual(updateData);
   });
 
   it("rejects unavailable memories and propagates unexpected errors", async () => {
@@ -204,16 +231,21 @@ describe("MemoryReactionsService", () => {
         }),
       }),
     );
-    expect(reactions.create).toHaveBeenCalledWith({
-      data: {
+    expect(reactions.upsert).toHaveBeenCalledWith({
+      where: { reactedByMemberId_memoryId: { reactedByMemberId: "member", memoryId: "memory" } },
+      create: {
         memoryId: "memory",
         spaceId: "space",
         reactedByMemberId: "member",
         reactionType: "heart",
       },
+      update: { deletedAt: null, reactionType: "heart" },
     });
     expect(reactions.findUnique).toHaveBeenCalledWith({
-      where: { reactedByMemberId_memoryId: { reactedByMemberId: "member", memoryId: "memory" } },
+      where: {
+        reactedByMemberId_memoryId: { reactedByMemberId: "member", memoryId: "memory" },
+        deletedAt: null,
+      },
     });
   });
 
@@ -237,8 +269,8 @@ describe("MemoryReactionsService", () => {
     expect(persisted).toBe(false);
   });
 
-  it("applies two serialized first toggles as add then remove", async () => {
-    let selected = false;
+  it("applies two serialized first toggles as add then soft-delete", async () => {
+    let isActive = false;
     let queue = Promise.resolve();
     prisma.$transaction.mockImplementation((callback) => {
       const result = queue.then(() => callback(transaction));
@@ -249,20 +281,21 @@ describe("MemoryReactionsService", () => {
       return result;
     });
     reactions.findUnique.mockImplementation(async () =>
-      selected ? { reactionType: "heart" } : null,
+      isActive ? { reactionType: "heart", deletedAt: null } : null,
     );
-    reactions.create.mockImplementation(async () => {
-      selected = true;
+    reactions.upsert.mockImplementation(async () => {
+      isActive = true;
     });
-    reactions.delete.mockImplementation(async () => {
-      selected = false;
+    reactions.update.mockImplementation(async ({ data }) => {
+      isActive = data.deletedAt === null;
     });
     await Promise.all([
       service.toggle({ userId: "user", memoryId: "memory", reactionType: "heart" }),
       service.toggle({ userId: "user", memoryId: "memory", reactionType: "heart" }),
     ]);
-    expect(selected).toBe(false);
-    expect(reactions.create).toHaveBeenCalledOnce();
-    expect(reactions.delete).toHaveBeenCalledOnce();
+    expect(isActive).toBe(false);
+    expect(reactions.upsert).toHaveBeenCalledOnce();
+    expect(reactions.update).toHaveBeenCalledOnce();
+    expect(reactions.update.mock.calls[0][0].data.deletedAt).toBeInstanceOf(Date);
   });
 });

@@ -18,7 +18,7 @@ CREATE TYPE "file_purpose" AS ENUM ('memory_image');
 CREATE TYPE "file_status" AS ENUM ('pending', 'uploaded', 'ready', 'failed', 'deleting');
 
 CREATE TABLE "files" (
-  "id" UUID NOT NULL DEFAULT "private"."uuid_v7"(),
+  "id" UUID NOT NULL DEFAULT uuidv7(),
   "space_id" UUID NOT NULL,
   "uploaded_by_user_id" TEXT NOT NULL,
   "original_file_id" UUID,

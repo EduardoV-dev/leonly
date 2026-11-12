@@ -28,6 +28,7 @@ type CommitParams = FindExistingCreationParams & { uploads: ClaimedFile[] };
 type CreateParams = { userId: string; body: CreateMemoryDto };
 type CommitReturn = { result: CreationResult; eventIds: string[] };
 type UpdateVisibilityParams = MemoryPlacementRequest & { userId: string; memoryId: string };
+type DeleteMemoryParams = { userId: string; memoryId: string };
 type RequireActiveMemoryParams = {
   userId: string;
   memoryId: string;
@@ -166,9 +167,62 @@ export class MemoriesService {
         RETURNING id, visibility, to_char(updated_at AT TIME ZONE 'UTC', ${POSTGRES_TIMESTAMP_FORMAT}) AS "updatedAt"
       `;
 
-    if (!updated[0]) throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
+    if (!updated[0]) {
+      // Deletion may have committed while this update waited on the memory row; recheck
+      // availability so resuming placement reports unavailable instead of a stale conflict.
+      await this.requireActiveMemory({ userId, memoryId, membership });
+      throw new ConflictException({ error: STALE_RESOURCE_MESSAGE });
+    }
 
     return updated[0];
+  }
+
+  async delete({ userId, memoryId }: DeleteMemoryParams): Promise<void> {
+    await this.prismaService.$transaction(async (transaction) => {
+      const membership = await this.membershipsService.requireActiveMembership({
+        userId,
+        transaction,
+        lock: true,
+      });
+
+      await this.requireActiveMemory({
+        userId,
+        memoryId,
+        membership,
+        options: { transaction, lock: true },
+      });
+
+      // Cascade order is an invariant: children are marked first and the memory last,
+      // so the memory is never deleted without its children. Existing child deletion
+      // timestamps are preserved by only updating rows that are still active.
+      await transaction.$executeRaw`
+        UPDATE memory_comments SET deleted_at = clock_timestamp()
+        WHERE memory_id = ${memoryId}::uuid AND space_id = ${membership.spaceId}::uuid
+          AND deleted_at IS NULL
+      `;
+      await transaction.$executeRaw`
+        UPDATE memory_reactions SET deleted_at = clock_timestamp()
+        WHERE memory_id = ${memoryId}::uuid AND space_id = ${membership.spaceId}::uuid
+          AND deleted_at IS NULL
+      `;
+      await transaction.$executeRaw`
+        UPDATE files SET status = ${FileStatus.deleting}::file_status
+        WHERE status <> ${FileStatus.deleting}::file_status AND (
+          id IN (
+            SELECT mf.file_id FROM memory_files mf
+            WHERE mf.memory_id = ${memoryId}::uuid AND mf.space_id = ${membership.spaceId}::uuid
+          ) OR original_file_id IN (
+            SELECT mf.file_id FROM memory_files mf
+            WHERE mf.memory_id = ${memoryId}::uuid AND mf.space_id = ${membership.spaceId}::uuid
+          )
+        )
+      `;
+      await transaction.$executeRaw`
+        UPDATE memories SET deleted_at = clock_timestamp()
+        WHERE id = ${memoryId}::uuid AND space_id = ${membership.spaceId}::uuid
+          AND deleted_at IS NULL
+      `;
+    });
   }
 
   async requireActiveMemory({

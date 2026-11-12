@@ -83,7 +83,7 @@ enum SpaceMemberRole {
 }
 
 model Space {
-  id                  String        @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                  String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name                String
   startDate           DateTime      @map("start_date") @db.Date
   inviteCode          String?       @map("invite_code")
@@ -105,7 +105,7 @@ model Space {
 }
 
 model SpaceMember {
-  id                    String          @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                    String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
   spaceId               String          @map("space_id") @db.Uuid
   space                 Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   userId                String          @map("user_id")
@@ -159,7 +159,7 @@ enum MemoryReactionType {
 }
 
 model File {
-  id                     String      @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                     String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
   spaceId                String      @map("space_id") @db.Uuid
   space                  Space       @relation(fields: [spaceId], references: [id], onDelete: Restrict)
   uploadedByUserId       String      @map("uploaded_by_user_id")
@@ -190,7 +190,7 @@ model File {
 }
 
 model Memory {
-  id                  String           @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                  String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
   spaceId             String           @map("space_id") @db.Uuid
   space               Space            @relation(fields: [spaceId], references: [id], onDelete: Restrict)
   createdByUserId     String           @map("created_by_user_id")
@@ -220,7 +220,7 @@ model Memory {
 }
 
 model MemoryComment {
-  id                 String          @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                 String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
   memoryId           String          @map("memory_id") @db.Uuid
   spaceId            String          @map("space_id") @db.Uuid
   authorMembershipId String          @map("author_membership_id") @db.Uuid
@@ -240,18 +240,19 @@ model MemoryComment {
 }
 
 model MemoryReaction {
-  id                String             @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
   spaceId           String             @map("space_id") @db.Uuid
   memoryId          String             @map("memory_id") @db.Uuid
   memory            Memory             @relation(fields: [memoryId, spaceId], references: [id, spaceId], onDelete: Cascade, onUpdate: NoAction)
   reactedByMemberId String             @map("reacted_by_member_id") @db.Uuid
   reactedByMember   SpaceMember        @relation(fields: [reactedByMemberId, spaceId], references: [id, spaceId], onDelete: Cascade, onUpdate: NoAction)
   reactionType      MemoryReactionType @map("reaction_type")
+  deletedAt         DateTime?          @map("deleted_at") @db.Timestamptz(3)
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([reactedByMemberId, memoryId], map: "memory_reactions_member_memory_unique")
-  @@index([memoryId], map: "memory_reactions_memory_id")
+  @@index([memoryId, deletedAt], map: "memory_reactions_memory_deleted_at")
   @@map("memory_reactions")
 }
 
@@ -272,7 +273,7 @@ model MemoryFile {
 }
 
 model OutboxEvent {
-  id                     String    @id @default(dbgenerated("private.uuid_v7()")) @db.Uuid
+  id                     String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
   entityType             String    @map("entity_type")
   entityId               String    @map("entity_id")
   eventType              String    @map("event_type")
@@ -282,5 +283,5 @@ model OutboxEvent {
   publishAttemptCount    Int       @default(0) @map("publish_attempt_count")
   lastPublishErrorCode   String?   @map("last_publish_error_code")
 
-  @@map("outbox_event")
+  @@map("outbox_events")
 }

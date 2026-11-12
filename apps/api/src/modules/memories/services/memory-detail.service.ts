@@ -29,7 +29,7 @@ export class MemoryDetailService {
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
     private readonly memoryReactionsService: MemoryReactionsService,
-  ) { }
+  ) {}
 
   async getDetail({ userId, memoryId, visibility }: GetDetailParams): Promise<MemoryDetail> {
     const membership = await this.membershipsService.requireActiveMembership({ userId });
