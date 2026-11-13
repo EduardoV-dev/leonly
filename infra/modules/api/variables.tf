@@ -25,3 +25,9 @@ variable "environment_variables" {
   sensitive   = true
   default     = {}
 }
+
+variable "environment" {
+  description = "Deployment environment label stamped into API log records."
+  type        = string
+  default     = "local"
+}

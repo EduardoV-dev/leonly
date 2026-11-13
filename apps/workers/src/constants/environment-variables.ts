@@ -1,5 +1,8 @@
+const NODE_ENVIRONMENT = process.env.NODE_ENV || "";
+
 export const ENVIRONMENT_VARIABLES = Object.freeze({
-  NODE_ENV: process.env.NODE_ENV || "",
+  NODE_ENV: NODE_ENVIRONMENT,
+  ENVIRONMENT: process.env.ENVIRONMENT || NODE_ENVIRONMENT || "local",
   DATABASE_URL: process.env.DATABASE_URL || "",
   STORAGE_ENDPOINT: process.env.STORAGE_ENDPOINT || "",
   STORAGE_REGION: process.env.STORAGE_REGION || "",

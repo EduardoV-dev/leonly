@@ -54,7 +54,9 @@ resource "aws_lambda_function" "api" {
   timeout       = 10
 
   environment {
-    variables = var.environment_variables
+    variables = merge(var.environment_variables, {
+      ENVIRONMENT = var.environment
+    })
   }
 
   depends_on = [

@@ -135,8 +135,15 @@ export class OutboxPublisher implements OnModuleDestroy {
         );
 
         outcomes.push({ id: event.id, status: "published" });
-      } catch {
-        this.logger.warn({ event: "outbox_publication_failed", eventId: event.id, code });
+      } catch (error) {
+        this.logger.warn({
+          event: "outbox_publication_failed",
+          eventId: event.id,
+          entityId: event.entityId,
+          code,
+          outcome: hasAcknowledgment ? "uncertain" : "failed",
+          err: error,
+        });
 
         try {
           await this.runBookkeeping((transaction) =>
@@ -145,8 +152,15 @@ export class OutboxPublisher implements OnModuleDestroy {
               data: { publishAttemptCount: { increment: 1 }, lastPublishErrorCode: code },
             }),
           );
-        } catch {
-          this.logger.error({ event: "outbox_bookkeeping_failed", eventId: event.id, code });
+        } catch (bookkeepingError) {
+          this.logger.error({
+            event: "outbox_bookkeeping_failed",
+            eventId: event.id,
+            entityId: event.entityId,
+            code,
+            outcome: "failed",
+            err: bookkeepingError,
+          });
         }
 
         outcomes.push({ id: event.id, status: hasAcknowledgment ? "uncertain" : "failed" });

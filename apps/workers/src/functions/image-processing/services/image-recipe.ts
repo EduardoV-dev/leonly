@@ -9,8 +9,11 @@ const MIMETYPE = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 export type Variant = keyof typeof VARIANT_DIMENSIONS;
 
 export class ImageProcessingError extends Error {
-  constructor(public readonly code: string) {
-    super(code);
+  constructor(
+    public readonly code: string,
+    options?: { cause?: unknown },
+  ) {
+    super(code, options);
   }
 }
 
@@ -32,7 +35,7 @@ export async function validateOriginal(
     await image.clone().raw().toBuffer();
   } catch (error) {
     if (error instanceof ImageProcessingError) throw error;
-    throw new ImageProcessingError("INVALID_ORIGINAL");
+    throw new ImageProcessingError("INVALID_ORIGINAL", { cause: error });
   }
 }
 
@@ -48,8 +51,8 @@ export async function generateVariant(bytes: Buffer, variant: Variant): Promise<
       })
       .webp({ quality: 85 })
       .toBuffer();
-  } catch {
-    throw new ImageProcessingError("INVALID_ORIGINAL");
+  } catch (error) {
+    throw new ImageProcessingError("INVALID_ORIGINAL", { cause: error });
   }
 }
 

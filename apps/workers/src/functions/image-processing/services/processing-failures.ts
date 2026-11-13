@@ -32,7 +32,7 @@ type RecordRootVerificationFailureParams = {
 
 export function normalizeProcessingError(error: unknown): unknown {
   return error instanceof ObjectSizeError
-    ? new ImageProcessingError("IMAGE_SIZE_LIMIT_EXCEEDED")
+    ? new ImageProcessingError("IMAGE_SIZE_LIMIT_EXCEEDED", { cause: error })
     : error;
 }
 
@@ -67,8 +67,15 @@ export async function recordVariantProcessingFailure({
       prisma,
     });
     return true;
-  } catch {
-    logger.error({ event: "image_failure_bookkeeping_failed", fileId: variantFile.id, code });
+  } catch (bookkeepingError) {
+    logger.error({
+      event: "image_failure_bookkeeping_failed",
+      fileId: variantFile.id,
+      originalFileId: imageFile.file.id,
+      variantName,
+      code,
+      err: bookkeepingError,
+    });
     return false;
   }
 }
@@ -125,20 +132,26 @@ export async function recordRootVerificationFailure({
       logger.error({
         event: "image_failure_bookkeeping_failed",
         fileId: variantFile.id,
+        originalFileId: imageFile.file.id,
+        variantName,
         code:
           bookkeepingError instanceof ImageProcessingError
             ? bookkeepingError.code
             : "IMAGE_FAILURE_BOOKKEEPING_FAILED",
+        err: bookkeepingError,
       });
     } finally {
       if (variantLease) {
         try {
           await releaseProcessingLease({ lease: variantLease, prisma });
-        } catch {
+        } catch (releaseError) {
           logger.error({
             event: "image_failure_release_failed",
             fileId: variantFile.id,
+            originalFileId: imageFile.file.id,
+            variantName,
             code: "OPERATION_LOCK_RELEASE_FAILED",
+            err: releaseError,
           });
         }
       }

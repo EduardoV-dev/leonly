@@ -1,12 +1,24 @@
-import type { SQSEvent } from "aws-lambda";
-import { describe, expect, it, vi } from "vitest";
+import type { Context, SQSEvent } from "aws-lambda";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createAdapter, PrismaClient, ObjectStorage, concurrency, cache } = vi.hoisted(() => ({
+const {
+  createAdapter,
+  PrismaClient,
+  ObjectStorage,
+  concurrency,
+  cache,
+  invocationLogger,
+  logger,
+  processImageBatch,
+} = vi.hoisted(() => ({
   createAdapter: vi.fn(() => ({})),
   PrismaClient: vi.fn(),
   ObjectStorage: vi.fn(),
   concurrency: vi.fn(),
   cache: vi.fn(),
+  invocationLogger: { info: vi.fn(), error: vi.fn() },
+  logger: { child: vi.fn() },
+  processImageBatch: vi.fn(),
 }));
 
 vi.mock("@leonly/database", () => ({ PrismaConnection: { createAdapter } }));
@@ -16,14 +28,24 @@ vi.mock("@leonly/utils/storage", () => ({
   ObjectSizeError: class extends Error {},
 }));
 vi.mock("sharp", () => ({ default: { concurrency, cache } }));
+vi.mock("../../../lib/logger", () => ({ logger }));
+vi.mock("../events/sqs-handler", () => ({ processImageBatch }));
+
+const context = { awsRequestId: "request-id" } as Context;
 
 describe("image Lambda initialization", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    logger.child.mockReturnValue(invocationLogger);
+  });
+
   it("reuses initialized clients and Sharp settings across warm invocations", async () => {
+    processImageBatch.mockResolvedValue({ batchItemFailures: [] });
     const { handler } = await import("../handler");
     const event = { Records: [] } as SQSEvent;
 
-    await expect(handler(event)).resolves.toEqual({ batchItemFailures: [] });
-    await expect(handler(event)).resolves.toEqual({ batchItemFailures: [] });
+    await expect(handler(event, context)).resolves.toEqual({ batchItemFailures: [] });
+    await expect(handler(event, context)).resolves.toEqual({ batchItemFailures: [] });
 
     expect(PrismaClient).toHaveBeenCalledTimes(1);
     expect(ObjectStorage).toHaveBeenCalledTimes(1);
@@ -34,5 +56,21 @@ describe("image Lambda initialization", () => {
     expect(concurrency).toHaveBeenCalledWith(1);
     expect(cache).toHaveBeenCalledTimes(1);
     expect(cache).toHaveBeenCalledWith(false);
+    expect(logger.child).toHaveBeenCalledWith({ awsRequestId: "request-id" });
+  });
+
+  it("logs and rethrows batch-level failures with the invocation identifier", async () => {
+    const failure = new Error("batch unavailable");
+    processImageBatch.mockRejectedValue(failure);
+    const { handler } = await import("../handler");
+    const event = { Records: [] } as SQSEvent;
+
+    await expect(handler(event, context)).rejects.toBe(failure);
+
+    expect(invocationLogger.error).toHaveBeenCalledWith({
+      event: "image_batch_failed",
+      recordCount: 0,
+      err: failure,
+    });
   });
 });

@@ -1,28 +1,43 @@
 import type { HealthResponse } from "@leonly/utils/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { RedisService } from "../common/redis/redis.service";
 
 export const HEALTH_CHECK_TIMEOUT_MS = 5_000;
 
+type ProbeOutcome = "timeout" | "rejected" | "unhealthy";
+
+type ProbeDiagnostic = {
+  dependency: string;
+  durationMs: number;
+  timedOut: boolean;
+  outcome: ProbeOutcome;
+  err?: unknown;
+};
+
 @Injectable()
 export class HealthService {
+  private readonly logger = new Logger(HealthService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly redisService: RedisService,
   ) {}
 
   async check(): Promise<HealthResponse> {
-    const [isDatabaseUp, isRedisUp] = await Promise.all([
-      this.checkDependency(async () => {
+    const [databaseFailure, redisFailure] = await Promise.all([
+      this.probeDependency("database", async () => {
         await this.prismaService.$queryRaw`SELECT 1`;
         return true;
       }),
-      this.checkDependency(() => this.redisService.ping()),
+      this.probeDependency("redis", () => this.redisService.ping()),
     ]);
 
+    const isDatabaseUp = databaseFailure === undefined;
+    const isRedisUp = redisFailure === undefined;
     const isHealthy = isDatabaseUp && isRedisUp;
     const isUnavailable = !isDatabaseUp && !isRedisUp;
+
     let status: HealthResponse["status"] = "degraded";
 
     if (isHealthy) status = "ok";
@@ -34,19 +49,52 @@ export class HealthService {
     };
   }
 
-  private async checkDependency(probe: () => Promise<boolean>): Promise<boolean> {
+  private async probeDependency(
+    dependency: string,
+    probe: () => Promise<boolean>,
+  ): Promise<ProbeDiagnostic | undefined> {
+    const startedAt = Date.now();
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+
     try {
-      return await Promise.race([
-        probe(),
-        new Promise<false>((resolve) => {
-          timeout = setTimeout(() => resolve(false), HEALTH_CHECK_TIMEOUT_MS);
+      const outcome = await Promise.race([
+        probe().then((up) => (up ? undefined : ("unhealthy" as const))),
+        new Promise<"timeout">((resolve) => {
+          timeout = setTimeout(() => {
+            timedOut = true;
+            resolve("timeout");
+          }, HEALTH_CHECK_TIMEOUT_MS);
         }),
       ]);
-    } catch {
-      return false;
+
+      if (outcome === undefined) return undefined;
+
+      return this.recordFailure(dependency, { startedAt, timedOut, outcome });
+    } catch (error) {
+      return this.recordFailure(dependency, {
+        startedAt,
+        timedOut,
+        outcome: "rejected",
+        err: error,
+      });
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private recordFailure(
+    dependency: string,
+    failure: { startedAt: number; timedOut: boolean; outcome: ProbeOutcome; err?: unknown },
+  ): ProbeDiagnostic {
+    const diagnostic: ProbeDiagnostic = {
+      dependency,
+      durationMs: Math.max(0, Date.now() - failure.startedAt),
+      timedOut: failure.timedOut,
+      outcome: failure.outcome,
+      ...(failure.err !== undefined ? { err: failure.err } : {}),
+    };
+    this.logger.error({ event: "dependency_probe_failed", ...diagnostic });
+    return diagnostic;
   }
 }

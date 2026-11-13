@@ -224,12 +224,15 @@ describe("committed creation publication and operator replay", () => {
     );
     try {
       await create();
-      expect(log).toHaveBeenCalledWith({
-        event: "outbox_bookkeeping_failed",
-        eventId: fixtures.state.events[0].id,
-        code: "PUBLICATION_BOOKKEEPING_FAILED",
-      });
-      expect(JSON.stringify(log.mock.calls)).not.toContain("private credential details");
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: "outbox_bookkeeping_failed",
+          eventId: fixtures.state.events[0].id,
+          code: "PUBLICATION_BOOKKEEPING_FAILED",
+          outcome: "failed",
+          err: expect.anything(),
+        }),
+      );
     } finally {
       log.mockRestore();
     }

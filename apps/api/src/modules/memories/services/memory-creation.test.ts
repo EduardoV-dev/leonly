@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Logger, NotFoundException } from "@nestjs/common";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -20,6 +21,7 @@ describe("atomic memory creation and recovery", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("commits normalized details, ordered file associations, same-memory cover and one event per image", async () => {
@@ -115,6 +117,54 @@ describe("atomic memory creation and recovery", () => {
       status: "uploaded",
       operationLockToken: null,
       operationLockExpiresAt: null,
+    });
+  });
+
+  it("records unexpected upload failures that do not propagate", async () => {
+    const first = fixtures.addUpload({ bytes });
+    const second = fixtures.addUpload({ bytes });
+    const droppedError = new Error("storage unavailable");
+    vi.spyOn(fixtures.finalization, "confirmUploaded").mockImplementation(async ({ id }) => {
+      if (id === first.id) throw new NotFoundException({ error: "The upload is unavailable." });
+
+      throw droppedError;
+    });
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
+    await expect(
+      fixtures.memories.create({
+        userId: "user-a",
+        body: createMemoryRequest([first.id, second.id]),
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(warn).toHaveBeenCalledWith({
+      event: "upload_confirmation_failed",
+      uploadId: second.id,
+      outcome: "failed",
+      err: droppedError,
+    });
+    expect(
+      warn.mock.calls.filter(([record]) => record.event === "upload_confirmation_failed"),
+    ).toHaveLength(1);
+  });
+
+  it("records the consumed failure when recovery finds a committed creation", async () => {
+    const upload = fixtures.addUpload({ bytes });
+    const request = createMemoryRequest([upload.id]);
+    const committed = await fixtures.memories.create({ userId: "user-a", body: request });
+    const consumedError = new Error("database unavailable");
+    fixtures.prisma.memory.findUnique.mockResolvedValueOnce(null);
+    fixtures.prisma.$queryRaw.mockRejectedValueOnce(consumedError);
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
+    await expect(fixtures.memories.create({ userId: "user-a", body: request })).resolves.toEqual(
+      committed,
+    );
+    expect(warn).toHaveBeenCalledWith({
+      event: "memory_creation_recovered",
+      memoryId: committed.id,
+      outcome: "recovered",
+      err: consumedError,
     });
   });
 

@@ -3,11 +3,22 @@ import { serializeError } from "./serialize-error";
 
 export { serializeError } from "./serialize-error";
 
-export function createLoggerOptions(nodeEnvironment: string): LoggerOptions {
+export type CreateLoggerOptionsParams = {
+  nodeEnvironment: string;
+  service: string;
+  environment: string;
+};
+
+export function createLoggerOptions({
+  nodeEnvironment,
+  service,
+  environment,
+}: CreateLoggerOptionsParams): LoggerOptions {
   const isDevelopment = nodeEnvironment === "development";
 
   return {
     level: isDevelopment ? "debug" : "info",
+    base: { service, environment },
     transport: isDevelopment
       ? { target: "pino-pretty", options: { colorize: process.stdout.isTTY } }
       : undefined,

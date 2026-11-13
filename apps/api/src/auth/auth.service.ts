@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { fromNodeHeaders } from "better-auth/node";
 import type { Request } from "express";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -11,8 +11,10 @@ export type SessionRequest = Request & {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prismaService: PrismaService) {}
+  private readonly logger = new Logger(AuthService.name);
   private instance?: ReturnType<typeof createAuth>;
+
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getRequestUser(request: SessionRequest): Promise<SessionRequest["authUser"]> {
     if (request.authSessionResolved) return request.authUser;
@@ -27,7 +29,7 @@ export class AuthService {
   }
 
   get auth(): ReturnType<typeof createAuth> {
-    if (!this.instance) this.instance = createAuth(this.prismaService);
+    if (!this.instance) this.instance = createAuth(this.prismaService, this.logger);
     return this.instance;
   }
 }

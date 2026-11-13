@@ -1,3 +1,4 @@
+import { HttpException } from "@nestjs/common";
 import { toNodeHandler } from "better-auth/node";
 import type { RequestHandler } from "express";
 import type { RateLimitGuard } from "../../common/rate-limit/guards/rate-limit.guard";
@@ -12,14 +13,18 @@ const SIGN_IN_RATE_LIMIT = {
   key: "auth-sign-in",
 } satisfies RateLimitOptions;
 
+type AuthRequestLogger = { error: (record: Record<string, unknown>) => void };
+
 type CreateAuthHandlerParams = {
   authService: { readonly auth: Pick<AuthService["auth"], "handler"> };
   rateLimitGuard: Pick<RateLimitGuard, "enforce">;
+  logger: AuthRequestLogger;
 };
 
 export function createAuthHandler({
   authService,
   rateLimitGuard,
+  logger,
 }: CreateAuthHandlerParams): RequestHandler {
   const handler = toNodeHandler(authService.auth);
 
@@ -37,6 +42,18 @@ export function createAuthHandler({
       });
       await handler(request, response);
     } catch (error) {
+      const status = error instanceof HttpException ? error.getStatus() : 500;
+
+      if (status >= 500) {
+        logger.error({
+          event: "auth_request_failed",
+          method: request.method,
+          path: request.path,
+          status,
+          err: error,
+        });
+      }
+
       next(error);
     }
   };

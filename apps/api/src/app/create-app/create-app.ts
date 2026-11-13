@@ -11,7 +11,8 @@ export async function createApiApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, new ExpressAdapter(), {
     bufferLogs: true,
   });
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
   app.setGlobalPrefix("api");
   app.enableCors({
     origin: [getWebAppOrigin()],
@@ -26,6 +27,7 @@ export async function createApiApp(): Promise<NestExpressApplication> {
     createAuthHandler({
       authService: app.get(AuthService),
       rateLimitGuard: app.get(RateLimitGuard),
+      logger,
     }),
   );
 

@@ -45,20 +45,27 @@ describe("SQS image event handling", () => {
     ).resolves.toEqual({
       batchItemFailures: [{ itemIdentifier: "invalid-json" }, { itemIdentifier: "legacy" }],
     });
-    expect(fixtures.dependencies.logger.error).toHaveBeenCalledWith({
-      event: "image_processing_failed",
-      messageId: "legacy",
-      eventId: fixtures.event.id,
-      fileId: undefined,
-      code: "INVALID_EVENT",
-    });
-    expect(fixtures.dependencies.logger.info).toHaveBeenCalledWith({
-      event: "image_processed",
-      messageId: "valid",
-      eventId: fixtures.event.id,
-      fileId: fixtures.fileId,
-      outcome: "completed",
-    });
+    expect(fixtures.dependencies.logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "image_processing_failed",
+        messageId: "legacy",
+        eventId: fixtures.event.id,
+        fileId: undefined,
+        code: "INVALID_EVENT",
+        outcome: "retryable_failure",
+        err: expect.anything(),
+      }),
+    );
+    expect(fixtures.dependencies.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "image_processed",
+        messageId: "valid",
+        eventId: fixtures.event.id,
+        fileId: fixtures.fileId,
+        outcome: "completed",
+        durationMs: expect.any(Number),
+      }),
+    );
   });
 
   it.each([

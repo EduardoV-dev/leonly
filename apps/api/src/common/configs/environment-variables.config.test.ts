@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ENVIRONMENT_VARIABLE_NAMES = [
   "NODE_ENV",
+  "ENVIRONMENT",
   "PORT",
   "BETTER_AUTH_SECRET",
   "BETTER_AUTH_COOKIE_DOMAIN",
@@ -37,6 +38,7 @@ describe("ENVIRONMENT_VARIABLES", () => {
 
     expect(ENVIRONMENT_VARIABLES).toEqual({
       NODE_ENV: "",
+      ENVIRONMENT: "local",
       PORT: "",
       BETTER_AUTH_SECRET: "",
       BETTER_AUTH_COOKIE_DOMAIN: "",
@@ -104,6 +106,18 @@ describe("ENVIRONMENT_VARIABLES", () => {
       SQS_QUEUES_URLS: JSON.parse(configuredValues.SQS_QUEUES_URLS),
     });
     expect(Object.isFrozen(ENVIRONMENT_VARIABLES)).toBe(true);
+  });
+
+  it("falls back to the runtime environment for the log environment label", async () => {
+    vi.stubEnv("ENVIRONMENT", "");
+    vi.stubEnv("NODE_ENV", "test");
+    const testVariables = await import("./environment-variables.config");
+    expect(testVariables.ENVIRONMENT_VARIABLES.ENVIRONMENT).toBe("test");
+
+    vi.stubEnv("NODE_ENV", "production");
+    vi.resetModules();
+    const productionVariables = await import("./environment-variables.config");
+    expect(productionVariables.ENVIRONMENT_VARIABLES.ENVIRONMENT).toBe("production");
   });
 
   it("parses kebab-case queue URLs", async () => {

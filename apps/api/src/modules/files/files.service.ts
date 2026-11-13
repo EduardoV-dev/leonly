@@ -25,11 +25,12 @@ type IssueParams = { userId: string; body: IssueUploadsDto };
 @Injectable()
 export class FilesService {
   private readonly logger = new Logger(FilesService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
-  ) {}
+  ) { }
 
   async confirmUploaded({
     id,
@@ -107,8 +108,13 @@ export class FilesService {
               : { lastErrorCode: "UPLOAD_VERIFICATION_RETRYABLE" }),
           },
         });
-      } catch {
-        this.logger.warn({ event: "upload_confirmation_release_failed", fileId: id });
+      } catch (releaseError) {
+        this.logger.warn({
+          event: "upload_confirmation_release_failed",
+          fileId: id,
+          outcome: "failed",
+          err: releaseError,
+        });
       }
       throw error;
     }

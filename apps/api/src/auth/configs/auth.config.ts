@@ -1,3 +1,4 @@
+import type { Logger } from "@nestjs/common";
 import { type Auth, type BetterAuthOptions, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import {
@@ -5,8 +6,9 @@ import {
   getWebAppOrigin,
 } from "../../common/configs/environment-variables.config";
 import type { PrismaService } from "../../common/prisma/prisma.service";
+import { createAuthLogHandler } from "./auth-diagnostics";
 
-function getAuthOptions(prisma: PrismaService) {
+function getAuthOptions(prisma: PrismaService, logger: Logger) {
   const baseURL = getWebAppOrigin();
   if (!baseURL) throw new Error("WEB_APP_ORIGIN is required.");
 
@@ -25,6 +27,7 @@ function getAuthOptions(prisma: PrismaService) {
     secret: ENVIRONMENT_VARIABLES.BETTER_AUTH_SECRET,
     trustedOrigins: [baseURL],
     rateLimit: { enabled: false },
+    logger: { log: createAuthLogHandler(logger) },
     advanced: {
       crossSubDomainCookies: {
         enabled: Boolean(cookieDomain),
@@ -43,6 +46,9 @@ function getAuthOptions(prisma: PrismaService) {
   } satisfies BetterAuthOptions;
 }
 
-export function createAuth(prisma: PrismaService): Auth<ReturnType<typeof getAuthOptions>> {
-  return betterAuth(getAuthOptions(prisma));
+export function createAuth(
+  prisma: PrismaService,
+  logger: Logger,
+): Auth<ReturnType<typeof getAuthOptions>> {
+  return betterAuth(getAuthOptions(prisma, logger));
 }

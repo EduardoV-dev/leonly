@@ -73,7 +73,10 @@ describe("ApiExceptionFilter", () => {
 
     filter.catch(error, host);
 
-    expect(logError).toHaveBeenCalledWith({ err: error }, "Unhandled API error");
+    expect(logError).toHaveBeenCalledWith(
+      { event: "api_request_failed", status: 500, err: error },
+      "Unhandled API error",
+    );
     expect(reply).toHaveBeenCalledWith(
       {},
       expect.objectContaining({

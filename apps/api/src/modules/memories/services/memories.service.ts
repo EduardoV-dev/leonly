@@ -77,7 +77,7 @@ export class MemoriesService {
               }),
             };
           } catch (error) {
-            return { status: "rejected" as const, error };
+            return { status: "rejected" as const, uploadId: id, error };
           }
         }),
       );
@@ -87,8 +87,24 @@ export class MemoriesService {
         ),
       );
 
-      const failedConfirmation = confirmations.find(({ status }) => status === "rejected");
-      if (failedConfirmation?.status === "rejected") throw failedConfirmation.error;
+      const failures = confirmations.filter(
+        (confirmation): confirmation is { status: "rejected"; uploadId: string; error: unknown } =>
+          confirmation.status === "rejected",
+      );
+      const [thrownFailure, ...droppedFailures] = failures;
+
+      for (const { uploadId, error } of droppedFailures) {
+        if (error instanceof NotFoundException || error instanceof ConflictException) continue;
+
+        this.logger.warn({
+          event: "upload_confirmation_failed",
+          uploadId,
+          outcome: "failed",
+          err: error,
+        });
+      }
+
+      if (thrownFailure) throw thrownFailure.error;
 
       const { result, eventIds } = await this.commit({ scope, input, hash, uploads });
       hasCommittedResult = true;
@@ -96,8 +112,14 @@ export class MemoriesService {
       if (eventIds.length > 0) {
         try {
           await this.outboxPublisherService.publish({ ids: eventIds, limit: eventIds.length });
-        } catch {
-          this.logger.warn({ event: "memory_publication_failed", memoryId: result.id, eventIds });
+        } catch (error) {
+          this.logger.warn({
+            event: "memory_publication_failed",
+            memoryId: result.id,
+            eventIds,
+            outcome: "uncertain",
+            err: error,
+          });
         }
       }
 
@@ -109,18 +131,37 @@ export class MemoriesService {
         winner = await this.findExistingCreation({ scope, input, hash });
       } catch (recoveryError) {
         if (recoveryError instanceof ConflictException) throw recoveryError;
-        this.logger.warn({ event: "memory_creation_recovery_lookup_failed" });
+        this.logger.warn({
+          event: "memory_creation_recovery_lookup_failed",
+          outcome: "failed",
+          err: recoveryError,
+        });
         throw error;
-      }
-
-      if (winner) {
-        hasCommittedResult = true;
-        return winner;
       }
 
       const isTransactionConflict =
         error instanceof Prisma.PrismaClientKnownRequestError &&
         ["P2002", "P2034"].includes(error.code);
+
+      if (winner) {
+        hasCommittedResult = true;
+
+        const isExpectedFailure =
+          isTransactionConflict ||
+          error instanceof NotFoundException ||
+          error instanceof ConflictException;
+
+        if (!isExpectedFailure) {
+          this.logger.warn({
+            event: "memory_creation_recovered",
+            memoryId: winner.id,
+            outcome: "recovered",
+            err: error,
+          });
+        }
+
+        return winner;
+      }
 
       if (isTransactionConflict) throwCreationInProgressError();
 
@@ -129,10 +170,12 @@ export class MemoriesService {
       if (!hasCommittedResult) {
         try {
           await this.filesService.release(uploads);
-        } catch {
+        } catch (error) {
           this.logger.warn({
             event: "upload_claim_release_failed",
             uploadIds: uploads.map(({ id }) => id),
+            outcome: "failed",
+            err: error,
           });
         }
       }

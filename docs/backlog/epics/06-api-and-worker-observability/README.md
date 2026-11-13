@@ -34,7 +34,7 @@ The current API, image worker, outbox, and queue are the initial scope. Apply th
 additional workers present when implementation begins. Storage cleanup, places, and dashboard
 feature expansion do not block this work.
 
-Approve retention before log-group deployment; 30 days is the proposed initial default. Choose alarm
+The configurable initial log-retention default is approved at 30 days. Choose alarm
 owners, notification routing, thresholds, sampling, and telemetry budgets in the owning stories.
 Production API deployment ownership must be identified before changing its infrastructure: the
 repository API module is currently referenced by the local environment.

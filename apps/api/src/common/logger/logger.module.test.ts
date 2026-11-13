@@ -5,6 +5,7 @@ type LoggerOptions = {
   pinoHttp: {
     transport?: { target: string; options: { colorize: boolean } };
     level: string;
+    base: { service: string; environment: string };
     autoLogging: { ignore: (request: { url?: string }) => boolean };
     serializers: Record<string, (value: unknown) => unknown>;
     redact: { paths: string[]; censor: string };
@@ -23,21 +24,32 @@ describe("API logger configuration", () => {
     forRoot.mockClear();
   });
 
-  it("uses pretty output only in development", async () => {
+  it("uses pretty output only in development and stamps the service identity", async () => {
     vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("ENVIRONMENT", "local");
     await import("./logger.module");
     expect(forRoot.mock.calls[0][0].pinoHttp.level).toBe("debug");
     expect(forRoot.mock.calls[0][0].pinoHttp.transport?.target).toBe("pino-pretty");
+    expect(forRoot.mock.calls[0][0].pinoHttp.base).toEqual({
+      service: "api",
+      environment: "local",
+    });
 
     vi.resetModules();
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ENVIRONMENT", "staging");
     await import("./logger.module");
     expect(forRoot.mock.calls[1][0].pinoHttp.level).toBe("info");
     expect(forRoot.mock.calls[1][0].pinoHttp.transport).toBeUndefined();
+    expect(forRoot.mock.calls[1][0].pinoHttp.base).toEqual({
+      service: "api",
+      environment: "staging",
+    });
   });
 
   it("serializes safe request fields and preserves sanitized error diagnostics", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("ENVIRONMENT", "staging");
     await import("./logger.module");
     const options = forRoot.mock.calls[0][0].pinoHttp;
     expect(options.autoLogging.ignore({ url: "/api/health?probe=1" })).toBe(true);

@@ -88,6 +88,7 @@ resource "aws_lambda_function" "image_worker" {
   environment {
     variables = merge(var.worker_environment_variables, {
       NODE_ENV         = "production"
+      ENVIRONMENT      = "staging"
       STORAGE_ENDPOINT = "https://${var.cloudflare_account_id}.r2.cloudflarestorage.com"
       STORAGE_REGION   = "auto"
       STORAGE_BUCKET   = cloudflare_r2_bucket.memory_uploads.name

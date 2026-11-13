@@ -2,23 +2,30 @@ import pino from "pino";
 import { describe, expect, it } from "vitest";
 import { createLoggerOptions } from "./index";
 
+const IDENTITY = { nodeEnvironment: "production", service: "api", environment: "staging" };
+
+function createCapturingLogger(options = IDENTITY) {
+  const lines: string[] = [];
+  const logger = pino(createLoggerOptions(options), {
+    write: (line: string) => lines.push(line),
+  });
+  return { logger, lines };
+}
+
 describe("shared logger configuration", () => {
   it("uses structured output in production and pretty debug output in development", () => {
-    expect(createLoggerOptions("production")).toMatchObject({
+    expect(createLoggerOptions(IDENTITY)).toMatchObject({
       level: "info",
       transport: undefined,
     });
-    expect(createLoggerOptions("development")).toMatchObject({
+    expect(createLoggerOptions({ ...IDENTITY, nodeEnvironment: "development" })).toMatchObject({
       level: "debug",
       transport: { target: "pino-pretty" },
     });
   });
 
-  it("redacts credentials while preserving event and error diagnostics", () => {
-    const lines: string[] = [];
-    const logger = pino(createLoggerOptions("production"), {
-      write: (line: string) => lines.push(line),
-    });
+  it("stamps every record with the service and environment identity", () => {
+    const { logger, lines } = createCapturingLogger();
     logger.error({
       event: "worker_failed",
       token: "private-token",
@@ -30,8 +37,9 @@ describe("shared logger configuration", () => {
     });
 
     expect(JSON.parse(lines[0])).toMatchObject({
+      service: "api",
+      environment: "staging",
       event: "worker_failed",
-      msg: "Failed for [Redacted email]",
       token: "[Redacted]",
       account: { password: "[Redacted]" },
       err: {

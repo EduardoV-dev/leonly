@@ -65,6 +65,7 @@ export async function processImage({
   if (!imageFile) return "unavailable";
 
   const rootLease = await claimRootProcessingLease({ fileId: imageFile.file.id, prisma });
+  let outcome: ImageOutcome;
 
   try {
     const variantFiles = await ensureVariantFiles({
@@ -77,44 +78,70 @@ export async function processImage({
       ({ status }) => status === FileStatus.ready,
     );
 
-    if (areRequestedVariantsReady) return "already_completed";
+    if (areRequestedVariantsReady) {
+      outcome = "already_completed";
+    } else {
+      let bytes: Buffer;
+      try {
+        bytes = await prepareOriginal({ imageFile, rootLease, dependencies });
+      } catch (error) {
+        const processingError = normalizeProcessingError(error);
+        try {
+          await recordRootVerificationFailure({
+            error: processingError,
+            imageFile,
+            variantFiles,
+            rootLease,
+            dependencies,
+          });
+        } catch (bookkeepingError) {
+          dependencies.logger.error({
+            event: "image_failure_bookkeeping_failed",
+            fileId: imageFile.file.id,
+            code:
+              processingError instanceof ImageProcessingError
+                ? processingError.code
+                : "TRANSIENT_PROCESSING_ERROR",
+            err: bookkeepingError,
+          });
+        }
+        throw processingError;
+      }
 
-    let bytes: Buffer;
-    try {
-      bytes = await prepareOriginal({ imageFile, rootLease, dependencies });
-    } catch (error) {
-      const processingError = normalizeProcessingError(error);
-      await recordRootVerificationFailure({
-        error: processingError,
-        imageFile,
-        variantFiles,
-        rootLease,
-        dependencies,
-      });
-      throw processingError;
+      for (const [index, variantFile] of variantFiles.entries()) {
+        const variantName = event.payload.variantNames[index];
+        if (!variantName) throw new ImageProcessingError("VARIANT_METADATA_MISMATCH");
+        if (variantFile.status === FileStatus.ready) continue;
+
+        await processVariant({
+          bytes,
+          imageFile,
+          variantFile,
+          variantName,
+          rootLease,
+          dependencies,
+        });
+      }
+
+      outcome = "completed";
     }
-
-    for (const [index, variantFile] of variantFiles.entries()) {
-      const variantName = event.payload.variantNames[index];
-      if (!variantName) throw new ImageProcessingError("VARIANT_METADATA_MISMATCH");
-      if (variantFile.status === FileStatus.ready) continue;
-
-      await processVariant({
-        bytes,
-        imageFile,
-        variantFile,
-        variantName,
-        rootLease,
-        dependencies,
-      });
-    }
-
-    return "completed";
   } catch (error) {
-    throw normalizeProcessingError(error);
-  } finally {
-    await releaseProcessingLease({ lease: rootLease, prisma });
+    const processingError = normalizeProcessingError(error);
+    try {
+      await releaseProcessingLease({ lease: rootLease, prisma });
+    } catch (releaseError) {
+      dependencies.logger.error({
+        event: "image_failure_release_failed",
+        fileId: imageFile.file.id,
+        code: "OPERATION_LOCK_RELEASE_FAILED",
+        err: releaseError,
+      });
+    }
+    throw processingError;
   }
+
+  await releaseProcessingLease({ lease: rootLease, prisma });
+  return outcome;
 }
 
 async function ensureVariantFiles({
@@ -274,17 +301,32 @@ async function processVariant({
     });
   } catch (error) {
     const processingError = normalizeProcessingError(error);
-    await recordVariantProcessingFailure({
-      error: processingError,
-      imageFile,
-      variantFile,
-      variantName,
-      rootLease,
-      variantLease,
-      dependencies: { prisma, logger },
-    });
+    try {
+      await recordVariantProcessingFailure({
+        error: processingError,
+        imageFile,
+        variantFile,
+        variantName,
+        rootLease,
+        variantLease,
+        dependencies: { prisma, logger },
+      });
+    } finally {
+      try {
+        await releaseProcessingLease({ lease: variantLease, prisma });
+      } catch (releaseError) {
+        logger.error({
+          event: "image_failure_release_failed",
+          fileId: variantFile.id,
+          originalFileId: imageFile.file.id,
+          variantName,
+          code: "OPERATION_LOCK_RELEASE_FAILED",
+          err: releaseError,
+        });
+      }
+    }
     throw processingError;
-  } finally {
-    await releaseProcessingLease({ lease: variantLease, prisma });
   }
+
+  await releaseProcessingLease({ lease: variantLease, prisma });
 }

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Logger, NotFoundException } from "@nestjs/common";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -36,6 +37,7 @@ describe("atomic memory edit save", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("commits a metadata-only edit without image events and returns the advanced token", async () => {
@@ -236,6 +238,42 @@ describe("atomic memory edit save", () => {
     await expect(
       fixtures.edits.save({ userId: "user-a", memoryId: EDIT_MEMORY_ID, body: editBody({}) }),
     ).rejects.toMatchObject({ status: 404, response: { error: "Memory unavailable." } });
+  });
+
+  it("propagates availability-recheck failures instead of reporting a conflict", async () => {
+    const memory = fixtures.addMemory({ attachmentIds: [] });
+    const recheckError = new Error("database unavailable");
+    fixtures.prisma.memory.findFirst
+      .mockImplementationOnce(async () => ({ id: EDIT_MEMORY_ID }))
+      .mockRejectedValueOnce(recheckError);
+    memory.updatedAt = new Date(INITIAL_EDIT_TOKEN.getTime() + 1);
+    await expect(
+      fixtures.edits.save({ userId: "user-a", memoryId: EDIT_MEMORY_ID, body: editBody({}) }),
+    ).rejects.toBe(recheckError);
+  });
+
+  it("records unexpected upload failures that do not propagate", async () => {
+    const first = fixtures.addUpload({ bytes, overrides: { status: "uploaded" } });
+    const droppedUploadId = randomUUID();
+    fixtures.addMemory({ attachmentIds: [] });
+    const droppedError = new Error("storage unavailable");
+    vi.spyOn(fixtures.finalization, "confirmUploaded").mockImplementation(async ({ id }) => {
+      if (id === first.id) throw new NotFoundException({ error: "The upload is unavailable." });
+      throw droppedError;
+    });
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+    await expect(
+      fixtures.edits.save({
+        userId: "user-a",
+        memoryId: EDIT_MEMORY_ID,
+        body: editBody({ uploadIds: [first.id, droppedUploadId] }),
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(warn.mock.calls[0]?.[0]).toMatchObject({
+      event: "upload_confirmation_failed",
+      uploadId: droppedUploadId,
+      err: droppedError,
+    });
   });
 
   it("advances the token on rapid no-op saves so the previous token cannot be reused", async () => {

@@ -45,6 +45,7 @@ export class SettingsService {
     const currentMembers = members.filter((member) => member.isCurrentMember);
     const hasInvalidSettingsContext =
       members.length > MAX_SPACE_MEMBERS || currentMembers.length !== 1 || !account;
+
     if (hasInvalidSettingsContext) {
       throw new Error("Settings requires one active space and a current account.");
     }

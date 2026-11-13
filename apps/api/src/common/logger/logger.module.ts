@@ -4,7 +4,11 @@ import { Module } from "@nestjs/common";
 import { LoggerModule as PinoLoggerModule } from "nestjs-pino";
 import { ENVIRONMENT_VARIABLES } from "../configs/environment-variables.config";
 
-const loggerOptions = createLoggerOptions(ENVIRONMENT_VARIABLES.NODE_ENV);
+const loggerOptions = createLoggerOptions({
+  nodeEnvironment: ENVIRONMENT_VARIABLES.NODE_ENV,
+  service: "api",
+  environment: ENVIRONMENT_VARIABLES.ENVIRONMENT,
+});
 
 @Module({
   imports: [

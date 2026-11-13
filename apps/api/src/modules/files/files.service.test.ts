@@ -1,6 +1,9 @@
 import { FilePurpose, FileStatus } from "@leonly/database/client";
-import { describe, expect, it } from "vitest";
+import { Logger } from "@nestjs/common";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCreationFixtures, SPACE_ID } from "../../app/tests/creation-fixtures";
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("file upload confirmation", () => {
   it("rejects active operation owners and reclaims expired claims", async () => {
@@ -80,6 +83,39 @@ describe("file upload confirmation", () => {
     });
     await expect(fixtures.finalization.confirmUploaded(input)).resolves.toMatchObject({
       status: FileStatus.uploaded,
+    });
+  });
+
+  it("reports a cleanup failure while preserving the verification error", async () => {
+    const fixtures = await createCreationFixtures();
+    const file = fixtures.addUpload({ bytes: Buffer.from("photo") });
+    const storageError = new Error("storage unavailable");
+    const releaseError = new Error("release unavailable");
+    const runUpdateMany = fixtures.prisma.file.updateMany.getMockImplementation();
+    if (!runUpdateMany) throw new Error("Missing update implementation");
+    let updateCalls = 0;
+    fixtures.prisma.file.updateMany.mockImplementation(async (args) => {
+      updateCalls += 1;
+      if (updateCalls === 2) throw releaseError;
+
+      return runUpdateMany(args);
+    });
+    fixtures.storage.headObject.mockRejectedValueOnce(storageError);
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
+    await expect(
+      fixtures.finalization.confirmUploaded({
+        id: file.id,
+        userId: "user-a",
+        spaceId: SPACE_ID,
+        purpose: FilePurpose.memory_image,
+      }),
+    ).rejects.toBe(storageError);
+    expect(warn).toHaveBeenCalledWith({
+      event: "upload_confirmation_release_failed",
+      fileId: file.id,
+      outcome: "failed",
+      err: releaseError,
     });
   });
 
