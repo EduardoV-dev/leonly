@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  verify-web-app:
     name: Web app verification
     runs-on: ubuntu-latest
 

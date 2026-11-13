@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  verify-workers:
     name: Workers verification
     runs-on: ubuntu-latest
     steps:

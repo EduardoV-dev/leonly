@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  verify-api:
     name: API verification
     runs-on: ubuntu-latest
     steps:
