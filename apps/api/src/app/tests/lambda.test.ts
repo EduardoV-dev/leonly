@@ -1,7 +1,11 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResult, Context } from "aws-lambda";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { handler } from "../../lambda";
 import { createApiApp } from "../create-app/create-app";
+import { rateLimitStorage } from "./rate-limit-setup";
+
+const BODY_LIMIT_BYTES = 1024 * 1024;
+const { createVerification } = vi.hoisted(() => ({ createVerification: vi.fn() }));
 
 vi.mock("dotenv/config", () => ({}));
 
@@ -28,7 +32,11 @@ vi.mock("../../common/configs/environment-variables.config", () => ({
   },
   getWebAppOrigin: () => "https://app.example.com",
 }));
-vi.mock("../../common/prisma/prisma.service", () => ({ PrismaService: class {} }));
+vi.mock("../../common/prisma/prisma.service", () => ({
+  PrismaService: class {
+    verification = { create: createVerification };
+  },
+}));
 
 const context: Context = {
   callbackWaitsForEmptyEventLoop: false,
@@ -45,46 +53,73 @@ const context: Context = {
   succeed: vi.fn(),
 };
 
-async function invoke(path: string): Promise<APIGatewayProxyResult> {
+type InvokeParams = {
+  path: string;
+  method?: "GET" | "POST";
+  body?: string;
+  contentType?: string;
+};
+
+async function invoke({
+  path,
+  method = "GET",
+  body,
+  contentType = "application/json",
+}: InvokeParams): Promise<APIGatewayProxyResult> {
   const event: APIGatewayProxyEventV2 = {
     version: "2.0",
-    routeKey: `GET ${path}`,
+    routeKey: `${method} ${path}`,
     rawPath: path,
     rawQueryString: "",
-    headers: { host: "api.example.com", "x-forwarded-proto": "https" },
+    headers: {
+      host: "api.example.com",
+      "x-forwarded-proto": "https",
+      origin: "https://app.example.com",
+      ...(body === undefined
+        ? {}
+        : { "content-type": contentType, "content-length": String(Buffer.byteLength(body)) }),
+    },
     requestContext: {
       accountId: "000000000000",
       apiId: "api",
       domainName: "api.example.com",
       domainPrefix: "api",
-      http: { method: "GET", path, protocol: "HTTP/1.1", sourceIp: "127.0.0.1", userAgent: "test" },
+      http: { method, path, protocol: "HTTP/1.1", sourceIp: "127.0.0.1", userAgent: "test" },
       requestId: "request-id",
-      routeKey: `GET ${path}`,
+      routeKey: `${method} ${path}`,
       stage: "$default",
       time: "01/Nov/2026:00:00:00 +0000",
       timeEpoch: 0,
     },
     isBase64Encoded: false,
+    body,
   };
 
   return handler(event, context, vi.fn());
 }
 
+beforeEach(() => {
+  vi.stubEnv("AWS_LAMBDA_FUNCTION_NAME", "api");
+  createVerification.mockReset();
+  createVerification.mockImplementation(({ data }) => data);
+});
+
 afterAll(async () => {
   const app = await vi.mocked(createApiApp).mock.results[0]?.value;
   await app?.close();
+  vi.unstubAllEnvs();
 });
 
 describe("Lambda API documentation", () => {
   it("serves Scalar outside the API prefix", async () => {
-    const response = await invoke("/docs");
+    const response = await invoke({ path: "/docs" });
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain("/openapi.json");
   });
 
   it("serves OpenAPI with prefixed operations and concrete request DTOs", async () => {
-    const response = await invoke("/openapi.json");
+    const response = await invoke({ path: "/openapi.json" });
 
     expect(response.statusCode).toBe(200);
     const document = JSON.parse(response.body);
@@ -98,4 +133,94 @@ describe("Lambda API documentation", () => {
     ]);
     expect(document.components.schemas.CreateMemoryDto.required).toContain("idempotencyKey");
   });
+});
+
+describe("Lambda request bodies", () => {
+  it("starts Google sign-in after an asynchronous rate-limit check", async () => {
+    rateLimitStorage.limit.mockImplementation(async () => {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      return { success: true, reset: Date.now() + 60_000, pending: Promise.resolve() };
+    });
+
+    const response = await invoke({
+      path: "/api/auth/sign-in/social",
+      method: "POST",
+      body: JSON.stringify({
+        provider: "google",
+        callbackURL: "https://app.example.com/welcome/create/start",
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    const result = JSON.parse(response.body);
+    expect(new URL(result.url).hostname).toBe("accounts.google.com");
+    expect(createVerification).toHaveBeenCalledOnce();
+  });
+
+  it("still rejects sign-in when the limiter denies the request", async () => {
+    rateLimitStorage.limit.mockResolvedValue({
+      success: false,
+      reset: Date.now() + 60_000,
+      pending: Promise.resolve(),
+    });
+
+    const response = await invoke({
+      path: "/api/auth/sign-in/social",
+      method: "POST",
+      body: JSON.stringify({ provider: "google" }),
+    });
+
+    expect(response.statusCode).toBe(429);
+    expect(createVerification).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed JSON before starting authentication", async () => {
+    const response = await invoke({
+      path: "/api/auth/sign-in/social",
+      method: "POST",
+      body: '{"provider":',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body)).toMatchObject({ ok: false, data: null });
+    expect(createVerification).not.toHaveBeenCalled();
+  });
+
+  it.each(["application/json", "application/x-www-form-urlencoded"])(
+    "accepts a %s body of exactly 1 MiB through parsing",
+    async (contentType) => {
+      const prefix = contentType === "application/json" ? '{"padding":"' : "padding=";
+      const suffix = contentType === "application/json" ? '"}' : "";
+      const body = `${prefix}${"x".repeat(BODY_LIMIT_BYTES - prefix.length - suffix.length)}${suffix}`;
+
+      const response = await invoke({ path: "/api/spaces", method: "POST", contentType, body });
+
+      // Authentication rejects the anonymous request only after the parser accepts its body.
+      expect(response.statusCode).toBe(401);
+    },
+  );
+
+  it.each(["application/json", "application/x-www-form-urlencoded"])(
+    "rejects a %s body above 1 MiB before authentication",
+    async (contentType) => {
+      const prefix = contentType === "application/json" ? '{"padding":"' : "padding=";
+      const suffix = contentType === "application/json" ? '"}' : "";
+      const body = `${prefix}${"x".repeat(BODY_LIMIT_BYTES + 1 - prefix.length - suffix.length)}${suffix}`;
+
+      const response = await invoke({
+        path: "/api/auth/sign-in/social",
+        method: "POST",
+        contentType,
+        body,
+      });
+
+      expect(response.statusCode).toBe(413);
+      expect(JSON.parse(response.body)).toMatchObject({
+        ok: false,
+        data: null,
+        error: [{ code: "HTTP_413", message: "The request body is too large." }],
+      });
+      expect(createVerification).not.toHaveBeenCalled();
+    },
+  );
 });

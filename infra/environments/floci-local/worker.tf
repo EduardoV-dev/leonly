@@ -60,7 +60,9 @@ resource "aws_lambda_function" "image_worker" {
   reserved_concurrent_executions = 2
 
   environment {
-    variables = var.environment_variables
+    variables = merge(var.environment_variables, {
+      ENVIRONMENT = "local"
+    })
   }
 
   depends_on = [aws_iam_role_policy.image_worker]

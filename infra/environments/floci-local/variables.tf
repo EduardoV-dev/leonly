@@ -1,3 +1,14 @@
+variable "api_image_tag" {
+  description = "Local API image tag; the deploy command saves a fresh dev tag after applying."
+  type        = string
+  default     = "handler-async"
+
+  validation {
+    condition     = can(regex("^(handler-async|dev-[a-z0-9-]+)$", var.api_image_tag))
+    error_message = "api_image_tag must be handler-async or a unique dev tag."
+  }
+}
+
 variable "environment_variables" {
   description = "Shared environment variables configured on local Lambda functions."
   type        = map(string)

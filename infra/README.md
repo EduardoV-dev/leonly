@@ -65,6 +65,68 @@ Rollback: set `image_processing_enabled = false` and disable new creation and
 publication traffic. Keep schema, bucket objects, queues, and unpublished events
 intact. Do not destroy storage as a rollback mechanism.
 
+## Deploy the local API
+
+With the Compose services running and `floci-local/local.auto.tfvars` configured, build
+the API image and deploy it from the repository root:
+
+```bash
+pnpm --filter api build:image
+pnpm api:deploy:local
+```
+
+The deploy command reuses `leonly-api:latest`; skip the build when that image is already current.
+It requires the existing local API ECR repository, Docker, Terraform, AWS CLI, and Node.js 22.6+.
+It gives the image a unique dev tag, applies a saved API/queue-permission plan, and waits for
+Lambda readiness. Floci uses the image directly from Docker; no ECR push is needed.
+
+After applying, the command saves `api_image_tag` in the ignored `local.auto.tfvars`, preserving
+other configuration. Failed applies leave the stored tag unchanged. Plans containing resource
+deletions or changes outside the API and its queue dependencies are rejected. The worker is
+deployed separately with `pnpm workers:deploy:local`.
+
+Keep the deployed dev-tagged image available for cold starts. To roll back, tag a retained image
+as `leonly-api:latest` and rerun the deploy command. This changes code without removing application
+data. The frontend remains a separate Next.js process/deployment.
+
+Check the deployed API through Floci's gateway using its API hostname:
+
+```bash
+API_ENDPOINT=$(terraform -chdir=infra/environments/floci-local output -raw api_endpoint)
+curl --fail -H "Host: ${API_ENDPOINT#https://}" http://localhost:4566/api/health
+```
+
+Expect `{"status":"ok","checks":{"database":"up","redis":"up"}}`.
+Floci can continue reporting empty Lambda `image_config` and worker reserved-concurrency
+differences after applying. Inspect live Lambda configuration before treating those as runtime drift.
+
+### Connect the web app to Floci
+
+Start the localhost proxy from the repository root:
+
+```bash
+pnpm api:proxy:local
+```
+
+The proxy listens on `127.0.0.1:3002` and forwards requests to Floci on port `4566`.
+It reads the gateway hostname from Terraform, rewrites the upstream `Host` header,
+and preserves cookies, request bodies, response headers, and status codes.
+
+Set these values in `apps/web-app/.env.local`:
+
+```dotenv
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3002
+```
+
+Keep the API base URL without `/api`; the web app adds that prefix. Restart the web
+app with `pnpm --filter web-app dev` in another terminal. The host-run NestJS API is
+not needed. Keeping the browser-facing URL on `localhost` preserves the existing
+localhost authentication cookie scope.
+
+Verify the proxy with `curl --fail http://localhost:3002/api/health`; expect database
+and Redis checks to be `up`. Stop the proxy with Ctrl+C.
+
 ## Local Floci S3
 
 1. Start Floci with `docker compose -f apps/api/docker-compose.yml up -d floci`.

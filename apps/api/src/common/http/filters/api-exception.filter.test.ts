@@ -41,7 +41,7 @@ describe("ApiExceptionFilter", () => {
     expect(JSON.stringify(reply.mock.calls)).not.toContain("Provider secret");
   });
 
-  it.each([400, 401, 403, 404, 409, 429, 500, 503])(
+  it.each([400, 401, 403, 404, 409, 413, 429, 500, 503])(
     "provides a complete error body for HTTP %s without leaking server details",
     (status) => {
       const { filter, host, reply } = new FilterFixture();
@@ -85,6 +85,29 @@ describe("ApiExceptionFilter", () => {
       }),
       500,
     );
+  });
+
+  it("returns a safe 413 for oversized parser bodies without logging the submitted body", () => {
+    const { filter, host, reply, error: logError } = new FilterFixture();
+    const exception = Object.assign(new Error("request entity too large"), {
+      type: "entity.too.large",
+      status: 413,
+      body: "private submitted body",
+    });
+
+    filter.catch(exception, host);
+
+    expect(reply).toHaveBeenCalledWith(
+      {},
+      {
+        ok: false,
+        data: null,
+        error: [{ code: "HTTP_413", message: "The request body is too large." }],
+        message: "The request body is too large.",
+      },
+      413,
+    );
+    expect(logError).not.toHaveBeenCalled();
   });
 
   it.each([400, 409, 500])("discards exception response data for HTTP %s", (status) => {

@@ -60,8 +60,14 @@ export class ApiExceptionFilter implements ExceptionFilter {
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const status =
+    let status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const isBodyTooLarge =
+      isRecord(exception) &&
+      exception.type === "entity.too.large" &&
+      exception.status === HttpStatus.PAYLOAD_TOO_LARGE;
+    if (isBodyTooLarge) status = HttpStatus.PAYLOAD_TOO_LARGE;
+
     const isServerError = status >= 500;
 
     if (isServerError) {

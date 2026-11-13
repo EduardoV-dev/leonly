@@ -7,6 +7,8 @@ import { getWebAppOrigin } from "../../common/configs/environment-variables.conf
 import { RateLimitGuard } from "../../common/rate-limit/guards/rate-limit.guard";
 import { AppModule } from "../app.module";
 
+const REQUEST_BODY_LIMIT = "1mb";
+
 export async function createApiApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, new ExpressAdapter(), {
     bufferLogs: true,
@@ -20,6 +22,10 @@ export async function createApiApp(): Promise<NestExpressApplication> {
     exposedHeaders: ["Retry-After"],
   });
   app.enableCsrfProtection({ trustedOrigins: [getWebAppOrigin()] });
+
+  // Parse before the async auth handler yields control to the Lambda adapter.
+  app.useBodyParser("json", { limit: REQUEST_BODY_LIMIT });
+  app.useBodyParser("urlencoded", { limit: REQUEST_BODY_LIMIT, extended: true });
 
   const express = app.getHttpAdapter().getInstance();
   express.all(

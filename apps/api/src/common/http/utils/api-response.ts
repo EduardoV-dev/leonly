@@ -10,6 +10,7 @@ const API_ERROR_MESSAGES: Readonly<Record<number, string>> = {
   403: "You are not allowed to perform this action.",
   404: "The requested resource was not found.",
   409: "The request conflicts with the current state.",
+  413: "The request body is too large.",
   429: "Too many requests. Please try again later.",
   500: "We could not complete your request. Please try again.",
   503: "Service is temporarily unavailable. Please try again later.",
