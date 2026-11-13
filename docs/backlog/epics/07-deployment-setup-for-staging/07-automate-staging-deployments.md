@@ -4,8 +4,8 @@
 
 ## User Story
 
-As a developer, I want a push or merge to `staging` to deploy a verified release automatically and
-show its result in GitHub Deployments.
+As a developer, I want PRs targeting `staging` checked before merge and the merged commit deployed
+automatically, with its result shown in GitHub Deployments.
 
 ## Information needed
 
@@ -15,11 +15,12 @@ show its result in GitHub Deployments.
 
 ## Work to do
 
-1. Keep PR verification credential-free. Trigger the release on pushes to `staging` and allow a
-   manual rerun of a selected trusted release. Restrict deployment to that branch/environment.
-2. Run existing backend/frontend gates and Terraform checks against the exact release commit.
-   Preserve serialized backend preparation because Prisma generation shares an output directory.
-   Build both container images and the frontend artifact with pinned tools and lockfile installs.
+1. Run the existing backend/frontend gates and Terraform checks on PRs targeting `staging`, without
+   deployment credentials. Configure their stable status names as required GitHub checks.
+2. After merge, trigger a release for the resulting `staging` commit. Restrict deployment to that
+   branch/environment and allow a manual rerun of a selected trusted release. Verify and build the
+   exact release commit using pinned tools and lockfile installs. Serialize backend preparation
+   because Prisma generation shares an output directory.
 3. Push images tagged with the commit SHA and capture their digests. Run authenticated Terraform
    plans only in the trusted release context; apply each exact saved plan automatically after checks.
    Keep secret-bearing plans private and ephemeral, outside public workflow artifacts.
@@ -33,7 +34,9 @@ show its result in GitHub Deployments.
 
 ## Acceptance Criteria
 
-- A merge and a direct trusted push both trigger the release; Terraform has no manual approval gate.
+- A PR targeting `staging` runs all required checks; GitHub blocks merge when any check is missing
+  or failing and blocks direct pushes through branch protection.
+- Merging a passing PR triggers deployment of the resulting commit; Terraform has no manual approval gate.
 - Releases are serialized across infrastructure, migrations, and apps. Do not cancel an active
    release halfway through mutation; pending releases cannot overwrite newer deployed commits.
 - Failed checks/migrations stop dependent deployment. Backend verification failure blocks Vercel;
@@ -43,5 +46,6 @@ show its result in GitHub Deployments.
 - Re-running a release is safe, artifacts share one commit, and build/verification success is not
    reported as deployment success before smoke checks pass.
 
-Starting points: `.github/workflows/api-verify.yml`, `.github/workflows/web-app-verify.yml`,
+Starting points: `.github/workflows/verify-api.yml`, `.github/workflows/verify-workers.yml`,
+`.github/workflows/verify-web-app.yml`,
 and `packages/database/package.json` (`prisma:migrate` runs `prisma migrate deploy`).

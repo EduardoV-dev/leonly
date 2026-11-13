@@ -1,4 +1,4 @@
-name: Backend Verify
+name: API Verify
 
 on:
   pull_request:
@@ -6,34 +6,30 @@ on:
       - main
       - staging
 
+permissions:
+  contents: read
+
 jobs:
   verify:
+    name: API verification
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --ignore-scripts
-
       - name: Biome check
-        run: pnpm --filter 'api...' --filter 'workers...' check
-
+        run: pnpm --filter 'api...' check
       - name: Type check
-        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 typecheck
-
+        run: pnpm --filter 'api...' --workspace-concurrency=1 typecheck
       - name: Run tests
-        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 test:run
-
+        run: pnpm --filter 'api...' --workspace-concurrency=1 test:run
       - name: Build
-        run: pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 build
+        run: pnpm --filter 'api...' --workspace-concurrency=1 build
