@@ -28,7 +28,6 @@ local Floci behavior as part of this epic.
 
 | Order | User story | Finish when |
 | --- | --- | --- |
-| 01 | [Configure accounts and access](01-configure-accounts-and-access.md) | Accounts, credentials, GitHub environment, and branch protection are ready. |
 | 02 | [Bootstrap Terraform state in R2](02-bootstrap-terraform-state-in-r2.md) | Private remote state, locking, and backup recovery are verified. |
 | 03 | [Provision staging data services](03-provision-staging-data-services.md) | Neon, Redis, and private upload storage are ready. |
 | 04 | [Provision the AWS backend](04-provision-aws-backend.md) | Image repositories, queues, and deployable API/worker infrastructure exist. |
