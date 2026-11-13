@@ -15,9 +15,9 @@ image worker. Explain Terraform as it is introduced so the owner understands its
 | Area | Decision |
 | --- | --- |
 | Frontend | New Vercel project at `https://stg.leonly.eduardov.dev`; GitHub Actions owns deployment. |
-| Backend | AWS Lambda, API Gateway, ECR, and SQS in `us-east-1`; API at `https://api.stg.leonly.eduardov.dev`. |
+| Backend | AWS Lambda, API Gateway, ECR, and SQS in `us-east-1`; API at `https://api.stg.leonly.eduardov.dev`. Terraform state uses a separate private, versioned S3 bucket. |
 | Data | Terraform-provisioned Neon in `aws-us-east-1` and isolated Upstash Redis. |
-| Cloudflare | DNS for `eduardov.dev`, private R2 uploads, and a separate private Terraform state bucket. |
+| Cloudflare | DNS for `eduardov.dev` and private R2 uploads. |
 | Releases | Public repository; required PR checks gate merges to `staging`, which trigger automatic deployment without a separate approval. |
 | Budget | Target $5/month for staging, using eligible free plans and low usage; not a guaranteed spending cap. |
 
@@ -28,7 +28,7 @@ local Floci behavior as part of this epic.
 
 | Order | User story | Finish when |
 | --- | --- | --- |
-| 02 | [Bootstrap Terraform state in R2](02-bootstrap-terraform-state-in-r2.md) | Private remote state, locking, and backup recovery are verified. |
+| 02 | [Bootstrap Terraform state in S3](02-bootstrap-terraform-state-in-s3.md) | Private remote state, locking, and version recovery are verified. |
 | 03 | [Provision staging data services](03-provision-staging-data-services.md) | Neon, Redis, and private upload storage are ready. |
 | 04 | [Provision the AWS backend](04-provision-aws-backend.md) | Image repositories, queues, and deployable API/worker infrastructure exist. |
 | 05 | [Configure domains and authentication](05-configure-staging-domains-and-authentication.md) | HTTPS, Google login configuration, CORS, and cookie scope are correct. |

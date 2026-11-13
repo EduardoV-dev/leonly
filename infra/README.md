@@ -170,6 +170,8 @@ Live provider behavior requires the checks in
 `openspec/changes/archive/2026-10-28-create-memory-upload-worker/provider-feasibility.md`.
 
 Terraform state can contain sensitive configuration. Local state and `.tfvars`
-are ignored by Git. Staging state storage and access policy must be selected
-before applying this environment. Do not use bucket deletion or schema removal
-to roll back creation traffic; retain tracked originals and pending work.
+are ignored by Git. The planned staging backend is a dedicated private, versioned
+AWS S3 bucket; it has not yet been configured. Bootstrap the bucket, scoped access,
+locking, and version recovery before applying the staging environment. R2 remains
+the application upload store. Do not use bucket deletion or schema
+removal to roll back creation traffic; retain tracked originals and pending work.

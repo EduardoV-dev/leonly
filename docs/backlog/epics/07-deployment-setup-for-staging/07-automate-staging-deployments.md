@@ -10,7 +10,7 @@ automatically, with its result shown in GitHub Deployments.
 ## Information needed
 
 - GitHub `staging` Environment and the verified account secrets/variables from access setup.
-- Terraform backend configuration, AWS role ARN, ECR repository URLs, and Vercel project/team IDs.
+- S3 state backend configuration, AWS role ARN, ECR repository URLs, and Vercel project/team IDs.
 - Direct migration database URL, runtime configuration, and the expected health/smoke checks.
 
 ## Work to do
@@ -42,7 +42,8 @@ automatically, with its result shown in GitHub Deployments.
 - Failed checks/migrations stop dependent deployment. Backend verification failure blocks Vercel;
    final smoke failure marks the GitHub deployment unsuccessful, including partial-release details.
 - AWS uses short-lived OIDC credentials scoped to this environment. Fork PRs cannot deploy or
-   access provider credentials; Actions permissions are limited to each job's needs.
+    access provider credentials; Actions permissions are limited to each job's needs, including
+    access to the staging state and lockfile where required.
 - Re-running a release is safe, artifacts share one commit, and build/verification success is not
    reported as deployment success before smoke checks pass.
 
