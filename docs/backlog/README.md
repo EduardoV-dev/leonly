@@ -13,7 +13,7 @@ unfinished work. Delete entries when they are done; no completion log belongs he
 | 04 | [Build places and currency](epics/04-places-and-currency/README.md) | Add currency preferences, places, budgets, ranking, ratings, editing, and deletion. | Future |
 | 05 | [Expand the dashboard](epics/05-dashboard-expansion/README.md) | Add real memory and place previews after their dependencies are ready. | Future |
 | 06 | [Make API and worker failures diagnosable](epics/06-api-and-worker-observability/README.md) | Establish logging, metrics, tracing, alerts, and verified incident diagnosis. | Operational readiness |
-| 07 | [Set up staging deployment](epics/07-deployment-setup-for-staging/README.md) | Provision staging services and deploy through GitHub Actions, with backend verification before Vercel. | Staging readiness |
+| 07 | [Automate staging deployment](epics/07-deployment-setup-for-staging/README.md) | Gate staging merges with PR checks, then deploy and verify the frontend and backend automatically. | Staging readiness |
 
 This is the recommended execution order, not a claim that every task blocks the next one. Each epic
 lists actual prerequisites. Finish the MVP queue before starting future-release work.

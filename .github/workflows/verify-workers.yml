@@ -1,0 +1,35 @@
+name: Workers Verify
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  verify-workers:
+    name: Workers verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
+      - name: Biome check
+        run: pnpm --filter 'workers...' check
+      - name: Type check
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 typecheck
+      - name: Run tests
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 test:run
+      - name: Build
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 build

@@ -39,8 +39,9 @@ pnpm exec husky install
 - `apps/web-app/next.config.ts`
 - `apps/web-app/vitest.config.ts`
 - `apps/web-app/vitest.setup.ts`
-- `.github/workflows/api-verify.yml`
-- `.github/workflows/web-app-verify.yml`
+- `.github/workflows/verify-api.yml`
+- `.github/workflows/verify-workers.yml`
+- `.github/workflows/verify-web-app.yml`
 
 ## Build/Lint/Test/Typecheck Commands
 Run from repo root unless noted.
@@ -91,13 +92,13 @@ pnpm --filter web-app test:run -- -t "renders starter heading"
 - Coverage output path: `apps/web-app/coverage`.
 
 ## CI + Hook Gates
-Web app CI (`.github/workflows/web-app-verify.yml`) requires:
+Web app CI (`.github/workflows/verify-web-app.yml`) requires:
 1. `pnpm --filter web-app check`
 2. `pnpm --filter web-app typecheck`
 3. `pnpm --filter web-app test:run`
 4. `pnpm --filter web-app build`
 
-Backend CI (`.github/workflows/api-verify.yml`) requires these gates for API, workers, and their workspace dependencies:
+Backend CI (`.github/workflows/verify-api.yml` and `.github/workflows/verify-workers.yml`) requires these gates for API, workers, and their workspace dependencies:
 1. `pnpm --filter 'api...' --filter 'workers...' check`
 2. `pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 typecheck`
 3. `pnpm --filter 'api...' --filter 'workers...' --workspace-concurrency=1 test:run`

@@ -30,7 +30,7 @@ export class FilesService {
     private readonly prismaService: PrismaService,
     private readonly storage: ObjectStorage,
     private readonly membershipsService: MembershipsService,
-  ) { }
+  ) {}
 
   async confirmUploaded({
     id,

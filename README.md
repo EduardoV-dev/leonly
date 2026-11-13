@@ -69,7 +69,7 @@ After setup:
 
 ## CI
 
-Workflow at `.github/workflows/web-app-verify.yml` runs on pushes to `main` and verifies `apps/web-app`:
+Workflow at `.github/workflows/verify-web-app.yml` runs on pull requests to `main` and `staging` and verifies `apps/web-app`:
 
 - Biome check
 - TypeScript check

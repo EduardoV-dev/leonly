@@ -24,18 +24,21 @@ secret values in GitHub's `staging` Environment or an ignored local credential s
 
 1. Confirm the target accounts, plan limits, and existing resources before creating anything. Check
    Vercel Hobby's personal/non-commercial eligibility and Upstash's free database availability.
-2. Create the GitHub `staging` Environment restricted to the `staging` branch, without a manual
-   approval requirement. Require passing PR checks and restrict who can push or change workflows.
-3. Bootstrap AWS OIDC trust for this repository and environment. Scope the deployment role to the
+2. Configure GitHub branch protection for `staging`: block direct pushes and require PRs with the
+   frontend, backend, and Terraform checks passing before merge. Restrict workflow changes.
+3. Create the GitHub `staging` Environment restricted to the `staging` branch, without a separate
+   deployment approval requirement.
+4. Bootstrap AWS OIDC trust for this repository and environment. Scope the deployment role to the
    required staging resources; application Lambdas use separate runtime roles.
-4. Document exact GitHub secret/variable names and provider permissions as implementations select
+5. Document exact GitHub secret/variable names and provider permissions as implementations select
    them. Keep R2 backend credentials separate from real AWS provider credentials.
-5. Verify read-only account access and record a cost estimate. Standard GitHub-hosted runners are
+6. Verify read-only account access and record a cost estimate. Standard GitHub-hosted runners are
    free for this public repository; larger runners and other billable features are excluded.
 
 ## Acceptance Criteria
 
 - Every account has an identified owner, required IDs, and a verified access path.
+- GitHub blocks direct pushes and merges with missing or failing required checks on `staging`.
 - Fork PR checks cannot receive deployment secrets or assume the AWS deployment role.
 - Credentials, state, and secret-bearing plans cannot enter public commits, logs, or artifacts.
 - The $5 target has documented assumptions and a decision before any paid-plan upgrade.
