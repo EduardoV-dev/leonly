@@ -33,6 +33,17 @@ token is separate from those application S3 credentials. No Secrets Manager
 integration is used. Environment values enter Terraform state; protect that
 state and its backups and keep tfvars out of source control.
 
+### Staging Neon project
+
+The staging configuration declares a Neon project in `aws-us-east-1` with PostgreSQL 18,
+Free-plan-compatible history retention, and protection against project destruction. Set
+`TF_VAR_neon_organization_id` to the target organization and provide `NEON_API_KEY` through
+the environment. The organization-scoped provisioning key can access other projects in that
+organization; keep it private. The official Neon provider is pinned to a beta release. It does
+not store project passwords or connection strings in state, but other configuration can contain
+secrets, so keep the state private.
+The project configuration does not yet create the separate migration, API, and worker roles.
+
 The worker role can consume only the image queue and write only its own log
 group. The existing API execution role receives `sqs:SendMessage` only for that
 queue. ECR image retrieval is restricted to the named Lambda. Give the worker

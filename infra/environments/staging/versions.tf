@@ -16,12 +16,17 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    neon = {
+      source  = "neondatabase/neon"
+      version = "0.19.0-beta.0"
+    }
   }
 }
 
 provider "cloudflare" {}
 
+provider "neon" {}
+
 provider "aws" {
   region = var.aws_region
 }
-

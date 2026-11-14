@@ -13,6 +13,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "neon_organization_id" {
+  description = "Neon organization that owns the staging database project."
+  type        = string
+}
+
 variable "image_queue_name" {
   description = "Name of the standard staging image queue."
   type        = string

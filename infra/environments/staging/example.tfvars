@@ -1,4 +1,5 @@
 cloudflare_account_id     = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+neon_organization_id      = "REPLACE_WITH_NEON_ORGANIZATION_ID"
 memory_upload_bucket_name = "REPLACE_WITH_PRIVATE_R2_BUCKET"
 frontend_origins          = ["https://REPLACE_WITH_FRONTEND_HOST"]
 aws_region                = "REPLACE_WITH_AWS_REGION"
