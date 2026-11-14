@@ -109,9 +109,10 @@ This scoped apply leaves the separate API Lambda stack alone. Use an ordinary fu
 when managing the complete environment with its API image available. Terraform warnings about
 targeting are expected for this scoped workflow and do not establish full-stack convergence.
 
-The API and worker share `environment_variables` in `local.auto.tfvars`. Configure the Compose
-database (`postgres:5432`) and storage (`floci:4566`) there so both containers can reach them.
-Use `example.tfvars` as the template; never use local credentials in production.
+Configure `api_environment_variables` and `worker_environment_variables` separately in
+`local.auto.tfvars`. Both containers need the Compose database (`postgres:5432`) and storage
+(`floci:4566`); the worker does not need the API's authentication or Redis settings. Use
+`example.tfvars` as the template; never use local credentials in production.
 
 ## Use and inspect the worker
 

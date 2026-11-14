@@ -9,8 +9,15 @@ variable "api_image_tag" {
   }
 }
 
-variable "environment_variables" {
-  description = "Shared environment variables configured on local Lambda functions."
+variable "api_environment_variables" {
+  description = "Environment variables configured on the local API Lambda."
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+}
+
+variable "worker_environment_variables" {
+  description = "Environment variables configured on the local image worker Lambda."
   type        = map(string)
   sensitive   = true
   default     = {}

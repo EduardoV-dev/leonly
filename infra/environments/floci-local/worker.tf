@@ -60,7 +60,7 @@ resource "aws_lambda_function" "image_worker" {
   reserved_concurrent_executions = 2
 
   environment {
-    variables = merge(var.environment_variables, {
+    variables = merge(var.worker_environment_variables, {
       ENVIRONMENT = "local"
     })
   }
