@@ -1,0 +1,28 @@
+name: Terraform Verify
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  verify-terraform:
+    name: Terraform verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.4
+      - name: Check formatting
+        run: terraform fmt -check -recursive infra
+      - name: Initialize staging without backend
+        run: terraform -chdir=infra/environments/staging init -backend=false -input=false -lockfile=readonly
+      - name: Validate staging
+        run: terraform -chdir=infra/environments/staging validate -no-color
