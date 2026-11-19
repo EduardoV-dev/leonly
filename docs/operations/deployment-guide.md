@@ -1,7 +1,8 @@
 # Deployment guide
 
-Use this guide to prepare a staging or production deployment. Terraform configuration for both cloud
-environments is pending. The PR workflows are in place:
+Use this guide to prepare a staging or production deployment. The staging Terraform root defines
+the [ECR repositories](../../infra/environments/staging/README.md). The remaining cloud
+infrastructure is pending. The PR workflows are in place:
 
 | PR target | Workflow | Terraform root |
 | --- | --- | --- |
@@ -29,7 +30,8 @@ Lambda separately from Terraform.
 
 1. **Separate environments.** Use isolated Terraform state, Neon projects, Redis databases, upload
    buckets, credentials, and GitHub environments for staging and production. Staging uses the
-   `staging` GitHub environment and `us-east-1`; decide production settings before provisioning it.
+   `infra-staging` and `app-staging` GitHub environments and `us-east-1`; decide production settings
+   before provisioning it.
 2. **Bootstrap AWS access and state.** Use the [manual staging bootstrap](../../infra/bootstrap/staging/README.md)
    to adopt or create the OIDC provider and configure separate infrastructure and application roles.
    Bootstrap uses the existing private, encrypted, versioned S3 bucket with its own state key and
