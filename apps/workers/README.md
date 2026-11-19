@@ -95,11 +95,9 @@ or retired by an edit or deletion during processing cannot regain active readine
 written after eligibility is lost remains durably attributed for deferred cleanup.
 
 Approved initial settings are 1024 MiB memory, a 120-second Lambda timeout, batch size 1,
-concurrency 2, queue visibility 720 seconds, and DLQ redrive after 5 receives. Queue settings
-are configured in `infra/modules/image-queue`; staging Lambda/IAM/event-source wiring
-is in `infra/environments/staging/worker.tf`. Private configuration uses the
-`worker_environment_variables` sensitive map supplied through an ignored tfvars file,
-matching the existing API convention. Secrets Manager is not used.
+concurrency 2, queue visibility 720 seconds, and DLQ redrive after 5 receives. Floci declares
+the local queue in `infra/environments/floci-local/queue.tf`. See the
+[deployment guide](../../docs/operations/deployment-guide.md) for staging and production.
 Measurement details are in `openspec/changes/archive/2026-10-28-create-memory-upload-worker/worker-sizing.md`.
 
 Rollback: pause the event source and disable new publication before removing worker code. Preserve original/output objects and database records.

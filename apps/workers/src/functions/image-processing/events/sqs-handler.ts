@@ -6,7 +6,7 @@ import { loadImageFile } from "../repositories/load-image-file";
 import { ImageProcessingError } from "../services/image-recipe";
 import { type ImageDependencies, processImage } from "../services/process-image";
 
-// Keep aligned with the SQS redrive policy in infra/modules/image-queue/main.tf.
+// Keep the queue's SQS redrive policy aligned with this retry limit.
 const MAX_IMAGE_RECEIVE_COUNT = 5;
 const EXHAUSTED_RETRIES_ERROR_CODE = "PROCESSING_RETRIES_EXHAUSTED";
 

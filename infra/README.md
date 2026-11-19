@@ -1,71 +1,51 @@
-# Memory upload storage
+# Local infrastructure with Floci
 
-Terraform configures a private staging R2 bucket and a local Floci S3 bucket.
-Both allow browser PUT requests from explicitly supplied frontend origins with
-the `Content-Type` and `If-None-Match: *` headers required by upload issuance. Neither configures object
-expiration, lifecycle rules, public domains, or cleanup.
+## Environment ownership
 
-Image processing is the only worker. The file-cleanup Lambda, schedule, and related
-permissions are deferred; abandoned uploads and superseded sources remain stored.
+The bucket input and output are named `storage_bucket_name`. Rename any existing
+`memory_upload_bucket_name` entries in local tfvars, `TF_VAR_memory_upload_bucket_name`
+environment variables, and scripts reading the old Terraform output. The new output becomes
+available in existing state after a reviewed apply. Storage resources now use `files` addresses.
+Rebuild Floci from clean local state before applying these renamed resources.
 
-## Staging R2
+Floci declares its API, queues, worker, and storage directly under `environments/floci-local`.
+Run its Terraform checks locally. `infra/modules` is reserved for staging and production.
+See the [deployment guide](../docs/operations/deployment-guide.md) for cloud infrastructure work.
 
-1. Set `CLOUDFLARE_API_TOKEN` to a server-side provisioning token with R2 storage
-   write permission for the selected account. Do not put it in source control.
-2. Supply `TF_VAR_cloudflare_account_id`, `TF_VAR_memory_upload_bucket_name`, and
-   `TF_VAR_frontend_origins` (a JSON list of HTTPS origins, without trailing paths).
-   Configure AWS credentials for provisioning and supply `TF_VAR_aws_region` and
-   `TF_VAR_image_queue_name` for the staging image queue and DLQ.
-3. Run `terraform -chdir=infra/environments/staging init`, followed by
-   `terraform -chdir=infra/environments/staging plan`. Review before applying.
-
-Copy `infra/environments/staging/example.tfvars` to an ignored `local.tfvars`
-in that directory and replace the explicit placeholders. Pass
-`-var-file=local.tfvars` to plan/apply commands. Alternatively, provide the same
-inputs through `TF_VAR_*`. Bucket/account/origins, AWS region, queue/worker names,
-existing API role, image digest, and processing enablement have no defaults.
-
-`worker_environment_variables` is a sensitive map supplied through that file,
-matching the existing API configuration pattern. It requires the worker database
-URL and bucket-scoped R2 object read/write credentials. Terraform supplies the
-authoritative R2 bucket/endpoint and region `auto`. The Cloudflare provisioning
-token is separate from those application S3 credentials. No Secrets Manager
-integration is used. Environment values enter Terraform state; protect that
-state and its backups and keep tfvars out of source control.
-
-The worker role can consume only the image queue and write only its own log
-group. The existing API execution role receives `sqs:SendMessage` only for that
-queue. ECR image retrieval is restricted to the named Lambda. Give the worker
-database credential SELECT access to `files`, `memory_files`, `memories`, and
-`spaces`; INSERT access to `files`; and UPDATE access to `files` for operation
-leases and processing metadata. It does not require schema-creation or
-authentication-administration privileges. R2 credentials must be scoped to the
-selected private bucket.
-
-### Container deployment order
-
-1. Fill the staging tfvars file. For the initial repository-only bootstrap,
-   use a clearly temporary all-zero SHA-256 digest in `image_worker_image_digest`.
-   Plan with `-target=aws_ecr_repository.image_worker -var-file=local.tfvars`,
-   review it, and apply that repository-only plan. Do not apply the complete
-   environment with the temporary digest.
-2. Build the image with `docker build --platform linux/amd64 --provenance=false
-   -f apps/workers/Dockerfile -t leonly-image-worker:local .`. Authenticate Docker
-   to the output ECR registry, tag/push the image, and replace the temporary
-   digest with the actual pushed image digest.
-3. Plan/apply the complete environment with `image_processing_enabled = false`.
-   Inspect the Lambda configuration and run a bounded worker probe before
-   enabling the mapping through the same variable.
-4. Configure the staging API's `SQS_QUEUES_URLS` as
-   `{"memories":"<image_queue_url output>"}` and use the same AWS region.
-   Supply its bucket-scoped storage credentials and R2 endpoint, deploy the
-   compatible worker before allowing API publication, then enable processing.
-
-Rollback: set `image_processing_enabled = false` and disable new creation and
-publication traffic. Keep schema, bucket objects, queues, and unpublished events
-intact. Do not destroy storage as a rollback mechanism.
+The local S3 bucket allows browser PUT requests from configured frontend origins with the
+`Content-Type` and `If-None-Match: *` headers required by upload issuance. Image processing is the
+only worker. Abandoned uploads and superseded sources remain stored until cleanup is implemented.
 
 ## Deploy the local API
+
+### Clean local rebuild
+
+The local configuration uses dedicated root resources and has no migration mappings for the
+former modules. Destroy the old local resources using their existing state before rebuilding;
+deleting only the state file leaves unmanaged resources. Local uploads and queued work are lost
+when their resources are destroyed. Staging is a separate environment.
+
+After the reset, configure `local.auto.tfvars` from `example.tfvars`, keeping
+`image_worker_local_image_uri = null` and `image_worker_image_digest = null` for the first API
+deployment. Build the API image and run the commands below in order. The API command can create
+its ECR repository and Lambda in the same full-environment apply; the repository need not exist
+before Docker tags the local image.
+
+Floci's ECR backing registry persists separately in the Docker volume `floci-ecr-registry-data`.
+Clearing `apps/api/data` alone does not clear that registry: its repository catalog can reappear
+when the registry starts and cause `RepositoryAlreadyExistsException`. Include the backing registry
+and its volume when intentionally resetting all Floci data; this deletes locally stored registry images.
+
+```bash
+pnpm --filter api build:image
+pnpm api:deploy:local
+pnpm workers:deploy:local
+```
+
+The first apply creates the API and supporting resources. The worker command builds its image
+and adds the worker and SQS mapping. Both commands reconcile the entire environment without
+resource targeting. Each retains the other application's configured image reference, so keep
+both referenced images available on Docker for subsequent deployments.
 
 With the Compose services running and `floci-local/local.auto.tfvars` configured, build
 the API image and deploy it from the repository root:
@@ -76,14 +56,14 @@ pnpm api:deploy:local
 ```
 
 The deploy command reuses `leonly-api:latest`; skip the build when that image is already current.
-It requires the existing local API ECR repository, Docker, Terraform, AWS CLI, and Node.js 22.6+.
-It gives the image a unique dev tag, applies a saved API/queue-permission plan, and waits for
-Lambda readiness. Floci uses the image directly from Docker; no ECR push is needed.
+It requires Docker, Terraform, AWS CLI, and Node.js 22.6+.
+It gives the image a unique dev tag, applies a saved full-environment plan, and waits for
+API Lambda readiness. Floci uses the image directly from Docker; no ECR push is needed.
 
 After applying, the command saves `api_image_tag` in the ignored `local.auto.tfvars`, preserving
-other configuration. Failed applies leave the stored tag unchanged. Plans containing resource
-deletions or changes outside the API and its queue dependencies are rejected. The worker is
-deployed separately with `pnpm workers:deploy:local`.
+other configuration. Failed applies leave the stored tag unchanged. Both scripts reject plans
+containing resource deletions or replacements; they allow pending updates anywhere in the local
+environment. The worker image is rebuilt with `pnpm workers:deploy:local`.
 
 Keep the deployed dev-tagged image available for cold starts. To roll back, tag a retained image
 as `leonly-api:latest` and rerun the deploy command. This changes code without removing application
@@ -131,7 +111,7 @@ and Redis checks to be `up`. Stop the proxy with Ctrl+C.
 
 1. Start Floci with `docker compose -f apps/api/docker-compose.yml up -d floci`.
 2. Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to Floci test credentials.
-   Supply `TF_VAR_memory_upload_bucket_name` and `TF_VAR_frontend_origins` (a JSON
+   Supply `TF_VAR_storage_bucket_name` and `TF_VAR_frontend_origins` (a JSON
    list of HTTP(S) frontend origins). Supply `TF_VAR_image_queue_name` for the
    local image queue and DLQ.
 3. Run `terraform -chdir=infra/environments/floci-local init`, followed by
@@ -144,13 +124,9 @@ server operations and retain the browser-reachable endpoint for signing. Never
 rewrite a presigned URL's host after signing. Floci emulates S3; public-access
 block configuration is not evidence that its security matches staging R2.
 
-Both environments reuse `infra/modules/image-queue`: standard SQS queue, private
-DLQ redrive allowance, managed encryption requested, 720-second visibility, and
-5 receives before redrive. Message retention uses the provider's four-day
-default for both queues. The outputs expose the image and dead-letter queue URLs.
-The staging mapping uses the approved one-record batches and concurrency 2,
-with `ReportBatchItemFailures`. Lambda memory/timeout are 1024 MiB/120 seconds.
-Image references use a pushed digest rather than a mutable tag.
+Floci declares a standard SQS queue with a private DLQ redrive allowance, managed encryption
+requested, 720-second visibility, and 5 receives before redrive. Message retention uses the
+provider's four-day default for both queues. The outputs expose the image and dead-letter queue URLs.
 
 For automatic local processing, run `pnpm workers:deploy:local` to build a local worker image
 and update the Lambda/SQS mapping. [Deploy the image worker to Floci](local-image-worker.md)
@@ -160,18 +136,14 @@ There is no host-side worker queue runner.
 ## Checks
 
 ```bash
-terraform fmt -check -recursive infra
-terraform -chdir=infra/environments/staging validate
+terraform -chdir=infra/environments/floci-local fmt -check
+terraform -chdir=infra/environments/floci-local init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/environments/floci-local validate
-terraform -chdir=infra/modules/image-queue init -backend=false
 ```
 
 Live provider behavior requires the checks in
 `openspec/changes/archive/2026-10-28-create-memory-upload-worker/provider-feasibility.md`.
 
-Terraform state can contain sensitive configuration. Local state and `.tfvars`
-are ignored by Git. The planned staging backend is a dedicated private, versioned
-AWS S3 bucket; it has not yet been configured. Bootstrap the bucket, scoped access,
-locking, and version recovery before applying the staging environment. R2 remains
-the application upload store. Do not use bucket deletion or schema
-removal to roll back creation traffic; retain tracked originals and pending work.
+Terraform state can contain sensitive configuration. Keep local state and private `.tfvars` out
+of Git. Do not use bucket deletion or schema removal to roll back creation traffic; retain tracked
+originals and pending work.

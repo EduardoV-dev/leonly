@@ -6,13 +6,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const FUNCTION_NAME = "leonly-image-worker-local";
+const REPOSITORY_NAME = "leonly-workers-local";
 const LOCAL_ENDPOINT = "http://localhost:4566";
-const WORKER_TARGETS = [
-  "aws_s3_bucket_cors_configuration.memory_uploads",
-  "aws_s3_bucket_public_access_block.memory_uploads",
-  "aws_lambda_function.image_worker",
-  "aws_lambda_event_source_mapping.images",
-];
 
 type Plan = { resource_changes?: { address: string; change: { actions: string[] } }[] };
 
@@ -38,7 +33,7 @@ export function deployFlociWorker(rootDirectory: string): void {
   run("terraform", ["version"]);
   run("aws", [...aws, "lambda", "list-functions"]);
 
-  const imageUri = `000000000000.dkr.ecr.us-east-1.amazonaws.com/${FUNCTION_NAME}:dev-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const imageUri = `000000000000.dkr.ecr.us-east-1.amazonaws.com/${REPOSITORY_NAME}:dev-${Date.now()}-${randomUUID().slice(0, 8)}`;
   process.stdout.write(`Building local worker image: ${imageUri}\n`);
   run(
     "docker",
@@ -70,19 +65,18 @@ export function deployFlociWorker(rootDirectory: string): void {
         "-input=false",
         `-out=${planPath}`,
         `-var=image_worker_local_image_uri=${imageUri}`,
-        ...WORKER_TARGETS.map((target) => `-target=${target}`),
       ],
       true,
     );
-    const plan = JSON.parse(
+    const plan: Plan = JSON.parse(
       run("terraform", [terraformDirectory, "show", "-json", planPath]),
-    ) as Plan;
+    );
     for (const resource of plan.resource_changes ?? []) {
-      if (
-        resource.address.startsWith("module.api.") ||
-        resource.change.actions.includes("delete")
-      ) {
-        throw new Error(`Refusing API or destructive change: ${resource.address}`);
+      if (resource.change.actions.every((action) => action === "no-op")) continue;
+
+      const hasDeletion = resource.change.actions.includes("delete");
+      if (hasDeletion) {
+        throw new Error(`Refusing destructive change: ${resource.address}`);
       }
     }
     run("terraform", [terraformDirectory, "apply", "-input=false", planPath], true);

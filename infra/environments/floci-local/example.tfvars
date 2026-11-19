@@ -1,6 +1,6 @@
-memory_upload_bucket_name = "leonly-memory-photos-local"
-image_queue_name          = "leonly-images-local"
-frontend_origins          = ["http://localhost:3000"]
+storage_bucket_name = "leonly-memory-photos-local"
+image_queue_name    = "leonly-images-local"
+frontend_origins    = ["http://localhost:3000"]
 
 # The API deploy command updates this tag after a successful apply.
 api_image_tag = "handler-async"
@@ -12,8 +12,8 @@ image_worker_image_digest = null
 # Set false to pause SQS delivery without removing the worker.
 image_processing_enabled = true
 
-# Shared by local Lambda containers; use Compose hostnames for internal services.
-environment_variables = {
+# Use Compose hostnames for internal services.
+api_environment_variables = {
   NODE_ENV                  = "production"
   BETTER_AUTH_SECRET        = "replace-me"
   BETTER_AUTH_COOKIE_DOMAIN = "localhost"
@@ -31,4 +31,14 @@ environment_variables = {
   STORAGE_SECRET_ACCESS_KEY = "test"
   SQS_ENDPOINT              = "http://floci:4566"
   SQS_QUEUES_URLS           = "{\"memories\":\"http://floci:4566/000000000000/leonly-images-local\"}"
+}
+
+worker_environment_variables = {
+  NODE_ENV                  = "production"
+  DATABASE_URL              = "postgresql://leonly:leonly@postgres:5432/leonly?schema=public"
+  STORAGE_ENDPOINT          = "http://floci:4566"
+  STORAGE_REGION            = "us-east-1"
+  STORAGE_BUCKET            = "leonly-memory-photos-local"
+  STORAGE_ACCESS_KEY_ID     = "test"
+  STORAGE_SECRET_ACCESS_KEY = "test"
 }

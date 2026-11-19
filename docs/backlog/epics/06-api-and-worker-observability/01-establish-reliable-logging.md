@@ -74,9 +74,8 @@ requests and background jobs without reproducing them.
 - HTTP outcomes belong to the request boundary; operational events belong to their owning services;
   selected security events belong to security boundaries. Remove the exception-filter logger after
   proving equivalent unexpected-error coverage at the request boundary.
-- AWS infrastructure changes belong under root `infra/`. The API module exists in `infra/modules/api`;
-  confirm deployed resource ownership and Terraform state before applying changes because its only
-  checked-in environment reference currently targets `floci-local`.
+- AWS infrastructure changes belong under root `infra/`. Confirm deployed resource ownership and
+  Terraform state before applying changes. Floci declares its resources in a separate local root.
 
 ## Implementation Decisions to Specify
 
@@ -100,4 +99,4 @@ requests and background jobs without reproducing them.
 
 Starting points: `apps/api/src/common/logger`, `apps/api/src/auth`, `apps/api/src/common/outbox`,
 `apps/api/src/health`, `apps/workers/src/functions/image-processing`, `packages/utils/src/logger`,
-`infra/modules/api`, and `infra/environments/staging`.
+and `infra/`.

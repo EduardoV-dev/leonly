@@ -7,6 +7,7 @@ normative behavior and records proposed and completed changes.
 - [MVP product contract](product-contract.md)
 - [Database schema design](architecture/database-schema/README.md)
 - [Terraform learning path for the API](architecture/terraform-learning-path.md)
+- [Deployment guide](operations/deployment-guide.md)
 
 ## Sources of truth
 
@@ -16,6 +17,7 @@ normative behavior and records proposed and completed changes.
 | Shared product intent | `docs/product-contract.md` |
 | Accepted database design | `docs/architecture/database-schema/` |
 | API infrastructure learning plan | `docs/architecture/terraform-learning-path.md` |
+| Deployment prerequisites and release process | `docs/operations/deployment-guide.md` |
 | Normative behavior and acceptance scenarios | `openspec/specs/` |
 | Proposed changes and implementation tasks | `openspec/changes/` |
 
