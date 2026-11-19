@@ -1,11 +1,11 @@
 output "api_endpoint" {
   description = "Base URL for the local API Gateway HTTP API."
-  value       = module.api.api_endpoint
+  value       = aws_apigatewayv2_api.api.api_endpoint
 }
 
-output "memory_upload_bucket_name" {
+output "storage_bucket_name" {
   description = "Local Floci S3 bucket for API and worker storage configuration."
-  value       = aws_s3_bucket.memory_uploads.id
+  value       = aws_s3_bucket.files.id
 }
 
 output "memory_storage_endpoint" {
@@ -15,17 +15,17 @@ output "memory_storage_endpoint" {
 
 output "image_queue_url" {
   description = "Floci SQS URL for API publication and local image processing."
-  value       = module.image_queue.queue_url
+  value       = aws_sqs_queue.images.id
 }
 
 output "image_dead_letter_queue_url" {
   description = "Floci SQS DLQ for local failure inspection."
-  value       = module.image_queue.dead_letter_queue_url
+  value       = aws_sqs_queue.dead_letter.id
 }
 
-output "image_worker_repository_url" {
+output "workers_repository_url" {
   description = "Local ECR repository for publishing the worker image before Lambda creation."
-  value       = aws_ecr_repository.image_worker.repository_url
+  value       = aws_ecr_repository.workers.repository_url
 }
 
 output "image_worker_function_name" {

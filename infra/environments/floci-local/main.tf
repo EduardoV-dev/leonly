@@ -1,8 +1,93 @@
-module "api" {
-  source                = "../../modules/api"
-  repository_name       = "leonly-api-local"
-  image_tag_mutability  = "MUTABLE"
-  function_name         = "leonly-api-local"
-  image_tag             = var.api_image_tag
-  environment_variables = var.api_environment_variables
+resource "aws_ecr_repository" "api" {
+  name                 = "leonly-api-local"
+  image_tag_mutability = "MUTABLE"
+}
+
+resource "aws_iam_role" "api" {
+  name = "leonly-api-local-execution"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "api_logs" {
+  role       = aws_iam_role.api.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy" "api_ecr_read" {
+  name = "leonly-api-local-ecr-read"
+  role = aws_iam_role.api.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action   = ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"]
+      Effect   = "Allow"
+      Resource = aws_ecr_repository.api.arn
+    }]
+  })
+}
+
+resource "aws_lambda_function" "api" {
+  function_name = "leonly-api-local"
+  role          = aws_iam_role.api.arn
+  package_type  = "Image"
+  image_uri     = "${aws_ecr_repository.api.repository_url}:${var.api_image_tag}"
+  architectures = ["x86_64"]
+  memory_size   = 512
+  timeout       = 10
+
+  environment {
+    variables = merge(var.api_environment_variables, { ENVIRONMENT = "local" })
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.api_logs, aws_iam_role_policy.api_ecr_read]
+}
+
+resource "aws_apigatewayv2_api" "api" {
+  name          = "leonly-api-local-http"
+  protocol_type = "HTTP"
+}
+
+resource "aws_apigatewayv2_integration" "api" {
+  api_id                 = aws_apigatewayv2_api.api.id
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.api.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "api" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "ANY /api/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_route" "api_root" {
+  api_id    = aws_apigatewayv2_api.api.id
+  route_key = "ANY /api"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_apigatewayv2_stage" "api" {
+  api_id      = aws_apigatewayv2_api.api.id
+  name        = "$default"
+  auto_deploy = true
+
+  depends_on = [aws_apigatewayv2_route.api, aws_apigatewayv2_route.api_root]
+}
+
+resource "aws_lambda_permission" "api_gateway" {
+  statement_id  = "AllowExecutionFromHttpApi"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.api.execution_arn}/*/*"
 }

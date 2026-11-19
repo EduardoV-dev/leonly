@@ -1,6 +1,6 @@
-memory_upload_bucket_name = "leonly-memory-photos-local"
-image_queue_name          = "leonly-images-local"
-frontend_origins          = ["http://localhost:3000"]
+storage_bucket_name = "leonly-memory-photos-local"
+image_queue_name    = "leonly-images-local"
+frontend_origins    = ["http://localhost:3000"]
 
 # The API deploy command updates this tag after a successful apply.
 api_image_tag = "handler-async"

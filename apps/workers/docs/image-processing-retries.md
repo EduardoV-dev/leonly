@@ -1,6 +1,8 @@
 # Image processing retries and DLQ
 
-The image queue allows five receives (`maxReceiveCount` in `infra/modules/image-queue/main.tf`). The worker returns per-record failures so successful records in the same batch are acknowledged independently.
+The worker expects the image queue to allow five receives. Floci sets `maxReceiveCount` in
+`infra/environments/floci-local/queue.tf`. The worker returns per-record failures so successful
+records in the same batch are acknowledged independently.
 
 ## File state after a failure
 

@@ -13,18 +13,23 @@ pnpm workers:deploy:local
 ```
 
 The command checks Docker/Floci, builds `apps/workers/Dockerfile` with a fresh dev tag,
-and applies a saved Terraform plan for the image worker and SQS mapping. It waits for
+and applies a saved Terraform plan for the entire `floci-local` environment. It waits for
 Lambda readiness and prints the deployed reference and log command. No registry login,
-ECR push, or API Lambda update occurs. Local test credentials are scoped to the command.
+or ECR push is required. Pending API configuration changes can also be applied, using the
+configured API image tag. Local test credentials are scoped to the command.
 
 Floci uses the exact image already present on the Docker daemon. An AWS-shaped reference
 does not contact AWS: all provisioning uses the Floci Terraform provider and explicit local
 CLI endpoint. Every update gets a new reference so Floci invalidates the old runtime.
+The shared repository is `leonly-workers-local`; the Lambda remains `leonly-image-worker-local`.
+Floci uses the Dockerfile's image-processing handler because Lambda handler overrides have not been
+verified in the emulator.
 
 The command updates only `image_worker_local_image_uri` in the ignored `local.auto.tfvars`,
 preserving other settings and any retained ECR digest. Failed builds/applies leave that
-stored reference unchanged. API changes or resource deletions in the saved plan are rejected.
-Terraform targeting warnings are expected because the separate API stack is excluded.
+stored reference unchanged. Resource deletions and replacements in the saved plan are rejected.
+Neither deployment script uses Terraform resource targeting. On a clean rebuild, deploy the API
+first as described in the [infrastructure guide](README.md#clean-local-rebuild).
 
 Run the command again after worker code changes. Keep each referenced local Docker image
 available until replacing that deployment; clearing it from Docker may prevent a cold start.
@@ -35,7 +40,7 @@ Set `image_processing_enabled = false` to pause delivery; the command preserves 
 Use the steps below when testing image publication and digest-based deployment rather
 than the everyday local-image command. Production remains digest-pinned.
 
-### 1. Start services and bootstrap ECR
+### 1. Start services and deploy the local API
 
 ```bash
 docker compose -f apps/api/docker-compose.yml up -d postgres redis redis-http floci
@@ -44,7 +49,7 @@ docker compose -f apps/api/docker-compose.yml up -d postgres redis redis-http fl
 Configure `infra/environments/floci-local/local.auto.tfvars` with:
 
 ```hcl
-memory_upload_bucket_name = "leonly-memory-photos-local"
+storage_bucket_name = "leonly-memory-photos-local"
 image_queue_name          = "leonly-images-local"
 frontend_origins          = ["http://localhost:3000"]
 ```
@@ -55,24 +60,24 @@ platform-specific `*.localhost` DNS resolution. A pre-existing memory-only Floci
 must have its objects and pending messages preserved before being recreated.
 
 ```bash
-terraform -chdir=infra/environments/floci-local init
-terraform -chdir=infra/environments/floci-local apply -target=aws_ecr_repository.image_worker
+pnpm --filter api build:image
+pnpm api:deploy:local
 ```
 
-Targeting here bootstraps ECR before an image exists. Review each apply before confirming.
-The environment also owns the API Lambda; a full apply can restore or modify that stack.
+The complete API deployment also creates the worker's ECR repository before its image exists.
+For a fresh setup, keep both worker image references null until the image is published.
 
 ### 2. Build and publish the image
 
 ```bash
-REPOSITORY=$(terraform -chdir=infra/environments/floci-local output -raw image_worker_repository_url)
+REPOSITORY=$(terraform -chdir=infra/environments/floci-local output -raw workers_repository_url)
 docker build --platform linux/amd64 --provenance=false \
   -f apps/workers/Dockerfile -t "$REPOSITORY:local" .
 aws --region us-east-1 --endpoint-url http://localhost:4566 ecr get-login-password \
   | docker login --username AWS --password-stdin "${REPOSITORY%%/*}"
 docker push "$REPOSITORY:local"
 aws --region us-east-1 --endpoint-url http://localhost:4566 ecr describe-images \
-  --repository-name leonly-image-worker-local --image-ids imageTag=local \
+  --repository-name leonly-workers-local --image-ids imageTag=local \
   --query 'imageDetails[0].imageDigest' --output text
 ```
 
@@ -89,25 +94,15 @@ provisions no worker Lambda or event-source mapping.
 
 ### 3. Deploy the Lambda and trigger
 
-For the host-run API development flow, apply only storage, queue, and worker resources:
+Review and apply the complete local environment with the configured API image available:
 
 ```bash
-terraform -chdir=infra/environments/floci-local apply \
-  -target=aws_s3_bucket.memory_uploads \
-  -target=aws_s3_bucket_cors_configuration.memory_uploads \
-  -target=aws_s3_bucket_public_access_block.memory_uploads \
-  -target=module.image_queue \
-  -target=aws_ecr_repository.image_worker \
-  -target=aws_cloudwatch_log_group.image_worker \
-  -target=aws_iam_role.image_worker \
-  -target=aws_iam_role_policy.image_worker \
-  -target=aws_lambda_function.image_worker \
-  -target=aws_lambda_event_source_mapping.images
+terraform -chdir=infra/environments/floci-local plan
+terraform -chdir=infra/environments/floci-local apply
 ```
 
-This scoped apply leaves the separate API Lambda stack alone. Use an ordinary full plan/apply
-when managing the complete environment with its API image available. Terraform warnings about
-targeting are expected for this scoped workflow and do not establish full-stack convergence.
+This reconciles API, worker, queues, and storage together. Inspect all pending changes before
+confirming the apply.
 
 Configure `api_environment_variables` and `worker_environment_variables` separately in
 `local.auto.tfvars`. Both containers need the Compose database (`postgres:5432`) and storage
@@ -137,7 +132,7 @@ an event that never reached SQS.
 For daily updates, run `pnpm workers:deploy:local`. For ECR verification, repeat build/push,
 replace the digest, and set the local image reference to null before applying. Reusing a tag
 alone does not update deployed code. Restore a prior retained local image reference or ECR
-digest and apply worker targets to roll back code. Keep bucket objects and database records
+digest and review/apply the complete environment to roll back code. Keep bucket objects and database records
 intact. Persistent Floci resources resume after Compose restarts without redeployment.
 
 Floci 2.1.0 was verified locally for image execution, SQS delivery, duplicate acknowledgment,

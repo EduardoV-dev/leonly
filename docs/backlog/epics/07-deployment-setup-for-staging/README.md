@@ -28,13 +28,9 @@ local Floci behavior as part of this epic.
 
 | Order | User story | Finish when |
 | --- | --- | --- |
-| 02 | [Bootstrap Terraform state in S3](02-bootstrap-terraform-state-in-s3.md) | Private remote state, locking, and version recovery are verified. |
-| 03 | [Provision staging data services](03-provision-staging-data-services.md) | Neon, Redis, and private upload storage are ready. |
-| 04 | [Provision the AWS backend](04-provision-aws-backend.md) | Image repositories, queues, and deployable API/worker infrastructure exist. |
-| 05 | [Configure domains and authentication](05-configure-staging-domains-and-authentication.md) | HTTPS, Google login configuration, CORS, and cookie scope are correct. |
-| 06 | [Configure the Vercel staging project](06-configure-vercel-staging-project.md) | The frontend builds with staging configuration and accepts CI deployments. |
-| 07 | [Automate staging deployments](07-automate-staging-deployments.md) | Required PR checks gate merges; GitHub Actions deploys and verifies the merged commit. |
-| 08 | [Verify staging and rollback](08-verify-staging-and-rollback.md) | Real user flows, failure handling, recovery, and budget checks pass. |
+| 02 | [Prepare staging access](02-prepare-staging-access.md) | One-time account, state, credentials, and GitHub access setup is ready. |
+| 03 | [Provision staging infrastructure](03-provision-staging-infrastructure.md) | Terraform manages the staging services, domains, and configuration. |
+| 04 | [Automate staging releases](04-automate-staging-releases.md) | Required checks gate releases; CD deploys, verifies, and supports recovery. |
 
 ## Deployment order
 
@@ -53,6 +49,6 @@ and plan changes in plain English. Keep durable setup and recovery instructions 
 these backlog stories are deleted when completed, following the [backlog lifecycle](../../README.md).
 
 Start from [existing infrastructure](../../../../infra/README.md). Extend its staging bucket, queue,
-and worker configuration; the staging API and protected state backend still need wiring. Cleanup
+and worker configuration; the staging API and protected state backend still need verification and wiring. Cleanup
 workers remain deferred. Coordinate logging with the existing observability epic; its approved
 initial retention is 30 days, with cost controlled through bounded volume and retained images.

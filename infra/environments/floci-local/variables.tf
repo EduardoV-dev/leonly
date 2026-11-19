@@ -45,7 +45,7 @@ variable "image_worker_local_image_uri" {
   default     = null
 
   validation {
-    condition     = var.image_worker_local_image_uri == null ? true : can(regex("^000000000000\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/leonly-image-worker-local:dev-[a-z0-9-]+$", var.image_worker_local_image_uri))
+    condition     = var.image_worker_local_image_uri == null ? true : can(regex("^000000000000\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/leonly-(workers|image-worker)-local:dev-[a-z0-9-]+$", var.image_worker_local_image_uri))
     error_message = "image_worker_local_image_uri must be a local worker image with a unique dev tag."
   }
 }
@@ -56,13 +56,13 @@ variable "image_processing_enabled" {
   default     = true
 }
 
-variable "memory_upload_bucket_name" {
+variable "storage_bucket_name" {
   description = "Name of the local Floci S3 memory upload bucket."
   type        = string
 
   validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.memory_upload_bucket_name))
-    error_message = "memory_upload_bucket_name must contain 3–63 lowercase letters, digits, or hyphens."
+    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$", var.storage_bucket_name))
+    error_message = "storage_bucket_name must contain 3–63 lowercase letters, digits, or hyphens."
   }
 }
 

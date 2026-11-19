@@ -1,0 +1,38 @@
+name: Terraform Verify (Staging)
+
+on:
+  pull_request:
+    branches:
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  verify-terraform-staging:
+    name: Terraform verification (staging)
+    runs-on: ubuntu-latest
+    env:
+      TERRAFORM_ROOT: infra/environments/staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Report missing staging configuration
+        if: ${{ hashFiles(format('{0}/*.tf', env.TERRAFORM_ROOT)) == '' }}
+        run: 'echo "::notice::Staging Terraform configuration is not present; skipping verification."'
+      - name: Setup Terraform
+        if: ${{ hashFiles(format('{0}/*.tf', env.TERRAFORM_ROOT)) != '' }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.4
+      - name: Check formatting
+        if: ${{ hashFiles(format('{0}/*.tf', env.TERRAFORM_ROOT)) != '' }}
+        run: terraform -chdir="$TERRAFORM_ROOT" fmt -check -recursive
+      - name: Initialize staging without backend
+        if: ${{ hashFiles(format('{0}/*.tf', env.TERRAFORM_ROOT)) != '' }}
+        run: terraform -chdir="$TERRAFORM_ROOT" init -backend=false -input=false -lockfile=readonly
+      - name: Validate staging
+        if: ${{ hashFiles(format('{0}/*.tf', env.TERRAFORM_ROOT)) != '' }}
+        run: terraform -chdir="$TERRAFORM_ROOT" validate -no-color

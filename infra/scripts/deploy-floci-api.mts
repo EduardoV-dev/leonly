@@ -8,7 +8,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const FUNCTION_NAME = "leonly-api-local";
 const LOCAL_ENDPOINT = "http://localhost:4566";
 const SOURCE_IMAGE = "leonly-api:latest";
-const API_TARGETS = ["module.api", "aws_iam_role_policy.image_publication"];
 const COMMAND_TIMEOUT_MS = 600_000;
 
 type Plan = { resource_changes?: { address: string; change: { actions: string[] } }[] };
@@ -37,27 +36,9 @@ export function deployFlociApi(rootDirectory: string): void {
 
   run({ command: "docker", args: ["info"] });
   run({ command: "docker", args: ["image", "inspect", SOURCE_IMAGE] });
-  const repositoryUri = run({
-    command: "aws",
-    args: [
-      ...aws,
-      "ecr",
-      "describe-repositories",
-      "--repository-names",
-      FUNCTION_NAME,
-      "--query",
-      "repositories[0].repositoryUri",
-      "--output",
-      "text",
-    ],
-  }).trim();
-
-  if (repositoryUri !== "localhost:4566/000000000000/us-east-1/leonly-api-local") {
-    throw new Error("The local Floci API repository is missing or has an unexpected URI.");
-  }
-
   const imageTag = `dev-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const imageUri = `${repositoryUri}:${imageTag}`;
+  // Floci uses this local Docker reference even before Terraform creates the repository.
+  const imageUri = `localhost:4566/000000000000/us-east-1/${FUNCTION_NAME}:${imageTag}`;
   process.stdout.write(`Deploying existing API image: ${SOURCE_IMAGE}\n`);
   run({ command: "docker", args: ["tag", SOURCE_IMAGE, imageUri] });
 
@@ -78,7 +59,6 @@ export function deployFlociApi(rootDirectory: string): void {
         "-input=false",
         `-out=${planPath}`,
         `-var=api_image_tag=${imageTag}`,
-        ...API_TARGETS.map((target) => `-target=${target}`),
       ],
       shouldInherit: true,
     });
@@ -88,13 +68,9 @@ export function deployFlociApi(rootDirectory: string): void {
     for (const resource of plan.resource_changes ?? []) {
       if (resource.change.actions.every((action) => action === "no-op")) continue;
 
-      const isApiDependency =
-        resource.address.startsWith("module.api.") ||
-        resource.address.startsWith("module.image_queue.") ||
-        resource.address === "aws_iam_role_policy.image_publication";
       const hasDeletion = resource.change.actions.includes("delete");
-      if (!isApiDependency || hasDeletion) {
-        throw new Error(`Refusing unrelated or destructive change: ${resource.address}`);
+      if (hasDeletion) {
+        throw new Error(`Refusing destructive change: ${resource.address}`);
       }
     }
 
