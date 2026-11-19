@@ -30,10 +30,11 @@ Lambda separately from Terraform.
 1. **Separate environments.** Use isolated Terraform state, Neon projects, Redis databases, upload
    buckets, credentials, and GitHub environments for staging and production. Staging uses the
    `staging` GitHub environment and `us-east-1`; decide production settings before provisioning it.
-2. **Bootstrap AWS access and state.** Create a private, encrypted, versioned S3 state bucket and
-   configure native lockfile access. Create a GitHub OIDC deployment role scoped to the repository
-   and environment. Grant it state access and the permissions needed to manage that environment.
-   GitHub obtains short-lived AWS credentials; do not store AWS access keys as GitHub secrets.
+2. **Bootstrap AWS access and state.** Use the [manual staging bootstrap](../../infra/bootstrap/staging/README.md)
+   to adopt or create the OIDC provider and configure separate infrastructure and application roles.
+   Bootstrap uses the existing private, encrypted, versioned S3 bucket with its own state key and
+   native lockfile. GitHub obtains short-lived AWS credentials; do not store AWS access keys as
+   GitHub secrets.
 3. **Protect releases.** Require the API, worker, web, and Terraform PR checks on the release branch.
    Restrict direct pushes and deployment access. Serialize releases so migrations and infrastructure
    updates do not overlap.
