@@ -1,4 +1,4 @@
-name: Workers Verify
+name: "CI: Verify web app"
 
 on:
   pull_request:
@@ -10,26 +10,34 @@ permissions:
   contents: read
 
 jobs:
-  verify-workers:
-    name: Workers verification
+  verify-web-app:
+    name: Web app verification
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --ignore-scripts
+
       - name: Biome check
-        run: pnpm --filter 'workers...' check
+        run: pnpm --filter web-app check
+
       - name: Type check
-        run: pnpm --filter 'workers...' --workspace-concurrency=1 typecheck
+        run: pnpm --filter web-app typecheck
+
       - name: Run tests
-        run: pnpm --filter 'workers...' --workspace-concurrency=1 test:run
+        run: pnpm --filter web-app test:run
+
       - name: Build
-        run: pnpm --filter 'workers...' --workspace-concurrency=1 build
+        run: pnpm --filter web-app build

@@ -1,18 +1,19 @@
 # Bootstrap staging deployment access
 
-Run this Terraform root manually with the `stg-admin` AWS profile. It manages the GitHub OIDC
+Run this Terraform root manually with the `ev-admin` AWS profile. It manages the GitHub OIDC
 provider and deployment roles for `EduardoV-dev/leonly`. The state bucket already exists and is
 managed outside this root.
 
 | GitHub environment | AWS role | Permissions in this root |
 | --- | --- | --- |
-| `infra-staging` | `leonly-deploy-infra-staging` | Read/write `staging/terraform.tfstate` and manage its `.tflock`. Add resource-management permissions here as the staging stack is introduced. |
-| `app-staging` | `leonly-deploy-app-staging` | Push and resolve images in `leonly-staging-api` and `leonly-staging-image-worker`. Update and publish the matching Lambda functions and promote their `live` aliases. |
+| `infra-staging` | `leonly-deploy-infra-staging` | Read/write `staging/terraform.tfstate`, manage its `.tflock`, and create and configure the two staging ECR repositories. |
+| `app-staging` | `leonly-deploy-app-staging` | Push and resolve images in the two staging repositories. Inspect, publish, and wait for versions of `leonly-staging-api` and `leonly-staging-image-worker`, and promote their `live` aliases. |
 
 Bootstrap state is stored in `s3://leonly-terraform-state-staging/bootstrap/staging.tfstate` in
 `us-east-1`, with native S3 locking. If you initialized the former `infra/bootstrap/` root, run
 `init` in the new directory to reconnect to the same state. No state migration is needed.
-Only the operator needs access to this state. If an older
+Only the operator can read or write this state. The infra role can list keys in the staging bucket
+so Terraform can distinguish a missing staging state object from denied access. If an older
 staging state key already contains resources, resolve that state migration before creating or applying
 the staging infrastructure root.
 
@@ -28,8 +29,8 @@ the staging infrastructure root.
    ```bash
    unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_DEFAULT_PROFILE
    unset AWS_ENDPOINT_URL AWS_ENDPOINT_URL_S3 AWS_ENDPOINT_URL_IAM AWS_ENDPOINT_URL_STS
-   export AWS_PROFILE=stg-admin AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true
-   aws login --profile stg-admin
+   export AWS_PROFILE=ev-admin AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true
+   aws login --profile ev-admin
    aws sts get-caller-identity
 
    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -76,17 +77,14 @@ the staging infrastructure root.
    ```
 
    Keep the plan private and discard it after applying. Use the two role ARN outputs when wiring
-   the matching GitHub deployment jobs. The staging stack must create the ECR repositories, grant
-   Lambda image retrieval, and create the functions and `live` aliases before CI can promote releases.
+   the matching GitHub deployment jobs. Next, provision the [staging ECR repositories](../../environments/staging/README.md).
 
 ## Offline checks
 
 Run in a fresh checkout or with a separate `TF_DATA_DIR` if the S3 backend is already initialized.
-The test uses a mock AWS provider and makes no AWS changes.
 
 ```bash
 terraform -chdir=infra/bootstrap/staging fmt -check -recursive
 terraform -chdir=infra/bootstrap/staging init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/bootstrap/staging validate
-terraform -chdir=infra/bootstrap/staging test
 ```

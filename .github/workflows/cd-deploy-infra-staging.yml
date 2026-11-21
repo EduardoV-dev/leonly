@@ -1,0 +1,67 @@
+name: "CD: Deploy staging infrastructure"
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - .github/workflows/cd-deploy-infra-staging.yml
+      - infra/environments/staging/**
+      - infra/modules/**
+  workflow_dispatch:
+
+jobs:
+  apply:
+    name: Apply staging Terraform
+    if: ${{ github.ref == 'refs/heads/staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: infra-staging
+    concurrency:
+      group: leonly-staging-mutations
+      queue: max
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        shell: bash
+        working-directory: infra/environments/staging
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Check out the staging infrastructure commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Reject superseded Terraform configuration
+        run: |
+          git fetch --no-tags origin refs/heads/staging
+          git diff --exit-code HEAD FETCH_HEAD -- . ../../modules ../../../.github/workflows/cd-deploy-infra-staging.yml
+
+      - name: Install Terraform for staging
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.16.4
+          terraform_wrapper: false
+
+      - name: Assume the staging infrastructure role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::458818293454:role/leonly-deploy-infra-staging
+
+      - name: Initialize the staging backend
+        run: terraform init -input=false -lockfile=readonly
+
+      - name: Plan the staging infrastructure changes
+        run: terraform plan -input=false -lock-timeout=60s -out="$RUNNER_TEMP/staging.tfplan"
+
+      - name: Apply the saved staging infrastructure plan
+        run: |
+          plan="$RUNNER_TEMP/staging.tfplan"
+          if ! terraform show -json "$plan" | jq -e 'all(.resource_changes[]?; (.change.actions | index("delete")) == null)' >/dev/null; then
+            printf 'CI does not apply deletions or replacements. Review this plan separately.\n' >&2
+            exit 1
+          fi
+          terraform apply -input=false -lock-timeout=60s "$plan"

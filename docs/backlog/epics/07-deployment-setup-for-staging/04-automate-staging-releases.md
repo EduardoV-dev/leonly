@@ -19,9 +19,9 @@ the GitHub deployment result reflects a usable release.
 3. Build and push API and worker images tagged with the commit SHA, capture their digests, and
    create authenticated Terraform plans only in the trusted release context. Apply each exact saved
    plan automatically; keep secret-bearing plans private and ephemeral.
-4. Apply foundational changes, run Prisma migrate-deploy with the direct Neon URL, deploy the worker
-   and then the API through Terraform, and verify Lambda readiness and `/api/health`. Deploy the
-   prebuilt frontend with the Vercel CLI only after backend verification.
+4. Apply prerequisite infrastructure changes, run Prisma migrate-deploy with the direct Neon URL,
+   and publish and promote the selected Lambda versions, worker before API when both change. Verify
+   Lambda readiness and `/api/health` before deploying the prebuilt frontend with the Vercel CLI.
 5. Run deterministic smoke checks and report the result in GitHub Deployments for `staging` at
    `https://stg.leonly.eduardov.dev`. Record commit, image digests, and Vercel deployment ID without
    secrets. Document investigation and rollback using retained compatible artifacts.
@@ -43,6 +43,6 @@ the GitHub deployment result reflects a usable release.
 - Durable instructions cover release order, investigation, rollback, separate state recovery, and
   safe staging pause; actual usage and the limitations of budget alerts are documented.
 
-Starting points: `.github/workflows/verify-api.yml`, `.github/workflows/verify-workers.yml`,
-`.github/workflows/verify-web-app.yml`, `.github/workflows/verify-terraform-staging.yml`, and
+Starting points: `.github/workflows/ci-verify-api.yml`, `.github/workflows/ci-verify-workers.yml`,
+`.github/workflows/ci-verify-web-app.yml`, `.github/workflows/ci-verify-terraform-staging.yml`, and
 `packages/database/package.json`.

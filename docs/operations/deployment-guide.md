@@ -1,12 +1,13 @@
 # Deployment guide
 
-Use this guide to prepare a staging or production deployment. Terraform configuration for both cloud
-environments is pending. The PR workflows are in place:
+Use this guide to prepare a staging or production deployment. The staging Terraform root defines
+the [ECR repositories](../../infra/environments/staging/README.md). The remaining cloud
+infrastructure is pending. The PR workflows are in place:
 
 | PR target | Workflow | Terraform root |
 | --- | --- | --- |
-| `staging` | `verify-terraform-staging.yml` | `infra/environments/staging` |
-| `main` | `verify-terraform-production.yml` | `infra/environments/production` |
+| `staging` | `ci-verify-terraform-staging.yml` | `infra/environments/staging` |
+| `main` | `ci-verify-terraform-production.yml` | `infra/environments/production` |
 
 Each workflow skips Terraform until its root contains a `.tf` file. Commit the root's provider
 lockfile when restoring its configuration. Configure the matching required Terraform check for
@@ -21,15 +22,17 @@ each branch if replacing an existing required check. Floci is tested locally.
 | Prisma | Apply versioned database schema migrations. |
 | GitHub Environment Secrets | Supply credentials to trusted deployment jobs. |
 
-Terraform manages ECR repositories and Lambda image references. GitHub Actions builds and pushes
-the images, then passes their immutable digests to Terraform. Do not update a Terraform-managed
-Lambda separately from Terraform.
+Terraform manages ECR repositories, Lambda configuration, and trigger wiring. The first
+Terraform apply that creates a Lambda uses an image digest from GitHub Actions. After creation,
+application CD owns the deployed image, published versions, and `live` alias target. Terraform
+must ignore updates to the image and alias target so an infrastructure apply cannot undo a release.
 
 ## Prepare each environment
 
 1. **Separate environments.** Use isolated Terraform state, Neon projects, Redis databases, upload
    buckets, credentials, and GitHub environments for staging and production. Staging uses the
-   `staging` GitHub environment and `us-east-1`; decide production settings before provisioning it.
+   `infra-staging` and `app-staging` GitHub environments and `us-east-1`; decide production settings
+   before provisioning it.
 2. **Bootstrap AWS access and state.** Use the [manual staging bootstrap](../../infra/bootstrap/staging/README.md)
    to adopt or create the OIDC provider and configure separate infrastructure and application roles.
    Bootstrap uses the existing private, encrypted, versioned S3 bucket with its own state key and
@@ -76,15 +79,16 @@ The first deployment needs a bootstrap phase. Terraform must create ECR reposito
 pipeline can push images, and image-based Lambdas need real image digests. Provision foundational
 services and roles, add the resulting runtime secrets to GitHub, then run the complete release.
 
-For each release:
+The [staging runbook](../../infra/environments/staging/README.md) covers initial image publication,
+release activation, and manual workflow runs. For later releases:
 
 1. Pass the required PR checks and merge the release commit.
-2. Build and push the API and worker images; record their digests.
-3. Apply prerequisite infrastructure changes and run Prisma migrations using the direct database URL.
-4. Deploy the worker and API through Terraform. Verify Lambda readiness and API health before
-   deploying the frontend.
-5. Deploy the frontend, run smoke checks, and report the result in GitHub Deployments. Keep failed
-   or partial releases visible as failures.
+2. Infrastructure CD applies Terraform when staging infrastructure changes. Application CD waits
+   for the required Terraform run before starting a full release.
+3. Build and push the affected images, run Prisma migrations once using the direct staging database
+   URL, and publish and promote the selected Lambda versions. A failed migration blocks promotion.
+4. Verify Lambda readiness and API health before deploying the frontend. Run the end-to-end staging
+   smoke checks and investigate any partial release before retrying.
 
 ## Verify and recover
 

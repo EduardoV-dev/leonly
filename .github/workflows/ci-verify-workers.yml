@@ -1,4 +1,4 @@
-name: API Verify
+name: "CI: Verify workers"
 
 on:
   pull_request:
@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  verify-api:
-    name: API verification
+  verify-workers:
+    name: Workers verification
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,10 +26,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --ignore-scripts
       - name: Biome check
-        run: pnpm --filter 'api...' check
+        run: pnpm --filter 'workers...' check
       - name: Type check
-        run: pnpm --filter 'api...' --workspace-concurrency=1 typecheck
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 typecheck
       - name: Run tests
-        run: pnpm --filter 'api...' --workspace-concurrency=1 test:run
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 test:run
       - name: Build
-        run: pnpm --filter 'api...' --workspace-concurrency=1 build
+        run: pnpm --filter 'workers...' --workspace-concurrency=1 build
