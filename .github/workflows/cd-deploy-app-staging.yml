@@ -1,0 +1,158 @@
+name: "CD: Deploy staging applications"
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - .github/workflows/cd-deploy-app-staging.yml
+      - infra/scripts/staging-release.sh
+      - apps/api/**
+      - apps/workers/**
+      - packages/database/**
+      - packages/utils/**
+      - .dockerignore
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.base.json
+  workflow_dispatch:
+    inputs:
+      workload:
+        description: Workloads to release
+        type: choice
+        options: [both, api, worker]
+        default: both
+      publish_only:
+        description: Push images without running migrations or promoting Lambda versions
+        type: boolean
+        default: false
+
+permissions: {}
+
+env:
+  ECR_REGISTRY: 458818293454.dkr.ecr.us-east-1.amazonaws.com
+  IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
+
+jobs:
+  select:
+    name: Select staging workloads
+    if: ${{ github.ref == 'refs/heads/staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      workloads: ${{ steps.select.outputs.workloads }}
+      matrix: ${{ steps.select.outputs.matrix }}
+      release: ${{ steps.select.outputs.release }}
+    steps:
+      - name: Check out the staging release commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect workloads and select release mode
+        id: select
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          WORKLOAD: ${{ inputs.workload }}
+          PUBLISH_ONLY: ${{ inputs.publish_only }}
+          RELEASE_ENABLED: ${{ vars.STAGING_APP_RELEASE_ENABLED }}
+        run: bash infra/scripts/staging-release.sh select
+
+      - name: Wait for the required staging infrastructure apply
+        if: ${{ steps.select.outputs.release == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: bash infra/scripts/staging-release.sh wait-infra
+
+  publish:
+    name: Build and push staging ${{ matrix.workload }}
+    needs: select
+    if: ${{ needs.select.outputs.workloads != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: app-staging
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select.outputs.matrix) }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      ECR_REPOSITORY: ${{ matrix.repository }}
+      DOCKERFILE: ${{ matrix.dockerfile }}
+    steps:
+      - name: Check out staging ${{ matrix.workload }} sources
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Assume the app role for ${{ matrix.workload }} publishing
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::458818293454:role/leonly-deploy-app-staging
+
+      - name: Publish the ${{ matrix.workload }} image and record its digest
+        run: bash infra/scripts/staging-release.sh publish
+
+  release:
+    name: Migrate and deploy selected staging Lambdas
+    needs: [select, publish]
+    if: ${{ needs.select.outputs.release == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: app-staging
+    concurrency:
+      group: leonly-staging-mutations
+      queue: max
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      WORKLOADS: ${{ needs.select.outputs.workloads }}
+    steps:
+      - name: Check out the staging migration commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Reject superseded application inputs
+        run: bash infra/scripts/staging-release.sh verify-current
+
+      - name: Install Node.js for Prisma migrations
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install the locked migration dependencies
+        run: |
+          corepack enable
+          pnpm --filter @leonly/database install --frozen-lockfile --ignore-scripts
+
+      - name: Assume the staging app role for Lambda promotion
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::458818293454:role/leonly-deploy-app-staging
+
+      - name: Check staging Lambda aliases and image digests
+        run: bash infra/scripts/staging-release.sh preflight
+
+      - name: Apply pending staging database migrations once
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_MIGRATION_DATABASE_URL }}
+        run: |
+          : "${DATABASE_URL:?Configure STAGING_MIGRATION_DATABASE_URL in app-staging}"
+          pnpm --filter @leonly/database prisma:migrate
+
+      - name: Publish Lambda versions and promote the live aliases
+        run: bash infra/scripts/staging-release.sh promote

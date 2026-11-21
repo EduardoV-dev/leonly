@@ -7,7 +7,7 @@ managed outside this root.
 | GitHub environment | AWS role | Permissions in this root |
 | --- | --- | --- |
 | `infra-staging` | `leonly-deploy-infra-staging` | Read/write `staging/terraform.tfstate`, manage its `.tflock`, and create and configure the two staging ECR repositories. |
-| `app-staging` | `leonly-deploy-app-staging` | Push and resolve images in `leonly-api-staging` and `leonly-image-worker-staging`. Update and publish `leonly-staging-api` and `leonly-staging-image-worker` Lambda functions and promote their `live` aliases. |
+| `app-staging` | `leonly-deploy-app-staging` | Push and resolve images in the two staging repositories. Inspect, publish, and wait for versions of `leonly-staging-api` and `leonly-staging-image-worker`, and promote their `live` aliases. |
 
 Bootstrap state is stored in `s3://leonly-terraform-state-staging/bootstrap/staging.tfstate` in
 `us-east-1`, with native S3 locking. If you initialized the former `infra/bootstrap/` root, run

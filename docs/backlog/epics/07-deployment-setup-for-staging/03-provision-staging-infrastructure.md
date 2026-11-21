@@ -41,7 +41,8 @@ Track the infrastructure review findings and verification in the
 - State and lockfile access works locally and through OIDC; lock contention and recovery are tested.
   Secrets supplied to Lambda through Terraform are recognized as present in state and saved plans.
 - The worker is ready before API publication, and initial queue consumption stays disabled until
-  the worker is verified. Image references remain Terraform-owned and use real digests.
+   the worker is verified. Terraform uses real digests for first creation; app CD owns subsequent
+   image updates and `live` alias promotion.
 - Both staging domains use valid HTTPS; trusted origins, upload CORS, and authentication cookie
   scope are configured without exposing backend secrets to the frontend.
 - Terraform formatting and validation pass; provider behavior and API/worker probes are verified.

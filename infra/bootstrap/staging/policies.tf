@@ -92,10 +92,22 @@ resource "aws_iam_role_policy" "app_release" {
         Resource = local.repository_arns
       },
       {
-        Sid      = "PublishStagingFunctions"
-        Effect   = "Allow"
-        Action   = ["lambda:GetFunctionConfiguration", "lambda:PublishVersion", "lambda:UpdateFunctionCode"]
+        Sid    = "PublishStagingFunctions"
+        Effect = "Allow"
+        Action = [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:ListVersionsByFunction",
+          "lambda:PublishVersion",
+          "lambda:UpdateFunctionCode"
+        ]
         Resource = local.function_arns
+      },
+      {
+        Sid      = "WaitForPublishedVersions"
+        Effect   = "Allow"
+        Action   = "lambda:GetFunctionConfiguration"
+        Resource = [for arn in local.function_arns : "${arn}:*"]
       },
       {
         Sid      = "PromoteStagingAliases"

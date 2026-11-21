@@ -37,10 +37,10 @@ local Floci behavior as part of this epic.
 First bootstrap the state bucket and CI access. Provision data services and ECR repositories before
 publishing the first images. Configure domains and OAuth before testing sign-in.
 
-After merge: build artifacts → foundational Terraform changes → compatible migrations
-→ Terraform-managed worker update → Terraform-managed API update → backend verification → Vercel
-deployment → smoke checks. Apply each saved plan automatically after checks pass; keep Lambda image
-updates in Terraform so configuration and deployed releases stay consistent.
+After merge: apply prerequisite Terraform changes → build and push affected images → run compatible
+migrations once → publish and promote selected Lambda versions → backend verification → Vercel
+deployment → smoke checks. Terraform owns configuration; app CD owns the released image and `live`
+alias target after the initial function creation.
 
 ## Documentation expectations
 
